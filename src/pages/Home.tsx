@@ -28,10 +28,10 @@ import labanonLogo from './labanonlogo.png';
 import learningImage from './learningup.jpeg'; // Adjust the path if needed
 
 // Primary high-quality image for hero section
-const PRIMARY_HERO_IMAGE = 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=2070&q=80';
+const PRIMARY_HERO_IMAGE = learningImage; // Use local learningup.jpeg
 
 const IMAGES = {
-  hero: PRIMARY_HERO_IMAGE, // Use high-quality online image
+  hero: PRIMARY_HERO_IMAGE, // Use local learningup.jpeg image
   fallbackHero: learningImage, // Your local image as fallback
   webDev: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=2072&q=80',
   math: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=2070&q=80',
@@ -507,52 +507,34 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="relative hidden lg:block"
+              className="relative mt-6 md:mt-0"
             >
-              <div className="relative h-[400px] lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
+              <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
                 {/* Blurred background overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-teal-600/20 backdrop-blur-sm " />
                 
                 {/* Image container with improved quality */}
-                <div className="relative w-full h-full">
+                <div className="relative w-full h-full hero-image-container">
                   {heroImageError ? (
-                    // Fallback to your local image with improved styling
-                    <div className="relative w-full h-full">
-                      <img 
-                        src={IMAGES.fallbackHero}
-                        alt="Students learning together"
-                        className="w-full h-full object-cover"
-                        onError={() => {
-                          // Ultimate fallback to gradient
-                          const container = document.querySelector('.hero-image-container');
-                          if (container) {
-                            container.innerHTML = `
-                              <div class="w-full h-full flex items-center justify-center ${fallbackColors.hero}">
-                                <div class="text-center p-8">
-                                  <svg class="w-20 h-20 text-white mx-auto mb-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"></path>
-                                  </svg>
-                                  <div class="text-white text-2xl font-bold">Lebanon Academy</div>
-                                  <div class="text-white/80">Future Ready Learning</div>
-                                </div>
-                              </div>
-                            `;
-                          }
-                        }}
-                      />
-                      {/* Add overlay to improve blurry image */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent backdrop-blur-[1px]" />
+                    // Fallback to gradient with icon
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-600 to-teal-600">
+                      <div className="text-center p-8">
+                        <svg className="w-20 h-20 text-white mx-auto mb-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"></path>
+                        </svg>
+                        <div className="text-white text-2xl font-bold">Lebanon Academy</div>
+                        <div className="text-white/80">Future Ready Learning</div>
+                      </div>
                     </div>
                   ) : (
                     <>
                       {/* High-quality primary image */}
-                      <motion.img
+                      <img
                         src={IMAGES.hero}
                         alt="Students learning together"
-                        className={`w-full h-full object-cover ${heroImageLoaded ? 'opacity-100' : 'opacity-100'} transition-opacity duration-500`}
-                        style={{ y }}
+                        className={`w-full h-full object-cover transition-opacity duration-500`}
                         onLoad={handleHeroImageLoad}
                         onError={handleHeroImageError}
                         loading="eager"

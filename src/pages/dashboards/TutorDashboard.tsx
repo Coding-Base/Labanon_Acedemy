@@ -100,7 +100,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       title: 'Total Courses',
       value: summary?.courses_count || 0,
       icon: <BookOpen className="w-6 h-6" />,
-      color: 'from-blue-500 to-cyan-400',
+      color: 'from-green-600 to-teal-500',
       change: '+2 this month',
       trend: 'up'
     },
@@ -131,7 +131,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   ];
 
   const quickActions = [
-    { title: 'Create New Course', icon: <PlusCircle className="w-5 h-5" />, color: 'bg-blue-100 text-blue-600', path: 'manage' },
+    { title: 'Create New Course', icon: <PlusCircle className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'manage' },
     { title: 'Schedule Live Class', icon: <Calendar className="w-5 h-5" />, color: 'bg-purple-100 text-purple-600', path: 'schedule' },
     { title: 'Go Live', icon: <Sparkles className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'overview' }
   ];
@@ -144,7 +144,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50">
       {/* Top Header */}
       <motion.header initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -168,7 +168,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
               </motion.button>
 
               <div className="hidden md:flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
                   {summary?.username?.charAt(0).toUpperCase() || 'T'}
                 </div>
                 <div>
@@ -189,7 +189,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
                       {summary?.username?.charAt(0).toUpperCase() || 'T'}
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white"></div>
@@ -211,17 +211,17 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   const active = isActivePath(item.path);
                   return (
                     <motion.div key={item.path} whileHover={{ x: 5 }}>
-                      <Link to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${ active ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 border-l-4 border-blue-500' : 'text-gray-700 hover:bg-gray-50' }`}>
-                        <div className={`${active ? 'text-blue-600' : 'text-gray-500'}`}>{item.icon}</div>
+                      <Link to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${ active ? 'bg-gradient-to-r from-green-50 to-teal-50 text-green-600 border-l-4 border-green-500' : 'text-gray-700 hover:bg-gray-50' }`}>
+                        <div className={`${active ? 'text-green-600' : 'text-gray-500'}`}>{item.icon}</div>
                         <span className="font-medium">{item.label}</span>
-                        {active && <ChevronRight className="w-4 h-4 ml-auto text-blue-500" />}
+                        {active && <ChevronRight className="w-4 h-4 ml-auto text-green-500" />}
                       </Link>
                     </motion.div>
                   );
                 })}
               </nav>
 
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow">
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow">
                 <PlusCircle className="w-5 h-5 inline mr-2" />
                 Create New Course
               </motion.button>
@@ -257,7 +257,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   {navItems.map((item) => {
                     const active = isActivePath(item.path);
                     return (
-                      <Link key={item.path} to={item.path} className={`px-3 py-2 rounded-md font-medium transition-colors ${active ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link key={item.path} to={item.path} className={`px-3 py-2 rounded-md font-medium transition-colors ${active ? 'bg-gradient-to-r from-green-50 to-teal-50 text-green-600' : 'text-gray-600 hover:text-gray-900'}`}>
                         {item.label}
                       </Link>
                     );
@@ -282,11 +282,11 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                       <div className="mb-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{summary?.username}</span>! 🎓</h1>
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome, <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">{summary?.username}</span>! 🎓</h1>
                             <p className="text-gray-600 mt-2">Manage your courses, track earnings, and grow your teaching impact</p>
                           </div>
                           <div className="flex items-center space-x-3">
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg">
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
                               <Sparkles className="w-5 h-5 inline mr-2" />
                               Go Live
                             </motion.button>
@@ -361,11 +361,11 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   <Route path="" element={
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-6">Welcome to Your Tutor Dashboard</h2>
-                      <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8">
+                      <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl p-8">
                         <div className="max-w-2xl">
                           <p className="text-gray-700 mb-6">Start by creating your first course or exploring the different sections from the sidebar.</p>
                           <div className="flex flex-wrap gap-4">
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold"><PlusCircle className="w-5 h-5 inline mr-2" />Create New Course</motion.button>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold"><PlusCircle className="w-5 h-5 inline mr-2" />Create New Course</motion.button>
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-white text-gray-900 border border-gray-300 rounded-xl font-semibold"><Video className="w-5 h-5 inline mr-2" />Schedule Live Session</motion.button>
                           </div>
                         </div>

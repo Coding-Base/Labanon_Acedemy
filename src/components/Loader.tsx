@@ -58,11 +58,11 @@ export default function Loader() {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-green-50 via-white to-emerald-50 flex flex-col items-center justify-center z-[9999] overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-green-50 via-white to-teal-50 flex flex-col items-center justify-center z-[9999] overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute top-10 left-10 w-32 h-32 bg-green-200 rounded-full filter blur-3xl opacity-20"
+          className="absolute top-10 left-10 w-32 h-32 bg-green-300 rounded-full filter blur-3xl opacity-20"
           animate={{
             x: [0, 50, 0],
             y: [0, 30, 0],
@@ -74,7 +74,7 @@ export default function Loader() {
           }}
         />
         <motion.div
-          className="absolute bottom-20 right-20 w-48 h-48 bg-emerald-200 rounded-full filter blur-3xl opacity-20"
+          className="absolute bottom-20 right-20 w-48 h-48 bg-teal-300 rounded-full filter blur-3xl opacity-20"
           animate={{
             x: [0, -50, 0],
             y: [0, -30, 0],
@@ -91,13 +91,13 @@ export default function Loader() {
       <div className="relative z-10 flex flex-col items-center">
         {/* Outer rotating circle */}
         <motion.div
-          className="absolute w-48 h-48 border-4 border-transparent border-t-green-500 border-r-emerald-500 rounded-full"
+          className="absolute w-48 h-48 border-4 border-transparent border-t-green-600 border-r-teal-500 rounded-full"
           animate={rotateAnimation}
         />
 
         {/* Middle pulsing circle */}
         <motion.div
-          className="absolute w-40 h-40 border-2 border-green-300 rounded-full"
+          className="absolute w-40 h-40 border-2 border-green-400 rounded-full"
           animate={pulseAnimation}
         />
 
@@ -111,9 +111,9 @@ export default function Loader() {
             className="relative"
             animate={{
               boxShadow: [
-                "0 0 20px rgba(16, 185, 129, 0.3)",
-                "0 0 40px rgba(16, 185, 129, 0.5)",
-                "0 0 20px rgba(16, 185, 129, 0.3)",
+                "0 0 20px rgba(34, 197, 94, 0.3)",
+                "0 0 40px rgba(34, 197, 94, 0.5)",
+                "0 0 20px rgba(34, 197, 94, 0.3)",
               ]
             }}
             transition={{
@@ -133,7 +133,7 @@ export default function Loader() {
           {[0, 1, 2, 3, 4].map((i) => (
             <motion.div
               key={i}
-              className="absolute w-2 h-2 bg-green-500 rounded-full"
+              className="absolute w-2 h-2 bg-green-600 rounded-full"
               style={{
                 top: 50,
                 left: 50,
@@ -154,7 +154,7 @@ export default function Loader() {
           transition={{ duration: 0.8, delay: 0.3 }}
           className="mt-16 text-center relative z-20"
         >
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-3">
             Lebanon Academy
           </h1>
           <p className="text-green-700 font-semibold text-lg">Future Ready Learning</p>
@@ -169,7 +169,7 @@ export default function Loader() {
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
-                className="w-2 h-2 bg-green-500 rounded-full"
+                className="w-2 h-2 bg-green-600 rounded-full"
                 animate={{
                   y: [0, -8, 0],
                 }}
@@ -181,7 +181,7 @@ export default function Loader() {
               />
             ))}
           </div>
-          <span className="text-green-600 font-semibold ml-2">Preparing your experience...</span>
+          <span className="text-green-700 font-semibold ml-2">Preparing your experience...</span>
         </motion.div>
 
         {/* Progress bar */}
@@ -192,7 +192,7 @@ export default function Loader() {
           className="mt-8 w-64 h-1 bg-gray-200 rounded-full overflow-hidden relative z-20"
         >
           <motion.div
-            className="h-full bg-gradient-to-r from-green-500 to-emerald-600"
+            className="h-full bg-gradient-to-r from-green-600 to-teal-500"
             animate={{
               x: ["-100%", "100%"],
             }}
@@ -235,10 +235,10 @@ export default function Loader() {
 
       {/* Corner decorations */}
       <motion.div
-        className="absolute top-8 right-8 w-12 h-12 border-2 border-green-300 rounded-lg"
+        className="absolute top-8 right-8 w-12 h-12 border-2 border-green-400 rounded-lg"
         animate={{
           rotate: 360,
-          borderColor: ["rgb(134, 239, 172)", "rgb(16, 185, 129)", "rgb(134, 239, 172)"]
+          borderColor: ["rgb(134, 239, 172)", "rgb(34, 197, 94)", "rgb(134, 239, 172)"]
         }}
         transition={{
           duration: 4,
@@ -247,10 +247,10 @@ export default function Loader() {
         }}
       />
       <motion.div
-        className="absolute bottom-8 left-8 w-16 h-16 border-2 border-emerald-300 rounded-full"
+        className="absolute bottom-8 left-8 w-16 h-16 border-2 border-teal-400 rounded-full"
         animate={{
           scale: [1, 1.2, 1],
-          borderColor: ["rgb(110, 231, 183)", "rgb(16, 185, 129)", "rgb(110, 231, 183)"]
+          borderColor: ["rgb(45, 212, 191)", "rgb(20, 184, 166)", "rgb(45, 212, 191)"]
         }}
         transition={{
           duration: 3,

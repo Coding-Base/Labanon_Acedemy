@@ -238,14 +238,14 @@ export default function Home() {
   ];
 
   const fallbackColors = {
-    hero: 'bg-gradient-to-br from-blue-500 to-purple-600',
+    hero: 'bg-gradient-to-br from-green-600 to-teal-600',
     webDev: 'bg-gradient-to-br from-green-500 to-teal-600',
     math: 'bg-gradient-to-br from-orange-500 to-red-600',
     dataScience: 'bg-gradient-to-br from-purple-500 to-pink-600'
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 overflow-x-hidden">
       {/* Header */}
       <motion.header
         initial={{ y: -100 }}
@@ -283,10 +283,10 @@ export default function Home() {
                 >
                   <Link
                     to={item.path}
-                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors relative group"
+                    className="text-gray-700 hover:text-green-600 font-medium transition-colors relative group"
                   >
                     {item.label}
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300" />
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-600 group-hover:w-full transition-all duration-300" />
                   </Link>
                 </motion.div>
               ))}
@@ -300,7 +300,7 @@ export default function Home() {
               >
                 <Link
                   to="/login"
-                  className="hidden md:inline px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  className="hidden md:inline px-4 py-2 text-gray-700 hover:text-green-600 font-medium transition-colors"
                 >
                   Sign In
                 </Link>
@@ -311,7 +311,7 @@ export default function Home() {
               >
                 <Link
                   to="/register"
-                  className="px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg md:rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 whitespace-nowrap"
+                  className="px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg md:rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all duration-300 whitespace-nowrap"
                 >
                   Get Started Free
                 </Link>
@@ -349,7 +349,7 @@ export default function Home() {
                   >
                     <Link
                       to={item.path}
-                      className="block px-3 py-2.5 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors"
+                      className="block px-3 py-2.5 text-sm text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg font-medium transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       {item.label}
@@ -360,7 +360,7 @@ export default function Home() {
                   <motion.div whileHover={{ x: 5 }}>
                     <Link
                       to="/login"
-                      className="block px-3 py-2.5 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors mb-2"
+                      className="block px-3 py-2.5 text-sm text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg font-medium transition-colors mb-2"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Sign In
@@ -369,7 +369,7 @@ export default function Home() {
                   <motion.div whileHover={{ x: 5 }}>
                     <Link
                       to="/register"
-                      className="block px-3 py-2.5 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold text-center"
+                      className="block px-3 py-2.5 text-sm bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold text-center"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Get Started Free
@@ -384,7 +384,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <section ref={heroSectionRef} className="relative pt-28 pb-16 md:pt-40 md:pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-teal-500/5" />
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Hero Content */}
@@ -396,7 +396,7 @@ export default function Home() {
             >
               <motion.div variants={fadeInUp}>
                 <motion.div 
-                  className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium"
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
@@ -419,7 +419,7 @@ export default function Home() {
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4, duration: 0.8 }}
-                    className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+                    className="block bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent"
                   >
                     Ace Exams
                   </motion.span>
@@ -457,7 +457,7 @@ export default function Home() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="ml-1 md:ml-2 px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg md:rounded-xl font-semibold hover:shadow-lg transition-shadow whitespace-nowrap"
+                    className="ml-1 md:ml-2 px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg md:rounded-xl font-semibold hover:shadow-lg transition-shadow whitespace-nowrap"
                   >
                     Search
                   </motion.button>
@@ -511,7 +511,7 @@ export default function Home() {
             >
               <div className="relative h-[400px] lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
                 {/* Blurred background overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-sm " />
+                <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-teal-600/20 backdrop-blur-sm " />
                 
                 {/* Image container with improved quality */}
                 <div className="relative w-full h-full">
@@ -559,7 +559,7 @@ export default function Home() {
                       />
                       {/* Loading skeleton */}
                       {!heroImageLoaded && !heroImageError && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 animate-pulse" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-teal-500/20 animate-pulse" />
                       )}
                     </>
                   )}
@@ -580,7 +580,7 @@ export default function Home() {
                     <motion.div
                       animate={{ rotate: [0, 360] }}
                       transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                      className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center"
+                      className="w-12 h-12 bg-gradient-to-br from-green-600 to-teal-500 rounded-xl flex items-center justify-center"
                     >
                       <Award className="w-6 h-6 text-white" />
                     </motion.div>
@@ -656,7 +656,7 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
             >
-              Everything You Need to <span className="text-blue-600">Succeed</span>
+              Everything You Need to <span className="text-green-600">Succeed</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -690,7 +690,7 @@ export default function Home() {
                 <motion.div
                   whileHover={{ rotate: 360, scale: 1.1 }}
                   transition={{ duration: 0.6 }}
-                  className="w-12 md:w-14 h-12 md:h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mb-4 md:mb-6"
+                  className="w-12 md:w-14 h-12 md:h-14 bg-gradient-to-br from-green-600 to-teal-500 rounded-2xl flex items-center justify-center mb-4 md:mb-6"
                 >
                   <div className="text-white text-lg md:text-base">
                     {feature.icon}
@@ -728,7 +728,7 @@ export default function Home() {
                 transition={{ duration: 0.6 }}
                 className="text-3xl md:text-4xl font-bold text-gray-900"
               >
-                Featured <span className="text-blue-600">Courses</span>
+                Featured <span className="text-green-600">Courses</span>
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -743,7 +743,7 @@ export default function Home() {
             <motion.div whileHover={{ x: 5 }}>
               <Link
                 to="/marketplace"
-                className="inline-flex items-center space-x-2 text-blue-600 font-semibold hover:text-blue-700"
+                className="inline-flex items-center space-x-2 text-green-600 font-semibold hover:text-green-700"
               >
                 <span>View All Courses</span>
                 <ChevronRight className="w-5 h-5" />
@@ -815,7 +815,7 @@ export default function Home() {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm bg-blue-50 text-blue-600 rounded-lg font-semibold hover:bg-blue-100 transition-colors whitespace-nowrap"
+                      className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm bg-green-50 text-green-600 rounded-lg font-semibold hover:bg-green-100 transition-colors whitespace-nowrap"
                     >
                       Enroll Now
                     </motion.button>
@@ -850,7 +850,7 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="text-3xl md:text-4xl font-bold text-white mb-4"
             >
-              Trusted by <span className="text-blue-300">Thousands</span>
+              Trusted by <span className="text-teal-300">Thousands</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -910,7 +910,7 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <motion.div
                     whileHover={{ scale: 1.1 }}
-                    className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                    className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-green-600 to-teal-500 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
                   >
                     <img
                       src={testimonial.avatar}
@@ -938,7 +938,7 @@ export default function Home() {
         transition={{ duration: 0.8 }}
         className="py-20 relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 to-teal-600/10" />
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -951,7 +951,7 @@ export default function Home() {
             whileInView={{ scale: 1 }}
             viewport={{ once: true }}
             transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
-            className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mb-6 md:mb-8"
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 rounded-full mb-6 md:mb-8"
           >
             <Sparkles className="w-5 h-5 text-white" />
             <span className="text-white font-semibold text-sm md:text-base">Start Your Journey Today</span>
@@ -964,7 +964,7 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-3xl md:text-5xl font-bold text-gray-900 mb-4 md:mb-6"
           >
-            Ready to Transform Your <span className="text-blue-600">Learning</span>?
+            Ready to Transform Your <span className="text-green-600">Learning</span>?
           </motion.h2>
 
           <motion.p
@@ -988,7 +988,7 @@ export default function Home() {
             >
               <Link
                 to="/register"
-                className="px-6 md:px-8 py-3 md:py-4 text-sm md:text-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg md:rounded-xl font-semibold hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 block text-center"
+                className="px-6 md:px-8 py-3 md:py-4 text-sm md:text-lg bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg md:rounded-xl font-semibold hover:shadow-2xl hover:shadow-green-500/30 transition-all duration-300 block text-center"
               >
                 Create Free Account
               </Link>
@@ -1003,7 +1003,7 @@ export default function Home() {
             >
               <Link
                 to="/marketplace"
-                className="px-6 md:px-8 py-3 md:py-4 text-sm md:text-lg bg-white text-gray-900 border-2 border-gray-200 rounded-lg md:rounded-xl font-semibold hover:border-blue-500 hover:text-blue-600 transition-all duration-300 block text-center"
+                className="px-6 md:px-8 py-3 md:py-4 text-sm md:text-lg bg-white text-gray-900 border-2 border-gray-200 rounded-lg md:rounded-xl font-semibold hover:border-green-500 hover:text-green-600 transition-all duration-300 block text-center"
               >
                 Browse Courses
               </Link>

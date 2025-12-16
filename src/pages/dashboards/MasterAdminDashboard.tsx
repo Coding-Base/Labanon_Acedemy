@@ -244,16 +244,16 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   ]
 
   if (loadingSummary) return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 flex items-center justify-center">
       <div className="text-center">
-        <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+        <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
         <p className="text-gray-600">Loading admin dashboard...</p>
       </div>
     </div>
   )
   
   if (!summary) return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 flex items-center justify-center">
       <div className="text-center">
         <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to load dashboard</h2>
@@ -263,7 +263,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50">
       {/* Header */}
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
@@ -309,7 +309,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
                       {summary.username?.charAt(0).toUpperCase() || 'A'}
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white"></div>
@@ -334,11 +334,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     onClick={() => setTab(item.id)}
                     className={`flex items-center space-x-3 w-full px-4 py-3 rounded-xl transition-all duration-300 ${
                       tab === item.id
-                        ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 border-l-4 border-blue-500'
+                        ? 'bg-gradient-to-r from-green-50 to-teal-50 text-green-600 border-l-4 border-green-500'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <div className={`${tab === item.id ? 'text-blue-600' : 'text-gray-500'}`}>
+                    <div className={`${tab === item.id ? 'text-green-600' : 'text-gray-500'}`}>
                       {item.icon}
                     </div>
                     <span className="font-medium">{item.label}</span>
@@ -364,7 +364,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="mt-6 w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
+                className="mt-6 w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
               >
                 <Settings className="w-5 h-5 inline mr-2" />
                 System Settings
@@ -381,7 +381,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               className="mb-6"
             >
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Welcome back, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{summary.username}</span>
+                Welcome back, <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">{summary.username}</span>
               </h1>
               <p className="text-gray-600 mt-2">Manage users, courses, exams, and system configurations</p>
             </motion.div>
@@ -443,7 +443,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => loadUsers(1)}
-                          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                          className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg"
                         >
                           <Filter className="w-5 h-5 inline mr-2" />
                           Apply Filters
@@ -474,13 +474,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   onClick={() => setSelectedUser(user)}
                                   className={`p-4 rounded-xl border cursor-pointer transition-all ${
                                     selectedUser?.id === user.id
-                                      ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50'
+                                      ? 'border-green-500 bg-gradient-to-r from-green-50 to-teal-50'
                                       : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                                   }`}
                                 >
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-4">
-                                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
                                         {user.username?.charAt(0).toUpperCase()}
                                       </div>
                                       <div>

@@ -164,7 +164,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
   ];
 
   const stats = [
-    { title: 'Enrollments', value: summary.enrollments_count, icon: <BookOpen className="w-6 h-6" />, color: 'from-blue-500 to-cyan-400', change: '+2 this week', trend: 'up' },
+    { title: 'Enrollments', value: summary.enrollments_count, icon: <BookOpen className="w-6 h-6" />, color: 'from-green-600 to-teal-500', change: '+2 this week', trend: 'up' },
     { title: 'Exam Attempts', value: summary.attempts_count, icon: <FileCheck className="w-6 h-6" />, color: 'from-purple-500 to-pink-400', change: '+5 this month', trend: 'up' },
     { title: 'Average Score', value: summary.avg_score ? `${summary.avg_score}%` : '—', icon: <Target className="w-6 h-6" />, color: 'from-green-500 to-emerald-400', change: '↑ 8% from last month', trend: 'up' },
     { title: 'Completed Courses', value: summary.completed_courses || 0, icon: <CheckCircle className="w-6 h-6" />, color: 'from-orange-500 to-amber-400', change: '1 in progress', trend: 'neutral' },
@@ -181,7 +181,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
   ];
 
   const quickActions = [
-    { title: 'Take Practice Test', icon: <FileText className="w-5 h-5" />, color: 'bg-blue-100 text-blue-600', path: 'cbt' },
+    { title: 'Take Practice Test', icon: <FileText className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'cbt' },
     { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-purple-100 text-purple-600', path: 'courses' },
     { title: 'Download Materials', icon: <Download className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'courses' },
     { title: 'View Leaderboard', icon: <BarChart3 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-600', path: 'progress' }
@@ -195,7 +195,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 overflow-x-hidden">
       {/* Top Header (small sticky bar with avatar/notifications) - kept minimal and always visible */}
       <motion.header initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -222,7 +222,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
               </motion.button>
 
               <div className="hidden md:flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
                   {summary.username.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -235,7 +235,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
                 onClick={() => doLogout('user clicked logout')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium"
+                className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Logout</span>
@@ -254,7 +254,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
                       {summary.username.charAt(0).toUpperCase()}
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white"></div>
@@ -292,11 +292,11 @@ export default function StudentDashboard(props: StudentDashboardProps) {
                     <motion.div key={item.path} whileHover={{ x: 5 }}>
                       <Link
                         to={item.path} // relative link -> resolves under /student
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${ active ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 border-l-4 border-blue-500' : 'text-gray-700 hover:bg-gray-50' }`}
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${ active ? 'bg-gradient-to-r from-green-50 to-teal-50 text-green-600 border-l-4 border-green-500' : 'text-gray-700 hover:bg-gray-50' }`}
                       >
-                        <div className={`${active ? 'text-blue-600' : 'text-gray-500'}`}>{item.icon}</div>
+                        <div className={`${active ? 'text-green-600' : 'text-gray-500'}`}>{item.icon}</div>
                         <span className="font-medium">{item.label}</span>
-                        {active && <ChevronRight className="w-4 h-4 ml-auto text-blue-500" />}
+                        {active && <ChevronRight className="w-4 h-4 ml-auto text-green-500" />}
                       </Link>
                     </motion.div>
                   );
@@ -312,7 +312,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
                     <span className="font-semibold">{summary.completed_courses || 0}/12</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full" style={{ width: `${((summary.completed_courses || 0) / 12) * 100}%` }}></div>
+                    <div className="bg-gradient-to-r from-green-500 to-teal-500 h-2 rounded-full" style={{ width: `${((summary.completed_courses || 0) / 12) * 100}%` }}></div>
                   </div>
 
                   <div className="flex items-center justify-between mt-4">
@@ -322,7 +322,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
                 </div>
               </div>
 
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow">
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow">
                 Upgrade to Pro
               </motion.button>
             </div>
@@ -364,7 +364,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
                   {navItems.map((item) => {
                     const active = isActivePath(item.path);
                     return (
-                      <Link key={item.path} to={item.path} className={`px-3 py-2 rounded-md font-medium transition-colors ${active ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link key={item.path} to={item.path} className={`px-3 py-2 rounded-md font-medium transition-colors ${active ? 'bg-gradient-to-r from-green-50 to-teal-50 text-green-600' : 'text-gray-600 hover:text-gray-900'}`}>
                         {item.label}
                       </Link>
                     );
@@ -396,11 +396,11 @@ export default function StudentDashboard(props: StudentDashboardProps) {
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                               <div>
                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                                  Welcome back, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{summary.username}</span>! 👋
+                                  Welcome back, <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">{summary.username}</span>! 👋
                                 </h1>
                                 <p className="text-gray-600 mt-2">Track your progress, access courses, and ace your exams</p>
                               </div>
-                              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg">
+                              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
                                 <PlayCircle className="w-5 h-5 inline mr-2" />
                                 Continue Learning
                               </motion.button>
@@ -464,7 +464,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
                                 </div>
                               </div>
 
-                              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6">
+                              <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-xl p-6">
                                 <h3 className="font-semibold text-gray-900 mb-4">Upcoming Deadlines</h3>
                                 <div className="space-y-4">
                                   <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -491,7 +491,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
 
                           {/* Bottom Stats */}
                           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-2xl p-6">
+                            <div className="bg-gradient-to-br from-green-500 to-teal-600 text-white rounded-2xl p-6">
                               <h3 className="font-semibold mb-2">Learning Streak</h3>
                               <div className="text-3xl font-bold">14 days 🔥</div>
                               <p className="text-sm opacity-90">Keep going! 7 more days to unlock premium</p>

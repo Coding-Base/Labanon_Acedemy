@@ -1,6 +1,7 @@
 // src/App.tsx
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, lazy, useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Loader from './components/Loader'
 
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
@@ -21,10 +22,22 @@ const PerformancePage = lazy(() => import('./components/cbt/PerformancePage'))
 const BulkUploadPage = lazy(() => import('./pages/BulkUploadPage'))
 
 export default function App() {
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+
+  useEffect(() => {
+    // Show loader for minimum 2.5 seconds for visual impact
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false)
+    }, 2500)
+
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-100">
-        <Suspense fallback={<div className="text-center py-20">Loading...</div>}>
+        {isInitialLoading && <Loader />}
+        <Suspense fallback={<Loader />}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

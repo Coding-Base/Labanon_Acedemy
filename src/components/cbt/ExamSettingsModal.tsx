@@ -77,7 +77,7 @@ export default function ExamSettingsModal({
               max={subject.question_count}
               value={numQuestions}
               onChange={(e) => setNumQuestions(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
@@ -90,11 +90,11 @@ export default function ExamSettingsModal({
               min="1"
               value={timeLimitMinutes}
               onChange={(e) => setTimeLimitMinutes(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
-          <div className="bg-blue-50 p-4 rounded-lg">
+          <div className="bg-green-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">
               You will answer <strong>{numQuestions} questions</strong> in <strong>{timeLimitMinutes} minutes</strong>
             </p>
@@ -112,7 +112,7 @@ export default function ExamSettingsModal({
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
           >
             {isLoading ? 'Starting...' : 'Start Exam'}
           </button>

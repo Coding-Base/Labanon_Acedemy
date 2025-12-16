@@ -74,7 +74,7 @@ export default function PerformancePage() {
         <div className="text-red-600 mb-4">{error}</div>
         <button
           onClick={() => navigate('/student')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+          className="px-4 py-2 bg-green-600 text-white rounded-lg"
         >
           Back to Dashboard
         </button>
@@ -123,8 +123,8 @@ export default function PerformancePage() {
       value: performance.percentage_score.toFixed(1),
       unit: '%',
       icon: Target,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100'
+      color: 'text-green-600',
+      bgColor: 'bg-green-100'
     },
     {
       label: 'Correct Answers',
@@ -139,8 +139,8 @@ export default function PerformancePage() {
       value: ((performance.time_taken_seconds / (performance.time_limit_minutes * 60)) * 100).toFixed(1),
       unit: '%',
       icon: Clock,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100'
+      color: 'text-teal-600',
+      bgColor: 'bg-teal-100'
     },
     {
       label: 'Speed',
@@ -242,9 +242,9 @@ export default function PerformancePage() {
               </ResponsiveContainer>
             </div>
             <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-green-50 p-4 rounded-lg">
                 <p className="text-gray-600 text-sm">Time Used</p>
-                <p className="text-2xl font-bold text-blue-600">{formatTime(performance.time_taken_seconds)}</p>
+                <p className="text-2xl font-bold text-green-600">{formatTime(performance.time_taken_seconds)}</p>
               </div>
               <div className="bg-amber-50 p-4 rounded-lg">
                 <p className="text-gray-600 text-sm">Time Limit</p>
@@ -258,9 +258,9 @@ export default function PerformancePage() {
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-6">📋 Exam Details</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="border-l-4 border-blue-500 pl-4">
+            <div className="border-l-4 border-green-500 pl-4">
               <p className="text-gray-600 text-sm font-medium">Total Questions</p>
-              <p className="text-3xl font-bold text-blue-600 mt-1">{performance.num_questions}</p>
+              <p className="text-3xl font-bold text-green-600 mt-1">{performance.num_questions}</p>
             </div>
             <div className="border-l-4 border-green-500 pl-4">
               <p className="text-gray-600 text-sm font-medium">Correct Answers</p>
@@ -282,7 +282,7 @@ export default function PerformancePage() {
           <h2 className="text-xl font-bold text-gray-900 mb-6">⏱️ Timeline</h2>
           <div className="space-y-4">
             <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
               <div>
                 <p className="text-sm text-gray-600">Started</p>
                 <p className="font-semibold text-gray-900">{new Date(performance.started_at).toLocaleString()}</p>
@@ -296,7 +296,7 @@ export default function PerformancePage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+              <div className="w-3 h-3 bg-teal-600 rounded-full"></div>
               <div>
                 <p className="text-sm text-gray-600">Total Duration</p>
                 <p className="font-semibold text-gray-900">{formatTime(performance.time_taken_seconds)}</p>
@@ -361,7 +361,7 @@ export default function PerformancePage() {
         )}
 
         {/* Performance Feedback */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-8 mb-8 text-white">
+        <div className="bg-gradient-to-r from-green-500 to-teal-600 rounded-xl shadow-lg p-8 mb-8 text-white">
           <h2 className="text-xl font-bold mb-4">📊 Performance Insights</h2>
           <div className="space-y-3">
             {performance.percentage_score >= 70 && (
@@ -419,13 +419,13 @@ export default function PerformancePage() {
         <div className="flex gap-4 mb-8">
           <button
             onClick={() => navigate('/student')}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
           >
             ← Back to Dashboard
           </button>
           <button
             onClick={() => navigate('/progress')}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
           >
             📊 View All Results
           </button>

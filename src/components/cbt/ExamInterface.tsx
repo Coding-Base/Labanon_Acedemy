@@ -152,11 +152,11 @@ export default function ExamInterface({
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-blue-600 text-white p-4 flex-shrink-0 z-10">
+      <div className="bg-green-600 text-white p-4 flex-shrink-0 z-10">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold">{examTitle}</h1>
-            <p className="text-blue-100">{subjectName}</p>
+            <p className="text-green-100">{subjectName}</p>
           </div>
           <div className="text-right">
             <div className={`text-3xl font-bold ${timeRemaining < 300 ? 'text-red-300' : ''}`}>
@@ -218,7 +218,7 @@ export default function ExamInterface({
                           value={choice.id}
                           checked={selectedAnswers[question.id] === choice.id}
                           onChange={() => handleAnswerSelect(question.id, choice.id)}
-                          className="w-4 h-4 text-blue-600"
+                          className="w-4 h-4 text-green-600"
                         />
                         <span className="ml-3 flex-1">{choice.text}</span>
                       </label>

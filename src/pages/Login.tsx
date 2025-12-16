@@ -120,13 +120,13 @@ export default function Login() {
               <input type="checkbox" className="w-4 h-4" />
               <span className="text-gray-600">Remember me</span>
             </label>
-            <Link to="/forgot" className="text-blue-600 hover:underline">Forgot?</Link>
+            <Link to="/forgot" className="text-green-600 hover:underline">Forgot?</Link>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-blue-600 to-purple-600 shadow-md hover:opacity-95 disabled:opacity-60"
+            className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-green-600 to-teal-600 shadow-md hover:opacity-95 disabled:opacity-60"
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
@@ -134,7 +134,7 @@ export default function Login() {
 
         <div className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link to="/register" className="text-blue-600 font-medium hover:underline">
+          <Link to="/register" className="text-green-600 font-medium hover:underline">
             Create account
           </Link>
         </div>

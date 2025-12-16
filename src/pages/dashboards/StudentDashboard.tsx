@@ -165,10 +165,10 @@ export default function StudentDashboard(props: StudentDashboardProps) {
 
   const stats = [
     { title: 'Enrollments', value: summary.enrollments_count, icon: <BookOpen className="w-6 h-6" />, color: 'from-green-600 to-teal-500', change: '+2 this week', trend: 'up' },
-    { title: 'Exam Attempts', value: summary.attempts_count, icon: <FileCheck className="w-6 h-6" />, color: 'from-purple-500 to-pink-400', change: '+5 this month', trend: 'up' },
+    { title: 'Exam Attempts', value: summary.attempts_count, icon: <FileCheck className="w-6 h-6" />, color: 'from-teal-500 to-green-400', change: '+5 this month', trend: 'up' },
     { title: 'Average Score', value: summary.avg_score ? `${summary.avg_score}%` : '—', icon: <Target className="w-6 h-6" />, color: 'from-green-500 to-emerald-400', change: '↑ 8% from last month', trend: 'up' },
     { title: 'Completed Courses', value: summary.completed_courses || 0, icon: <CheckCircle className="w-6 h-6" />, color: 'from-orange-500 to-amber-400', change: '1 in progress', trend: 'neutral' },
-    { title: 'Study Time', value: `${summary.total_study_time || 0}h`, icon: <Clock className="w-6 h-6" />, color: 'from-indigo-500 to-blue-400', change: '12h this week', trend: 'up' },
+    { title: 'Study Time', value: `${summary.total_study_time || 0}h`, icon: <Clock className="w-6 h-6" />, color: 'from-green-500 to-teal-400', change: '12h this week', trend: 'up' },
     { title: 'Global Rank', value: `#${summary.rank || '—'}`, icon: <BarChart3 className="w-6 h-6" />, color: 'from-rose-500 to-pink-400', change: '↑ 15 positions', trend: 'up' }
   ];
 
@@ -182,7 +182,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
 
   const quickActions = [
     { title: 'Take Practice Test', icon: <FileText className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'cbt' },
-    { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-purple-100 text-purple-600', path: 'courses' },
+    { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-teal-100 text-teal-600', path: 'courses' },
     { title: 'Download Materials', icon: <Download className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'courses' },
     { title: 'View Leaderboard', icon: <BarChart3 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-600', path: 'progress' }
   ];
@@ -446,7 +446,7 @@ export default function StudentDashboard(props: StudentDashboardProps) {
                                 <div className="space-y-4">
                                   {recentActivities.map((activity) => (
                                     <motion.div key={activity.id} whileHover={{ x: 5 }} className="flex items-center p-3 bg-white rounded-lg shadow-sm">
-                                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${activity.type === 'exam' ? 'bg-blue-100 text-blue-600' : activity.type === 'enrollment' ? 'bg-green-100 text-green-600' : activity.type === 'assignment' ? 'bg-purple-100 text-purple-600' : 'bg-amber-100 text-amber-600'}`}>
+                                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${activity.type === 'exam' ? 'bg-green-100 text-green-600' : activity.type === 'enrollment' ? 'bg-green-100 text-green-600' : activity.type === 'assignment' ? 'bg-teal-100 text-teal-600' : 'bg-amber-100 text-amber-600'}`}>
                                         {activity.type === 'exam' && <FileText className="w-5 h-5" />}
                                         {activity.type === 'enrollment' && <BookOpen className="w-5 h-5" />}
                                         {activity.type === 'assignment' && <FileCheck className="w-5 h-5" />}

@@ -61,7 +61,7 @@ export default function Register() {
       icon: <GraduationCap className="w-6 h-6" />,
       description: 'Access courses, take exams, track progress',
       color: 'from-blue-500 to-cyan-400',
-      features: ['Access to all courses', 'CBT practice exams', 'Progress tracking', 'Certificate earning']
+      features: ['Access to all courses', 'Progress tracking', 'Certificate earning',' Practice real CBT  past questions Jamb, Waec, Neco']
     },
     { 
       id: 'tutor', 
@@ -69,7 +69,7 @@ export default function Register() {
       icon: <Users className="w-6 h-6" />,
       description: 'Create courses, teach students, earn money',
       color: 'from-purple-500 to-pink-400',
-      features: ['Create and sell courses', 'Live teaching sessions', 'Revenue sharing', 'Student management']
+      features: ['Create and sell courses', 'Live teaching sessions', 'Revenue sharing', ]
     },
     { 
       id: 'institution', 
@@ -77,7 +77,7 @@ export default function Register() {
       icon: <Building className="w-6 h-6" />,
       description: 'Manage students, create courses, track performance',
       color: 'from-green-500 to-emerald-400',
-      features: ['Student management', 'Custom courses', 'Performance analytics', 'Institution portal']
+      features: ['Portfolio management' ,'Custom courses Sales', 'Performance analytics', 'Institution portal']
     },
     { 
       id: 'researcher', 
@@ -85,7 +85,7 @@ export default function Register() {
       icon: <Search className="w-6 h-6" />,
       description: 'Access advanced courses, research materials',
       color: 'from-amber-500 to-orange-400',
-      features: ['Advanced courses', 'Research materials', 'Professional network', 'Learning analytics']
+      features: ['Access to Interview Questions','Advanced courses', 'Research materials', 'Professional network', 'Learning analytics']
     }
   ];
 

@@ -1,6 +1,6 @@
 // src/pages/Login.tsx
 import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { login } from '../api/auth'
 import axios from 'axios'
 import { Eye, EyeOff } from 'lucide-react'
@@ -15,9 +15,14 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // if register sent a next param, it will appear in URL as ?next=...
+  const params = new URLSearchParams(location.search)
+  const nextParam = params.get('next')
 
   function mapRoleToRoute(role: string | undefined) {
-    if (!role) return '/dashboard'
+    if (!role) return '/student'
     const roleMap: Record<string, string> = {
       student: '/student',
       institution: '/institution',
@@ -25,7 +30,7 @@ export default function Login() {
       admin: '/admin',
       superadmin: '/admin',
     }
-    return roleMap[role] || '/dashboard'
+    return roleMap[role] || '/student'
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -40,6 +45,12 @@ export default function Login() {
       localStorage.setItem('access', data.access)
       localStorage.setItem('refresh', data.refresh)
 
+      // if a next param was present (redirect target), go there
+      if (nextParam) {
+        navigate(nextParam, { replace: true })
+        return
+      }
+
       // Try to read role from login response (some APIs include it)
       let role: string | undefined = (data.role as string) || (data.user && (data.user.role as string))
 
@@ -53,12 +64,10 @@ export default function Login() {
         summary = res.data
         role = role || res.data?.role
       } catch (fetchErr) {
-        // ignore — the target dashboard will fetch if needed
         console.warn('Could not fetch summary after login', fetchErr)
       }
 
       const target = mapRoleToRoute(role)
-      // Navigate and pass summary in location.state so the dashboard can reuse it
       navigate(target, { state: summary ? { summary } : undefined, replace: true })
     } catch (err: any) {
       console.error(err)
@@ -84,33 +93,13 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
             <div className="text-sm text-gray-600 mb-1">Username</div>
-            <input
-              autoComplete="username"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="Enter your username or email"
-            />
+            <input autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="Enter your username or email" />
           </label>
 
           <label className="block relative">
             <div className="text-sm text-gray-600 mb-1">Password</div>
-            <input
-              autoComplete="current-password"
-              required
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 pr-10"
-              placeholder="Enter your password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((s) => !s)}
-              className="absolute right-2 top-9 p-1 rounded-md text-gray-500 hover:text-gray-700"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
+            <input autoComplete="current-password" required type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 pr-10" placeholder="Enter your password" />
+            <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute right-2 top-9 p-1 rounded-md text-gray-500 hover:text-gray-700" aria-label={showPassword ? 'Hide password' : 'Show password'}>
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </label>
@@ -123,20 +112,14 @@ export default function Login() {
             <Link to="/forgot" className="text-green-600 hover:underline">Forgot?</Link>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-green-600 to-teal-600 shadow-md hover:opacity-95 disabled:opacity-60"
-          >
+          <button type="submit" disabled={loading} className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-green-600 to-teal-600 shadow-md hover:opacity-95 disabled:opacity-60">
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link to="/register" className="text-green-600 font-medium hover:underline">
-            Create account
-          </Link>
+          <Link to={`/register${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-green-600 font-medium hover:underline">Create account</Link>
         </div>
       </div>
     </div>

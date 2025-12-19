@@ -1,11 +1,13 @@
+// src/pages/CourseDetails.tsx
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
 export default function CourseDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [course, setCourse] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
@@ -33,24 +35,20 @@ export default function CourseDetail() {
         window.location.href = '/login'
         return
       }
-      // create enrollment (backend expects `course_id` write-only field)
       const create = await axios.post(`${API_BASE}/enrollments/`, { course_id: course.id }, { headers: { Authorization: `Bearer ${token}` } })
       const enrollment = create.data
 
-      // If the enrollment is already purchased (free course auto-enrolled), show confirmation
       if (enrollment.purchased) {
         alert('Enrollment completed — you have access to this course')
         return
       }
 
-      // otherwise initiate purchase
       const pay = await axios.post(`${API_BASE}/enrollments/${enrollment.id}/purchase/`, {}, { headers: { Authorization: `Bearer ${token}` } })
       const payment_url = pay.data.payment_url
       if (payment_url) {
         window.open(payment_url, '_blank')
         alert('Payment/checkout opened - complete payment to finalize enrollment (or follow instructions).')
       } else {
-        // if backend returned immediate confirmation (free course fallback), show it
         const detail = pay.data.detail || 'Enrollment completed'
         alert(detail)
       }
@@ -96,6 +94,10 @@ export default function CourseDetail() {
                   setAdding(false)
                 }
               }}>Add to cart</button>
+
+              <button className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded" onClick={() => navigate(`/student/courses/${course.id}`)}>Open Course Player</button>
+
+              <button className="mt-2 px-3 py-1 bg-gray-100 rounded text-sm" onClick={() => navigate(`/student/courses/${course.id}/details`)}>View Details</button>
             </div>
           </div>
         </header>
@@ -117,7 +119,7 @@ export default function CourseDetail() {
                   {m.lessons?.map((l: any) => (
                     <div key={l.id} className="p-2 bg-gray-50 rounded">
                       <div className="font-medium">{l.title}</div>
-                      <div className="text-sm text-gray-600">{l.content?.substring(0, 120)}</div>
+                      <div className="text-sm text-gray-600">{String(l.content || '').substring(0, 120)}</div>
                     </div>
                   ))}
                 </div>

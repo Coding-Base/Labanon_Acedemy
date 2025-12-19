@@ -1,6 +1,7 @@
+// src/shared/CoursesList.tsx
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -21,9 +22,11 @@ export default function CoursesList() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [addingIds, setAddingIds] = useState<number[]>([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, search])
 
   async function load() {
@@ -32,8 +35,8 @@ export default function CoursesList() {
       const res = await axios.get(`${API_BASE}/courses/`, {
         params: { page, page_size: pageSize, search },
       })
-      setCourses(res.data.results)
-      setCount(res.data.count)
+      setCourses(res.data.results || [])
+      setCount(res.data.count || 0)
     } catch (err) {
       console.error(err)
     } finally {
@@ -43,14 +46,39 @@ export default function CoursesList() {
 
   const totalPages = Math.max(1, Math.ceil(count / pageSize))
 
+  function normalizeSrc(src?: string) {
+    if (!src) return null
+    // collapse duplicate /media/ occurrences and trim
+    try {
+      let s = src.trim()
+      // If we got a full URL, just return it
+      if (s.startsWith('http://') || s.startsWith('https://')) return s
+
+      // Replace repeated '/media/' sequences with a single '/media/'
+      s = s.replace(/(\/media\/)+/g, '/media/')
+
+      // remove accidental leading 'media/' without slash -> '/media/...'
+      if (s.startsWith('media/')) s = `/${s}`
+
+      // ensure single leading slash
+      if (!s.startsWith('/')) s = `/${s}`
+
+      return s
+    } catch (e) {
+      return src
+    }
+  }
+
   function resolveImage(src?: string) {
     if (!src) return null
+    // if it's an absolute URL already
     if (src.startsWith('http://') || src.startsWith('https://')) return src
-    // If API_BASE ends with /api, strip it to get site base
+
+    const normalized = normalizeSrc(src)
+    if (!normalized) return null
     const siteBase = API_BASE.replace(/\/api\/?$/, '')
-    // If src already starts with /, join directly
-    if (src.startsWith('/')) return `${siteBase}${src}`
-    return `${siteBase}/${src}`
+    // normalized starts with '/', so just join
+    return `${siteBase}${normalized}`
   }
 
   return (
@@ -74,7 +102,7 @@ export default function CoursesList() {
                 )}
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold">{c.title}</h3>
-                  <p className="text-sm text-gray-600">{c.description}</p>
+                  <p className="text-sm text-gray-600 truncate">{c.description}</p>
                 </div>
                 <div className="text-right flex flex-col items-end gap-2">
                   <div>
@@ -87,7 +115,7 @@ export default function CoursesList() {
                         onClick={async (e) => {
                           e.preventDefault()
                           const token = localStorage.getItem('access')
-                          if (!token) { window.location.href = '/login'; return }
+                          if (!token) { window.location.href = `/register?next=/marketplace/${c.id}`; return }
                           if (addingIds.includes(c.id)) return
                           setAddingIds((cur) => [...cur, c.id])
                           try {

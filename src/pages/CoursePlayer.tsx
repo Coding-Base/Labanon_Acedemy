@@ -1,0 +1,521 @@
+// src/pages/CoursePlayer.tsx
+import React, { useEffect, useMemo, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import { Play, ChevronLeft, ChevronRight, Lock, CheckCircle, Clock, BookOpen, User } from 'lucide-react'
+
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api'
+
+/** --- Types --- */
+interface Resource {
+  title: string
+  url: string
+  type?: string
+}
+
+interface Lesson {
+  id: number
+  title: string
+  content?: string
+  video?: string
+  thumbnail?: string
+  description?: string
+  resources?: Resource[]
+}
+
+interface ModuleItem {
+  id: number
+  course?: number
+  title: string
+  order?: number
+  lessons: Lesson[]
+}
+
+interface Course {
+  id: number
+  title: string
+  creator?: string
+  price?: string | number
+  modules?: ModuleItem[]
+  [k: string]: any
+}
+
+/** Resolve a possibly-relative media url returned by backend into an absolute URL usable by the browser */
+function resolveMedia(src?: string | null): string | null {
+  if (!src) return null
+  if (src.startsWith('http://') || src.startsWith('https://')) return src
+  // If API_BASE contains "/api", remove that so we have the site base
+  const siteBase = API_BASE.replace(/\/api\/?$/, '')
+  if (src.startsWith('/')) return `${siteBase}${src}`
+  return `${siteBase}/${src}`
+}
+
+export default function CoursePlayer(): JSX.Element {
+  const { id } = useParams<{ id?: string }>()
+  const navigate = useNavigate()
+  const [course, setCourse] = useState<Course | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [lessonIndex, setLessonIndex] = useState<number>(0)
+  const [enrolled, setEnrolled] = useState<boolean>(false)
+  const [checkingEnroll, setCheckingEnroll] = useState<boolean>(true)
+
+  // Load course details
+  useEffect(() => {
+    if (!id) return
+    let mounted = true
+    async function load(): Promise<void> {
+      setLoading(true)
+      try {
+        const res = await axios.get<Course>(`${API_BASE}/courses/${id}/`)
+        if (!mounted) return
+        setCourse(res.data)
+        setLessonIndex(0)
+      } catch (err) {
+        console.error('Failed to load course', err)
+        setCourse(null)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [id])
+
+  // Check enrollment status (fetch user's enrollments and match)
+  useEffect(() => {
+    if (!id) return
+    let mounted = true
+    async function check(): Promise<void> {
+      setCheckingEnroll(true)
+      try {
+        const token = localStorage.getItem('access')
+        if (!token) {
+          if (mounted) setEnrolled(false)
+          return
+        }
+        const res = await axios.get(`${API_BASE}/enrollments/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { page_size: 1000 }
+        })
+        if (!mounted) return
+        const items: any[] = res.data.results || res.data || []
+        const found = items.find((it: any) => String(it.course?.id) === String(id))
+        setEnrolled(Boolean(found && (found.purchased === true || found.purchased)))
+      } catch (err) {
+        console.error('Failed to check enrollment', err)
+        if (mounted) setEnrolled(false)
+      } finally {
+        if (mounted) setCheckingEnroll(false)
+      }
+    }
+    check()
+    return () => { mounted = false }
+  }, [id])
+
+  // Flatten modules -> lessons array
+  const lessons: Lesson[] = useMemo(() => {
+    if (!course) return []
+    const arr: Lesson[] = []
+    const modules: ModuleItem[] = Array.isArray(course.modules) ? course.modules : []
+    modules.forEach((m: ModuleItem) => {
+      const ls: Lesson[] = Array.isArray(m.lessons) ? m.lessons : []
+      ls.forEach((lesson: Lesson) => {
+        arr.push({
+          ...lesson,
+          // ensure moduleTitle available at lesson level for UI convenience
+          // @ts-expect-error moduleTitle is not part of Lesson type strictly, but harmless for UI
+          moduleTitle: m.title,
+          // @ts-expect-error moduleId not part of Lesson type strictly
+          moduleId: m.id,
+        } as any)
+      })
+    })
+    return arr
+  }, [course])
+
+  // Group modules with lessons for sidebar rendering (typed)
+  const modulesWithLessons: ModuleItem[] = useMemo(() => {
+    if (!course) return []
+    const modules: ModuleItem[] = Array.isArray(course.modules) ? course.modules : []
+    return modules.map((mod: ModuleItem) => ({
+      ...mod,
+      lessons: Array.isArray(mod.lessons) ? mod.lessons : []
+    }))
+  }, [course])
+
+  // Clamp lessonIndex into valid bounds whenever lessons array changes
+  useEffect(() => {
+    if (lessons.length === 0) {
+      setLessonIndex(0)
+      return
+    }
+    setLessonIndex((idx) => {
+      if (idx < 0) return 0
+      if (idx >= lessons.length) return lessons.length - 1
+      return idx
+    })
+  }, [lessons.length])
+
+  const currentLesson: Lesson | undefined = lessons[lessonIndex]
+
+  function goNext(): void {
+    setLessonIndex((s) => Math.min(s + 1, Math.max(0, lessons.length - 1)))
+  }
+
+  function goPrev(): void {
+    setLessonIndex((s) => Math.max(0, s - 1))
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto" />
+          <p className="mt-4 text-gray-600">Loading course content...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!course) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Course not found</h2>
+          <p className="text-gray-500 mb-6">The course you're looking for doesn't exist or has been removed.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          >
+            Browse Courses
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <button
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-2"
+                aria-label="Go back"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Back
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900">{course.title}</h1>
+              <div className="flex items-center gap-4 mt-2">
+                <span className="inline-flex items-center text-sm text-gray-600">
+                  <User className="w-4 h-4 mr-1" />
+                  {course.creator}
+                </span>
+                <span className="text-sm text-gray-600">
+                  {modulesWithLessons.reduce((total, module) => total + (module.lessons?.length || 0), 0)} lessons
+                </span>
+              </div>
+            </div>
+            <div className="bg-gray-50 px-4 py-3 rounded-lg">
+              <div className="text-sm text-gray-500">Course Price</div>
+              <div className="text-2xl font-bold text-gray-900">₦{course.price}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar */}
+          <aside className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border overflow-hidden sticky top-8">
+              <div className="p-5 border-b">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">Course Content</h3>
+                  <div className="flex items-center text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                    <Play className="w-4 h-4 mr-1" />
+                    <span className="text-sm font-medium">Playing</span>
+                  </div>
+                </div>
+
+                {enrolled && (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Progress</span>
+                      <span className="font-medium text-green-600">
+                        {lessons.length > 0 ? `${Math.round(((lessonIndex + 1) / lessons.length) * 100)}%` : '0%'}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-600 rounded-full transition-all duration-300"
+                        style={{ width: `${(lessonIndex + 1) / Math.max(1, lessons.length) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
+                {modulesWithLessons.length === 0 ? (
+                  <div className="p-5 text-center text-gray-500">
+                    <BookOpen className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    No modules available
+                  </div>
+                ) : (
+                  modulesWithLessons.map((module: ModuleItem, moduleIndex: number) => (
+                    <div key={module.id} className="border-b last:border-b-0">
+                      <div className="px-5 py-3 bg-gray-50 border-b">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-gray-900">
+                            Module {moduleIndex + 1}: {module.title}
+                          </h4>
+                          <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                            {module.lessons.length} lessons
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="divide-y">
+                        {module.lessons.map((lesson: Lesson, lessonIdx: number) => {
+                          const globalIndex = lessons.findIndex((l) => l.id === lesson.id)
+                          const isActive = globalIndex === lessonIndex
+                          const isLocked = !enrolled && globalIndex > 0
+
+                          return (
+                            <button
+                              key={lesson.id}
+                              onClick={() => !isLocked && setLessonIndex(globalIndex)}
+                              disabled={isLocked}
+                              className={`w-full text-left p-4 flex items-start gap-3 transition-all ${
+                                isActive ? 'bg-green-50 border-l-4 border-l-green-600' : 'hover:bg-gray-50'
+                              } ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                            >
+                              <div className="flex-shrink-0">
+                                {isActive ? (
+                                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                    <Play className="w-4 h-4 text-green-600" />
+                                  </div>
+                                ) : isLocked ? (
+                                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                    <Lock className="w-4 h-4 text-gray-400" />
+                                  </div>
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center">
+                                    <span className="text-sm text-gray-600">{globalIndex + 1}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className={`font-medium text-sm truncate ${isActive ? 'text-green-900' : 'text-gray-900'}`}>
+                                  {lesson.title}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Clock className="w-3 h-3 text-gray-400" />
+                                  <span className="text-xs text-gray-500">15 min</span>
+                                </div>
+                              </div>
+
+                              {globalIndex < lessonIndex && enrolled && (
+                                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <main className="lg:col-span-3">
+            {/* Enrollment Banner */}
+            {checkingEnroll ? (
+              <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+                  <span className="ml-3 text-blue-700">Checking access permissions...</span>
+                </div>
+              </div>
+            ) : !enrolled ? (
+              <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200 p-5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Lock className="w-5 h-5 text-yellow-600" />
+                      <h3 className="font-semibold text-gray-900">Access Restricted</h3>
+                    </div>
+                    <p className="text-gray-600 mb-2">Enroll in this course to unlock all lessons, track your progress, and earn a certificate.</p>
+                    <p className="text-sm text-gray-500">Currently viewing limited preview content only.</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={() => navigate(`/student/courses/${course.id}/details`)}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                    >
+                      Enroll Now - ₦{course.price}
+                    </button>
+                    <button
+                      onClick={() => navigate(`/student/courses/${course.id}/details`)}
+                      className="px-6 py-3 bg-white text-gray-700 rounded-lg border hover:bg-gray-50 transition font-medium"
+                    >
+                      Course Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Lesson Video / Content */}
+            <div className="bg-white rounded-xl shadow-sm border overflow-hidden mb-6">
+              <div className="p-6 border-b">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-3">
+                      {((currentLesson as any)?.moduleTitle) || 'Introduction'}
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900">{currentLesson?.title || 'Course Introduction'}</h2>
+                    {currentLesson?.description && <p className="mt-2 text-gray-600">{currentLesson.description}</p>}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Current Lesson</div>
+                      <div className="font-bold text-gray-900">{lessons.length > 0 ? `${lessonIndex + 1}/${lessons.length}` : '0/0'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Media Player */}
+              <div className="bg-black">
+                {currentLesson?.video ? (
+                  (String(currentLesson.video).includes('youtube') ||
+                    String(currentLesson.video).includes('youtu.be') ||
+                    String(currentLesson.video).includes('embed')) ? (
+                    <div className="relative pt-[56.25%]">
+                      <iframe
+                        title={currentLesson.title}
+                        className="absolute top-0 left-0 w-full h-full"
+                        src={String(currentLesson.video).includes('watch?v=') ? String(currentLesson.video).replace('watch?v=', 'embed/') : String(currentLesson.video)}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (String(currentLesson.video).startsWith('/media') ||
+                    String(currentLesson.video).match(/\.(mp4|webm|ogg)$/i)) ? (
+                    <video
+                      className="w-full h-auto max-h-[70vh]"
+                      controls
+                      src={resolveMedia(currentLesson.video) || undefined}
+                      poster={resolveMedia((currentLesson as any).thumbnail) || undefined}
+                    />
+                  ) : (
+                    <div className="p-8 text-center">
+                      <div className="max-w-md mx-auto py-12 text-white/70 mb-4">Unsupported media format</div>
+                      <div className="text-sm text-white/50 break-all">{String(currentLesson.video).slice(0, 200)}...</div>
+                    </div>
+                  )
+                ) : (
+                  <div className="p-8 min-h-[400px] flex items-center justify-center bg-gray-900">
+                    <div className="text-center">
+                      <BookOpen className="w-16 h-16 text-gray-700 mx-auto mb-4" />
+                      <p className="text-gray-600">No video content available for this lesson</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Lesson Content */}
+              <div className="p-6">
+                <div className="prose prose-lg max-w-none">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Lesson Content</h3>
+                  <div
+                    className="text-gray-700"
+                    dangerouslySetInnerHTML={{
+                      __html: currentLesson?.content || '<p class="text-gray-500 italic">No detailed content available for this lesson.</p>'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="p-6 border-t bg-gray-50">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-sm text-gray-600">
+                    {lessons.length > 0 ? `Lesson ${lessonIndex + 1} of ${lessons.length}` : 'Start learning to see lessons'}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={goPrev}
+                      disabled={lessonIndex === 0}
+                      className="px-6 py-3 bg-white text-gray-700 rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium inline-flex items-center gap-2"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (!enrolled) {
+                          navigate(`/student/courses/${course.id}/details`)
+                          return
+                        }
+                        if (lessonIndex >= lessons.length - 1) {
+                          alert('Congratulations! You have completed all available lessons.')
+                        } else {
+                          goNext()
+                        }
+                      }}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium inline-flex items-center gap-2"
+                    >
+                      {lessonIndex >= lessons.length - 1 ? 'Complete Course' : 'Next Lesson'}
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Resources */}
+            {currentLesson?.resources && currentLesson.resources.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border p-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Resources</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {currentLesson.resources.map((resource: Resource, idx: number) => (
+                    <a
+                      key={idx}
+                      href={resource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-4 border rounded-lg hover:border-green-300 hover:bg-green-50 transition"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                        <BookOpen className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{resource.title}</div>
+                        <div className="text-sm text-gray-500">{resource.type || 'Resource'}</div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+    </div>
+  )
+}

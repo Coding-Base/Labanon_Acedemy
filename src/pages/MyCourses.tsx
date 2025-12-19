@@ -1,53 +1,56 @@
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
+// src/pages/MyCourses.tsx
+// src/MyCourses.tsx
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 
 export default function MyCourses() {
-  const [enrollments, setEnrollments] = useState<any[]>([])
-  const [page, setPage] = useState(1)
-  const [pageSize] = useState(10)
-  const [count, setCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    load()
-  }, [page])
+  useEffect(() => { load(); }, [page]);
 
   async function load() {
-    setLoading(true)
+    setLoading(true);
     try {
-      const token = localStorage.getItem('access')
-      const res = await axios.get(`${API_BASE}/enrollments/`, { headers: { Authorization: `Bearer ${token}` }, params: { page, page_size: pageSize } })
-      setEnrollments(res.data.results || [])
-      setCount(res.data.count || 0)
+      const token = localStorage.getItem('access');
+      const res = await axios.get(`${API_BASE}/enrollments/`, { headers: { Authorization: `Bearer ${token}` }, params: { page, page_size: pageSize } });
+      setEnrollments(res.data.results || []);
+      setCount(res.data.count || 0);
     } catch (err) {
-      console.error(err)
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(count / pageSize))
+  const totalPages = Math.max(1, Math.ceil(count / pageSize));
 
-  if (loading) return <div>Loading your courses...</div>
-
+  // safer image resolver (avoids /media/media double prefix)
   function resolveImage(src?: string) {
-    if (!src) return null
-    if (src.startsWith('http://') || src.startsWith('https://')) return src
-    const siteBase = API_BASE.replace(/\/api\/?$/, '')
-    if (src.startsWith('/')) return `${siteBase}${src}`
-    return `${siteBase}/${src}`
+    if (!src) return null;
+    if (/^https?:\/\//.test(src)) return src;
+    const siteBase = API_BASE.replace(/\/api\/?$/, '');
+    let full = siteBase + (src.startsWith('/') ? src : `/${src}`);
+    // collapse duplicate /media segments
+    full = full.replace(/(\/media){2,}/, '/media');
+    return full;
   }
+
+  if (loading) return <div>Loading your courses...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">My Courses</h2>
         <div>
-          <button className="px-3 py-1 bg-blue-600 text-white rounded" onClick={() => navigate('/dashboard/explore')}>Explore Market</button>
+          <button className="px-3 py-1 bg-blue-600 text-white rounded" onClick={() => navigate('/marketplace')}>Explore Market</button>
         </div>
       </div>
 
@@ -55,7 +58,7 @@ export default function MyCourses() {
 
       <div className="space-y-3">
         {enrollments.map((e) => (
-          <div key={e.id} className="p-3 border rounded flex items-center gap-4">
+          <div key={e.id} className="p-3 border rounded flex items-center gap-4 cursor-pointer" onClick={() => navigate(`/student/courses/${e.course?.id}`)}>
             {e.course?.image ? (
               <img src={resolveImage(e.course.image) || undefined} alt={e.course.title} className="w-24 h-16 object-cover rounded" />
             ) : (
@@ -78,5 +81,5 @@ export default function MyCourses() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   User, 
   Mail, 
@@ -43,6 +43,11 @@ const staggerContainer = {
 };
 
 export default function Register() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const nextParam = params.get('next') || '';
+
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -121,10 +126,12 @@ export default function Register() {
 
     try {
       await register({ username, email, password, role });
-      // Show success state before redirect
+      // After successful registration, redirect to login preserving `next` if present
+      const qs = nextParam ? `?next=${encodeURIComponent(nextParam)}` : '';
+      // small success delay for UX
       setTimeout(() => {
-        window.location.href = '/login';
-      }, 1500);
+        navigate(`/login${qs}`, { replace: true });
+      }, 800);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
@@ -444,7 +451,7 @@ export default function Register() {
                 <div className="text-center mt-6">
                   <p className="text-gray-600">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-green-600 hover:text-green-700 font-semibold">
+                    <Link to={`/login${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-green-600 hover:text-green-700 font-semibold">
                       Sign In
                     </Link>
                   </p>

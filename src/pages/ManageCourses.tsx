@@ -1,3 +1,4 @@
+// src/ManageCourses.tsx
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
@@ -7,12 +8,9 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 export default function ManageCourses() {
   const [courses, setCourses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [price, setPrice] = useState('0')
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [pageCount, setPageCount] = useState(1)
+  const [pageSize] = useState(10)
 
   useEffect(() => {
     async function load() {
@@ -21,8 +19,13 @@ export default function ManageCourses() {
         const token = localStorage.getItem('access')
         const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } })
         const uid = me.data.id
-        const res = await axios.get(`${API_BASE}/courses/?creator=${uid}`, { headers: { Authorization: `Bearer ${token}` } })
-        setCourses(res.data.results || [])
+        const res = await axios.get(`${API_BASE}/courses/?creator=${uid}&page=${page}&page_size=${pageSize}`, { headers: { Authorization: `Bearer ${token}` } })
+        // support both simple list and paginated responses
+        const items = res.data.results || res.data || []
+        setCourses(items)
+        if (res.data.count) {
+          setPageCount(Math.ceil(res.data.count / pageSize))
+        }
       } catch (err) {
         console.error(err)
       } finally {
@@ -30,45 +33,9 @@ export default function ManageCourses() {
       }
     }
     load()
-  }, [])
+  }, [page])
 
-  async function handleCreate() {
-    if (!title || title.trim() === '') {
-      alert('Title is required')
-      return
-    }
-    if (isNaN(Number(price))) {
-      alert('Price must be numeric')
-      return
-    }
-
-    try {
-      const token = localStorage.getItem('access')
-      let imageUrl = ''
-      if (imageFile) {
-        const fd = new FormData()
-        fd.append('file', imageFile)
-        setUploadProgress(0)
-        const up = await axios.post(`${API_BASE}/uploads/courses/image/`, fd, {
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: (e) => setUploadProgress(Math.round((e.loaded * 100) / (e.total || 1)))
-        })
-        imageUrl = up.data.url
-        setUploadProgress(null)
-      }
-
-      const res = await axios.post(`${API_BASE}/courses/`, { title, description, price, image: imageUrl }, { headers: { Authorization: `Bearer ${token}` } })
-      setCourses((c) => [res.data, ...c])
-      setTitle('')
-      setDescription('')
-      setPrice('0')
-      setImageFile(null)
-      setPreviewUrl(null)
-    } catch (err) {
-      console.error(err)
-      alert('Failed to create course')
-    }
-  }
+  // Course creation moved to dedicated CreateCourse page — ManageCourses now lists and paginates
 
   if (loading) return <div>Loading your courses...</div>
 
@@ -76,30 +43,9 @@ export default function ManageCourses() {
     <div>
       <h2 className="text-xl font-semibold mb-4">Manage Courses</h2>
 
-      <div className="bg-white p-4 rounded mb-4">
-        <h3 className="font-semibold">Create Course</h3>
-        <input className="border p-2 w-full my-2" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <textarea className="border p-2 w-full my-2" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
-        <input className="border p-2 my-2" placeholder="Price" value={price} onChange={(e) => setPrice(e.target.value)} />
-        <div className="my-2">
-          <label className="block text-sm text-gray-700">Course image (optional)</label>
-          <input type="file" accept="image/*" onChange={(e) => {
-            const f = e.target.files ? e.target.files[0] : null
-            setImageFile(f)
-            if (f) setPreviewUrl(URL.createObjectURL(f))
-            else setPreviewUrl(null)
-          }} />
-          {uploadProgress !== null && <div className="text-sm text-gray-600">Uploading image: {uploadProgress}%</div>}
-          {previewUrl && (
-            <div className="mt-2">
-              <div className="text-sm text-gray-600">Preview</div>
-              <img src={previewUrl} alt="preview" className="w-48 h-32 object-cover rounded mt-1" />
-            </div>
-          )}
-        </div>
-        <div>
-          <button className="px-3 py-1 bg-green-600 text-white rounded" onClick={handleCreate}>Create</button>
-        </div>
+      <div className="flex items-center justify-between bg-white p-4 rounded mb-4">
+        <h3 className="font-semibold">Your Courses</h3>
+        <Link to="/tutor/manage/create" className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold">Create Course</Link>
       </div>
 
       <div className="space-y-3">
@@ -117,10 +63,18 @@ export default function ManageCourses() {
                 <div className="text-sm text-gray-500">Price</div>
                 <div className="font-bold">₦{c.price}</div>
               </div>
-              <Link to={`/dashboard/manage/${c.id}`} className="px-3 py-1 bg-blue-600 text-white rounded">Manage</Link>
+              {/* <-- Updated: open editor (CreateCourse) with courseId in query string so tutor can edit everything */}
+              <Link to={`/tutor/manage/create?courseId=${c.id}`} className="px-3 py-1 bg-green-600 text-white rounded">Manage</Link>
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-center gap-3 mt-6">
+        <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50">Previous</button>
+        <div className="text-sm text-gray-600">Page {page} / {pageCount}</div>
+        <button disabled={page >= pageCount} onClick={() => setPage((p) => Math.min(pageCount, p + 1))} className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50">Next</button>
       </div>
     </div>
   )

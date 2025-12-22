@@ -18,9 +18,7 @@ import {
   Menu,
   X,
   Video,
-  Settings,
-  UploadCloud,
-  ImageIcon
+  Settings
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import ManageCourses from '../ManageCourses';
@@ -161,9 +159,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   };
 
   /***************************************************************************
-   * Students tab and analytics/earnings code omitted here (kept from your file)
-   * ... we'll keep them as in your original file for brevity.
-   * (They remain unchanged and still present below — preserved behavior.)
+   * Students / Analytics / Earnings code preserved from your original file
    ***************************************************************************/
 
   // -- STUDENTS (kept unchanged) --
@@ -343,45 +339,39 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   }
 
   /***************************************************************************
-   * NEW: Upload Media modal + helpers
+   * Upload helpers and states are preserved so child components can call the
+   * same handlers (we removed the modal UI and sidebar quick action).
    *
-   * We add a small UI and functions so the tutor can:
-   *  - upload a course image (POST /api/uploads/courses/image/ then PATCH /api/courses/{id}/ with image)
-   *  - upload lesson media (POST /api/uploads/lessons/media/ then PATCH /api/lessons/{id}/ with video)
-   *
-   * After a successful edit we reload the page so frontend shows the updated image/video.
+   * This aligns with your request: tutors will use the CreateCourse page for
+   * uploads. The dashboard no longer shows the upload modal.
    ***************************************************************************/
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadTab, setUploadTab] = useState<'course' | 'lesson'>('course');
-
-  // for course-upload tab
   const [myCourses, setMyCourses] = useState<any[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [courseFile, setCourseFile] = useState<File | null>(null);
   const [uploadingCourseImage, setUploadingCourseImage] = useState(false);
 
-  // for lesson-upload tab
   const [selectedLessonCourseId, setSelectedLessonCourseId] = useState<number | null>(null);
   const [courseModules, setCourseModules] = useState<any[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
   const [lessonFile, setLessonFile] = useState<File | null>(null);
   const [uploadingLessonMedia, setUploadingLessonMedia] = useState(false);
+  const [durationError, setDurationError] = useState<string | null>(null);
 
-  // fetch tutor courses for dropdown
+  const [useYouTubeEmbed, setUseYouTubeEmbed] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+
+  // fetch tutor courses for dropdown (kept for programmatic use)
   async function loadMyCourses() {
     try {
       const token = localStorage.getItem('access');
-      const res = await axios.get(`${API_BASE}/courses/?page_size=1000&creator=${''}`, { // we will filter by current user server-side if supported
+      const res = await axios.get(`${API_BASE}/courses/?page_size=1000&creator=${''}`, {
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => null);
 
-      // If API supports filtering by creator it should return only tutor's courses.
-      // If not, we fetch all and filter by username in summary (best-effort).
       let items: any[] = [];
       if (res && (res.data.results || res.data)) {
         items = res.data.results || res.data;
       } else {
-        // fallback: fetch all courses (page_size=1000) and filter locally by creator username
         const res2 = await axios.get(`${API_BASE}/courses/?page_size=1000`, { headers: { Authorization: `Bearer ${localStorage.getItem('access')}` } });
         items = res2.data.results || res2.data || [];
         if (summary?.username) {
@@ -412,19 +402,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
     }
   }
 
-  useEffect(() => {
-    if (showUploadModal) {
-      loadMyCourses();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showUploadModal]);
-
-  useEffect(() => {
-    loadCourseModules(selectedLessonCourseId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLessonCourseId]);
-
-  // helper to upload file (returns { name, url })
+  // helper to upload file (returns { name, url }) -- kept for course images & legacy endpoints
   async function postFileToEndpoint(formFile: File, endpoint: string) {
     const token = localStorage.getItem('access');
     const fd = new FormData();
@@ -432,13 +410,12 @@ export default function TutorDashboard(props: TutorDashboardProps) {
     const res = await axios.post(`${API_BASE}${endpoint}`, fd, {
       headers: {
         Authorization: `Bearer ${token}`,
-        // axios will set proper multipart boundary
       }
     });
     return res.data;
   }
 
-  // Upload course image flow
+  // Upload course image flow (unchanged)
   async function handleUploadCourseImage() {
     if (!selectedCourseId) { alert('Select a course first'); return; }
     if (!courseFile) { alert('Choose an image file'); return; }
@@ -446,11 +423,9 @@ export default function TutorDashboard(props: TutorDashboardProps) {
     try {
       // upload to endpoint
       const uploaded = await postFileToEndpoint(courseFile, '/uploads/courses/image/');
-      // backend returns { name: saved_name, url }
       const savedName = uploaded?.name || uploaded?.url || '';
       if (!savedName) throw new Error('Upload did not return file name');
 
-      // PATCH course to set image to savedName (backend serializer will normalize)
       const token = localStorage.getItem('access');
       await axios.patch(`${API_BASE}/courses/${selectedCourseId}/`, { image: savedName }, { headers: { Authorization: `Bearer ${token}` } });
 
@@ -464,8 +439,114 @@ export default function TutorDashboard(props: TutorDashboardProps) {
     }
   }
 
-  // Upload lesson media flow
+  // ---------- CLIENT-SIDE DURATION CHECK ----------
+  function getVideoDuration(file: File): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (!file) return resolve(0);
+      const url = URL.createObjectURL(file);
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.src = url;
+      v.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        resolve(v.duration || 0);
+      };
+      v.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Could not read video metadata'));
+      };
+    });
+  }
+
+  async function onLessonFilePicked(file: File | null) {
+    setDurationError(null);
+    setLessonFile(null);
+    if (!file) return;
+    if (useYouTubeEmbed) return;
+
+    if (!file.type.startsWith('video/')) {
+      setDurationError('Please select a valid video file (mp4, webm, etc.) or choose YouTube embed.');
+      return;
+    }
+
+    try {
+      const duration = await getVideoDuration(file);
+      const MAX_UPLOAD_SECONDS = 6 * 60;
+      if (duration > MAX_UPLOAD_SECONDS) {
+        setDurationError(`Video is too long (${Math.round(duration)}s). Maximum allowed is ${MAX_UPLOAD_SECONDS}s (6 minutes). Use a YouTube embed for longer videos.`);
+        setLessonFile(null);
+      } else {
+        setLessonFile(file);
+      }
+    } catch (err) {
+      console.error('Error reading video duration', err);
+      setDurationError('Could not determine video length. Try a different file or use YouTube embed.');
+    }
+  }
+
+  // ---------- PRESIGN + UPLOAD FLOW ----------
+  async function requestPresignUrl(filename: string, contentType: string, lessonId: number, courseId?: number) {
+    const token = localStorage.getItem('access');
+    const res = await axios.post(`${API_BASE}/aws/presign/`, {
+      filename,
+      content_type: contentType,
+      lesson_id: lessonId,
+      course_id: courseId
+    }, { headers: { Authorization: `Bearer ${token}` }});
+    return res.data; // expects { url, key }
+  }
+
   async function handleUploadLessonMedia() {
+    if (!selectedLessonCourseId) { alert('Select a course first'); return; }
+    if (!selectedLessonId) { alert('Select a lesson'); return; }
+
+    // If tutor selected YouTube embed option
+    if (useYouTubeEmbed) {
+      if (!youtubeUrl) { alert('Enter the YouTube URL to embed'); return; }
+      try {
+        const token = localStorage.getItem('access');
+        await axios.patch(`${API_BASE}/lessons/${selectedLessonId}/`, { video: youtubeUrl }, { headers: { Authorization: `Bearer ${token}` } });
+        alert('YouTube link saved to lesson. Changes applied.');
+        window.location.reload();
+      } catch (err: any) {
+        console.error('Failed to save YouTube link', err);
+        alert(err?.response?.data?.detail || 'Failed to save YouTube link');
+      }
+      return;
+    }
+
+    if (!lessonFile) { alert('Choose a video file to upload (or use YouTube embed)'); return; }
+
+    setUploadingLessonMedia(true);
+    try {
+      const presign = await requestPresignUrl(lessonFile.name, lessonFile.type, selectedLessonId, selectedLessonCourseId || undefined);
+      if (!presign?.url) throw new Error('Presign endpoint did not return upload URL');
+
+      const putRes = await fetch(presign.url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': lessonFile.type
+        },
+        body: lessonFile
+      });
+
+      if (!putRes.ok) throw new Error('Upload to S3 failed');
+
+      const token = localStorage.getItem('access');
+      await axios.patch(`${API_BASE}/lessons/${selectedLessonId}/`, { video: presign.key }, { headers: { Authorization: `Bearer ${token}` }});
+
+      alert('Upload successful. Backend will process/transcode the file; changes will be available shortly.');
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Failed to upload lesson media', err);
+      alert(err?.response?.data?.detail || err?.message || 'Upload failed');
+    } finally {
+      setUploadingLessonMedia(false);
+    }
+  }
+
+  // Upload lesson media legacy flow (kept for backwards compatibility)
+  async function handleUploadLessonMediaLegacy() {
     if (!selectedLessonCourseId) { alert('Select a course first'); return; }
     if (!selectedLessonId) { alert('Select a lesson'); return; }
     if (!lessonFile) { alert('Choose a file to upload'); return; }
@@ -477,7 +558,6 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       if (!savedName) throw new Error('Upload did not return file name');
 
       const token = localStorage.getItem('access');
-      // patch lesson endpoint. video field stores lesson media reference
       await axios.patch(`${API_BASE}/lessons/${selectedLessonId}/`, { video: savedName }, { headers: { Authorization: `Bearer ${token}` } });
 
       alert('Lesson media uploaded and saved. Refreshing page to apply changes.');
@@ -491,7 +571,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   }
 
   /***************************************************************************
-   * UI (sidebar is the single nav; top "tab links" removed as requested)
+   * UI (sidebar is the single nav; upload quick action removed from sidebar)
    ***************************************************************************/
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50">
@@ -576,15 +656,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                 Create New Course
               </Link>
 
-              {/* Upload media quick action */}
-              <button
-                className="mt-3 w-full py-2 flex items-center justify-center gap-2 border rounded-lg text-gray-700 hover:bg-gray-50"
-                onClick={() => { setShowUploadModal(true); setUploadTab('course'); }}
-                title="Upload course image or lesson media"
-              >
-                <UploadCloud className="w-4 h-4" />
-                Upload Media
-              </button>
+              {/* Note: Upload Media quick action removed from sidebar per request */}
             </div>
           </motion.aside>
 
@@ -890,90 +962,6 @@ export default function TutorDashboard(props: TutorDashboardProps) {
           })}
         </div>
       </div>
-
-      {/* Upload Media Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 px-4">
-          <div className="bg-white rounded-xl max-w-3xl w-full overflow-auto max-h-[90vh] p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Upload Media (Course image / Lesson media)</h3>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setUploadTab('course')} className={`px-3 py-1 rounded ${uploadTab === 'course' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}>Course Image</button>
-                <button onClick={() => setUploadTab('lesson')} className={`px-3 py-1 rounded ${uploadTab === 'lesson' ? 'bg-green-600 text-white' : 'bg-gray-100'}`}>Lesson Media</button>
-                <button onClick={() => setShowUploadModal(false)} className="ml-2 px-3 py-1 bg-gray-100 rounded">Close</button>
-              </div>
-            </div>
-
-            {uploadTab === 'course' ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-2">Select Course</label>
-                  <select value={selectedCourseId ?? ''} onChange={(e) => setSelectedCourseId(e.target.value ? Number(e.target.value) : null)} className="w-full border rounded p-2">
-                    <option value="">-- choose course --</option>
-                    {myCourses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-600 mb-2">Choose Image (jpg, png)</label>
-                  <input type="file" accept="image/*" onChange={(e) => setCourseFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} />
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button disabled={uploadingCourseImage} onClick={handleUploadCourseImage} className={`px-4 py-2 rounded ${uploadingCourseImage ? 'bg-gray-300' : 'bg-green-600 text-white'}`}>
-                    {uploadingCourseImage ? 'Uploading...' : 'Upload & Save'}
-                  </button>
-                  <div className="text-sm text-gray-500">Uploaded images will replace current course image.</div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-2">Select Course (to pick a lesson)</label>
-                  <select value={selectedLessonCourseId ?? ''} onChange={(e) => setSelectedLessonCourseId(e.target.value ? Number(e.target.value) : null)} className="w-full border rounded p-2">
-                    <option value="">-- choose course --</option>
-                    {myCourses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-600 mb-2">Select Lesson</label>
-                  <div className="border rounded p-2 max-h-40 overflow-auto">
-                    {courseModules.length === 0 && <div className="text-sm text-gray-500">Choose a course to load modules & lessons.</div>}
-                    {courseModules.map((m: any) => (
-                      <div key={m.id} className="mb-2">
-                        <div className="font-medium text-sm mb-1">{m.title}</div>
-                        <div className="space-y-1">
-                          {Array.isArray(m.lessons) && m.lessons.map((l: any) => (
-                            <label key={l.id} className="flex items-center gap-2 text-sm">
-                              <input type="radio" name="selectedLesson" checked={selectedLessonId === l.id} onChange={() => setSelectedLessonId(l.id)} />
-                              <span>{l.title}</span>
-                            </label>
-                          ))}
-                          {(!Array.isArray(m.lessons) || m.lessons.length === 0) && <div className="text-xs text-gray-500">No lessons</div>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-600 mb-2">Choose Media (mp4, webm, jpg, png)</label>
-                  <input type="file" accept="video/*,image/*" onChange={(e) => setLessonFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} />
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button disabled={uploadingLessonMedia} onClick={handleUploadLessonMedia} className={`px-4 py-2 rounded ${uploadingLessonMedia ? 'bg-gray-300' : 'bg-green-600 text-white'}`}>
-                    {uploadingLessonMedia ? 'Uploading...' : 'Upload & Save to Lesson'}
-                  </button>
-                  <div className="text-sm text-gray-500">This will set the lesson's `video` field to the uploaded media reference.</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-

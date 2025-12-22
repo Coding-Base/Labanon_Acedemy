@@ -1,22 +1,23 @@
 // src/pages/CreateCourse.tsx
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
-import { useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
+import { VideoUploadWidget } from '../components/VideoUploadWidget'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
 const levels = ['Beginner', 'Intermediate', 'Professional'] as const
-
 type Level = (typeof levels)[number]
 
 type Lesson = {
   id?: number | string
   title: string
   content?: string
-  video?: string
+  video_s3?: string
+  video_s3_url?: string
+  youtube_url?: string
 }
 
 type ModuleItem = {
@@ -28,6 +29,7 @@ type ModuleItem = {
 
 export default function CreateCourse() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [courseType, setCourseType] = useState<'normal' | 'scheduled'>('normal')
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState('0')
@@ -46,9 +48,7 @@ export default function CreateCourse() {
   const [moduleTitleInput, setModuleTitleInput] = useState('')
   const [lessonTitle, setLessonTitle] = useState('')
   const [lessonContent, setLessonContent] = useState('') // HTML from Quill or plain text + code blocks
-  const [videoLink, setVideoLink] = useState('')
   const [editingLessonIndex, setEditingLessonIndex] = useState<number | null>(null) // when editing an existing lesson
-  const location = useLocation()
 
   // scheduled course fields
   const [startDate, setStartDate] = useState('')
@@ -61,6 +61,10 @@ export default function CreateCourse() {
   const [courseImageFile, setCourseImageFile] = useState<File | null>(null)
   const [courseImagePreview, setCourseImagePreview] = useState<string | null>(null)
 
+  // Note: Video upload is now handled by VideoUploadWidget component
+  // It manages its own state and communicates via onVideoUploadComplete callback
+
+  // UI / status
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -88,7 +92,7 @@ export default function CreateCourse() {
     return () => { mounted = false; clearTimeout(t) }
   }, [searchQuery])
 
-  // if courseId provided in query params, load course for editing
+  // load course for editing if provided via ?courseId=...
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const courseId = params.get('courseId')
@@ -122,138 +126,92 @@ export default function CreateCourse() {
     return () => { mounted = false }
   }, [location.search])
 
-  function addModule() {
-    if (!moduleTitleInput.trim()) return
-    const newModule: ModuleItem = { title: moduleTitleInput.trim(), order: modules.length, lessons: [] }
-    setModules((m) => [...m, newModule])
-    setModuleTitleInput('')
-    setCurrentModuleIndex(modules.length)
-  }
+  /* ----------------------
+     Helper: Ensure course/module/lesson exist
+     (These are still needed for creating the course structure)
+     ---------------------- */
 
-  function startEditLesson(moduleIdx: number, lessonIdx: number) {
-    const ls = modules[moduleIdx].lessons?.[lessonIdx]
-    if (!ls) return
-    setEditingLessonIndex(lessonIdx)
-    setLessonTitle(ls.title || '')
-    setLessonContent(ls.content || '')
-    setVideoLink(ls.video || '')
-    setCurrentModuleIndex(moduleIdx)
-  }
-
-  function cancelEditLesson() {
-    setEditingLessonIndex(null)
-    setLessonTitle('')
-    setLessonContent('')
-    setVideoLink('')
-  }
-
-  function addOrUpdateLesson() {
-    if (currentModuleIndex === null) {
-      setErrors((e) => ({ ...e, lesson_module: ['Select or create a module first'] }))
-      return
-    }
-    if (!lessonTitle.trim()) {
-      setErrors((e) => ({ ...e, lesson_title: ['Lesson title required'] }))
-      return
-    }
-    setErrors((e) => {
-      const copy = { ...e }
-      delete copy.lesson_title
-      delete copy.lesson_module
-      return copy
-    })
-
-    setModules((m) => {
-      const copy = [...m]
-      const mod = { ...(copy[currentModuleIndex] || { title: 'Module', lessons: [] }) }
-      const lessonObj: Lesson = { title: lessonTitle.trim(), content: lessonContent, video: videoLink }
-      if (editingLessonIndex !== null) {
-        mod.lessons = [...(mod.lessons || [])]
-        mod.lessons[editingLessonIndex] = { ...(mod.lessons[editingLessonIndex] || {}), ...lessonObj }
-      } else {
-        mod.lessons = [...(mod.lessons || []), lessonObj]
-      }
-      copy[currentModuleIndex] = mod
-      return copy
-    })
-
-    // reset inputs
-    setLessonTitle('')
-    setLessonContent('')
-    setVideoLink('')
-    setEditingLessonIndex(null)
-  }
-
-  function removeLesson(moduleIdx: number, lessonIdx: number) {
-    // attempt backend delete if lesson has id and course is saved
-    ;(async () => {
-      try {
-        const mod = modules[moduleIdx]
-        const ls = mod?.lessons?.[lessonIdx]
-        const params = new URLSearchParams(location.search)
-        const courseId = params.get('courseId')
-        if (ls?.id && courseId) {
-          const token = localStorage.getItem('access')
-          await axios.delete(`${API_BASE}/lessons/${ls.id}/`, { headers: { Authorization: `Bearer ${token}` } })
-        }
-      } catch (err) {
-        console.error('Failed to delete lesson', err)
-      }
-    })()
-
-    setModules((m) => {
-      const copy = [...m]
-      const mod = { ...copy[moduleIdx] }
-      mod.lessons = (mod.lessons || []).filter((_: any, i: number) => i !== lessonIdx)
-      copy[moduleIdx] = mod
-      return copy
-    })
-  }
-
-  async function confirmDelete() {
-    if (!pendingDelete) return
-    const { type, moduleIdx, lessonIdx } = pendingDelete
-    try {
-      if (type === 'lesson') {
-        removeLesson(moduleIdx, lessonIdx)
-      } else if (type === 'module') {
-        await deleteModule(moduleIdx)
-      }
-    } catch (err) {
-      console.error('Delete action failed', err)
-    } finally {
-      setPendingDelete(null)
-    }
-  }
-
-  function cancelDelete() {
-    setPendingDelete(null)
-  }
-
-  async function deleteModule(moduleIdx: number) {
-    const mod = modules[moduleIdx]
+  // returns numeric course id (string or number as backend uses)
+  async function ensureCourseExists(): Promise<number | string | null> {
     const params = new URLSearchParams(location.search)
-    const courseId = params.get('courseId')
+    let courseId = params.get('courseId')
     try {
-      if (mod?.id && courseId) {
-        const token = localStorage.getItem('access')
-        await axios.delete(`${API_BASE}/modules/${mod.id}/`, { headers: { Authorization: `Bearer ${token}` } })
+      const token = localStorage.getItem('access')
+      if (!courseId) {
+        // create draft course to get id
+        const payload: any = {
+          title: title.trim() || 'Untitled draft',
+          description,
+          price: Number(price) || 0,
+          published: false
+        }
+        const res = await axios.post(`${API_BASE}/courses/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+        courseId = res.data.id
+        // update URL so other operations use same courseId
+        const newSearch = new URLSearchParams(location.search)
+        newSearch.set('courseId', String(courseId))
+        navigate(`${location.pathname}?${newSearch.toString()}`, { replace: true })
       }
+      return courseId
     } catch (err) {
-      console.error('Failed to delete module', err)
+      console.error('Failed to create or get course ID', err)
+      return null
     }
-    setModules((m) => {
-      const copy = [...m]
-      copy.splice(moduleIdx, 1)
-      return copy
-    })
-    setCurrentModuleIndex((cur) => {
-      if (cur === null) return null
-      if (cur > moduleIdx) return cur - 1
-      if (cur === moduleIdx) return null
-      return cur
-    })
   }
+
+  // ensures module exists; returns moduleId
+  async function ensureModuleExists(moduleIdx: number, courseId: number | string | null): Promise<number | string | null> {
+    try {
+      const mod = modules[moduleIdx]
+      if (!mod) return null
+      if (mod.id) return mod.id
+      if (!courseId) return null
+      const token = localStorage.getItem('access')
+      const res = await axios.post(`${API_BASE}/modules/`, { course: courseId, title: mod.title, order: moduleIdx }, { headers: { Authorization: `Bearer ${token}` } })
+      const moduleId = res.data.id
+      // update local state with id
+      setModules(prev => {
+        const cp = [...prev]
+        cp[moduleIdx] = { ...cp[moduleIdx], id: moduleId }
+        return cp
+      })
+      return moduleId
+    } catch (err) {
+      console.error('Failed to create module', err)
+      return null
+    }
+  }
+
+  // ensures lesson exists; returns lessonId
+  async function ensureLessonExists(moduleIdx: number, lessonIdx: number, moduleId: number | string | null): Promise<number | string | null> {
+    try {
+      const ls = modules[moduleIdx]?.lessons?.[lessonIdx]
+      if (!ls) return null
+      if (ls.id) return ls.id
+      if (!moduleId) return null
+      const token = localStorage.getItem('access')
+      const payload = { module: moduleId, title: ls.title, content: ls.content || '' }
+      const res = await axios.post(`${API_BASE}/lessons/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+      const lessonId = res.data.id
+      // update local state with id
+      setModules(prev => {
+        const cp = [...prev]
+        const mod = { ...(cp[moduleIdx] || {}) }
+        mod.lessons = [...(mod.lessons || [])]
+        mod.lessons[lessonIdx] = { ...(mod.lessons[lessonIdx] || {}), id: lessonId }
+        cp[moduleIdx] = mod
+        return cp
+      })
+      return lessonId
+    } catch (err) {
+      console.error('Failed to create lesson', err)
+      return null
+    }
+  }
+
+  /* ----------------------
+     Helpers for image upload and publish/save
+     ---------------------- */
 
   async function uploadCourseImageIfNeeded(courseId: any, token: string | null) {
     if (!courseImageFile || !courseId) return
@@ -284,7 +242,6 @@ export default function CreateCourse() {
         description,
         price: Number(price) || 0,
         published: true,
-        // scheduled-specific (backend must accept these to persist)
         start_date: courseType === 'scheduled' ? startDate || null : null,
         end_date: courseType === 'scheduled' ? endDate || null : null,
         meeting_time: courseType === 'scheduled' ? meetingTime || null : null,
@@ -333,10 +290,24 @@ export default function CreateCourse() {
             const ls = mod.lessons![li]
             try {
               // when sending lesson content we expect HTML or plain text; code snippets will be in <pre><code> blocks
+              const lessonPayload: any = { 
+                module: moduleId, 
+                title: ls.title, 
+                content: ls.content
+              }
+              // Include video fields if they exist
+              if (ls.video_s3) lessonPayload.video_s3 = ls.video_s3
+              if (ls.video_s3_url) lessonPayload.video_s3_url = ls.video_s3_url
+              if (ls.youtube_url) lessonPayload.youtube_url = ls.youtube_url
+              // Keep backward compatibility - if old 'video' field exists and looks like a URL, save as youtube_url
+              if (ls.video && typeof ls.video === 'string' && (ls.video.includes('youtube') || ls.video.startsWith('http'))) {
+                lessonPayload.youtube_url = ls.video
+              }
+              
               if (ls.id) {
-                await axios.patch(`${API_BASE}/lessons/${ls.id}/`, { module: moduleId, title: ls.title, content: ls.content, video: ls.video }, { headers: { Authorization: `Bearer ${token}` } })
+                await axios.patch(`${API_BASE}/lessons/${ls.id}/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
               } else {
-                await axios.post(`${API_BASE}/lessons/`, { module: moduleId, title: ls.title, content: ls.content, video: ls.video }, { headers: { Authorization: `Bearer ${token}` } })
+                await axios.post(`${API_BASE}/lessons/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
               }
             } catch (err) {
               console.error('Failed to create/update lesson', err)
@@ -414,10 +385,24 @@ export default function CreateCourse() {
           for (let li = 0; li < (mod.lessons || []).length; li++) {
             const ls = mod.lessons![li]
             try {
+              const lessonPayload: any = { 
+                module: moduleId, 
+                title: ls.title, 
+                content: ls.content
+              }
+              // Include video fields if they exist
+              if (ls.video_s3) lessonPayload.video_s3 = ls.video_s3
+              if (ls.video_s3_url) lessonPayload.video_s3_url = ls.video_s3_url
+              if (ls.youtube_url) lessonPayload.youtube_url = ls.youtube_url
+              // Keep backward compatibility - if old 'video' field exists and looks like a URL, save as youtube_url
+              if (ls.video && typeof ls.video === 'string' && (ls.video.includes('youtube') || ls.video.startsWith('http'))) {
+                lessonPayload.youtube_url = ls.video
+              }
+              
               if (ls.id) {
-                await axios.patch(`${API_BASE}/lessons/${ls.id}/`, { module: moduleId, title: ls.title, content: ls.content, video: ls.video }, { headers: { Authorization: `Bearer ${token}` } })
+                await axios.patch(`${API_BASE}/lessons/${ls.id}/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
               } else {
-                await axios.post(`${API_BASE}/lessons/`, { module: moduleId, title: ls.title, content: ls.content, video: ls.video }, { headers: { Authorization: `Bearer ${token}` } })
+                await axios.post(`${API_BASE}/lessons/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
               }
             } catch (err) {
               console.error('Failed to create/update lesson', err)
@@ -434,6 +419,139 @@ export default function CreateCourse() {
     } finally {
       setSaving(false)
     }
+  }
+
+  function addModule() {
+    if (!moduleTitleInput.trim()) return
+    const newModule: ModuleItem = { title: moduleTitleInput.trim(), order: modules.length, lessons: [] }
+    setModules((m) => [...m, newModule])
+    setModuleTitleInput('')
+    setCurrentModuleIndex(modules.length)
+  }
+
+  function startEditLesson(moduleIdx: number, lessonIdx: number) {
+    const ls = modules[moduleIdx].lessons?.[lessonIdx]
+    if (!ls) return
+    setEditingLessonIndex(lessonIdx)
+    setLessonTitle(ls.title || '')
+    setLessonContent(ls.content || '')
+    // Note: Video is now handled by VideoUploadWidget and should not be set from lessonTitle state
+    setCurrentModuleIndex(moduleIdx)
+  }
+
+  function cancelEditLesson() {
+    setEditingLessonIndex(null)
+    setLessonTitle('')
+    setLessonContent('')
+  }
+
+  function addOrUpdateLesson() {
+    if (currentModuleIndex === null) {
+      setErrors((e) => ({ ...e, lesson_module: ['Select or create a module first'] }))
+      return
+    }
+    if (!lessonTitle.trim()) {
+      setErrors((e) => ({ ...e, lesson_title: ['Lesson title required'] }))
+      return
+    }
+    setErrors((e) => {
+      const copy = { ...e }
+      delete copy.lesson_title
+      delete copy.lesson_module
+      return copy
+    })
+
+    setModules((m) => {
+      const copy = [...m]
+      const mod = { ...(copy[currentModuleIndex] || { title: 'Module', lessons: [] }) }
+      const lessonObj: Lesson = { title: lessonTitle.trim(), content: lessonContent }
+      // Video fields (video_s3, video_s3_url, youtube_url) are set via VideoUploadWidget callback
+      if (editingLessonIndex !== null) {
+        mod.lessons = [...(mod.lessons || [])]
+        // Preserve any existing video fields
+        mod.lessons[editingLessonIndex] = { ...(mod.lessons[editingLessonIndex] || {}), ...lessonObj }
+      } else {
+        mod.lessons = [...(mod.lessons || []), lessonObj]
+      }
+      copy[currentModuleIndex] = mod
+      return copy
+    })
+
+    // reset inputs
+    setLessonTitle('')
+    setLessonContent('')
+    setEditingLessonIndex(null)
+  }
+
+  async function removeLesson(moduleIdx: number, lessonIdx: number) {
+    // attempt backend delete if lesson has id and course is saved
+    ;(async () => {
+      try {
+        const mod = modules[moduleIdx]
+        const ls = mod?.lessons?.[lessonIdx]
+        const params = new URLSearchParams(location.search)
+        const courseId = params.get('courseId')
+        if (ls?.id && courseId) {
+          const token = localStorage.getItem('access')
+          await axios.delete(`${API_BASE}/lessons/${ls.id}/`, { headers: { Authorization: `Bearer ${token}` } })
+        }
+      } catch (err) {
+        console.error('Failed to delete lesson', err)
+      }
+    })()
+
+    setModules((m) => {
+      const copy = [...m]
+      const mod = { ...copy[moduleIdx] }
+      mod.lessons = (mod.lessons || []).filter((_: any, i: number) => i !== lessonIdx)
+      copy[moduleIdx] = mod
+      return copy
+    })
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    const { type, moduleIdx, lessonIdx } = pendingDelete
+    try {
+      if (type === 'lesson') {
+        removeLesson(moduleIdx, lessonIdx)
+      } else if (type === 'module') {
+        await deleteModule(moduleIdx)
+      }
+    } catch (err) {
+      console.error('Delete action failed', err)
+    } finally {
+      setPendingDelete(null)
+    }
+  }
+
+  function cancelDelete() {
+    setPendingDelete(null)
+  }
+
+  async function deleteModule(moduleIdx: number) {
+    const mod = modules[moduleIdx]
+    const params = new URLSearchParams(location.search)
+    const courseId = params.get('courseId')
+    try {
+      if (mod?.id && courseId) {
+        const token = localStorage.getItem('access')
+        await axios.delete(`${API_BASE}/modules/${mod.id}/`, { headers: { Authorization: `Bearer ${token}` } })
+      }
+    } catch (err) {
+      console.error('Failed to delete module', err)
+    }
+    setModules((m) => {
+      const copy = [...m]
+      copy.splice(moduleIdx, 1)
+      return copy
+    })
+    setCurrentModuleIndex((cur) => {
+      if (cur === null) return null
+      if (cur > moduleIdx) return cur - 1
+      if (cur === moduleIdx) return null
+      return cur
+    })
   }
 
   function handleCourseImageChange(file?: File) {
@@ -469,6 +587,10 @@ export default function CreateCourse() {
   }
   const quillFormats = ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'bullet', 'blockquote', 'code-block', 'link']
 
+  /* ----------------------
+     UI
+     ---------------------- */
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -489,6 +611,7 @@ export default function CreateCourse() {
               <option value="scheduled">Scheduled Lessons Course</option>
             </select>
 
+            {/* Main course fields (kept from your original UI) */}
             {courseType === 'normal' && (
               <>
                 <label className="block text-sm font-medium text-gray-700 mt-4">Title</label>
@@ -544,7 +667,6 @@ export default function CreateCourse() {
                     <button onClick={() => setLinkedCourse(null)} className="text-sm text-red-600">Remove</button>
                   </div>
                 )}
-
               </>
             )}
 
@@ -600,10 +722,8 @@ export default function CreateCourse() {
                     <div className="mt-2 text-sm text-gray-600">{startDate || 'Start'} — {endDate || 'End'}</div>
                   </div>
                 </div>
-
               </div>
             )}
-
           </div>
 
           <div>
@@ -650,13 +770,55 @@ export default function CreateCourse() {
                   <CodeSnippetInserter onInsert={(code, lang) => insertCodeSnippet(code, lang)} />
                 </div>
 
-                <label className="block text-sm font-medium text-gray-700 mt-3">Video (YouTube link)</label>
-                <input className="mt-2 w-full border rounded p-2" placeholder="https://youtube.com/..." value={videoLink} onChange={(e) => setVideoLink(e.target.value)} />
-                <div className="text-sm text-gray-500 mt-2">Video upload option disabled for now.</div>
+                <label className="block text-sm font-medium text-gray-700 mt-3">Video (YouTube link OR upload below)</label>
+                <div className="text-sm text-gray-500 mt-2">Upload a short video (≤ 6 minutes) or embed from YouTube.</div>
+
+                {/* Video Upload Widget - Handles S3 upload + microservices encoding */}
+                {currentModuleIndex !== null && editingLessonIndex !== null && (
+                  <div className="mt-4 border rounded p-3 bg-white">
+                    <VideoUploadWidget 
+                      onUploadComplete={(videoData) => {
+                        // Handle video upload completion
+                        // videoData contains: video_id, status (uploading, queued_for_encoding, processing, ready, failed)
+                        console.log('Video uploaded:', videoData)
+                        
+                        // Update lesson with video reference
+                        setModules(prev => {
+                          const cp = [...prev]
+                          const moduleIdx = currentModuleIndex
+                          const lessonIdx = editingLessonIndex
+                          
+                          if (cp[moduleIdx] && cp[moduleIdx].lessons) {
+                            cp[moduleIdx].lessons![lessonIdx] = {
+                              ...cp[moduleIdx].lessons![lessonIdx],
+                              video_s3: videoData.video_id,
+                              video_s3_url: videoData.cloudfront_url || undefined
+                            }
+                          }
+                          return cp
+                        })
+                        
+                        alert('Video uploaded successfully! Encoding has been queued. Your video will be available shortly.')
+                      }}
+                    />
+                  </div>
+                )}
+                
+                {currentModuleIndex === null && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                    Select a module first to upload a video
+                  </div>
+                )}
+                
+                {editingLessonIndex === null && currentModuleIndex !== null && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                    Select or create a lesson to upload a video
+                  </div>
+                )}
 
                 <div className="mt-4 flex gap-2">
                   <button onClick={addOrUpdateLesson} className="px-4 py-2 bg-green-600 text-white rounded">{editingLessonIndex !== null ? 'Save Lesson' : 'Add Lesson'}</button>
-                  <button onClick={() => { cancelEditLesson(); setLessonTitle(''); setLessonContent(''); setVideoLink('') }} className="px-4 py-2 bg-gray-100 rounded">Reset</button>
+                  <button onClick={() => { cancelEditLesson(); setLessonTitle(''); setLessonContent('') }} className="px-4 py-2 bg-gray-100 rounded">Reset</button>
                 </div>
               </div>
 
@@ -669,9 +831,27 @@ export default function CreateCourse() {
                       <div>
                         <div className="font-semibold">{l.title}</div>
                         <div className="text-sm text-gray-600" dangerouslySetInnerHTML={{ __html: String(l.content || '').slice(0, 200) }} />
-                        {l.video && (
+                        {(l.video || l.video_s3 || l.youtube_url) && (
                           <div className="mt-2">
-                            <iframe className="w-full h-40" src={l.video.includes('youtube') ? l.video.replace('watch?v=', 'embed/') : l.video} title={l.title} />
+                            {/* show YouTube embed or uploaded video status */}
+                            {l.youtube_url ? (
+                              <iframe 
+                                className="w-full h-40" 
+                                src={l.youtube_url.includes('watch?v=') ? l.youtube_url.replace('watch?v=', 'embed/') : l.youtube_url} 
+                                title={l.title} 
+                              />
+                            ) : l.video_s3_url ? (
+                              <div className="text-xs text-green-600">✓ Video ready: {l.video_s3_url.slice(-30)}</div>
+                            ) : l.video_s3 ? (
+                              <div className="text-xs text-yellow-600">⏳ Video queued/processing: {l.video_s3.slice(0, 30)}</div>
+                            ) : l.video ? (
+                              // Backward compatibility: check if old video field is a YouTube URL
+                              String(l.video).includes('youtube') ? (
+                                <iframe className="w-full h-40" src={String(l.video).includes('watch?v=') ? String(l.video).replace('watch?v=', 'embed/') : l.video} title={l.title} />
+                              ) : (
+                                <div className="text-xs text-gray-500">Uploaded key: {String(l.video).slice(0, 60)}</div>
+                              )
+                            ) : null}
                           </div>
                         )}
                       </div>
@@ -724,7 +904,8 @@ export default function CreateCourse() {
                       <div className="text-sm text-gray-700 mt-2" dangerouslySetInnerHTML={{ __html: l.content || '' }} />
                       {l.video && (
                         <div className="mt-2">
-                          <iframe className="w-full h-40" src={l.video.includes('youtube') ? l.video.replace('watch?v=', 'embed/') : l.video} title={l.title} />
+                          <iframe className="w-full h-40" src={String(l.video).includes('youtube') ? String(l.video).includes('watch?v=') ? String(l.video).replace('watch?v=', 'embed/') : l.video : undefined} title={l.title} />
+                          {!String(l.video).includes('youtube') && <div className="text-xs text-gray-500 mt-2">Uploaded (processing or HLS key): {String(l.video).slice(0, 80)}</div>}
                         </div>
                       )}
                     </div>
@@ -754,7 +935,10 @@ export default function CreateCourse() {
   )
 }
 
-// --- Helper subcomponent: CodeSnippetInserter ---
+/* ----------------------
+   Helper subcomponent: CodeSnippetInserter
+   (unchanged behavior)
+   ---------------------- */
 function CodeSnippetInserter({ onInsert }: { onInsert: (code: string, lang: string) => void }) {
   const [open, setOpen] = useState(false)
   const [code, setCode] = useState('')

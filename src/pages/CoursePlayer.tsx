@@ -1,172 +1,460 @@
 // src/pages/CoursePlayer.tsx
-import React, { useEffect, useMemo, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { Play, ChevronLeft, ChevronRight, Lock, CheckCircle, Clock, BookOpen, User } from 'lucide-react'
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Hls from 'hls.js';
+import {
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+  CheckCircle,
+  Clock,
+  BookOpen,
+  User
+} from 'lucide-react';
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api'
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
 
 /** --- Types --- */
 interface Resource {
-  title: string
-  url: string
-  type?: string
+  title: string;
+  url: string;
+  type?: string;
 }
 
 interface Lesson {
-  id: number
-  title: string
-  content?: string
-  video?: string
-  thumbnail?: string
-  description?: string
-  resources?: Resource[]
+  id: number;
+  title: string;
+  content?: string;
+  video?: string; // Old field (backward compatibility)
+  video_s3?: string; // Raw video ID
+  video_s3_url?: string; // HLS CloudFront URL
+  youtube_url?: string; // YouTube embed URL
+  thumbnail?: string;
+  description?: string;
+  resources?: Resource[];
+  [k: string]: any;
 }
 
 interface ModuleItem {
-  id: number
-  course?: number
-  title: string
-  order?: number
-  lessons: Lesson[]
+  id: number;
+  course?: number;
+  title: string;
+  order?: number;
+  lessons: Lesson[];
 }
 
 interface Course {
-  id: number
-  title: string
-  creator?: string
-  price?: string | number
-  modules?: ModuleItem[]
-  [k: string]: any
+  id: number;
+  title: string;
+  creator?: string;
+  price?: string | number;
+  modules?: ModuleItem[];
+  [k: string]: any;
+}
+
+/** Extract YouTube video ID from various URL formats */
+function extractYouTubeVideoId(url?: string | null): string | null {
+  if (!url) return null;
+  const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return match && match[1] && match[1].length === 11 ? match[1] : null;
+}
+
+/** Generate YouTube embed URL with restricted features */
+function generateRestrictedYouTubeEmbedUrl(videoId: string): string {
+  const params = new URLSearchParams({
+    autoplay: '0',
+    controls: '1',
+    rel: '0',
+    modestbranding: '1',
+    iv_load_policy: '3',
+    fs: '1',
+    playsinline: '1',
+    origin: window.location.origin,
+    widget_referrer: window.location.href,
+    enablejsapi: '0',
+    color: 'white',
+    host: 'www.youtube-nocookie.com',
+    cc_load_policy: '0',
+    cc_lang_pref: 'en',
+    start: '0',
+    end: '0'
+  });
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 }
 
 /** Resolve a possibly-relative media url returned by backend into an absolute URL usable by the browser */
 function resolveMedia(src?: string | null): string | null {
-  if (!src) return null
-  if (src.startsWith('http://') || src.startsWith('https://')) return src
-  // If API_BASE contains "/api", remove that so we have the site base
-  const siteBase = API_BASE.replace(/\/api\/?$/, '')
-  if (src.startsWith('/')) return `${siteBase}${src}`
-  return `${siteBase}/${src}`
+  if (!src) return null;
+  if (src.startsWith('http://') || src.startsWith('https://')) return src;
+  const siteBase = API_BASE.replace(/\/api\/?$/, '');
+  if (src.startsWith('/')) return `${siteBase}${src}`;
+  return `${siteBase}/${src}`;
+}
+
+/** Detect likely HLS stream by extension or content */
+function looksLikeHls(url?: string | null): boolean {
+  if (!url) return false;
+  return /\.m3u8(\?.*)?$/.test(url) || url.includes('m3u8');
 }
 
 export default function CoursePlayer(): JSX.Element {
-  const { id } = useParams<{ id?: string }>()
-  const navigate = useNavigate()
-  const [course, setCourse] = useState<Course | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [lessonIndex, setLessonIndex] = useState<number>(0)
-  const [enrolled, setEnrolled] = useState<boolean>(false)
-  const [checkingEnroll, setCheckingEnroll] = useState<boolean>(true)
+  const { id } = useParams<{ id?: string }>();
+  const navigate = useNavigate();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [lessonIndex, setLessonIndex] = useState<number>(0);
+  const [enrolled, setEnrolled] = useState<boolean>(false);
+  const [checkingEnroll, setCheckingEnroll] = useState<boolean>(true);
+  const [videoLoadError, setVideoLoadError] = useState<boolean>(false);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   // Load course details
   useEffect(() => {
-    if (!id) return
-    let mounted = true
+    if (!id) return;
+    let mounted = true;
     async function load(): Promise<void> {
-      setLoading(true)
+      setLoading(true);
       try {
-        const res = await axios.get<Course>(`${API_BASE}/courses/${id}/`)
-        if (!mounted) return
-        setCourse(res.data)
-        setLessonIndex(0)
+        const res = await axios.get<Course>(`${API_BASE}/courses/${id}/`);
+        if (!mounted) return;
+        setCourse(res.data);
+        setLessonIndex(0);
       } catch (err) {
-        console.error('Failed to load course', err)
-        setCourse(null)
+        console.error('Failed to load course', err);
+        setCourse(null);
       } finally {
-        if (mounted) setLoading(false)
+        if (mounted) setLoading(false);
       }
     }
-    load()
+    load();
     return () => {
-      mounted = false
-    }
-  }, [id])
+      mounted = false;
+    };
+  }, [id]);
 
   // Check enrollment status (fetch user's enrollments and match)
   useEffect(() => {
-    if (!id) return
-    let mounted = true
+    if (!id) return;
+    let mounted = true;
     async function check(): Promise<void> {
-      setCheckingEnroll(true)
+      setCheckingEnroll(true);
       try {
-        const token = localStorage.getItem('access')
+        const token = localStorage.getItem('access');
         if (!token) {
-          if (mounted) setEnrolled(false)
-          return
+          if (mounted) setEnrolled(false);
+          return;
         }
         const res = await axios.get(`${API_BASE}/enrollments/`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { page_size: 1000 }
-        })
-        if (!mounted) return
-        const items: any[] = res.data.results || res.data || []
-        const found = items.find((it: any) => String(it.course?.id) === String(id))
-        setEnrolled(Boolean(found && (found.purchased === true || found.purchased)))
+        });
+        if (!mounted) return;
+        const items: any[] = res.data.results || res.data || [];
+        const found = items.find((it: any) => String(it.course?.id) === String(id));
+        setEnrolled(Boolean(found && (found.purchased === true || found.purchased)));
       } catch (err) {
-        console.error('Failed to check enrollment', err)
-        if (mounted) setEnrolled(false)
+        console.error('Failed to check enrollment', err);
+        if (mounted) setEnrolled(false);
       } finally {
-        if (mounted) setCheckingEnroll(false)
+        if (mounted) setCheckingEnroll(false);
       }
     }
-    check()
-    return () => { mounted = false }
-  }, [id])
+    check();
+    return () => { mounted = false; };
+  }, [id]);
 
   // Flatten modules -> lessons array
   const lessons: Lesson[] = useMemo(() => {
-    if (!course) return []
-    const arr: Lesson[] = []
-    const modules: ModuleItem[] = Array.isArray(course.modules) ? course.modules : []
+    if (!course) return [];
+    const arr: Lesson[] = [];
+    const modules: ModuleItem[] = Array.isArray(course.modules) ? course.modules : [];
     modules.forEach((m: ModuleItem) => {
-      const ls: Lesson[] = Array.isArray(m.lessons) ? m.lessons : []
+      const ls: Lesson[] = Array.isArray(m.lessons) ? m.lessons : [];
       ls.forEach((lesson: Lesson) => {
         arr.push({
           ...lesson,
-          // ensure moduleTitle available at lesson level for UI convenience
-          // @ts-expect-error moduleTitle is not part of Lesson type strictly, but harmless for UI
           moduleTitle: m.title,
-          // @ts-expect-error moduleId not part of Lesson type strictly
-          moduleId: m.id,
-        } as any)
-      })
-    })
-    return arr
-  }, [course])
+          moduleId: m.id
+        } as any);
+      });
+    });
+    return arr;
+  }, [course]);
 
   // Group modules with lessons for sidebar rendering (typed)
   const modulesWithLessons: ModuleItem[] = useMemo(() => {
-    if (!course) return []
-    const modules: ModuleItem[] = Array.isArray(course.modules) ? course.modules : []
+    if (!course) return [];
+    const modules: ModuleItem[] = Array.isArray(course.modules) ? course.modules : [];
     return modules.map((mod: ModuleItem) => ({
       ...mod,
       lessons: Array.isArray(mod.lessons) ? mod.lessons : []
-    }))
-  }, [course])
+    }));
+  }, [course]);
 
   // Clamp lessonIndex into valid bounds whenever lessons array changes
   useEffect(() => {
     if (lessons.length === 0) {
-      setLessonIndex(0)
-      return
+      setLessonIndex(0);
+      return;
     }
     setLessonIndex((idx) => {
-      if (idx < 0) return 0
-      if (idx >= lessons.length) return lessons.length - 1
-      return idx
-    })
-  }, [lessons.length])
+      if (idx < 0) return 0;
+      if (idx >= lessons.length) return lessons.length - 1;
+      return idx;
+    });
+  }, [lessons.length]);
 
-  const currentLesson: Lesson | undefined = lessons[lessonIndex]
+  const currentLesson: Lesson | undefined = lessons[lessonIndex];
 
   function goNext(): void {
-    setLessonIndex((s) => Math.min(s + 1, Math.max(0, lessons.length - 1)))
+    setLessonIndex((s) => Math.min(s + 1, Math.max(0, lessons.length - 1)));
   }
 
   function goPrev(): void {
-    setLessonIndex((s) => Math.max(0, s - 1))
+    setLessonIndex((s) => Math.max(0, s - 1));
   }
+
+  // Reset video error when lesson changes
+  useEffect(() => {
+    setVideoLoadError(false);
+  }, [currentLesson?.video]);
+
+  // Setup HLS or native playback whenever currentLesson changes
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    // destroy previous hls instance if any
+    if (hlsRef.current) {
+      try {
+        hlsRef.current.destroy();
+      } catch (err) {
+        // ignore
+      }
+      hlsRef.current = null;
+    }
+
+    if (!videoEl) return;
+
+    // Use new video fields (video_s3_url, youtube_url) with fallback to old video field
+    let rawUrl: string | null = null;
+    if (currentLesson?.video_s3_url) {
+      rawUrl = currentLesson.video_s3_url; // HLS URL from CloudFront
+    } else if (currentLesson?.youtube_url) {
+      rawUrl = currentLesson.youtube_url; // YouTube URL
+    } else if (currentLesson?.video) {
+      rawUrl = String(currentLesson.video); // Fallback to old field for backward compatibility
+    }
+
+    if (!rawUrl) {
+      // nothing to play
+      videoEl.removeAttribute('src');
+      videoEl.load();
+      return;
+    }
+
+    const resolved = resolveMedia(rawUrl) || rawUrl;
+
+    // If it's a YouTube URL, we don't touch the <video> element (iframe used instead)
+    const youtubeId = extractYouTubeVideoId(rawUrl);
+    if (youtubeId) {
+      // ensure video element is reset
+      videoEl.pause();
+      videoEl.removeAttribute('src');
+      try { videoEl.load(); } catch { /* ignore */ }
+      return;
+    }
+
+    // If looks like HLS (.m3u8)
+    if (looksLikeHls(resolved)) {
+      // Safari has native HLS support in <video>
+      const isSafari = !!(navigator.vendor && navigator.vendor.includes('Apple')) || /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+      if (isSafari && videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        // native
+        videoEl.src = resolved;
+        videoEl.crossOrigin = 'anonymous';
+        videoEl.preload = 'metadata';
+        videoEl.load();
+      } else if (Hls.isSupported()) {
+        const hls = new Hls({
+          // recommended sensible defaults
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          enableWorker: true,
+          lowLatencyMode: false,
+        });
+        hlsRef.current = hls;
+        hls.attachMedia(videoEl);
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          hls.loadSource(resolved);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            // auto-play is blocked often, so we don't attempt to play here
+            // but we can keep the video ready
+          });
+        });
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('hls.js error', event, data);
+          setVideoLoadError(true);
+        });
+      } else {
+        // no HLS support at all
+        setVideoLoadError(true);
+      }
+      return;
+    }
+
+    // Fallback — direct file (mp4 etc.)
+    const isDirect = /\.(mp4|webm|ogg|mov|m4v)$/i.test(resolved) || resolved.startsWith('blob:') || resolved.includes('/media/');
+    if (isDirect) {
+      videoEl.src = resolved;
+      videoEl.crossOrigin = 'anonymous';
+      videoEl.preload = 'metadata';
+      videoEl.load();
+      return;
+    }
+
+    // Unknown/unhandled URL: show error state
+    setVideoLoadError(true);
+  }, [currentLesson?.video]);
+
+  // Cleanup hls when component unmounts
+  useEffect(() => {
+    return () => {
+      if (hlsRef.current) {
+        try {
+          hlsRef.current.destroy();
+        } catch { /* ignore */ }
+        hlsRef.current = null;
+      }
+    };
+  }, []);
+
+  // Render media player based on lesson video type
+  const renderMediaPlayer = () => {
+    if (!currentLesson?.video) {
+      return (
+        <div className="p-8 min-h-[400px] flex items-center justify-center bg-gray-900">
+          <div className="text-center">
+            <BookOpen className="w-16 h-16 text-gray-700 mx-auto mb-4" />
+            <p className="text-gray-600">No video content available for this lesson</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Determine video URL from new fields or fallback to old field
+    let videoUrl: string | null = null;
+    if (currentLesson?.video_s3_url) {
+      videoUrl = currentLesson.video_s3_url; // HLS URL
+    } else if (currentLesson?.youtube_url) {
+      videoUrl = currentLesson.youtube_url; // YouTube URL
+    } else if (currentLesson?.video) {
+      videoUrl = String(currentLesson.video); // Backward compatibility
+    }
+    
+    if (!videoUrl) {
+      return (
+        <div className="relative pt-[56.25%] overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-400">
+            <p className="text-gray-600">No video content available for this lesson</p>
+          </div>
+        </div>
+      );
+    }
+    
+    const youtubeVideoId = extractYouTubeVideoId(videoUrl);
+
+    // YouTube embed
+    if (youtubeVideoId) {
+      return (
+        <div className="relative pt-[56.25%] overflow-hidden youtube-iframe-container">
+          <iframe
+            title={currentLesson.title}
+            className="absolute top-0 left-0 w-full h-full"
+            src={generateRestrictedYouTubeEmbedUrl(youtubeVideoId)}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            loading="lazy"
+            onError={() => setVideoLoadError(true)}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none"
+            onContextMenu={(e) => e.preventDefault()}
+          />
+          {videoLoadError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-90">
+              <div className="text-center p-6">
+                <div className="text-white text-lg mb-2">Unable to load video</div>
+                <p className="text-gray-300 text-sm mb-4">
+                  The video may be private or unavailable. Try refreshing the page.
+                </p>
+                <button
+                  onClick={() => setVideoLoadError(false)}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // HLS or direct video: show <video> element (hls.js attaches automatically in effect)
+    const resolved = resolveMedia(videoUrl) || videoUrl;
+
+    // Show helpful message + button if previously failed to load
+    if (videoLoadError) {
+      return (
+        <div className="p-8 min-h-[360px] flex flex-col items-center justify-center bg-black text-center">
+          <div className="text-white text-lg mb-2">Unable to play this video</div>
+          <p className="text-gray-300 text-sm mb-4">The file may be unavailable, private, or in an unsupported format.</p>
+          <div className="flex gap-3">
+            <a
+              href={resolved}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-gray-800 text-white rounded"
+            >
+              Open in new tab
+            </a>
+            <button
+              onClick={() => setVideoLoadError(false)}
+              className="px-4 py-2 bg-green-600 text-white rounded"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full bg-black flex justify-center">
+        <video
+          ref={videoRef}
+          className="w-full h-auto max-h-[70vh]"
+          controls
+          poster={resolveMedia(currentLesson.thumbnail) || undefined}
+          preload="metadata"
+          playsInline
+          controlsList="nodownload nofullscreen noremoteplayback"
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {/* track can be added dynamically by backend if available */}
+          <track kind="captions" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -176,7 +464,7 @@ export default function CoursePlayer(): JSX.Element {
           <p className="mt-4 text-gray-600">Loading course content...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!course) {
@@ -194,7 +482,7 @@ export default function CoursePlayer(): JSX.Element {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -285,9 +573,9 @@ export default function CoursePlayer(): JSX.Element {
 
                       <div className="divide-y">
                         {module.lessons.map((lesson: Lesson, lessonIdx: number) => {
-                          const globalIndex = lessons.findIndex((l) => l.id === lesson.id)
-                          const isActive = globalIndex === lessonIndex
-                          const isLocked = !enrolled && globalIndex > 0
+                          const globalIndex = lessons.findIndex((l) => l.id === lesson.id);
+                          const isActive = globalIndex === lessonIndex;
+                          const isLocked = !enrolled && globalIndex > 0;
 
                           return (
                             <button
@@ -328,7 +616,7 @@ export default function CoursePlayer(): JSX.Element {
                                 <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                               )}
                             </button>
-                          )
+                          );
                         })}
                       </div>
                     </div>
@@ -398,42 +686,8 @@ export default function CoursePlayer(): JSX.Element {
               </div>
 
               {/* Media Player */}
-              <div className="bg-black">
-                {currentLesson?.video ? (
-                  (String(currentLesson.video).includes('youtube') ||
-                    String(currentLesson.video).includes('youtu.be') ||
-                    String(currentLesson.video).includes('embed')) ? (
-                    <div className="relative pt-[56.25%]">
-                      <iframe
-                        title={currentLesson.title}
-                        className="absolute top-0 left-0 w-full h-full"
-                        src={String(currentLesson.video).includes('watch?v=') ? String(currentLesson.video).replace('watch?v=', 'embed/') : String(currentLesson.video)}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  ) : (String(currentLesson.video).startsWith('/media') ||
-                    String(currentLesson.video).match(/\.(mp4|webm|ogg)$/i)) ? (
-                    <video
-                      className="w-full h-auto max-h-[70vh]"
-                      controls
-                      src={resolveMedia(currentLesson.video) || undefined}
-                      poster={resolveMedia((currentLesson as any).thumbnail) || undefined}
-                    />
-                  ) : (
-                    <div className="p-8 text-center">
-                      <div className="max-w-md mx-auto py-12 text-white/70 mb-4">Unsupported media format</div>
-                      <div className="text-sm text-white/50 break-all">{String(currentLesson.video).slice(0, 200)}...</div>
-                    </div>
-                  )
-                ) : (
-                  <div className="p-8 min-h-[400px] flex items-center justify-center bg-gray-900">
-                    <div className="text-center">
-                      <BookOpen className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-                      <p className="text-gray-600">No video content available for this lesson</p>
-                    </div>
-                  </div>
-                )}
+              <div className="bg-black" onContextMenu={(e) => e.preventDefault()}>
+                {renderMediaPlayer()}
               </div>
 
               {/* Lesson Content */}
@@ -469,13 +723,13 @@ export default function CoursePlayer(): JSX.Element {
                     <button
                       onClick={() => {
                         if (!enrolled) {
-                          navigate(`/student/courses/${course.id}/details`)
-                          return
+                          navigate(`/student/courses/${course.id}/details`);
+                          return;
                         }
                         if (lessonIndex >= lessons.length - 1) {
-                          alert('Congratulations! You have completed all available lessons.')
+                          alert('Congratulations! You have completed all available lessons.');
                         } else {
-                          goNext()
+                          goNext();
                         }
                       }}
                       className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium inline-flex items-center gap-2"
@@ -517,5 +771,5 @@ export default function CoursePlayer(): JSX.Element {
         </div>
       </div>
     </div>
-  )
+  );
 }

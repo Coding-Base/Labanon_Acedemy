@@ -169,9 +169,10 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
 
       setUploadStatus('Video processing...')
       onUploadComplete({
-        id: video_id,
+        video_id: video_id,
         status: 'processing',
-        youtube_url: null
+        youtube_url: null,
+        cloudfront_url: null
       })
 
       setFile(null)
@@ -215,7 +216,8 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
     onUploadComplete({
       youtube_url: youtubeUrl,
       status: 'ready',
-      id: null
+      video_id: null,
+      cloudfront_url: null
     })
 
     setYoutubeUrl('')

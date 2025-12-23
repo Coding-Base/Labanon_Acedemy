@@ -222,7 +222,7 @@ export default function CoursePlayer(): JSX.Element {
   // Reset video error when lesson changes
   useEffect(() => {
     setVideoLoadError(false);
-  }, [currentLesson?.video]);
+  }, [currentLesson?.video, currentLesson?.video_s3_url, currentLesson?.youtube_url]);
 
   // Setup HLS or native playback whenever currentLesson changes
   useEffect(() => {
@@ -334,7 +334,10 @@ export default function CoursePlayer(): JSX.Element {
 
   // Render media player based on lesson video type
   const renderMediaPlayer = () => {
-    if (!currentLesson?.video) {
+    // Check if any video field exists
+    const hasVideo = currentLesson?.video_s3_url || currentLesson?.youtube_url || currentLesson?.video;
+    
+    if (!hasVideo) {
       return (
         <div className="p-8 min-h-[400px] flex items-center justify-center bg-gray-900">
           <div className="text-center">

@@ -1,12 +1,12 @@
 // src/pages/CreateCourse.tsx
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { VideoUploadWidget } from '../components/VideoUploadWidget'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
 const levels = ['Beginner', 'Intermediate', 'Professional'] as const
 type Level = (typeof levels)[number]
@@ -17,7 +17,10 @@ type Lesson = {
   content?: string
   video_s3?: string
   video_s3_url?: string
+  video_s3_status?: string
   youtube_url?: string
+  video?: string // backward compatibility
+  [key: string]: any
 }
 
 type ModuleItem = {
@@ -72,6 +75,88 @@ export default function CreateCourse() {
   const [errors, setErrors] = useState<Record<string, any>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
 
+  // Polling refs for background video status checks
+  const videoPollingRefs = useRef<Record<string, number>>({})
+
+  // Wait for a single video to become ready and return its data
+  async function waitForVideoReady(videoId: string, token: string | null, timeoutMs = 30000, intervalMs = 3000) {
+    const start = Date.now()
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const res = await axios.get(`${API_BASE}/videos/${videoId}/`, { headers: { Authorization: `Bearer ${token}` } })
+        const data = res.data
+        if (data && data.status === 'ready') return data
+      } catch (err) {
+        // ignore transient errors
+      }
+      await new Promise((r) => setTimeout(r, intervalMs))
+    }
+    return null
+  }
+
+  // Ensure all videos in local modules that have video_s3 are updated with cloudfront URL if ready
+  async function ensureAllVideosReady(token: string | null, timeoutMs = 30000) {
+    const pending: string[] = []
+    modules.forEach((mod) => {
+      (mod.lessons || []).forEach((ls: any) => {
+        if (ls.video_s3 && !ls.video_s3_url) pending.push(ls.video_s3)
+      })
+    })
+    const unique = Array.from(new Set(pending))
+    if (unique.length === 0) return
+    const promises = unique.map((id) => waitForVideoReady(id, token, timeoutMs))
+    const results = await Promise.all(promises)
+    // update modules with any returned cloudfront_url
+    setModules((prev) => {
+      const copy = prev.map((m) => ({ ...m, lessons: (m.lessons || []).map((ls: any) => ({ ...ls })) }))
+      results.forEach((res) => {
+        if (res && res.id) {
+          // find lessons with this video_s3 id
+          for (let mi = 0; mi < copy.length; mi++) {
+            const mod = copy[mi]
+            for (let li = 0; li < (mod.lessons || []).length; li++) {
+              const ls = mod.lessons![li]
+              if (ls.video_s3 === res.id) {
+                copy[mi].lessons![li] = { ...ls, video_s3_url: res.cloudfront_url, video_s3_status: res.status }
+              }
+            }
+          }
+        }
+      })
+      return copy
+    })
+  }
+
+  // Start background polling for a specific video id and update the lesson when ready
+  function startPollingForVideo(videoId: string, moduleIdx: number, lessonIdx: number) {
+    const token = localStorage.getItem('access')
+    if (!videoId || !token) return
+    if (videoPollingRefs.current[videoId]) return // already polling
+    const interval = window.setInterval(async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/videos/${videoId}/`, { headers: { Authorization: `Bearer ${token}` } })
+        const data = res.data
+        if (data && data.status === 'ready') {
+          // update local lesson
+          setModules((prev) => {
+            const copy = [...prev]
+            if (copy[moduleIdx] && copy[moduleIdx].lessons) {
+              const lesson = copy[moduleIdx].lessons![lessonIdx]
+              copy[moduleIdx].lessons![lessonIdx] = { ...lesson, video_s3_url: data.cloudfront_url, video_s3_status: data.status }
+            }
+            return copy
+          })
+          window.clearInterval(videoPollingRefs.current[videoId])
+          delete videoPollingRefs.current[videoId]
+          // notify user
+          try { alert('Video encoding complete — URL attached to lesson.') } catch { }
+        }
+      } catch (err) {
+        // ignore
+      }
+    }, 3000)
+    videoPollingRefs.current[videoId] = interval as unknown as number
+  }
   useEffect(() => {
     let mounted = true
     async function search() {
@@ -260,6 +345,12 @@ export default function CreateCourse() {
 
       // upload image if selected
       if (createdCourseId) await uploadCourseImageIfNeeded(createdCourseId, token)
+
+      // wait for any pending video encodes to become ready (attach cloudfront urls)
+      await ensureAllVideosReady(token)
+
+      // wait for any pending video encodes to become ready (attach cloudfront urls)
+      await ensureAllVideosReady(token)
 
       // create/update modules and lessons
       if (createdCourseId && modules.length > 0) {
@@ -792,12 +883,20 @@ export default function CreateCourse() {
                             cp[moduleIdx].lessons![lessonIdx] = {
                               ...cp[moduleIdx].lessons![lessonIdx],
                               video_s3: videoData.video_id,
-                              video_s3_url: videoData.cloudfront_url || undefined
+                              video_s3_url: videoData.cloudfront_url || undefined,
+                              video_s3_status: videoData.status || 'processing'
                             }
                           }
                           return cp
                         })
-                        
+
+                        // Start background polling to attach cloudfront URL when encoding completes
+                        try {
+                          if (currentModuleIndex !== null && editingLessonIndex !== null && videoData.video_id) {
+                            startPollingForVideo(videoData.video_id, currentModuleIndex, editingLessonIndex)
+                          }
+                        } catch (e) { /* ignore */ }
+
                         alert('Video uploaded successfully! Encoding has been queued. Your video will be available shortly.')
                       }}
                     />

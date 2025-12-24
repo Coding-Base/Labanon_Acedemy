@@ -1,4 +1,3 @@
-// src/pages/CoursePlayer.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -27,10 +26,10 @@ interface Lesson {
   id: number;
   title: string;
   content?: string;
-  video?: string; // Old field (backward compatibility)
-  video_s3?: string; // Raw video ID
-  video_s3_url?: string; // HLS CloudFront URL
-  youtube_url?: string; // YouTube embed URL
+  video?: string;
+  video_s3?: string;
+  video_s3_url?: string;
+  youtube_url?: string;
   thumbnail?: string;
   description?: string;
   resources?: Resource[];
@@ -85,7 +84,7 @@ function generateRestrictedYouTubeEmbedUrl(videoId: string): string {
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 }
 
-/** Resolve a possibly-relative media url returned by backend into an absolute URL usable by the browser */
+/** Resolve a possibly-relative media url returned by backend into an absolute URL */
 function resolveMedia(src?: string | null): string | null {
   if (!src) return null;
   if (src.startsWith('http://') || src.startsWith('https://')) return src;
@@ -137,7 +136,7 @@ export default function CoursePlayer(): JSX.Element {
     };
   }, [id]);
 
-  // Check enrollment status (fetch user's enrollments and match)
+  // Check enrollment status
   useEffect(() => {
     if (!id) return;
     let mounted = true;
@@ -186,7 +185,7 @@ export default function CoursePlayer(): JSX.Element {
     return arr;
   }, [course]);
 
-  // Group modules with lessons for sidebar rendering (typed)
+  // Group modules with lessons for sidebar rendering
   const modulesWithLessons: ModuleItem[] = useMemo(() => {
     if (!course) return [];
     const modules: ModuleItem[] = Array.isArray(course.modules) ? course.modules : [];
@@ -196,7 +195,7 @@ export default function CoursePlayer(): JSX.Element {
     }));
   }, [course]);
 
-  // Clamp lessonIndex into valid bounds whenever lessons array changes
+  // Clamp lessonIndex
   useEffect(() => {
     if (lessons.length === 0) {
       setLessonIndex(0);
@@ -219,68 +218,55 @@ export default function CoursePlayer(): JSX.Element {
     setLessonIndex((s) => Math.max(0, s - 1));
   }
 
-  // Reset video error when lesson changes
+  // Reset video error
   useEffect(() => {
     setVideoLoadError(false);
   }, [currentLesson?.video, currentLesson?.video_s3_url, currentLesson?.youtube_url]);
 
-  // Setup HLS or native playback whenever currentLesson changes
+  // Setup HLS or native playback
   useEffect(() => {
     const videoEl = videoRef.current;
-    // destroy previous hls instance if any
     if (hlsRef.current) {
-      try {
-        hlsRef.current.destroy();
-      } catch (err) {
-        // ignore
-      }
+      try { hlsRef.current.destroy(); } catch (err) { /* ignore */ }
       hlsRef.current = null;
     }
 
     if (!videoEl) return;
 
-    // Use new video fields (video_s3_url, youtube_url) with fallback to old video field
     let rawUrl: string | null = null;
     if (currentLesson?.video_s3_url) {
-      rawUrl = currentLesson.video_s3_url; // HLS URL from CloudFront
+      rawUrl = currentLesson.video_s3_url;
     } else if (currentLesson?.youtube_url) {
-      rawUrl = currentLesson.youtube_url; // YouTube URL
+      rawUrl = currentLesson.youtube_url;
     } else if (currentLesson?.video) {
-      rawUrl = String(currentLesson.video); // Fallback to old field for backward compatibility
+      rawUrl = String(currentLesson.video);
     }
 
     if (!rawUrl) {
-      // nothing to play
       videoEl.removeAttribute('src');
       videoEl.load();
       return;
     }
 
     const resolved = resolveMedia(rawUrl) || rawUrl;
-
-    // If it's a YouTube URL, we don't touch the <video> element (iframe used instead)
     const youtubeId = extractYouTubeVideoId(rawUrl);
+    
     if (youtubeId) {
-      // ensure video element is reset
       videoEl.pause();
       videoEl.removeAttribute('src');
       try { videoEl.load(); } catch { /* ignore */ }
       return;
     }
 
-    // If looks like HLS (.m3u8)
     if (looksLikeHls(resolved)) {
-      // Safari has native HLS support in <video>
       const isSafari = !!(navigator.vendor && navigator.vendor.includes('Apple')) || /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
       if (isSafari && videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-        // native
         videoEl.src = resolved;
         videoEl.crossOrigin = 'anonymous';
         videoEl.preload = 'metadata';
         videoEl.load();
       } else if (Hls.isSupported()) {
         const hls = new Hls({
-          // recommended sensible defaults
           maxBufferLength: 30,
           maxMaxBufferLength: 60,
           enableWorker: true,
@@ -290,23 +276,17 @@ export default function CoursePlayer(): JSX.Element {
         hls.attachMedia(videoEl);
         hls.on(Hls.Events.MEDIA_ATTACHED, () => {
           hls.loadSource(resolved);
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            // auto-play is blocked often, so we don't attempt to play here
-            // but we can keep the video ready
-          });
         });
         hls.on(Hls.Events.ERROR, (event, data) => {
           console.error('hls.js error', event, data);
           setVideoLoadError(true);
         });
       } else {
-        // no HLS support at all
         setVideoLoadError(true);
       }
       return;
     }
 
-    // Fallback — direct file (mp4 etc.)
     const isDirect = /\.(mp4|webm|ogg|mov|m4v)$/i.test(resolved) || resolved.startsWith('blob:') || resolved.includes('/media/');
     if (isDirect) {
       videoEl.src = resolved;
@@ -316,25 +296,19 @@ export default function CoursePlayer(): JSX.Element {
       return;
     }
 
-    // Unknown/unhandled URL: show error state
     setVideoLoadError(true);
   }, [currentLesson?.video]);
 
-  // Cleanup hls when component unmounts
   useEffect(() => {
     return () => {
       if (hlsRef.current) {
-        try {
-          hlsRef.current.destroy();
-        } catch { /* ignore */ }
+        try { hlsRef.current.destroy(); } catch { /* ignore */ }
         hlsRef.current = null;
       }
     };
   }, []);
 
-  // Render media player based on lesson video type
   const renderMediaPlayer = () => {
-    // Check if any video field exists
     const hasVideo = currentLesson?.video_s3_url || currentLesson?.youtube_url || currentLesson?.video;
     
     if (!hasVideo) {
@@ -348,15 +322,10 @@ export default function CoursePlayer(): JSX.Element {
       );
     }
 
-    // Determine video URL from new fields or fallback to old field
     let videoUrl: string | null = null;
-    if (currentLesson?.video_s3_url) {
-      videoUrl = currentLesson.video_s3_url; // HLS URL
-    } else if (currentLesson?.youtube_url) {
-      videoUrl = currentLesson.youtube_url; // YouTube URL
-    } else if (currentLesson?.video) {
-      videoUrl = String(currentLesson.video); // Backward compatibility
-    }
+    if (currentLesson?.video_s3_url) videoUrl = currentLesson.video_s3_url;
+    else if (currentLesson?.youtube_url) videoUrl = currentLesson.youtube_url;
+    else if (currentLesson?.video) videoUrl = String(currentLesson.video);
     
     if (!videoUrl) {
       return (
@@ -370,7 +339,6 @@ export default function CoursePlayer(): JSX.Element {
     
     const youtubeVideoId = extractYouTubeVideoId(videoUrl);
 
-    // YouTube embed
     if (youtubeVideoId) {
       return (
         <div className="relative pt-[56.25%] overflow-hidden youtube-iframe-container">
@@ -386,17 +354,11 @@ export default function CoursePlayer(): JSX.Element {
             loading="lazy"
             onError={() => setVideoLoadError(true)}
           />
-          <div
-            className="absolute inset-0 pointer-events-none"
-            onContextMenu={(e) => e.preventDefault()}
-          />
+          <div className="absolute inset-0 pointer-events-none" onContextMenu={(e) => e.preventDefault()} />
           {videoLoadError && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-90">
               <div className="text-center p-6">
                 <div className="text-white text-lg mb-2">Unable to load video</div>
-                <p className="text-gray-300 text-sm mb-4">
-                  The video may be private or unavailable. Try refreshing the page.
-                </p>
                 <button
                   onClick={() => setVideoLoadError(false)}
                   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
@@ -410,30 +372,15 @@ export default function CoursePlayer(): JSX.Element {
       );
     }
 
-    // HLS or direct video: show <video> element (hls.js attaches automatically in effect)
     const resolved = resolveMedia(videoUrl) || videoUrl;
 
-    // Show helpful message + button if previously failed to load
     if (videoLoadError) {
       return (
         <div className="p-8 min-h-[360px] flex flex-col items-center justify-center bg-black text-center">
           <div className="text-white text-lg mb-2">Unable to play this video</div>
-          <p className="text-gray-300 text-sm mb-4">The file may be unavailable, private, or in an unsupported format.</p>
           <div className="flex gap-3">
-            <a
-              href={resolved}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-gray-800 text-white rounded"
-            >
-              Open in new tab
-            </a>
-            <button
-              onClick={() => setVideoLoadError(false)}
-              className="px-4 py-2 bg-green-600 text-white rounded"
-            >
-              Retry
-            </button>
+            <a href={resolved} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-gray-800 text-white rounded">Open in new tab</a>
+            <button onClick={() => setVideoLoadError(false)} className="px-4 py-2 bg-green-600 text-white rounded">Retry</button>
           </div>
         </div>
       );
@@ -451,7 +398,6 @@ export default function CoursePlayer(): JSX.Element {
           controlsList="nodownload nofullscreen noremoteplayback"
           onContextMenu={(e) => e.preventDefault()}
         >
-          {/* track can be added dynamically by backend if available */}
           <track kind="captions" />
           Your browser does not support the video tag.
         </video>
@@ -476,7 +422,6 @@ export default function CoursePlayer(): JSX.Element {
         <div className="text-center">
           <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-700 mb-2">Course not found</h2>
-          <p className="text-gray-500 mb-6">The course you're looking for doesn't exist or has been removed.</p>
           <button
             onClick={() => navigate('/')}
             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
@@ -489,7 +434,8 @@ export default function CoursePlayer(): JSX.Element {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    // Changed from min-h-screen to w-full so it fits in the dashboard scroll area
+    <div className="w-full bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -498,7 +444,6 @@ export default function CoursePlayer(): JSX.Element {
               <button
                 onClick={() => navigate(-1)}
                 className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-2"
-                aria-label="Go back"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Back
@@ -693,12 +638,12 @@ export default function CoursePlayer(): JSX.Element {
                 {renderMediaPlayer()}
               </div>
 
-              {/* Lesson Content */}
+              {/* Lesson Content - KEEPING SCROLLBAR HERE */}
               <div className="p-6">
                 <div className="prose prose-lg max-w-none">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Lesson Content</h3>
                   <div
-                    className="text-gray-700"
+                    className="text-gray-700 max-h-[600px] overflow-y-auto pr-4"
                     dangerouslySetInnerHTML={{
                       __html: currentLesson?.content || '<p class="text-gray-500 italic">No detailed content available for this lesson.</p>'
                     }}
@@ -706,7 +651,7 @@ export default function CoursePlayer(): JSX.Element {
                 </div>
               </div>
 
-              {/* Navigation */}
+              {/* Navigation Buttons - Now visible due to dashboard scrolling */}
               <div className="p-6 border-t bg-gray-50">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-sm text-gray-600">

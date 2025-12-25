@@ -148,6 +148,7 @@ export default function Home() {
   const navItems = [
     { label: 'Home', path: '/' },
     { label: 'Courses', path: '/marketplace' },
+    { label: 'Blog', path: '/blog' },
     { label: 'CBT Practice', path: '/register' },
     { label: 'For Schools', path: '/register' },
     { label: 'For Tutors', path: '/register' }

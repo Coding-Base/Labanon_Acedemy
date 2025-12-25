@@ -10,6 +10,8 @@ const CourseDetail = lazy(() => import('./pages/CourseDetail'))
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
 const AdminRegister = lazy(() => import('./pages/admin/AdminRegister'))
 const Home = lazy(() => import('./pages/Home'))
+const Blog = lazy(() => import('./pages/Blog'))
+const BlogDetail = lazy(() => import('./pages/BlogDetail'))
 
 // role dashboards (lazy)
 const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'))
@@ -59,6 +61,8 @@ export default function App() {
             {/* other app routes */}
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/marketplace/:id" element={<CourseDetail />} />
+            <Route path="/blog/:slug" element={<BlogDetail />} />
+            <Route path="/blog" element={<Blog />} />
             <Route path="/" element={<Home />} />
           </Routes>
         </Suspense>

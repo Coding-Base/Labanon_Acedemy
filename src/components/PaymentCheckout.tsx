@@ -1,0 +1,203 @@
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import { AlertCircle, Loader2, CheckCircle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+
+interface PaymentCheckoutProps {
+  itemId: number
+  itemType: 'course' | 'diploma'
+  amount: number
+  itemTitle: string
+  onSuccess?: () => void
+}
+
+declare global {
+  interface Window {
+    PaystackPop?: any
+  }
+}
+
+export default function PaymentCheckout({
+  itemId,
+  itemType,
+  amount,
+  itemTitle,
+  onSuccess,
+}: PaymentCheckoutProps) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [processing, setProcessing] = useState(false)
+  const navigate = useNavigate()
+
+  // Load Paystack script on mount
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://js.paystack.co/v1/inline.js'
+    document.body.appendChild(script)
+  }, [])
+
+  const initiatePayment = async () => {
+    setError('')
+    setLoading(true)
+
+    try {
+      const token = localStorage.getItem('access')
+      if (!token) {
+        window.location.href = `/login?next=/${itemType}/${itemId}`
+        return
+      }
+
+      // Call backend to initiate payment
+      const res = await axios.post(
+        `${API_BASE}/payments/initiate/`,
+        {
+          item_type: itemType,
+          item_id: itemId,
+          amount: amount,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      const { authorization_url, reference } = res.data
+
+      // Option 1: Redirect to Paystack hosted page with callback to verification
+      if (authorization_url) {
+        // Store reference for verification after redirect
+        sessionStorage.setItem('paymentReference', reference)
+        sessionStorage.setItem('paymentItemType', itemType)
+        sessionStorage.setItem('paymentItemId', itemId.toString())
+        // Redirect to Paystack (will redirect back to /payment/verify?reference=xxx after payment)
+        // Paystack will append the reference as query parameter automatically based on callback_url
+        window.location.href = authorization_url
+        return
+      }
+
+      // Option 2: Use Paystack Popup (if available)
+      if (window.PaystackPop) {
+        const handler = window.PaystackPop.setup({
+          key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_b5d0eaff52a5d2ed395c2ea99c881ec4ce62acc6',
+          email: (await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } })).data.email,
+          amount: amount * 100, // Convert to kobo
+          ref: reference,
+          onClose: () => {
+            setLoading(false)
+            alert('Payment window closed.')
+          },
+          onSuccess: async () => {
+            // Verify payment on backend
+            await verifyPayment(reference, token)
+          },
+        })
+        handler.openIframe()
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.detail || 'Failed to initiate payment'
+      setError(errorMsg)
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const verifyPayment = async (reference: string, token: string) => {
+    setProcessing(true)
+    try {
+      const res = await axios.get(
+        `${API_BASE}/payments/verify/${reference}/`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      if (res.data.status === 'success') {
+        alert('Payment successful! Your enrollment is now active.')
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          navigate(`/student/${itemType}s/${itemId}`)
+        }
+      } else {
+        setError('Payment verification failed. Please try again.')
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.detail || 'Payment verification failed'
+      setError(errorMsg)
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  if (amount === 0) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-green-900">Free Course/Diploma</h4>
+            <p className="text-sm text-green-700 mt-1">This is a free offering. Click enroll to get immediate access.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <p className="text-red-700 text-sm">{error}</p>
+        </div>
+      )}
+
+      <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <p className="text-gray-600 text-sm">You're about to purchase:</p>
+            <h3 className="text-xl font-bold text-gray-900 mt-1">{itemTitle}</h3>
+          </div>
+        </div>
+
+        <div className="border-t border-green-200 pt-4 mt-4">
+          <div className="flex justify-between mb-2">
+            <span className="text-gray-600">Subtotal:</span>
+            <span className="font-semibold text-gray-900">₦{amount.toLocaleString()}</span>
+          </div>
+          <div className="text-sm text-gray-500 flex justify-between mb-4">
+            <span>Platform fee (5%):</span>
+            <span>₦{(amount * 0.05).toLocaleString()}</span>
+          </div>
+          <div className="text-sm text-gray-500 flex justify-between pb-4 border-b border-green-200 mb-4">
+            <span>Creator gets (95%):</span>
+            <span className="font-medium text-green-700">₦{(amount * 0.95).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-lg font-bold text-gray-900">Total:</span>
+            <span className="text-2xl font-bold text-green-600">₦{amount.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={initiatePayment}
+        disabled={loading || processing}
+        className="w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 transition-all"
+      >
+        {loading || processing ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            {processing ? 'Verifying payment...' : 'Processing...'}
+          </>
+        ) : (
+          <>
+            Proceed to Payment
+          </>
+        )}
+      </button>
+
+      <p className="text-xs text-gray-500 text-center">
+        Powered by Paystack. Your payment is secure and encrypted.
+      </p>
+    </div>
+  )
+}

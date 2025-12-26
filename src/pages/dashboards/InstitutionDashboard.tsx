@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   LogOut,
+  Mail,
   Building2,
   MapPin,
   Globe,
@@ -26,11 +27,16 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 
-import labanonLogo from '../labanonlogo.png'; // Ensure this path is correct
+import labanonLogo from '../labanonlogo.png';
 // Reusing your existing Course Management components
 import ManageCourses from '../ManageCourses';
 import ManageCourseDetail from '../ManageCourseDetail';
 import CreateCourse from '../CreateCourse';
+import InstitutionDiplomas from '../../components/InstitutionDiplomas';
+import InstitutionPortfolio from '../../components/InstitutionPortfolio';
+import InstitutionPayments from '../../components/InstitutionPayments';
+import ContactAdminForm from '../../components/ContactAdminForm';
+import UserMessages from '../../components/UserMessages';
 
 // Recharts
 import {
@@ -291,6 +297,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [creatingCourse, setCreatingCourse] = useState(false);
+  const [contactAdminOpen, setContactAdminOpen] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
 
   const initialFromState = (location.state as any)?.summary;
   const [summary, setSummary] = useState<DashboardSummary | null>(props.summary ?? initialFromState ?? null);
@@ -384,6 +393,20 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   <p className="text-xs text-gray-500">Institution Admin</p>
                 </div>
               </div>
+              <button
+                onClick={() => setContactAdminOpen(true)}
+                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Contact Admin"
+              >
+                <Bell className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setShowInbox(true)}
+                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Inbox"
+              >
+                <Mail className="w-5 h-5" />
+              </button>
               <button
                 onClick={doLogout}
                 className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -507,16 +530,33 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   {/* Courses Management - Reusing existing components */}
                   <Route path="courses" element={
                     <div>
-                      <div className="flex justify-between items-center mb-6">
-                         <h2 className="text-xl font-bold">Online Courses</h2>
-                         <Link to="create" className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                           <PlusCircle className="w-4 h-4 mr-2" /> New Course
-                         </Link>
-                      </div>
-                      <ManageCourses 
-                        uploadCourseImageHandler={async () => { alert("Image upload handled in detail view"); }} 
-                        uploadLessonMediaHandler={async () => {}} 
-                      />
+                      {creatingCourse ? (
+                        <div className="space-y-4">
+                          <button
+                            onClick={() => setCreatingCourse(false)}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold"
+                          >
+                            ← Back to Courses
+                          </button>
+                          <CreateCourse />
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold">Online Courses</h2>
+                            <button
+                              onClick={() => setCreatingCourse(true)}
+                              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                            >
+                              <PlusCircle className="w-4 h-4 mr-2" /> New Course
+                            </button>
+                          </div>
+                          <ManageCourses 
+                            uploadCourseImageHandler={async () => { alert("Image upload handled in detail view"); }} 
+                            uploadLessonMediaHandler={async () => {}} 
+                          />
+                        </div>
+                      )}
                     </div>
                   } />
                   <Route path="courses/create" element={<CreateCourse />} />
@@ -528,30 +568,13 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   } />
 
                   {/* Diploma Management */}
-                  <Route path="diploma" element={<DiplomaCreator />} />
+                  <Route path="diploma" element={<InstitutionDiplomas />} />
 
                   {/* Portfolio Management */}
-                  <Route path="portfolio" element={<PortfolioEditor />} />
+                  <Route path="portfolio" element={<InstitutionPortfolio />} />
 
                   {/* Payments */}
-                  <Route path="payments" element={
-                    <div>
-                      <h2 className="text-2xl font-bold mb-6">Financials</h2>
-                      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-8 text-white mb-8">
-                        <p className="text-gray-400 mb-2">Total Earnings Available</p>
-                        <h1 className="text-4xl font-bold mb-4">₦{(summary.total_earnings || 0).toLocaleString()}</h1>
-                        <div className="flex gap-4">
-                          <button className="px-6 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600">Withdraw Funds</button>
-                          <button className="px-6 py-2 bg-white/10 text-white rounded-lg font-semibold hover:bg-white/20">View History</button>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-white border rounded-xl p-6">
-                        <h3 className="font-bold text-gray-900 mb-4">Recent Transactions</h3>
-                        <div className="text-center py-8 text-gray-500">No transactions found for this period.</div>
-                      </div>
-                    </div>
-                  } />
+                  <Route path="payments" element={<InstitutionPayments />} />
 
                   {/* Default redirect to overview */}
                   <Route path="" element={
@@ -568,6 +591,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
           </div>
         </div>
       </div>
+
+      <ContactAdminForm isOpen={contactAdminOpen} onClose={() => setContactAdminOpen(false)} />
+      <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
     </div>
   );
 }

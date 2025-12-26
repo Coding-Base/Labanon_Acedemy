@@ -5,7 +5,12 @@ import { Link } from 'react-router-dom'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
-export default function ManageCourses() {
+interface ManageCoursesProps {
+  uploadCourseImageHandler?: (courseId: number) => Promise<void>
+  uploadLessonMediaHandler?: (lessonId: number) => Promise<void>
+}
+
+export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMediaHandler }: ManageCoursesProps) {
   const [courses, setCourses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)

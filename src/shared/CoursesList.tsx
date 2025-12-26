@@ -25,6 +25,7 @@ type Course = {
   price: string
   slug?: string
   image?: string
+  isDiploma?: boolean
 }
 
 export default function CoursesList() {
@@ -44,11 +45,26 @@ export default function CoursesList() {
   async function load() {
     setLoading(true)
     try {
-      const res = await axios.get(`${API_BASE}/courses/`, {
-        params: { page, page_size: pageSize, search },
-      })
-      setCourses(res.data.results || [])
-      setCount(res.data.count || 0)
+      // fetch courses
+      const [coursesRes, diplomasRes] = await Promise.all([
+        axios.get(`${API_BASE}/courses/`, { params: { page, page_size: pageSize, search } }),
+        axios.get(`${API_BASE}/diplomas/`, { params: { page, page_size: pageSize, search } }),
+      ])
+
+      const courseResults = coursesRes.data.results || []
+      const diplomaResults = (diplomasRes.data.results || []).map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        description: d.description,
+        price: d.price,
+        image: d.image,
+        isDiploma: true,
+      }))
+
+      const merged = [...courseResults, ...diplomaResults]
+      setCourses(merged)
+      // approximate count as combined count (backend pagination differs), fall back to courses count
+      setCount((coursesRes.data.count || 0) + (diplomasRes.data.count || 0))
     } catch (err) {
       console.error(err)
     } finally {
@@ -169,7 +185,7 @@ export default function CoursesList() {
               {courses.map((c) => (
                 <Link 
                   key={c.id} 
-                  to={`/marketplace/${c.id}`} 
+                  to={c.isDiploma ? `/diploma/${c.id}` : `/marketplace/${c.id}`} 
                   className="group flex flex-col bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 >
                   {/* Image Section */}

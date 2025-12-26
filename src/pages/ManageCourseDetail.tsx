@@ -4,7 +4,12 @@ import axios from 'axios'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
-export default function ManageCourseDetail() {
+interface ManageCourseDetailProps {
+  uploadCourseImageHandler?: (courseId: number) => Promise<void>
+  uploadLessonMediaHandler?: (lessonId: number) => Promise<void>
+}
+
+export default function ManageCourseDetail({ uploadCourseImageHandler, uploadLessonMediaHandler }: ManageCourseDetailProps) {
   const { id } = useParams()
   const [course, setCourse] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)

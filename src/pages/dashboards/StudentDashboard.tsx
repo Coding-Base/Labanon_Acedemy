@@ -18,6 +18,7 @@ import {
   LogOut,
   PlayCircle,
   CheckCircle,
+    Mail,
   Users,
   Star,
   Target,
@@ -29,9 +30,11 @@ import MyCourses from '../MyCourses';
 import CBTPage from '../CBT';
 import PaymentsPage from '../Payments';
 import Profile from '../Profile';
+  import UserMessages from '../../components/UserMessages';
 import ProgressPage from '../../components/cbt/ProgressPage';
 import CoursePlayer from '../CoursePlayer';
 import CourseDetail from '../CourseDetail';
+import MessageModal from '../../components/MessageModal';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -51,6 +54,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
 
   const initialFromState = (location.state as any)?.summary;
   const [summary, setSummary] = useState<DashboardSummary | null>(props.summary ?? initialFromState ?? null);
@@ -208,7 +213,9 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
               <motion.button 
                 whileHover={{ scale: 1.05 }} 
                 whileTap={{ scale: 0.95 }} 
+                onClick={() => setShowMessageModal(true)}
                 className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Send message"
               >
                 <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -237,6 +244,20 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           </div>
         </div>
       </motion.header>
+      <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex items-center space-x-4">
+          <motion.button 
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }} 
+            onClick={() => setShowInbox(true)}
+            className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            title="Inbox"
+          >
+            <Mail className="w-5 h-5 text-gray-600" />
+          </motion.button>
+        </div>
+      </div>
 
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-[calc(100vh-5rem)]">
@@ -651,6 +672,9 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           })}
         </div>
       </div>
+
+      {/* Message Modal */}
+      <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} />
     </div>
   );
 }

@@ -3,6 +3,8 @@ import axios from 'axios'
 import { X, AlertCircle, CheckCircle, Trash2, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+
 interface SubAdmin {
   id: number
   user: {
@@ -16,6 +18,7 @@ interface SubAdmin {
   can_manage_cbt: boolean
   can_view_payments: boolean
   can_manage_blog: boolean
+  can_view_messages: boolean
   can_manage_subadmins: boolean
   is_active: boolean
   created_at: string
@@ -39,6 +42,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
     can_manage_cbt: false,
     can_view_payments: false,
     can_manage_blog: false,
+    can_view_messages: false,
     can_manage_subadmins: false,
   })
 
@@ -58,9 +62,10 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
   const fetchSubAdmins = async () => {
     try {
       setListLoading(true)
-      const token = localStorage.getItem('access_token')
+      const token = localStorage.getItem('access')
+      console.debug('SubAdminForm: fetchSubAdmins token present?', !!token)
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE}/subadmin/`,
+        `${API_BASE}/subadmin/`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -110,7 +115,8 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
 
     try {
       setLoading(true)
-      const token = localStorage.getItem('access_token')
+      const token = localStorage.getItem('access')
+      console.debug('SubAdminForm: create token present?', !!token)
       
       const payload = {
         username: formData.username.trim(),
@@ -122,11 +128,12 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
         can_manage_cbt: formData.can_manage_cbt,
         can_view_payments: formData.can_view_payments,
         can_manage_blog: formData.can_manage_blog,
+        can_view_messages: formData.can_view_messages,
         can_manage_subadmins: formData.can_manage_subadmins,
       }
 
       await axios.post(
-        `${import.meta.env.VITE_API_BASE}/subadmin/create_subadmin/`,
+        `${API_BASE}/subadmin/create_subadmin/`,
         payload,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -147,6 +154,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
         can_manage_cbt: false,
         can_view_payments: false,
         can_manage_blog: false,
+        can_view_messages: false,
         can_manage_subadmins: false,
       })
 
@@ -164,9 +172,10 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
     if (!window.confirm('Are you sure you want to delete this sub-admin?')) return
 
     try {
-      const token = localStorage.getItem('access_token')
+      const token = localStorage.getItem('access')
+      console.debug('SubAdminForm: delete token present?', !!token)
       await axios.delete(
-        `${import.meta.env.VITE_API_BASE}/subadmin/${id}/`,
+        `${API_BASE}/subadmin/${id}/`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -308,6 +317,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                     { key: 'can_manage_cbt', label: 'Manage CBT/Exams' },
                     { key: 'can_view_payments', label: 'View Payments' },
                     { key: 'can_manage_blog', label: 'Manage Blog' },
+                    { key: 'can_view_messages', label: 'View Messages' },
                     { key: 'can_manage_subadmins', label: 'Manage Sub-Admins' },
                   ].map((perm) => (
                     <label key={perm.key} className="flex items-center gap-3 cursor-pointer">
@@ -390,6 +400,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                             { key: 'can_manage_cbt', label: 'CBT' },
                             { key: 'can_view_payments', label: 'Payments' },
                             { key: 'can_manage_blog', label: 'Blog' },
+                            { key: 'can_view_messages', label: 'Messages' },
                             { key: 'can_manage_subadmins', label: 'Sub-Admins' },
                           ]
                             .filter((perm) => (subadmin as any)[perm.key])

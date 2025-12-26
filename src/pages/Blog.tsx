@@ -16,6 +16,9 @@ interface BlogPost {
   author_username: string
   published_at: string
   created_at: string
+  likes_count?: number
+  comments_count?: number
+  shares_count?: number
 }
 
 const fadeInUp = {

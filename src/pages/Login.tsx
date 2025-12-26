@@ -21,7 +21,8 @@ export default function Login() {
   const params = new URLSearchParams(location.search)
   const nextParam = params.get('next')
 
-  function mapRoleToRoute(role: string | undefined) {
+  function mapRoleToRoute(role: string | undefined, isSubAdmin: boolean = false) {
+    if (isSubAdmin) return '/admin'
     if (!role) return '/student'
     const roleMap: Record<string, string> = {
       student: '/student',
@@ -56,6 +57,7 @@ export default function Login() {
 
       // If role not provided, fetch summary to determine role (and also fetch summary if role present)
       let summary: any = undefined
+      let isSubAdmin = false
       try {
         const token = data.access
         const res = await axios.get(`${API_BASE}/dashboard/`, {
@@ -63,11 +65,25 @@ export default function Login() {
         })
         summary = res.data
         role = role || res.data?.role
+        
+        // Check if user is a sub-admin
+        try {
+          const subAdminRes = await axios.get(`${API_BASE}/subadmin/me/`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (subAdminRes.data) {
+            isSubAdmin = true
+            // Store sub-admin permissions in summary for use in dashboard
+            summary = { ...summary, subadmin_profile: subAdminRes.data }
+          }
+        } catch (err) {
+          // User is not a sub-admin, that's fine
+        }
       } catch (fetchErr) {
         console.warn('Could not fetch summary after login', fetchErr)
       }
 
-      const target = mapRoleToRoute(role)
+      const target = mapRoleToRoute(role, isSubAdmin)
       navigate(target, { state: summary ? { summary } : undefined, replace: true })
     } catch (err: any) {
       console.error(err)

@@ -1,6 +1,6 @@
 // src/pages/dashboards/TutorDashboard.tsx
 import React, { useEffect, useState, useMemo } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import {
@@ -18,12 +18,18 @@ import {
   Menu,
   X,
   Video,
-  Settings
+  Settings,
+  LogOut
+  ,Mail
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import ManageCourses from '../ManageCourses';
 import ManageCourseDetail from '../ManageCourseDetail';
 import CreateCourse from '../CreateCourse';
+import PaymentHistory from '../../components/PaymentHistory';
+import PaystackSubAccountForm from '../../components/PaystackSubAccountForm';
+import MessageModal from '../../components/MessageModal';
+import UserMessages from '../../components/UserMessages';
 
 // Recharts imports
 import {
@@ -57,7 +63,17 @@ interface TutorDashboardProps {
 
 export default function TutorDashboard(props: TutorDashboardProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
+    localStorage.removeItem('role');
+    navigate('/login');
+  };
 
   // attempt to get summary from props or location.state
   const initialFromState = (location.state as any)?.summary;
@@ -88,6 +104,16 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         setSummary(res.data);
       } catch (err) {
         console.error('Failed to fetch dashboard summary:', err);
+        // Use fallback summary to allow dashboard to render
+        if (!mounted) return;
+        setSummary({
+          username: 'Tutor',
+          courses_count: 0,
+          total_students: 0,
+          total_earnings: 0,
+          avg_rating: 4.8,
+          role: 'tutor'
+        });
       } finally {
         if (mounted) setLoadingSummary(false);
       }
@@ -176,7 +202,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } });
       const uid = me.data.id;
 
-      const res = await axios.get(`${API_BASE}/enrollments/?course__creator=${uid}&page=${page}&page_size=${STUDENTS_PAGE_SIZE}`, {
+      const res = await axios.get(`${API_BASE}/enrollments/?course__creator=${uid}&purchased=true&page=${page}&page_size=${STUDENTS_PAGE_SIZE}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -190,7 +216,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         const token = localStorage.getItem('access');
         const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } });
         const uid = me.data.id;
-        const res2 = await axios.get(`${API_BASE}/payments/?tutor=${uid}&page=${page}&page_size=${STUDENTS_PAGE_SIZE}`, {
+        const res2 = await axios.get(`${API_BASE}/payments/?tutor=${uid}&status=success&page=${page}&page_size=${STUDENTS_PAGE_SIZE}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const items2 = res2.data.results || res2.data || [];
@@ -280,7 +306,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
 
   // -- EARNINGS (kept unchanged) --
   const [earningsLoading, setEarningsLoading] = useState(false);
-  const [totalEarnings, setTotalEarnings] = useState<number>(summary?.total_earnings || 0);
+  const [totalEarnings, setTotalEarnings] = useState<number>(0);
   const [showPaystackModal, setShowPaystackModal] = useState(false);
   const [paystackCreds, setPaystackCreds] = useState({
     business_name: '',
@@ -296,7 +322,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } });
       const uid = me.data.id;
 
-      const paymentsRes = await axios.get(`${API_BASE}/payments/?tutor=${uid}&page_size=1000`, { headers: { Authorization: `Bearer ${token}` } })
+      const paymentsRes = await axios.get(`${API_BASE}/payments/?tutor=${uid}&page_size=1000&status=success`, { headers: { Authorization: `Bearer ${token}` } })
         .catch(() => null);
 
       if (paymentsRes && (paymentsRes.data.results || paymentsRes.data)) {
@@ -304,7 +330,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         const total = items.reduce((acc: number, it: any) => acc + Number(it.amount ?? it.value ?? 0), 0);
         setTotalEarnings(total);
       } else {
-        const enrollRes = await axios.get(`${API_BASE}/enrollments/?course__creator=${uid}&page_size=1000`, { headers: { Authorization: `Bearer ${token}` } });
+        const enrollRes = await axios.get(`${API_BASE}/enrollments/?course__creator=${uid}&page_size=1000&purchased=true`, { headers: { Authorization: `Bearer ${token}` } });
         const items = enrollRes.data.results || enrollRes.data || [];
         const total = items.reduce((acc: number, it: any) => acc + Number(it.amount ?? it.price ?? it.course?.price ?? 0), 0);
         setTotalEarnings(total);
@@ -318,9 +344,10 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   }
 
   useEffect(() => {
+    // Load earnings once when the dashboard mounts if we are on the earnings tab.
     if (isActivePath('earnings')) loadEarnings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
+  }, []);
 
   const platformFee = +(totalEarnings * 0.05).toFixed(2);
   const tutorShare = +(totalEarnings - platformFee).toFixed(2);
@@ -592,9 +619,25 @@ export default function TutorDashboard(props: TutorDashboardProps) {
             </div>
 
             <div className="flex items-center space-x-4">
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative p-2 rounded-lg hover:bg-gray-100">
+              <motion.button 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }} 
+                onClick={() => setShowMessageModal(true)}
+                className="relative p-2 rounded-lg hover:bg-gray-100"
+                title="Send message"
+              >
                 <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </motion.button>
+
+              <motion.button 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }} 
+                onClick={() => setShowInbox(true)}
+                className="relative p-2 rounded-lg hover:bg-gray-100"
+                title="Inbox"
+              >
+                <Mail className="w-5 h-5 text-gray-600" />
               </motion.button>
 
               <div className="hidden md:flex items-center space-x-3">
@@ -626,6 +669,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900">{summary?.username || 'Tutor'}</h3>
+              <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
                     <p className="text-sm text-gray-500">Certified Tutor</p>
                     <div className="flex items-center mt-1">
                       {[1,2,3,4,5].map((i) => (<Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />))}
@@ -656,6 +700,11 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                 Create New Course
               </Link>
 
+              <button onClick={handleLogout} className="mt-3 w-full py-3 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition-colors inline-flex items-center justify-center gap-2 border border-red-200">
+                <LogOut className="w-5 h-5" />
+                Logout
+              </button>
+
               {/* Note: Upload Media quick action removed from sidebar per request */}
             </div>
           </motion.aside>
@@ -676,6 +725,10 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                     </Link>
                   ))}
                 </nav>
+                <button onClick={() => { handleLogout(); setSidebarOpen(false); }} className="mt-4 w-full py-2 bg-red-50 text-red-600 rounded-lg font-semibold hover:bg-red-100 flex items-center justify-center gap-2 border border-red-200">
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
               </motion.aside>
             </div>
           )}
@@ -877,6 +930,15 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                         <div className="mt-4 text-sm text-gray-700">For now, connect your Paystack credentials to enable manual withdrawals on the backend later.</div>
                       </div>
 
+                      <div className="grid md:grid-cols-3 gap-6 mt-6">
+                        <div className="md:col-span-2">
+                          <PaymentHistory userRole="tutor" />
+                        </div>
+                        <div>
+                          <PaystackSubAccountForm />
+                        </div>
+                      </div>
+
                       {showPaystackModal && (
                         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
                           <div className="bg-white rounded-lg w-[90%] md:w-1/2 p-6">
@@ -962,6 +1024,9 @@ export default function TutorDashboard(props: TutorDashboardProps) {
           })}
         </div>
       </div>
+
+      {/* Message Modal */}
+      <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} />
     </div>
   );
 }

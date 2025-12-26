@@ -37,6 +37,8 @@ import {
 import labanonLogo from '../labanonlogo.png'
 import CreateCourse from '../CreateCourse'
 import SubAdminForm from '../../components/dashboards/SubAdminForm'
+import AdminMessages from '../../components/AdminMessages'
+import PaymentHistory from '../../components/PaymentHistory'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -103,11 +105,47 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [blogsLoading, setBlogsLoading] = useState(false)
   const [showBlogForm, setShowBlogForm] = useState(false)
   const [blogFormData, setBlogFormData] = useState({title: '', content: '', image: '', excerpt: ''})
+  const [subadminPermissions, setSubadminPermissions] = useState<any>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const [settingsData, setSettingsData] = useState({firstName: '', lastName: '', email: ''})
   const [passwordData, setPasswordData] = useState({old_password: '', new_password: '', confirm_password: ''})
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+
+  // Define tabs early so they can be used in useEffect hooks
+  const allTabs = [
+    { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" />, permission: 'can_manage_users' },
+    { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' },
+    { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' },
+    { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' },
+    { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' },
+    { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' },
+    { id: 'messages', label: 'Messages', icon: <Mail className="w-5 h-5" />, permission: 'can_view_messages' },
+    { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_courses' },
+  ]
+
+  // Filter tabs based on sub-admin permissions
+  const tabs = subadminPermissions 
+    ? allTabs.filter(tab => subadminPermissions[tab.permission] === true)
+    : allTabs
+
+  // Load sub-admin permissions from summary
+  useEffect(() => {
+    if (summary?.subadmin_profile) {
+      setSubadminPermissions(summary.subadmin_profile)
+    }
+  }, [summary])
+
+  // Ensure current tab is accessible to sub-admin
+  useEffect(() => {
+    if (subadminPermissions && tabs.length > 0) {
+      const currentTabAllowed = tabs.some(t => t.id === tab)
+      if (!currentTabAllowed) {
+        // Switch to first available tab
+        setTab(tabs[0].id)
+      }
+    }
+  }, [subadminPermissions, tabs])
 
   useEffect(() => {
     if (tab === 'users') loadUsers()
@@ -480,16 +518,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
   }
 
-  const tabs = [
-    { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" /> },
-    { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" /> },
-    { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" /> },
-    { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" /> },
-    { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" /> },
-    { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" /> },
-  ]
-
   if (loadingSummary) return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 flex items-center justify-center">
       <div className="text-center">
@@ -523,7 +551,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               <img src={labanonLogo} alt="Lebanon Academy" className="w-8 h-8 object-contain" />
               <div>
                 <h1 className="text-lg font-bold text-gray-900">
-                  Master Admin Dashboard
+                  {subadminPermissions ? 'Sub-Admin Dashboard' : 'Master Admin Dashboard'}
                 </h1>
               </div>
             </div>
@@ -1560,6 +1588,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     </div>
                   </div>
                 )}
+
+                {tab === 'messages' && (
+                  <AdminMessages />
+                )}
               </div>
             </motion.div>
           </div>
@@ -1854,7 +1886,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 </div>
               </div>
 
-              {/* Sub-Admin Management Section */}
+              {/* Sub-Admin Management Section - Only for Master Admins */}
+              {!subadminPermissions && (
               <div className="border-t pt-8">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">Sub-Admin Management</h3>
@@ -1874,6 +1907,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   <p className="text-sm text-gray-400">Create one to delegate specific dashboard features</p>
                 </div>
               </div>
+              )}
             </div>
 
             <div className="border-t p-6 flex gap-4 justify-end bg-gray-50">

@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   Loader2
 } from 'lucide-react';
+import PaymentCheckout from '../components/PaymentCheckout';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -41,7 +42,7 @@ export default function CourseDetail() {
   const navigate = useNavigate();
   const [course, setCourse] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [enrolling, setEnrolling] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
@@ -62,45 +63,27 @@ export default function CourseDetail() {
 
   async function handleEnroll() {
     if (!course) return;
-    setEnrolling(true);
-    try {
-      const token = localStorage.getItem('access');
-      if (!token) {
-        window.location.href = `/login?next=/marketplace/${id}`;
-        return;
-      }
-      const create = await axios.post(
-        `${API_BASE}/enrollments/`,
-        { course_id: course.id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const enrollment = create.data;
-
-      if (enrollment.purchased) {
+    const token = localStorage.getItem('access');
+    if (!token) {
+      window.location.href = `/login?next=/marketplace/${id}`;
+      return;
+    }
+    // Check if free course
+    if (course.price === 0) {
+      try {
+        await axios.post(
+          `${API_BASE}/enrollments/`,
+          { course_id: course.id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         alert('Enrollment completed — you have access to this course');
         navigate(`/student/courses/${course.id}`);
-        setEnrolling(false);
-        return;
+      } catch (err: any) {
+        alert(err?.response?.data?.detail || 'Enrollment failed');
       }
-
-      const pay = await axios.post(
-        `${API_BASE}/enrollments/${enrollment.id}/purchase/`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const payment_url = pay.data.payment_url;
-      if (payment_url) {
-        window.open(payment_url, '_blank');
-        alert('Payment/checkout opened - complete payment to finalize enrollment.');
-      } else {
-        const detail = pay.data.detail || 'Enrollment completed';
-        alert(detail);
-      }
-    } catch (err: any) {
-      console.error(err);
-      alert(err?.response?.data?.detail || 'Enrollment failed');
-    } finally {
-      setEnrolling(false);
+    } else {
+      // Show payment checkout for paid courses
+      setShowPayment(true);
     }
   }
 
@@ -368,26 +351,49 @@ export default function CourseDetail() {
 
                   {/* Action Buttons */}
                   <div className="space-y-3">
-                    <button
-                      onClick={handleEnroll}
-                      disabled={enrolling}
-                      className="w-full py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white font-bold rounded-xl hover:shadow-lg hover:from-green-700 hover:to-teal-700 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {enrolling ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <PlayCircle className="w-5 h-5" />
-                          Enroll Now
-                        </>
-                      )}
-                    </button>
+                    {showPayment && course.price > 0 ? (
+                      <PaymentCheckout
+                        itemId={course.id}
+                        itemType="course"
+                        amount={course.price}
+                        itemTitle={course.title}
+                        onSuccess={() => {
+                          alert('Payment successful! You now have access to this course.');
+                          navigate(`/student/courses/${course.id}`);
+                        }}
+                      />
+                    ) : (
+                      <button
+                        onClick={handleEnroll}
+                        className="w-full py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white font-bold rounded-xl hover:shadow-lg hover:from-green-700 hover:to-teal-700 transition-all duration-300 flex items-center justify-center gap-2"
+                      >
+                        <PlayCircle className="w-5 h-5" />
+                        {course.price === 0 ? 'Enroll Free' : 'Enroll Now'}
+                      </button>
+                    )}
 
                     <button
-                      onClick={() => navigate(`/student/courses/${course.id}`)}
+                      onClick={() => {
+                        // Check user role from localStorage
+                        const role = localStorage.getItem('role');
+                        const token = localStorage.getItem('access');
+                        
+                        if (!token) {
+                          navigate(`/login?next=/marketplace/${id}`);
+                          return;
+                        }
+
+                        // Map role to appropriate dashboard
+                        const dashboardMap: { [key: string]: string } = {
+                          student: `/student/courses/${course.id}`,
+                          tutor: `/tutor/courses/${course.id}`,
+                          institution: `/institution/courses/${course.id}`,
+                          master_admin: `/admin/courses/${course.id}`,
+                        };
+
+                        const targetRoute = dashboardMap[role || 'student'] || `/student/courses/${course.id}`;
+                        navigate(targetRoute);
+                      }}
                       className="w-full py-3.5 bg-white border-2 border-green-600 text-green-700 font-bold rounded-xl hover:bg-green-50 transition-colors duration-300 flex items-center justify-center gap-2"
                     >
                       <BookOpen className="w-5 h-5" />

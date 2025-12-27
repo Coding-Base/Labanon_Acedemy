@@ -1,47 +1,52 @@
-import axios from 'axios'
+import axios, { AxiosInstance } from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 
-/**
- * Setup global axios interceptors for JWT token handling
- * - Auto-logout on 401 Unauthorized responses (token expired/invalid)
- * - Redirect to login page automatically
- */
-export function setupAxiosInterceptors() {
-  // Response interceptor to handle 401 (token expired/invalid)
-  axios.interceptors.response.use(
+// --- Helper to attach interceptors to any instance ---
+const attachInterceptors = (instance: AxiosInstance) => {
+  // Request Interceptor: Auto-inject token
+  instance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('access');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  // Response Interceptor: Handle 401
+  instance.interceptors.response.use(
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
-        // Token is invalid or expired
-        handleTokenExpiry();
-        return Promise.reject(error);
+        console.warn('[Axios] 401 Unauthorized - Token might be expired.');
+        // Optional: Clear storage or redirect, but be careful of loops
+        // localStorage.removeItem('access'); 
+        // window.location.href = '/login'; 
       }
       return Promise.reject(error);
     }
   );
-}
+};
 
-/**
- * Handle token expiry: clear auth data and redirect to login
- */
-export function handleTokenExpiry() {
-  // Only redirect once to avoid infinite loop
-  if (window.location.pathname === '/login') {
-    return;
-  }
+// 1. Create the Secure Instance (For Dashboard/Portfolio)
+const api = axios.create({
+  baseURL: API_BASE,
+  headers: { 'Content-Type': 'application/json' },
+});
 
-  // Clear auth data from localStorage
-  localStorage.removeItem('access');
-  localStorage.removeItem('refresh');
-  localStorage.removeItem('role');
-  localStorage.removeItem('user_id');
-  
-  // Show alert to user
-  alert('Your session has expired. Please log in again.');
-  
-  // Redirect to login page with referrer
-  const currentPath = window.location.pathname;
-  window.location.href = `/login?next=${encodeURIComponent(currentPath)}&expired=true`;
-}
+// Attach logic to the secure instance
+attachInterceptors(api);
 
+// 2. Export the Setup Function (For App.tsx compatibility)
+// This applies the same logic to the global axios object so App.tsx is happy
+export const setupAxiosInterceptors = () => {
+  axios.defaults.baseURL = API_BASE;
+  attachInterceptors(axios);
+  console.log('Global Axios Interceptors initialized');
+};
+
+// 3. Default export for new components
+export default api;

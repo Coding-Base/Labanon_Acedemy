@@ -1,33 +1,33 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import { Save, Loader2, AlertCircle, CheckCircle, Copy, Globe } from 'lucide-react'
-import { motion } from 'framer-motion'
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+import React, { useState, useEffect } from 'react';
+// Import the secure instance
+import api from '../utils/axiosInterceptor'; 
+import { Save, Loader2, AlertCircle, CheckCircle, Copy, Globe, Upload } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Portfolio {
-  id: number
-  title: string
-  description: string
-  overview: string
-  image: string
-  website: string
-  location: string
-  phone: string
-  email: string
-  published: boolean
-  public_token: string
-  theme_color?: string
+  id: number;
+  title: string;
+  description: string;
+  overview: string;
+  image: string;
+  website: string;
+  location: string;
+  phone: string;
+  email: string;
+  published: boolean;
+  public_token: string;
+  theme_color?: string;
 }
 
 export default function InstitutionPortfolio() {
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [copied, setCopied] = useState(false)
-  const [institutionId, setInstitutionId] = useState<number | null>(null)
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [institutionId, setInstitutionId] = useState<number | null>(null);
+  
   const [formData, setFormData] = useState<Partial<Portfolio>>({
     title: '',
     description: '',
@@ -37,52 +37,51 @@ export default function InstitutionPortfolio() {
     phone: '',
     email: '',
     theme_color: '#0ea5a4',
-  })
+  });
 
-  const [gallery, setGallery] = useState<any[]>([])
-  const [galleryForm, setGalleryForm] = useState({ title: '', description: '', imageUrl: '', file: null as File | null })
+  const [gallery, setGallery] = useState<any[]>([]);
+  const [galleryForm, setGalleryForm] = useState({ 
+    title: '', 
+    description: '', 
+    imageUrl: '', 
+    file: null as File | null 
+  });
 
   const loadInstitution = async () => {
     try {
-      const token = localStorage.getItem('access')
-      // Try to get existing institution
-      const instRes = await axios.get(`${API_BASE}/institutions/my_institution/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setInstitutionId(instRes.data.id)
+      // API instance handles the token automatically
+      const instRes = await api.get('/institutions/my_institution/');
+      setInstitutionId(instRes.data.id);
     } catch (instError: any) {
-      // If not found, try to create one
       if (instError.response?.status === 404) {
         try {
-          const userRes = await axios.get(`${API_BASE}/users/me/`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          const createRes = await axios.post(
-            `${API_BASE}/institutions/`,
-            { name: `${userRes.data.username}'s Institution` },
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
-          setInstitutionId(createRes.data.id)
+          const userRes = await api.get('/users/me/');
+          const createRes = await api.post('/institutions/', { 
+            name: `${userRes.data.username}'s Institution` 
+          });
+          setInstitutionId(createRes.data.id);
         } catch (createError) {
-          setError('Failed to set up institution account')
+          setError('Failed to set up institution account');
         }
       }
     }
-  }
-
-  const token = localStorage.getItem('access')
+  };
 
   const loadPortfolio = async () => {
     try {
-      setLoading(true)
-      const token = localStorage.getItem('access')
-      const res = await axios.get(`${API_BASE}/portfolios/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      setLoading(true);
+      const token = localStorage.getItem('access');
+      if (!token) {
+        setError('Please log in to access this page');
+        return;
+      }
+
+      console.log('[InstitutionPortfolio] Loading portfolio...');
+      const res = await api.get('/portfolios/');
       
       if (res.data && res.data.length > 0) {
-        const port = res.data[0]
-        setPortfolio(port)
+        const port = res.data[0];
+        setPortfolio(port);
         setFormData({
           title: port.title,
           description: port.description,
@@ -91,173 +90,179 @@ export default function InstitutionPortfolio() {
           location: port.location,
           phone: port.phone,
           email: port.email,
-        })
+          theme_color: port.theme_color || '#0ea5a4',
+          image: port.image
+        });
       }
     } catch (err: any) {
-      setError('Failed to load portfolio')
-      console.error(err)
+      const status = err.response?.status;
+      if (status === 401 || status === 403) {
+        setError('Your session has expired. Please log in again.');
+      } else if (err.message === 'Network Error') {
+        setError('Network error. Please check your connection.');
+      } else {
+        setError('Failed to load portfolio.');
+      }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadInstitution()
-    loadPortfolio()
+    loadInstitution();
+    loadPortfolio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   useEffect(() => {
-    if (portfolio?.id) fetchGallery()
+    if (portfolio?.id) fetchGallery();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [portfolio?.id])
+  }, [portfolio?.id]);
 
   const fetchGallery = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/portfolio-gallery/`, { params: { portfolio: portfolio?.id } })
-      setGallery(res.data)
+      const res = await api.get('/portfolio-gallery/', { 
+        params: { portfolio: portfolio?.id } 
+      });
+      setGallery(res.data);
     } catch (err) {
-      console.error('Failed to load gallery', err)
+      console.error('Failed to load gallery', err);
     }
-  }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
-  }
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, theme_color: e.target.value })
-  }
+    setFormData({ ...formData, theme_color: e.target.value });
+  };
 
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, files } = e.target as any
+    const { name, value, files } = e.target as any;
     if (name === 'file' && files && files.length > 0) {
-      setGalleryForm({ ...galleryForm, file: files[0] })
+      setGalleryForm({ ...galleryForm, file: files[0] });
     } else {
-      setGalleryForm({ ...galleryForm, [name]: value })
+      setGalleryForm({ ...galleryForm, [name]: value });
     }
-  }
+  };
 
   const uploadImage = async (file: File) => {
-    const data = new FormData()
-    data.append('file', file)
+    const data = new FormData();
+    data.append('file', file);
     try {
-      const res = await axios.post(`${API_BASE}/uploads/courses/image/`, data, {
-        headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
-      })
-      return res.data.url || res.data.url
+      const res = await api.post('/uploads/courses/image/', data, {
+         headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return res.data.url || res.data.url;
     } catch (err) {
-      console.error('Upload failed', err)
-      throw err
+      console.error('Upload failed', err);
+      throw err;
     }
-  }
+  };
 
   const addGalleryItem = async () => {
-    if (!portfolio?.id) return setError('Create portfolio first')
+    if (!portfolio?.id) return setError('Create portfolio first');
     try {
-      let imageUrl = galleryForm.imageUrl
+      let imageUrl = galleryForm.imageUrl;
       if (galleryForm.file) {
-        imageUrl = await uploadImage(galleryForm.file)
+        imageUrl = await uploadImage(galleryForm.file);
       }
-      const payload = { portfolio: portfolio.id, title: galleryForm.title, description: galleryForm.description, image: imageUrl }
-      await axios.post(`${API_BASE}/portfolio-gallery/`, payload, { headers: { Authorization: `Bearer ${token}` } })
-      setGalleryForm({ title: '', description: '', imageUrl: '', file: null })
-      await fetchGallery()
-      setSuccess('Gallery item added')
+      const payload = { 
+        portfolio: portfolio.id, 
+        title: galleryForm.title, 
+        description: galleryForm.description, 
+        image: imageUrl 
+      };
+      
+      await api.post('/portfolio-gallery/', payload);
+      
+      setGalleryForm({ title: '', description: '', imageUrl: '', file: null });
+      await fetchGallery();
+      setSuccess('Gallery item added');
     } catch (err: any) {
-      console.error(err)
-      setError('Failed to add gallery item')
+      console.error(err);
+      setError('Failed to add gallery item');
     }
-  }
+  };
 
   const deleteGalleryItem = async (id: number) => {
     try {
-      await axios.delete(`${API_BASE}/portfolio-gallery/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
-      await fetchGallery()
+      await api.delete(`/portfolio-gallery/${id}/`);
+      await fetchGallery();
     } catch (err) {
-      console.error('Failed to delete', err)
+      console.error('Failed to delete', err);
     }
-  }
+  };
 
   const handleSave = async () => {
-    setSaving(true)
-    setError('')
-    setSuccess('')
+    setSaving(true);
+    setError('');
+    setSuccess('');
 
     try {
       if (!institutionId) {
-        setError('Institution ID not loaded. Please refresh.')
-        return
+        setError('Institution ID not loaded. Please refresh.');
+        return;
       }
 
-      const token = localStorage.getItem('access')
       const payload = {
         ...formData,
         institution: institutionId,
-      }
+      };
 
       if (portfolio?.id) {
-        await axios.put(`${API_BASE}/portfolios/${portfolio.id}/`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        setSuccess('Portfolio updated successfully!')
+        await api.put(`/portfolios/${portfolio.id}/`, payload);
+        setSuccess('Portfolio updated successfully!');
       } else {
-        const res = await axios.post(`${API_BASE}/portfolios/`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        setPortfolio(res.data)
-        setSuccess('Portfolio created successfully!')
+        const res = await api.post('/portfolios/', payload);
+        setPortfolio(res.data);
+        setSuccess('Portfolio created successfully!');
       }
 
-      await loadPortfolio()
+      await loadPortfolio();
     } catch (err: any) {
-      console.error('Save error:', err.response?.data || err.message)
-      setError(err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Failed to save portfolio')
+      console.error('Save error:', err.response?.data || err.message);
+      setError(err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Failed to save portfolio');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handlePublish = async () => {
-    if (!portfolio?.id) return
-
+    if (!portfolio?.id) return;
     try {
-      setSaving(true)
-      const token = localStorage.getItem('access')
-      const action = portfolio.published ? 'unpublish' : 'publish'
-
-      await axios.post(`${API_BASE}/portfolios/${portfolio.id}/${action}/`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      setSuccess(`Portfolio ${action}ed successfully!`)
-      await loadPortfolio()
+      setSaving(true);
+      const action = portfolio.published ? 'unpublish' : 'publish';
+      await api.post(`/portfolios/${portfolio.id}/${action}/`, {});
+      setSuccess(`Portfolio ${action}ed successfully!`);
+      await loadPortfolio();
     } catch (err: any) {
-      setError(`Failed to ${portfolio.published ? 'unpublish' : 'publish'} portfolio`)
+      setError(`Failed to ${portfolio?.published ? 'unpublish' : 'publish'} portfolio`);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const publicUrl = portfolio?.public_token
     ? `${window.location.origin}/portfolio/${portfolio.public_token}`
-    : ''
+    : '';
 
   const copyToClipboard = () => {
     if (publicUrl) {
-      navigator.clipboard.writeText(publicUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-green-600" />
       </div>
-    )
+    );
   }
 
   return (
@@ -373,14 +378,14 @@ export default function InstitutionPortfolio() {
               <input type="text" name="image" value={formData.image || ''} onChange={handleChange} placeholder="https://... or leave blank to upload" className="w-full px-3 py-2 border rounded-lg" />
               <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">Or upload image</label>
               <input type="file" name="main_image_file" accept="image/*" onChange={async (e) => {
-                const f = (e.target as HTMLInputElement).files?.[0]
-                if (!f) return
+                const f = (e.target as HTMLInputElement).files?.[0];
+                if (!f) return;
                 try {
-                  const url = await uploadImage(f)
-                  setFormData({ ...formData, image: url })
-                  setSuccess('Image uploaded')
+                  const url = await uploadImage(f);
+                  setFormData({ ...formData, image: url });
+                  setSuccess('Image uploaded');
                 } catch (err) {
-                  setError('Upload failed')
+                  setError('Upload failed');
                 }
               }} />
             </div>
@@ -506,5 +511,5 @@ export default function InstitutionPortfolio() {
         </div>
       </div>
     </div>
-  )
+  );
 }

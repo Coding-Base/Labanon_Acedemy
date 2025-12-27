@@ -75,27 +75,65 @@ export default function InstitutionPayments() {
     setError('');
     try {
       const token = localStorage.getItem('access');
+      if (!token) {
+        setError('Not authenticated. Please log in.');
+        setLoading(false);
+        return;
+      }
       
-      // Fetch payments for this institution
-      const paymentsRes = await axios.get(`${API_BASE}/payments/`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { 
-          page,
-          page_size: pageSize,
-          course__institution: institutionId
+      // Fetch course payments for this institution
+      let coursePaymentsRes: any = { data: { results: [], count: 0 } };
+      try {
+        coursePaymentsRes = await axios.get(`${API_BASE}/payments/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { 
+            page,
+            page_size: pageSize,
+            course__institution: institutionId
+          }
+        });
+      } catch (err: any) {
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          throw err; // Re-throw auth errors
         }
-      });
+        // Otherwise silently fail for this endpoint
+        console.warn('Failed to load course payments:', err);
+      }
 
-      const paymentData = paymentsRes.data.results || [];
-      setPayments(Array.isArray(paymentData) ? paymentData : []);
-      setPageCount(Math.ceil((paymentsRes.data.count || 0) / pageSize));
+      // Fetch diploma payments for this institution
+      let diplomaPaymentsRes: any = { data: { results: [], count: 0 } };
+      try {
+        diplomaPaymentsRes = await axios.get(`${API_BASE}/payments/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { 
+            page,
+            page_size: pageSize,
+            diploma__institution: institutionId
+          }
+        });
+      } catch (err: any) {
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          throw err; // Re-throw auth errors
+        }
+        // Otherwise silently fail for this endpoint
+        console.warn('Failed to load diploma payments:', err);
+      }
+
+      // Combine both course and diploma payments
+      const coursePayments = coursePaymentsRes.data.results || [];
+      const diplomaPayments = diplomaPaymentsRes.data.results || [];
+      const allPayments = [...coursePayments, ...diplomaPayments];
+
+      setPayments(Array.isArray(allPayments) ? allPayments : []);
+      const totalCount = (coursePaymentsRes.data.count || 0) + (diplomaPaymentsRes.data.count || 0);
+      setPageCount(Math.ceil(totalCount / pageSize));
 
       // Calculate stats
-      const successPayments = paymentData.filter((p: any) => p.status === 'success');
-      const pendingPayments = paymentData.filter((p: any) => p.status === 'pending');
-      const failedPayments = paymentData.filter((p: any) => p.status === 'failed');
+      const successPayments = allPayments.filter((p: any) => p.status === 'success');
+      const pendingPayments = allPayments.filter((p: any) => p.status === 'pending');
+      const failedPayments = allPayments.filter((p: any) => p.status === 'failed');
 
-      const totalAmount = paymentData.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+      const totalAmount = allPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
       const successAmount = successPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
 
       setStats({
@@ -108,8 +146,13 @@ export default function InstitutionPayments() {
         failed_count: failedPayments.length
       });
     } catch (err: any) {
-      console.error('Failed to load payments:', err);
-      setError(err.response?.data?.detail || 'Failed to load payments');
+      console.error('[InstitutionPayments] Failed to load payments:', err);
+      const status = err.response?.status;
+      if (status === 401 || status === 403) {
+        setError('Session expired. Please refresh or log in again.');
+      } else {
+        setError(err.response?.data?.detail || 'Failed to load payments');
+      }
     } finally {
       setLoading(false);
     }
@@ -257,10 +300,10 @@ export default function InstitutionPayments() {
                   {payments.map((payment, idx) => (
                     <tr key={payment.id || idx} className="border-b border-gray-200 hover:bg-gray-50 transition">
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {payment.user?.name || payment.user?.username || 'Unknown'}
+                        {payment.user?.name || payment.user?.username || payment.student_name || 'Unknown'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {payment.course?.title || 'N/A'}
+                        {payment.course?.title || payment.diploma?.title || payment.course_name || payment.diploma_name || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                         ₦{Number(payment.amount || 0).toLocaleString()}

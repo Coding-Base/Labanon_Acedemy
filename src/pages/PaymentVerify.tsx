@@ -20,7 +20,7 @@ export default function PaymentVerify() {
         if (!reference) {
           setStatus('error')
           setMessage('No payment reference found')
-          setTimeout(() => navigate('/student/dashboard'), 3000)
+          setTimeout(() => navigate('/student'), 3000)
           return
         }
 
@@ -55,20 +55,20 @@ export default function PaymentVerify() {
             if (itemType && itemId) {
               navigate(`/${itemType}/${itemId}`)
             } else {
-              navigate('/student/dashboard')
+              navigate('/student')
             }
           }, 2000)
         } else {
           setStatus('error')
           setMessage('Payment verification failed. Please contact support.')
-          setTimeout(() => navigate('/student/dashboard'), 3000)
+          setTimeout(() => navigate('/student'), 3000)
         }
       } catch (err: any) {
         console.error(err)
         const errorMsg = err.response?.data?.detail || 'Payment verification failed'
         setStatus('error')
         setMessage(errorMsg)
-        setTimeout(() => navigate('/student/dashboard'), 3000)
+        setTimeout(() => navigate('/student'), 3000)
       }
     }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { Plus, Trash2, Edit2, Loader2, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -39,6 +39,7 @@ export default function InstitutionDiplomas() {
   const [institutionId, setInstitutionId] = useState<number | null>(null)
   const [creatorId, setCreatorId] = useState<number | null>(null)
   const [imageTab, setImageTab] = useState<'url' | 'upload'>('url')
+  const initializedRef = useRef(false)
   const [formData, setFormData] = useState<DiplomaFormData>({
     title: '',
     description: '',
@@ -53,14 +54,25 @@ export default function InstitutionDiplomas() {
   const loadDiplomas = async () => {
     try {
       setLoading(true)
+      setError('') // Clear error before attempting
       const token = localStorage.getItem('access')
+      if (!token) {
+        setError('Not authenticated. Please log in.')
+        return
+      }
       const res = await axios.get(`${API_BASE}/diplomas/my_diplomas/`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setDiplomas(res.data)
     } catch (err: any) {
-      setError('Failed to load diplomas')
-      console.error(err)
+      console.error('[InstitutionDiplomas] Failed to load diplomas:', err)
+      const status = err.response?.status
+      if (status === 401 || status === 403) {
+        console.warn('[InstitutionDiplomas] Auth error - token may be invalid')
+        setError('Session expired. Please refresh or log in again.')
+      } else {
+        setError('Failed to load diplomas')
+      }
     } finally {
       setLoading(false)
     }

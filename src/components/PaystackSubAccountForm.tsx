@@ -47,15 +47,15 @@ export default function PaystackSubAccountForm() {
       // In production, fetch from Paystack API
       const nigerianBanks = [
         { id: 1, code: '011', name: 'First Bank Nigeria' },
-        { id: 2, code: '003', name: 'Guaranty Trust Bank (GTB)' },
+        { id: 2, code: '058', name: 'Guaranty Trust Bank (GTB)' },
         { id: 3, code: '044', name: 'Access Bank' },
-        { id: 4, code: '101', name: 'Zenith Bank' },
+        { id: 4, code: '057', name: 'Zenith Bank' },
         { id: 5, code: '050', name: 'EcoBank' },
-        { id: 6, code: '007', name: 'Stanbic IBTC' },
-        { id: 7, code: '020', name: 'FCMB Group' },
+        { id: 6, code: '039', name: 'Stanbic IBTC' },
+        { id: 7, code: '214', name: 'FCMB Group' },
         { id: 8, code: '058', name: 'GTBank Plc' },
-        { id: 9, code: '057', name: 'Guarantee Trust Bank' },
-        { id: 10, code: '014', name: 'UBA' },
+        { id: 9, code: '058', name: 'Guarantee Trust Bank' },
+        { id: 10, code: '033', name: 'UBA' },
       ]
       setBanks(nigerianBanks)
     } catch (err) {

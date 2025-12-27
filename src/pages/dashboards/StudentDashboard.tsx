@@ -18,19 +18,21 @@ import {
   LogOut,
   PlayCircle,
   CheckCircle,
-    Mail,
+  Mail,
   Users,
   Star,
   Target,
   FileCheck,
   Download,
+  ShoppingCart,
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import MyCourses from '../MyCourses';
 import CBTPage from '../CBT';
 import PaymentsPage from '../Payments';
 import Profile from '../Profile';
-  import UserMessages from '../../components/UserMessages';
+import Cart from '../Cart';
+import UserMessages from '../../components/UserMessages';
 import ProgressPage from '../../components/cbt/ProgressPage';
 import CoursePlayer from '../CoursePlayer';
 import CourseDetail from '../CourseDetail';
@@ -85,7 +87,13 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
       (res) => res,
       (error) => {
         const status = error?.response?.status;
-        if (status === 401) doLogout('token expired/unauthorized');
+        if (status === 401) {
+          // Token expired — clear it but don't force logout
+          // Let components handle their own auth errors
+          localStorage.removeItem('access');
+          localStorage.removeItem('refresh');
+          console.warn('[StudentDashboard] 401 error - token cleared, components should handle UI');
+        }
         return Promise.reject(error);
       }
     );
@@ -144,6 +152,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     { path: 'overview', label: 'Overview', icon: <Home className="w-5 h-5" /> },
     { path: 'courses', label: 'My Courses', icon: <BookOpen className="w-5 h-5" /> },
     { path: 'cbt', label: 'CBT & Exams', icon: <FileText className="w-5 h-5" /> },
+    { path: 'cart', label: 'Shopping Cart', icon: <ShoppingCart className="w-5 h-5" /> },
     { path: 'payments', label: 'Payments', icon: <CreditCard className="w-5 h-5" /> },
     { path: 'progress', label: 'Progress', icon: <TrendingUp className="w-5 h-5" /> },
     { path: 'certificates', label: 'Certificates', icon: <Award className="w-5 h-5" /> },
@@ -221,6 +230,16 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               </motion.button>
 
+              <motion.button 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }} 
+                onClick={() => setShowInbox(true)}
+                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Inbox"
+              >
+                <Mail className="w-5 h-5 text-gray-600" />
+              </motion.button>
+
               <div className="hidden md:flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
                   {summary.username.charAt(0).toUpperCase()}
@@ -245,19 +264,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         </div>
       </motion.header>
       <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex items-center space-x-4">
-          <motion.button 
-            whileHover={{ scale: 1.05 }} 
-            whileTap={{ scale: 0.95 }} 
-            onClick={() => setShowInbox(true)}
-            className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            title="Inbox"
-          >
-            <Mail className="w-5 h-5 text-gray-600" />
-          </motion.button>
-        </div>
-      </div>
 
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-[calc(100vh-5rem)]">
@@ -534,6 +540,10 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                       <div className="h-full overflow-y-auto pr-2 -mr-2">
                         <CBTPage />
                       </div>
+                    } />
+
+                    <Route path="cart" element={
+                      <Cart />
                     } />
                     
                     <Route path="payments" element={

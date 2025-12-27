@@ -319,35 +319,64 @@ export default function TutorDashboard(props: TutorDashboardProps) {
     setEarningsLoading(true);
     try {
       const token = localStorage.getItem('access');
+      if (!token) {
+        console.warn('No auth token available for earnings');
+        setTotalEarnings(0);
+        return;
+      }
+
       const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } });
       const uid = me.data.id;
+      console.log('[TutorDashboard] Loading earnings for tutor id:', uid);
 
-      const paymentsRes = await axios.get(`${API_BASE}/payments/?tutor=${uid}&page_size=1000&status=success`, { headers: { Authorization: `Bearer ${token}` } })
-        .catch(() => null);
+      // Fetch payments for courses and diplomas created by this tutor
+      let total = 0;
+      try {
+        const paymentsRes = await axios.get(`${API_BASE}/payments/?tutor=${uid}&page_size=1000&status=success`, { headers: { Authorization: `Bearer ${token}` } });
+        console.log('[TutorDashboard] Payments response:', paymentsRes.data);
 
-      if (paymentsRes && (paymentsRes.data.results || paymentsRes.data)) {
-        const items = paymentsRes.data.results || paymentsRes.data || [];
-        const total = items.reduce((acc: number, it: any) => acc + Number(it.amount ?? it.value ?? 0), 0);
-        setTotalEarnings(total);
-      } else {
-        const enrollRes = await axios.get(`${API_BASE}/enrollments/?course__creator=${uid}&page_size=1000&purchased=true`, { headers: { Authorization: `Bearer ${token}` } });
-        const items = enrollRes.data.results || enrollRes.data || [];
-        const total = items.reduce((acc: number, it: any) => acc + Number(it.amount ?? it.price ?? it.course?.price ?? 0), 0);
-        setTotalEarnings(total);
+        if (paymentsRes && paymentsRes.data) {
+          const items = paymentsRes.data.results || paymentsRes.data || [];
+          // Sum all successful payments - amount is decimal
+          total = items.reduce((acc: number, it: any) => {
+            const amount = parseFloat(it.amount || it.creator_amount || 0);
+            return acc + (isNaN(amount) ? 0 : amount);
+          }, 0);
+          console.log('[TutorDashboard] Total earnings from payments:', total);
+          setTotalEarnings(total);
+        }
+      } catch (paymentErr) {
+        console.warn('[TutorDashboard] Payments endpoint failed, trying fallback:', paymentErr);
+        // Fallback: try from enrollments if payments endpoint fails
+        try {
+          const enrollRes = await axios.get(`${API_BASE}/enrollments/?course__creator=${uid}&page_size=1000&purchased=true`, { headers: { Authorization: `Bearer ${token}` } });
+          const items = enrollRes.data.results || enrollRes.data || [];
+          total = items.reduce((acc: number, it: any) => {
+            const amount = parseFloat(it.course?.price || 0);
+            return acc + (isNaN(amount) ? 0 : amount);
+          }, 0);
+          console.log('[TutorDashboard] Total earnings from enrollments:', total);
+          setTotalEarnings(total);
+        } catch (enrollErr) {
+          console.error('[TutorDashboard] Both payments and enrollments failed:', enrollErr);
+          setTotalEarnings(0);
+        }
       }
     } catch (err) {
-      console.error('Failed to load earnings:', err);
-      setTotalEarnings(summary?.total_earnings || 0);
+      console.error('[TutorDashboard] Failed to load earnings:', err);
+      setTotalEarnings(0);
     } finally {
       setEarningsLoading(false);
     }
   }
 
   useEffect(() => {
-    // Load earnings once when the dashboard mounts if we are on the earnings tab.
-    if (isActivePath('earnings')) loadEarnings();
+    // Load earnings when dashboard mounts OR when navigating to earnings tab
+    if (isActivePath('earnings')) {
+      loadEarnings();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.pathname]);
 
   const platformFee = +(totalEarnings * 0.05).toFixed(2);
   const tutorShare = +(totalEarnings - platformFee).toFixed(2);
@@ -917,10 +946,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                       <div className="flex items-center justify-between mb-6">
                         <div>
                           <h3 className="font-semibold">Payouts & Payment Method</h3>
-                          <p className="text-sm text-gray-500">Connect your Paystack account to receive payouts (UI-only for now).</p>
-                        </div>
-                        <div>
-                          <button onClick={() => setShowPaystackModal(true)} className="px-4 py-2 bg-green-600 text-white rounded-lg">ADD PAYMENT METHOD</button>
+                          <p className="text-sm text-gray-500">Connect your Paystack account to receive payouts.</p>
                         </div>
                       </div>
 

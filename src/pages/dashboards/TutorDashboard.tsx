@@ -1,8 +1,9 @@
 // src/pages/dashboards/TutorDashboard.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+// 1. USE SECURE API INSTANCE
+import api from '../../utils/axiosInterceptor';
 import {
   Home,
   BookOpen,
@@ -18,9 +19,10 @@ import {
   Menu,
   X,
   Video,
-  Settings,
-  LogOut
-  ,Mail
+  LogOut,
+  Mail,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import ManageCourses from '../ManageCourses';
@@ -45,8 +47,6 @@ import {
   Legend,
 } from 'recharts';
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
-
 interface DashboardSummary {
   username?: string;
   courses_count?: number;
@@ -54,6 +54,7 @@ interface DashboardSummary {
   total_earnings?: number;
   avg_rating?: number;
   role?: string;
+  id?: number;
   [k: string]: any;
 }
 
@@ -75,36 +76,122 @@ export default function TutorDashboard(props: TutorDashboardProps) {
     navigate('/login');
   };
 
-  // attempt to get summary from props or location.state
+  // --- 1. ALL STATE HOOKS DECLARED AT THE TOP ---
   const initialFromState = (location.state as any)?.summary;
   const [summary, setSummary] = useState<DashboardSummary | null>(props.summary ?? initialFromState ?? null);
   const [loadingSummary, setLoadingSummary] = useState(!summary);
 
-  // base path for this page (top-level is /tutor)
-  const base = '/tutor';
+  // New State for Real-Time Calculated Totals
+  const [calculatedEarnings, setCalculatedEarnings] = useState(0);
+  const [calculatedStudents, setCalculatedStudents] = useState(0);
 
+  // Students State
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [studentPurchases, setStudentPurchases] = useState<any[]>([]);
+  const [studentsPage, setStudentsPage] = useState(1);
+  const [studentsPageCount, setStudentsPageCount] = useState(1);
+  
+  // Analytics State
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [salesByMonth, setSalesByMonth] = useState<any[]>([]);
+
+  // Earnings State
+  const [earningsLoading, setEarningsLoading] = useState(false);
+  const [totalEarnings, setTotalEarnings] = useState<number>(0);
+  const [showPaystackModal, setShowPaystackModal] = useState(false);
+  const [paystackCreds, setPaystackCreds] = useState({
+    business_name: '',
+    paystack_public_key: '',
+    paystack_secret_key: '',
+    paystack_email: ''
+  });
+
+  // Upload State
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
+  const [courseFile, setCourseFile] = useState<File | null>(null);
+  const [selectedLessonCourseId, setSelectedLessonCourseId] = useState<number | null>(null);
+  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
+  const [lessonFile, setLessonFile] = useState<File | null>(null);
+  const [useYouTubeEmbed, setUseYouTubeEmbed] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+
+  const base = '/tutor';
+  const STUDENTS_PAGE_SIZE = 10;
+
+  // --- 2. USE EFFECTS ---
+
+  // Load Summary & Dashboard Data
   useEffect(() => {
     let mounted = true;
-    async function loadSummary() {
-      if (summary) {
+    async function loadDashboardData() {
+      // If we already have data, stop loading
+      if (summary && calculatedEarnings > 0) {
         setLoadingSummary(false);
         return;
       }
+      
       const token = localStorage.getItem('access');
       if (!token) {
         window.location.href = '/login';
         return;
       }
-      setLoadingSummary(true);
+
+      if(!summary) setLoadingSummary(true);
+      
       try {
-        const res = await axios.get(`${API_BASE}/dashboard/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // 1. Get Basic Summary
+        const summaryReq = api.get('/dashboard/');
+        // 2. Get User Info
+        const userReq = api.get('/users/me/');
+
+        const [summaryRes, userRes] = await Promise.all([summaryReq, userReq]);
+        
         if (!mounted) return;
-        setSummary(res.data);
+        const currentSummary = summaryRes.data;
+        const userId = userRes.data.id;
+        
+        // Merge ID into summary
+        setSummary({ ...currentSummary, id: userId });
+
+        // 3. Fetch Real Calculations
+        const paymentsReq = api.get('/payments/', {
+            params: { 
+                tutor: userId, 
+                status: 'success', 
+                page_size: 1000 
+            }
+        });
+
+        const enrollmentsReq = api.get('/enrollments/', {
+            params: {
+                course__creator: userId,
+                page_size: 1000
+            }
+        });
+
+        const [paymentsRes, enrollmentsRes] = await Promise.all([
+            paymentsReq.catch(() => ({ data: [] })),
+            enrollmentsReq.catch(() => ({ data: [] }))
+        ]);
+
+        // Calculate Earnings (Net: creator_amount)
+        const paymentsList = Array.isArray(paymentsRes.data) ? paymentsRes.data : (paymentsRes.data.results || []);
+        const totalNet = paymentsList.reduce((sum: number, p: any) => {
+            return sum + parseFloat(p.creator_amount || '0');
+        }, 0);
+        setCalculatedEarnings(totalNet);
+
+        // Calculate Students (Unique)
+        const enrollmentsList = Array.isArray(enrollmentsRes.data) ? enrollmentsRes.data : (enrollmentsRes.data.results || []);
+        const uniqueStudentIds = new Set();
+        enrollmentsList.forEach((e: any) => {
+            const sId = e.user || e.student || e.buyer;
+            if (sId) uniqueStudentIds.add(sId);
+        });
+        setCalculatedStudents(uniqueStudentIds.size);
+
       } catch (err) {
-        console.error('Failed to fetch dashboard summary:', err);
-        // Use fallback summary to allow dashboard to render
+        console.error('Failed to fetch dashboard data:', err);
         if (!mounted) return;
         setSummary({
           username: 'Tutor',
@@ -118,14 +205,262 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         if (mounted) setLoadingSummary(false);
       }
     }
-    loadSummary();
+    loadDashboardData();
     return () => {
       mounted = false;
     };
-  }, [props.summary, location.state, summary]);
+  }, [props.summary, location.state]);
 
-  if (loadingSummary) return <div className="min-h-screen flex items-center justify-center">Loading dashboard...</div>;
-  if (!summary) return <div className="min-h-screen flex items-center justify-center">Unable to load dashboard.</div>;
+  // Load Students
+  useEffect(() => {
+    if (isActivePath('students')) loadStudentPurchases(studentsPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentsPage, location.pathname]);
+
+  // Load Analytics
+  useEffect(() => {
+    if (isActivePath('analytics')) loadAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // Load Earnings
+  useEffect(() => {
+    if (isActivePath('earnings')) loadEarnings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // Load Paystack Creds
+  useEffect(() => {
+    const saved = localStorage.getItem('tutor_paystack_creds');
+    if (saved) {
+      try { setPaystackCreds(JSON.parse(saved)); } catch { /* ignore */ }
+    }
+  }, []);
+
+  // --- 3. HELPER FUNCTIONS ---
+
+  const isActivePath = (p: string) => {
+    const normalized = location.pathname.replace(/\/+$/, '');
+    if (p === 'overview') return normalized === base || normalized === `${base}/overview`;
+    return normalized === `${base}/${p}` || normalized.includes(`/${p}`);
+  };
+
+  async function loadStudentPurchases(page = 1) {
+    setStudentsLoading(true);
+    try {
+      let uid = summary?.id;
+      if (!uid) {
+         const me = await api.get('/users/me/');
+         uid = me.data.id;
+      }
+
+      const res = await api.get('/enrollments/', {
+        params: {
+            course__creator: uid,
+            purchased: true,
+            page: page,
+            page_size: STUDENTS_PAGE_SIZE
+        }
+      });
+
+      const items = res.data.results || res.data || [];
+      setStudentPurchases(items);
+      if (res.data.count) setStudentsPageCount(Math.ceil(res.data.count / STUDENTS_PAGE_SIZE));
+      else setStudentsPageCount(Math.max(1, Math.ceil((items.length || 0) / STUDENTS_PAGE_SIZE)));
+    } catch (err) {
+      // Fallback
+      try {
+        let uid = summary?.id;
+        if (!uid) {
+            const me = await api.get('/users/me/');
+            uid = me.data.id;
+        }
+        const res2 = await api.get('/payments/', {
+            params: {
+                tutor: uid,
+                status: 'success',
+                page: page,
+                page_size: STUDENTS_PAGE_SIZE
+            }
+        });
+        const items2 = res2.data.results || res2.data || [];
+        setStudentPurchases(items2);
+        if (res2.data.count) setStudentsPageCount(Math.ceil(res2.data.count / STUDENTS_PAGE_SIZE));
+      } catch (err2) {
+        setStudentPurchases([]);
+      }
+    } finally {
+      setStudentsLoading(false);
+    }
+  }
+
+  async function loadAnalytics() {
+    setAnalyticsLoading(true);
+    try {
+      let uid = summary?.id;
+      if (!uid) {
+         const me = await api.get('/users/me/');
+         uid = me.data.id;
+      }
+
+      const tryAnalytics = await api.get('/sales/analytics/', {
+          params: { tutor: uid, months: 6 }
+      }).catch(() => null);
+
+      if (tryAnalytics && tryAnalytics.status === 200 && tryAnalytics.data) {
+        const data = tryAnalytics.data.data || tryAnalytics.data;
+        const normalized = Array.isArray(data) ? data.map((r: any) => ({
+          month: r.month || r.label || r.name,
+          sales: Number(r.sales || r.count || 0),
+          revenue: Number(r.revenue || r.amount || r.total || 0)
+        })) : [];
+        setSalesByMonth(normalized);
+      } else {
+        // Fallback
+        const res = await api.get('/enrollments/', {
+            params: { course__creator: uid, page_size: 1000 }
+        });
+        const items = res.data.results || res.data || [];
+        const map = new Map<string, { month: string; sales: number; revenue: number }>();
+        
+        items.forEach((it: any) => {
+          const dateStr = it.purchased_at || it.created_at || it.date || it.timestamp;
+          const d = dateStr ? new Date(dateStr) : new Date();
+          if (isNaN(d.getTime())) return;
+          
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
+          
+          const cur = map.get(key) || { month: label, sales: 0, revenue: 0 };
+          cur.sales += 1;
+          const amount = Number(it.amount ?? it.price ?? it.course?.price ?? 0);
+          cur.revenue += amount;
+          map.set(key, cur);
+        });
+        
+        const arr = Array.from(map.values()).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+        setSalesByMonth(arr.slice(-6));
+      }
+    } catch (err) {
+      setSalesByMonth([]);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }
+
+  async function loadEarnings() {
+    setEarningsLoading(true);
+    try {
+      let uid = summary?.id;
+      if (!uid) {
+         const me = await api.get('/users/me/');
+         uid = me.data.id;
+      }
+
+      let total = 0;
+      try {
+        const paymentsRes = await api.get('/payments/', {
+            params: {
+                tutor: uid,
+                page_size: 1000,
+                status: 'success'
+            }
+        });
+
+        if (paymentsRes && paymentsRes.data) {
+          const items = paymentsRes.data.results || paymentsRes.data || [];
+          total = items.reduce((acc: number, it: any) => {
+            const amount = parseFloat(it.creator_amount || it.amount || 0);
+            return acc + (isNaN(amount) ? 0 : amount);
+          }, 0);
+          setTotalEarnings(total);
+        }
+      } catch (paymentErr) {
+        setTotalEarnings(0);
+      }
+    } catch (err) {
+      setTotalEarnings(0);
+    } finally {
+      setEarningsLoading(false);
+    }
+  }
+
+  function savePaystackCredsToLocal() {
+    localStorage.setItem('tutor_paystack_creds', JSON.stringify(paystackCreds));
+    alert('Paystack credentials saved locally.');
+    setShowPaystackModal(false);
+  }
+
+  // Upload Helpers
+  async function postFileToEndpoint(formFile: File, endpoint: string) {
+    const fd = new FormData();
+    fd.append('file', formFile);
+    const res = await api.post(endpoint, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return res.data;
+  }
+
+  async function handleUploadCourseImage() {
+    if (!selectedCourseId) { alert('Select a course first'); return; }
+    if (!courseFile) { alert('Choose an image file'); return; }
+    try {
+      const uploaded = await postFileToEndpoint(courseFile, '/uploads/courses/image/');
+      const savedName = uploaded?.name || uploaded?.url || '';
+      await api.patch(`/courses/${selectedCourseId}/`, { image: savedName });
+      window.location.reload();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Upload failed');
+    }
+  }
+
+  async function requestPresignUrl(filename: string, contentType: string, lessonId: number, courseId?: number) {
+    const res = await api.post('/aws/presign/', {
+      filename,
+      content_type: contentType,
+      lesson_id: lessonId,
+      course_id: courseId
+    });
+    return res.data; 
+  }
+
+  async function handleUploadLessonMedia() {
+    if (!selectedLessonCourseId) { alert('Select a course first'); return; }
+    if (!selectedLessonId) { alert('Select a lesson'); return; }
+
+    if (useYouTubeEmbed) {
+      if (!youtubeUrl) { alert('Enter the YouTube URL'); return; }
+      try {
+        await api.patch(`/lessons/${selectedLessonId}/`, { video: youtubeUrl });
+        window.location.reload();
+      } catch (err) { alert('Failed to save YouTube link'); }
+      return;
+    }
+
+    if (!lessonFile) { alert('Choose a video file'); return; }
+
+    try {
+      const presign = await requestPresignUrl(lessonFile.name, lessonFile.type, selectedLessonId, selectedLessonCourseId || undefined);
+      const putRes = await fetch(presign.url, {
+        method: 'PUT',
+        headers: { 'Content-Type': lessonFile.type },
+        body: lessonFile
+      });
+      if (!putRes.ok) throw new Error('Upload to S3 failed');
+      await api.patch(`/lessons/${selectedLessonId}/`, { video: presign.key });
+      window.location.reload();
+    } catch (err) {
+      alert('Upload failed');
+    }
+  }
+
+  // --- 4. RENDER HELPERS ---
+  const chartData = useMemo(() => {
+    return salesByMonth.map(s => ({ name: s.month, Sales: s.sales, Revenue: s.revenue }));
+  }, [salesByMonth]);
+
+  const platformFee = +(totalEarnings * 0.05).toFixed(2);
+  const tutorShare = totalEarnings; // Assuming totalEarnings calculated above is already net creator_amount
 
   const navItems = [
     { path: 'overview', label: 'Overview', icon: <Home className="w-5 h-5" /> },
@@ -142,23 +477,23 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       value: summary?.courses_count || 0,
       icon: <BookOpen className="w-6 h-6" />,
       color: 'from-green-600 to-teal-500',
-      change: '+2 this month',
+      change: 'Active courses',
       trend: 'up'
     },
     {
       title: 'Total Students',
-      value: summary?.total_students || 0,
+      value: calculatedStudents,
       icon: <Users className="w-6 h-6" />,
       color: 'from-purple-500 to-pink-400',
-      change: '+45 this month',
+      change: 'Enrolled students',
       trend: 'up'
     },
     {
       title: 'Total Earnings',
-      value: `₦${(summary?.total_earnings || 0).toLocaleString()}`,
+      value: `₦${calculatedEarnings.toLocaleString()}`,
       icon: <DollarSign className="w-6 h-6" />,
       color: 'from-green-500 to-emerald-400',
-      change: '↑ 15% from last month',
+      change: 'Net income',
       trend: 'up'
     },
     {
@@ -166,7 +501,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       value: summary?.avg_rating ? summary.avg_rating.toFixed(1) : '4.8',
       icon: <Star className="w-6 h-6" />,
       color: 'from-amber-500 to-yellow-400',
-      change: '124 reviews',
+      change: 'Student reviews',
       trend: 'neutral'
     },
   ];
@@ -177,458 +512,12 @@ export default function TutorDashboard(props: TutorDashboardProps) {
     { title: 'Go Live', icon: <Sparkles className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'overview' }
   ];
 
-  // helper: isActivePath under /tutor
-  const isActivePath = (p: string) => {
-    const normalized = location.pathname.replace(/\/+$/, '');
-    if (p === 'overview') return normalized === base || normalized === `${base}/overview`;
-    return normalized === `${base}/${p}` || normalized.includes(`/${p}`);
-  };
+  // --- 5. RENDER LOGIC ---
+  
+  // Early return MOVED to bottom
+  if (loadingSummary) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>;
+  if (!summary) return <div className="min-h-screen flex items-center justify-center">Unable to load dashboard.</div>;
 
-  /***************************************************************************
-   * Students / Analytics / Earnings code preserved from your original file
-   ***************************************************************************/
-
-  // -- STUDENTS (kept unchanged) --
-  const [studentsLoading, setStudentsLoading] = useState(false);
-  const [studentPurchases, setStudentPurchases] = useState<any[]>([]);
-  const [studentsPage, setStudentsPage] = useState(1);
-  const [studentsPageCount, setStudentsPageCount] = useState(1);
-  const STUDENTS_PAGE_SIZE = 10;
-
-  async function loadStudentPurchases(page = 1) {
-    setStudentsLoading(true);
-    try {
-      const token = localStorage.getItem('access');
-      const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } });
-      const uid = me.data.id;
-
-      const res = await axios.get(`${API_BASE}/enrollments/?course__creator=${uid}&purchased=true&page=${page}&page_size=${STUDENTS_PAGE_SIZE}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const items = res.data.results || res.data || [];
-      setStudentPurchases(items);
-      if (res.data.count) setStudentsPageCount(Math.ceil(res.data.count / STUDENTS_PAGE_SIZE));
-      else setStudentsPageCount(Math.max(1, Math.ceil((items.length || 0) / STUDENTS_PAGE_SIZE)));
-    } catch (err) {
-      console.error('Failed to load student purchases via enrollments:', err);
-      try {
-        const token = localStorage.getItem('access');
-        const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } });
-        const uid = me.data.id;
-        const res2 = await axios.get(`${API_BASE}/payments/?tutor=${uid}&status=success&page=${page}&page_size=${STUDENTS_PAGE_SIZE}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const items2 = res2.data.results || res2.data || [];
-        setStudentPurchases(items2);
-        if (res2.data.count) setStudentsPageCount(Math.ceil(res2.data.count / STUDENTS_PAGE_SIZE));
-        else setStudentsPageCount(Math.max(1, Math.ceil((items2.length || 0) / STUDENTS_PAGE_SIZE)));
-      } catch (err2) {
-        console.error('Fallback payments endpoint failed too:', err2);
-        setStudentPurchases([]);
-        setStudentsPageCount(1);
-      }
-    } finally {
-      setStudentsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (isActivePath('students')) loadStudentPurchases(studentsPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentsPage, location.pathname]);
-
-  // -- ANALYTICS (kept unchanged) --
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [salesByMonth, setSalesByMonth] = useState<any[]>([]);
-
-  async function loadAnalytics() {
-    setAnalyticsLoading(true);
-    try {
-      const token = localStorage.getItem('access');
-      const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } });
-      const uid = me.data.id;
-
-      const tryAnalytics = await axios.get(`${API_BASE}/sales/analytics/?tutor=${uid}&months=6`, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).catch(() => null);
-
-      if (tryAnalytics && tryAnalytics.status === 200 && tryAnalytics.data && Array.isArray(tryAnalytics.data.data || tryAnalytics.data)) {
-        const data = tryAnalytics.data.data || tryAnalytics.data;
-        const normalized = data.map((r: any) => ({
-          month: r.month || r.label || r.name,
-          sales: Number(r.sales || r.count || 0),
-          revenue: Number(r.revenue || r.amount || r.total || 0)
-        }));
-        setSalesByMonth(normalized);
-      } else {
-        const res = await axios.get(`${API_BASE}/enrollments/?course__creator=${uid}&page_size=1000`, { headers: { Authorization: `Bearer ${token}` } });
-        const items = res.data.results || res.data || [];
-        const map = new Map<string, { month: string; sales: number; revenue: number }>();
-        items.forEach((it: any) => {
-          const dateStr = it.purchased_at || it.created_at || it.date || it.timestamp;
-          const d = dateStr ? new Date(dateStr) : new Date();
-          if (isNaN(d.getTime())) return;
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
-          const cur = map.get(key) || { month: label, sales: 0, revenue: 0 };
-          cur.sales += 1;
-          const amount = Number(it.amount ?? it.price ?? it.course?.price ?? 0);
-          cur.revenue += amount;
-          map.set(key, cur);
-        });
-        const arr = Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
-        setSalesByMonth(arr.slice(-6));
-      }
-    } catch (err) {
-      console.error('Failed to load analytics, using fallback mock:', err);
-      const now = new Date();
-      const months = [];
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
-        months.push({ month: label, sales: Math.floor(Math.random() * 30) + 5, revenue: Math.floor(Math.random() * 50000) + 2000 });
-      }
-      setSalesByMonth(months);
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (isActivePath('analytics')) loadAnalytics();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
-
-  const chartData = useMemo(() => {
-    return salesByMonth.map(s => ({ name: s.month, Sales: s.sales, Revenue: s.revenue }));
-  }, [salesByMonth]);
-
-  // -- EARNINGS (kept unchanged) --
-  const [earningsLoading, setEarningsLoading] = useState(false);
-  const [totalEarnings, setTotalEarnings] = useState<number>(0);
-  const [showPaystackModal, setShowPaystackModal] = useState(false);
-  const [paystackCreds, setPaystackCreds] = useState({
-    business_name: '',
-    paystack_public_key: '',
-    paystack_secret_key: '',
-    paystack_email: ''
-  });
-
-  async function loadEarnings() {
-    setEarningsLoading(true);
-    try {
-      const token = localStorage.getItem('access');
-      if (!token) {
-        console.warn('No auth token available for earnings');
-        setTotalEarnings(0);
-        return;
-      }
-
-      const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } });
-      const uid = me.data.id;
-      console.log('[TutorDashboard] Loading earnings for tutor id:', uid);
-
-      // Fetch payments for courses and diplomas created by this tutor
-      let total = 0;
-      try {
-        const paymentsRes = await axios.get(`${API_BASE}/payments/?tutor=${uid}&page_size=1000&status=success`, { headers: { Authorization: `Bearer ${token}` } });
-        console.log('[TutorDashboard] Payments response:', paymentsRes.data);
-
-        if (paymentsRes && paymentsRes.data) {
-          const items = paymentsRes.data.results || paymentsRes.data || [];
-          // Sum all successful payments - amount is decimal
-          total = items.reduce((acc: number, it: any) => {
-            const amount = parseFloat(it.amount || it.creator_amount || 0);
-            return acc + (isNaN(amount) ? 0 : amount);
-          }, 0);
-          console.log('[TutorDashboard] Total earnings from payments:', total);
-          setTotalEarnings(total);
-        }
-      } catch (paymentErr) {
-        console.warn('[TutorDashboard] Payments endpoint failed, trying fallback:', paymentErr);
-        // Fallback: try from enrollments if payments endpoint fails
-        try {
-          const enrollRes = await axios.get(`${API_BASE}/enrollments/?course__creator=${uid}&page_size=1000&purchased=true`, { headers: { Authorization: `Bearer ${token}` } });
-          const items = enrollRes.data.results || enrollRes.data || [];
-          total = items.reduce((acc: number, it: any) => {
-            const amount = parseFloat(it.course?.price || 0);
-            return acc + (isNaN(amount) ? 0 : amount);
-          }, 0);
-          console.log('[TutorDashboard] Total earnings from enrollments:', total);
-          setTotalEarnings(total);
-        } catch (enrollErr) {
-          console.error('[TutorDashboard] Both payments and enrollments failed:', enrollErr);
-          setTotalEarnings(0);
-        }
-      }
-    } catch (err) {
-      console.error('[TutorDashboard] Failed to load earnings:', err);
-      setTotalEarnings(0);
-    } finally {
-      setEarningsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    // Load earnings when dashboard mounts OR when navigating to earnings tab
-    if (isActivePath('earnings')) {
-      loadEarnings();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
-
-  const platformFee = +(totalEarnings * 0.05).toFixed(2);
-  const tutorShare = +(totalEarnings - platformFee).toFixed(2);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('tutor_paystack_creds');
-    if (saved) {
-      try { setPaystackCreds(JSON.parse(saved)); } catch { /* ignore */ }
-    }
-  }, []);
-
-  function savePaystackCredsToLocal() {
-    localStorage.setItem('tutor_paystack_creds', JSON.stringify(paystackCreds));
-    alert('Paystack credentials saved locally (UI-only). We will wire backend next.');
-    setShowPaystackModal(false);
-  }
-
-  /***************************************************************************
-   * Upload helpers and states are preserved so child components can call the
-   * same handlers (we removed the modal UI and sidebar quick action).
-   *
-   * This aligns with your request: tutors will use the CreateCourse page for
-   * uploads. The dashboard no longer shows the upload modal.
-   ***************************************************************************/
-  const [myCourses, setMyCourses] = useState<any[]>([]);
-  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
-  const [courseFile, setCourseFile] = useState<File | null>(null);
-  const [uploadingCourseImage, setUploadingCourseImage] = useState(false);
-
-  const [selectedLessonCourseId, setSelectedLessonCourseId] = useState<number | null>(null);
-  const [courseModules, setCourseModules] = useState<any[]>([]);
-  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
-  const [lessonFile, setLessonFile] = useState<File | null>(null);
-  const [uploadingLessonMedia, setUploadingLessonMedia] = useState(false);
-  const [durationError, setDurationError] = useState<string | null>(null);
-
-  const [useYouTubeEmbed, setUseYouTubeEmbed] = useState(false);
-  const [youtubeUrl, setYoutubeUrl] = useState('');
-
-  // fetch tutor courses for dropdown (kept for programmatic use)
-  async function loadMyCourses() {
-    try {
-      const token = localStorage.getItem('access');
-      const res = await axios.get(`${API_BASE}/courses/?page_size=1000&creator=${''}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => null);
-
-      let items: any[] = [];
-      if (res && (res.data.results || res.data)) {
-        items = res.data.results || res.data;
-      } else {
-        const res2 = await axios.get(`${API_BASE}/courses/?page_size=1000`, { headers: { Authorization: `Bearer ${localStorage.getItem('access')}` } });
-        items = res2.data.results || res2.data || [];
-        if (summary?.username) {
-          items = items.filter(it => String(it.creator || '').toLowerCase().includes(String(summary.username).toLowerCase()));
-        }
-      }
-      setMyCourses(items || []);
-      if (items && items.length > 0 && selectedCourseId === null) {
-        setSelectedCourseId(items[0].id);
-      }
-    } catch (err) {
-      console.error('Failed to fetch tutor courses for upload modal:', err);
-    }
-  }
-
-  // fetch modules+lessons of selected course
-  async function loadCourseModules(courseId: number | null) {
-    setCourseModules([]);
-    setSelectedLessonId(null);
-    if (!courseId) return;
-    try {
-      const token = localStorage.getItem('access');
-      const res = await axios.get(`${API_BASE}/courses/${courseId}/`, { headers: { Authorization: `Bearer ${token}` } });
-      const modules = res.data.modules || [];
-      setCourseModules(modules);
-    } catch (err) {
-      console.error('Failed to fetch course modules for lessons selection:', err);
-    }
-  }
-
-  // helper to upload file (returns { name, url }) -- kept for course images & legacy endpoints
-  async function postFileToEndpoint(formFile: File, endpoint: string) {
-    const token = localStorage.getItem('access');
-    const fd = new FormData();
-    fd.append('file', formFile);
-    const res = await axios.post(`${API_BASE}${endpoint}`, fd, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      }
-    });
-    return res.data;
-  }
-
-  // Upload course image flow (unchanged)
-  async function handleUploadCourseImage() {
-    if (!selectedCourseId) { alert('Select a course first'); return; }
-    if (!courseFile) { alert('Choose an image file'); return; }
-    setUploadingCourseImage(true);
-    try {
-      // upload to endpoint
-      const uploaded = await postFileToEndpoint(courseFile, '/uploads/courses/image/');
-      const savedName = uploaded?.name || uploaded?.url || '';
-      if (!savedName) throw new Error('Upload did not return file name');
-
-      const token = localStorage.getItem('access');
-      await axios.patch(`${API_BASE}/courses/${selectedCourseId}/`, { image: savedName }, { headers: { Authorization: `Bearer ${token}` } });
-
-      alert('Course image uploaded successfully. Page will refresh to show changes.');
-      window.location.reload();
-    } catch (err: any) {
-      console.error('Failed to upload course image:', err);
-      alert(err?.response?.data?.detail || err?.message || 'Upload failed');
-    } finally {
-      setUploadingCourseImage(false);
-    }
-  }
-
-  // ---------- CLIENT-SIDE DURATION CHECK ----------
-  function getVideoDuration(file: File): Promise<number> {
-    return new Promise((resolve, reject) => {
-      if (!file) return resolve(0);
-      const url = URL.createObjectURL(file);
-      const v = document.createElement('video');
-      v.preload = 'metadata';
-      v.src = url;
-      v.onloadedmetadata = () => {
-        URL.revokeObjectURL(url);
-        resolve(v.duration || 0);
-      };
-      v.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Could not read video metadata'));
-      };
-    });
-  }
-
-  async function onLessonFilePicked(file: File | null) {
-    setDurationError(null);
-    setLessonFile(null);
-    if (!file) return;
-    if (useYouTubeEmbed) return;
-
-    if (!file.type.startsWith('video/')) {
-      setDurationError('Please select a valid video file (mp4, webm, etc.) or choose YouTube embed.');
-      return;
-    }
-
-    try {
-      const duration = await getVideoDuration(file);
-      const MAX_UPLOAD_SECONDS = 6 * 60;
-      if (duration > MAX_UPLOAD_SECONDS) {
-        setDurationError(`Video is too long (${Math.round(duration)}s). Maximum allowed is ${MAX_UPLOAD_SECONDS}s (6 minutes). Use a YouTube embed for longer videos.`);
-        setLessonFile(null);
-      } else {
-        setLessonFile(file);
-      }
-    } catch (err) {
-      console.error('Error reading video duration', err);
-      setDurationError('Could not determine video length. Try a different file or use YouTube embed.');
-    }
-  }
-
-  // ---------- PRESIGN + UPLOAD FLOW ----------
-  async function requestPresignUrl(filename: string, contentType: string, lessonId: number, courseId?: number) {
-    const token = localStorage.getItem('access');
-    const res = await axios.post(`${API_BASE}/aws/presign/`, {
-      filename,
-      content_type: contentType,
-      lesson_id: lessonId,
-      course_id: courseId
-    }, { headers: { Authorization: `Bearer ${token}` }});
-    return res.data; // expects { url, key }
-  }
-
-  async function handleUploadLessonMedia() {
-    if (!selectedLessonCourseId) { alert('Select a course first'); return; }
-    if (!selectedLessonId) { alert('Select a lesson'); return; }
-
-    // If tutor selected YouTube embed option
-    if (useYouTubeEmbed) {
-      if (!youtubeUrl) { alert('Enter the YouTube URL to embed'); return; }
-      try {
-        const token = localStorage.getItem('access');
-        await axios.patch(`${API_BASE}/lessons/${selectedLessonId}/`, { video: youtubeUrl }, { headers: { Authorization: `Bearer ${token}` } });
-        alert('YouTube link saved to lesson. Changes applied.');
-        window.location.reload();
-      } catch (err: any) {
-        console.error('Failed to save YouTube link', err);
-        alert(err?.response?.data?.detail || 'Failed to save YouTube link');
-      }
-      return;
-    }
-
-    if (!lessonFile) { alert('Choose a video file to upload (or use YouTube embed)'); return; }
-
-    setUploadingLessonMedia(true);
-    try {
-      const presign = await requestPresignUrl(lessonFile.name, lessonFile.type, selectedLessonId, selectedLessonCourseId || undefined);
-      if (!presign?.url) throw new Error('Presign endpoint did not return upload URL');
-
-      const putRes = await fetch(presign.url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': lessonFile.type
-        },
-        body: lessonFile
-      });
-
-      if (!putRes.ok) throw new Error('Upload to S3 failed');
-
-      const token = localStorage.getItem('access');
-      await axios.patch(`${API_BASE}/lessons/${selectedLessonId}/`, { video: presign.key }, { headers: { Authorization: `Bearer ${token}` }});
-
-      alert('Upload successful. Backend will process/transcode the file; changes will be available shortly.');
-      window.location.reload();
-    } catch (err: any) {
-      console.error('Failed to upload lesson media', err);
-      alert(err?.response?.data?.detail || err?.message || 'Upload failed');
-    } finally {
-      setUploadingLessonMedia(false);
-    }
-  }
-
-  // Upload lesson media legacy flow (kept for backwards compatibility)
-  async function handleUploadLessonMediaLegacy() {
-    if (!selectedLessonCourseId) { alert('Select a course first'); return; }
-    if (!selectedLessonId) { alert('Select a lesson'); return; }
-    if (!lessonFile) { alert('Choose a file to upload'); return; }
-
-    setUploadingLessonMedia(true);
-    try {
-      const uploaded = await postFileToEndpoint(lessonFile, '/uploads/lessons/media/');
-      const savedName = uploaded?.name || uploaded?.url || '';
-      if (!savedName) throw new Error('Upload did not return file name');
-
-      const token = localStorage.getItem('access');
-      await axios.patch(`${API_BASE}/lessons/${selectedLessonId}/`, { video: savedName }, { headers: { Authorization: `Bearer ${token}` } });
-
-      alert('Lesson media uploaded and saved. Refreshing page to apply changes.');
-      window.location.reload();
-    } catch (err: any) {
-      console.error('Failed to upload lesson media:', err);
-      alert(err?.response?.data?.detail || err?.message || 'Upload failed');
-    } finally {
-      setUploadingLessonMedia(false);
-    }
-  }
-
-  /***************************************************************************
-   * UI (sidebar is the single nav; upload quick action removed from sidebar)
-   ***************************************************************************/
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50">
       {/* Top Header */}
@@ -698,7 +587,6 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900">{summary?.username || 'Tutor'}</h3>
-              <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
                     <p className="text-sm text-gray-500">Certified Tutor</p>
                     <div className="flex items-center mt-1">
                       {[1,2,3,4,5].map((i) => (<Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />))}
@@ -733,8 +621,6 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                 <LogOut className="w-5 h-5" />
                 Logout
               </button>
-
-              {/* Note: Upload Media quick action removed from sidebar per request */}
             </div>
           </motion.aside>
 
@@ -950,12 +836,6 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                         </div>
                       </div>
 
-                      <div className="bg-white rounded shadow p-4">
-                        <h4 className="font-semibold mb-2">Recent payouts (preview)</h4>
-                        <div className="text-sm text-gray-500">We will show recent cashout history here once integrated with payouts.</div>
-                        <div className="mt-4 text-sm text-gray-700">For now, connect your Paystack credentials to enable manual withdrawals on the backend later.</div>
-                      </div>
-
                       <div className="grid md:grid-cols-3 gap-6 mt-6">
                         <div className="md:col-span-2">
                           <PaymentHistory userRole="tutor" />
@@ -1051,8 +931,9 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         </div>
       </div>
 
-      {/* Message Modal */}
+      {/* Message Modal & Messages - MOVED OUTSIDE SIDEBAR TO FIX MOBILE ISSUE */}
       <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} />
+      <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
     </div>
   );
 }

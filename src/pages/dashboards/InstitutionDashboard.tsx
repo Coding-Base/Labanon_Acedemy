@@ -2,14 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+// 1. IMPORT SECURE API INSTANCE
+import api from '../../utils/axiosInterceptor'; 
 import {
   Home,
   BookOpen,
   Users,
-  BarChart3,
   DollarSign,
-  Calendar,
   Bell,
   ChevronRight,
   PlusCircle,
@@ -24,11 +23,10 @@ import {
   Globe,
   Save,
   Upload,
-  Image as ImageIcon
+  Loader2
 } from 'lucide-react';
 
 import labanonLogo from '../labanonlogo.png';
-// Reusing your existing Course Management components
 import ManageCourses from '../ManageCourses';
 import ManageCourseDetail from '../ManageCourseDetail';
 import CreateCourse from '../CreateCourse';
@@ -47,10 +45,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from 'recharts';
-
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
 
 // --- Types ---
 interface DashboardSummary {
@@ -69,17 +64,15 @@ function PortfolioEditor() {
     description: '',
     website: '',
     location: '',
-    images: [] as string[] // Mock images for now
+    images: [] as string[]
   });
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Connect to Backend Endpoint /api/institution/portfolio/
     alert('Portfolio saved locally! (Backend integration required)');
   };
 
   const handlePublish = () => {
-    // TODO: Connect to Backend Publish Logic
     alert(`Portfolio Published! Accessible at /${data.name.replace(/\s+/g, '-').toLowerCase()}/portfolio`);
   };
 
@@ -179,7 +172,6 @@ function DiplomaCreator() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Connect to Backend Endpoint /api/diplomas/
     alert('Diploma Created! Receipt generation logic initialized.');
   };
 
@@ -301,9 +293,20 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   const [contactAdminOpen, setContactAdminOpen] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
 
+  // --- Data States ---
   const initialFromState = (location.state as any)?.summary;
   const [summary, setSummary] = useState<DashboardSummary | null>(props.summary ?? initialFromState ?? null);
   const [loadingSummary, setLoadingSummary] = useState(!summary);
+  
+  // Real Analytics States
+  const [diplomaCount, setDiplomaCount] = useState(0);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  
+  // New States for Calculated Totals
+  const [calculatedRevenue, setCalculatedRevenue] = useState(0);
+  const [calculatedStudents, setCalculatedStudents] = useState(0);
+
   const base = '/institution';
 
   // Logout Function
@@ -313,37 +316,125 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
     navigate('/login', { replace: true });
   };
 
-  // Fetch Summary
+  // Helper: Process payments for chart
+  // NOTE: Now uses 'creator_amount' for calculation
+  const processRevenueData = (payments: any[]) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const groupedData: Record<string, number> = {};
+
+    payments.forEach(payment => {
+      const dateStr = payment.created_at || payment.date;
+      if (!dateStr) return;
+      
+      const date = new Date(dateStr); 
+      const monthKey = `${months[date.getMonth()]} ${date.getFullYear()}`;
+      
+      if (payment.status === 'success' || payment.verified === true) {
+        // USE CREATOR AMOUNT
+        const val = parseFloat(payment.creator_amount || payment.amount || '0');
+        groupedData[monthKey] = (groupedData[monthKey] || 0) + val;
+      }
+    });
+
+    return Object.keys(groupedData).map(key => ({
+      name: key,
+      revenue: groupedData[key]
+    })).slice(-6); 
+  };
+
+  // Fetch Summary & Analytics
   useEffect(() => {
     let mounted = true;
-    async function loadSummary() {
-      if (summary) {
-        setLoadingSummary(false);
-        return;
-      }
+    async function loadDashboardData() {
       const token = localStorage.getItem('access');
       if (!token) {
         window.location.href = '/login';
         return;
       }
-      setLoadingSummary(true);
+      
+      if (!summary) setLoadingSummary(true);
+      setLoadingAnalytics(true);
+
       try {
-        const res = await axios.get(`${API_BASE}/dashboard/`, {
-          headers: { Authorization: `Bearer ${token}` },
+        // 1. Fetch Main Summary
+        const summaryReq = api.get('/dashboard/');
+        
+        // 2. Fetch Diplomas (to get count)
+        const diplomaReq = api.get('/diploma-enrollments/');
+        
+        // 3. GET INSTITUTION ID FIRST
+        const instReq = await api.get('/institutions/my_institution/');
+        const institutionId = instReq.data?.id;
+
+        // 4. Fetch Payments using the Institution ID
+        // Using page_size=100 to gather enough data for accurate calculations
+        const paymentsReq = api.get('/payments/', { 
+          params: { 
+            diploma__institution: institutionId, 
+            page: 1, 
+            page_size: 100 
+          } 
         });
+
+        // Resolve remaining promises
+        const [summaryRes, diplomaRes, paymentsRes] = await Promise.all([
+          summaryReq,
+          diplomaReq.catch(() => ({ data: [] })), 
+          paymentsReq.catch(() => ({ data: [] }))
+        ]);
+
         if (!mounted) return;
-        setSummary(res.data);
+
+        setSummary(summaryRes.data);
+
+        // Process Diploma Count 
+        if (diplomaRes.data) {
+          const count = Array.isArray(diplomaRes.data) 
+            ? diplomaRes.data.length 
+            : (diplomaRes.data.count || 0);
+          setDiplomaCount(count);
+        }
+
+        // Process Revenue Data (Chart + Totals)
+        if (paymentsRes.data) {
+          const paymentList = Array.isArray(paymentsRes.data) 
+            ? paymentsRes.data 
+            : (paymentsRes.data.results || []);
+          
+          // 1. Update Chart Data (now uses creator_amount)
+          setRevenueData(processRevenueData(paymentList));
+
+          // 2. Calculate Totals directly from response
+          let totalRev = 0;
+          const uniqueStudents = new Set();
+
+          paymentList.forEach((p: any) => {
+            if (p.status === 'success' || p.verified === true) {
+              // USE CREATOR AMOUNT
+              totalRev += parseFloat(p.creator_amount || '0');
+              if (p.user) uniqueStudents.add(p.user);
+            }
+          });
+
+          setCalculatedRevenue(totalRev);
+          setCalculatedStudents(uniqueStudents.size);
+        }
+
       } catch (err) {
-        console.error('Failed to fetch dashboard summary:', err);
+        console.error('Failed to fetch dashboard data:', err);
       } finally {
-        if (mounted) setLoadingSummary(false);
+        if (mounted) {
+          setLoadingSummary(false);
+          setLoadingAnalytics(false);
+        }
       }
     }
-    loadSummary();
+    
+    loadDashboardData();
     return () => { mounted = false; };
-  }, [props.summary, location.state, summary]);
+  }, [props.summary, location.state]);
 
-  if (loadingSummary) return <div className="min-h-screen flex items-center justify-center">Loading dashboard...</div>;
+  if (loadingSummary) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>;
   if (!summary) return <div className="min-h-screen flex items-center justify-center">Unable to load dashboard.</div>;
 
   // Navigation Items
@@ -478,7 +569,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
           )}
 
           {/* Main Content Area */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl shadow-lg min-h-[600px]">
               <div className="p-6">
                 <Routes>
@@ -497,13 +588,33 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         </div>
                       </div>
 
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                      {/* Stats Grid - Mobile Responsive */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
                         {[
-                          { title: 'Total Students', value: summary.total_students || 0, icon: <Users className="w-6 h-6" />, color: 'bg-blue-500' },
-                          { title: 'Online Courses', value: summary.courses_count || 0, icon: <BookOpen className="w-6 h-6" />, color: 'bg-green-500' },
-                          { title: 'Diplomas Sold', value: 0, icon: <GraduationCap className="w-6 h-6" />, color: 'bg-purple-500' }, // Mock data
-                          { title: 'Total Revenue', value: `₦${(summary.total_earnings || 0).toLocaleString()}`, icon: <DollarSign className="w-6 h-6" />, color: 'bg-teal-500' },
+                          { 
+                            title: 'Total Students', 
+                            value: calculatedStudents, 
+                            icon: <Users className="w-6 h-6" />, 
+                            color: 'bg-blue-500' 
+                          },
+                          { 
+                            title: 'Online Courses', 
+                            value: summary.courses_count || 0, 
+                            icon: <BookOpen className="w-6 h-6" />, 
+                            color: 'bg-green-500' 
+                          },
+                          { 
+                            title: 'Diplomas Sold', 
+                            value: diplomaCount, 
+                            icon: <GraduationCap className="w-6 h-6" />, 
+                            color: 'bg-purple-500' 
+                          }, 
+                          { 
+                            title: 'Total Revenue', 
+                            value: `₦${calculatedRevenue.toLocaleString()}`, 
+                            icon: <DollarSign className="w-6 h-6" />, 
+                            color: 'bg-teal-500' 
+                          }
                         ].map((stat, index) => (
                           <div key={index} className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between mb-4">
@@ -517,11 +628,27 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         ))}
                       </div>
 
-                      {/* Simple Chart Placeholder (Can be connected to actual data later) */}
-                      <div className="bg-white rounded-xl border border-gray-100 p-6">
+                      {/* Revenue Chart - WIRED UP & Responsive */}
+                      <div className="bg-white rounded-xl border border-gray-100 p-6 min-w-0">
                         <h3 className="text-lg font-bold mb-4">Revenue Overview</h3>
-                        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                           <p className="text-gray-400">Chart data will appear here once sales begin.</p>
+                        <div className="h-72 w-full min-w-0">
+                           {loadingAnalytics ? (
+                             <div className="h-full flex items-center justify-center text-gray-400">Loading chart data...</div>
+                           ) : revenueData.length > 0 ? (
+                             <ResponsiveContainer width="100%" height="100%">
+                               <BarChart data={revenueData}>
+                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
+                                 <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `₦${val}`} tick={{fontSize: 12}} />
+                                 <Tooltip formatter={(val: number) => `₦${val.toLocaleString()}`} cursor={{fill: '#f0fdf4'}} />
+                                 <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+                               </BarChart>
+                             </ResponsiveContainer>
+                           ) : (
+                             <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                <p className="text-gray-400">No payment data available for the chart yet.</p>
+                             </div>
+                           )}
                         </div>
                       </div>
                     </div>
@@ -579,9 +706,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   {/* Default redirect to overview */}
                   <Route path="" element={
                     <div className="p-8 text-center">
-                       <h2 className="text-2xl font-bold mb-4">Welcome to the Institution Portal</h2>
-                       <p className="text-gray-600 mb-8">Manage your digital presence, onsite diplomas, and online courses all in one place.</p>
-                       <button onClick={() => navigate('overview')} className="px-6 py-3 bg-green-600 text-white rounded-lg">Go to Overview</button>
+                        <h2 className="text-2xl font-bold mb-4">Welcome to the Institution Portal</h2>
+                        <p className="text-gray-600 mb-8">Manage your digital presence, onsite diplomas, and online courses all in one place.</p>
+                        <button onClick={() => navigate('overview')} className="px-6 py-3 bg-green-600 text-white rounded-lg">Go to Overview</button>
                     </div>
                   } />
 

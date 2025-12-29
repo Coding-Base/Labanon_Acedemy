@@ -1,23 +1,25 @@
+// src/components/InstitutionPayments.tsx
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
-import axios from 'axios';
+import { DollarSign, TrendingUp, Calendar, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+// 1. Use the secure API instance
+import api from '../utils/axiosInterceptor';
 import PaystackSubAccountForm from './PaystackSubAccountForm';
-
-const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function InstitutionPayments() {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Stats State
   const [stats, setStats] = useState({
-    total_amount: 0,
-    total_success: 0,
-    total_pending: 0,
-    total_failed: 0,
+    total_gross: 0,      // Total amount paid by students
+    total_earnings: 0,   // Total creator_amount (Your Share)
+    total_fees: 0,       // Total platform_fee
     success_count: 0,
     pending_count: 0,
     failed_count: 0
   });
+
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [pageCount, setPageCount] = useState(1);
@@ -29,24 +31,17 @@ export default function InstitutionPayments() {
   useEffect(() => {
     const loadInstitution = async () => {
       try {
-        const token = localStorage.getItem('access');
-        
         // Get institution for current user
         try {
-          const instRes = await axios.get(`${API_BASE}/institutions/my_institution/`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const instRes = await api.get('/institutions/my_institution/');
           setInstitutionId(instRes.data.id);
         } catch (instError: any) {
           // If endpoint returns 404, try to create an institution
           if (instError.response?.status === 404) {
-            const userRes = await axios.get(`${API_BASE}/users/me/`, {
-              headers: { Authorization: `Bearer ${token}` }
+            const userRes = await api.get('/users/me/');
+            const createRes = await api.post('/institutions/', { 
+              name: `${userRes.data.username}'s Institution` 
             });
-            const createRes = await axios.post(`${API_BASE}/institutions/`, 
-              { name: `${userRes.data.username}'s Institution` },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
             setInstitutionId(createRes.data.id);
           } else {
             throw instError;
@@ -74,85 +69,94 @@ export default function InstitutionPayments() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('access');
-      if (!token) {
-        setError('Not authenticated. Please log in.');
-        setLoading(false);
-        return;
-      }
+      // 1. Fetch Course Payments
+      const courseReq = api.get('/payments/', {
+        params: { 
+          page,
+          page_size: pageSize,
+          course__institution: institutionId
+        }
+      });
+
+      // 2. Fetch Diploma Payments
+      const diplomaReq = api.get('/payments/', {
+        params: { 
+          page,
+          page_size: pageSize,
+          diploma__institution: institutionId
+        }
+      });
+
+      // Execute both
+      const [courseRes, diplomaRes] = await Promise.all([
+        courseReq.catch(() => ({ data: { results: [], count: 0 } })),
+        diplomaReq.catch(() => ({ data: { results: [], count: 0 } }))
+      ]);
+
+      const courseResults = courseRes.data.results || [];
+      const diplomaResults = diplomaRes.data.results || [];
+
+      // 3. Deduplicate Transactions
+      // We use a Map keyed by ID to ensure no duplicate transactions appear in the table
+      const uniquePaymentsMap = new Map();
       
-      // Fetch course payments for this institution
-      let coursePaymentsRes: any = { data: { results: [], count: 0 } };
-      try {
-        coursePaymentsRes = await axios.get(`${API_BASE}/payments/`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { 
-            page,
-            page_size: pageSize,
-            course__institution: institutionId
-          }
-        });
-      } catch (err: any) {
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          throw err; // Re-throw auth errors
+      [...courseResults, ...diplomaResults].forEach(p => {
+        uniquePaymentsMap.set(p.id, p);
+      });
+
+      // Convert back to array & Sort by date desc
+      const allPayments = Array.from(uniquePaymentsMap.values()).sort((a: any, b: any) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setPayments(allPayments);
+
+      // Total count logic (approximation since we are merging two paginated lists)
+      // Ideally, the backend should provide a single endpoint for 'all institution payments'
+      const totalCount = (courseRes.data.count || 0) + (diplomaRes.data.count || 0);
+      setPageCount(Math.ceil(totalCount / pageSize) || 1);
+
+      // 4. Calculate Stats based on the fetched batch
+      // (Note: For true global totals, the backend should provide a /stats endpoint. 
+      // These totals currently reflect the fetched page/batch mostly, unless we fetch all.
+      // Assuming for now we calculate based on what we see or what is loaded.)
+      
+      let gross = 0;
+      let earnings = 0;
+      let fees = 0;
+      let sCount = 0;
+      let pCount = 0;
+      let fCount = 0;
+
+      allPayments.forEach((p: any) => {
+        const amount = parseFloat(p.amount || '0');
+        const creatorAmt = parseFloat(p.creator_amount || '0');
+        const fee = parseFloat(p.platform_fee || '0');
+
+        if (p.status === 'success') {
+          gross += amount;
+          earnings += creatorAmt;
+          fees += fee;
+          sCount++;
+        } else if (p.status === 'pending') {
+          pCount++;
+        } else if (p.status === 'failed') {
+          fCount++;
         }
-        // Otherwise silently fail for this endpoint
-        console.warn('Failed to load course payments:', err);
-      }
-
-      // Fetch diploma payments for this institution
-      let diplomaPaymentsRes: any = { data: { results: [], count: 0 } };
-      try {
-        diplomaPaymentsRes = await axios.get(`${API_BASE}/payments/`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { 
-            page,
-            page_size: pageSize,
-            diploma__institution: institutionId
-          }
-        });
-      } catch (err: any) {
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          throw err; // Re-throw auth errors
-        }
-        // Otherwise silently fail for this endpoint
-        console.warn('Failed to load diploma payments:', err);
-      }
-
-      // Combine both course and diploma payments
-      const coursePayments = coursePaymentsRes.data.results || [];
-      const diplomaPayments = diplomaPaymentsRes.data.results || [];
-      const allPayments = [...coursePayments, ...diplomaPayments];
-
-      setPayments(Array.isArray(allPayments) ? allPayments : []);
-      const totalCount = (coursePaymentsRes.data.count || 0) + (diplomaPaymentsRes.data.count || 0);
-      setPageCount(Math.ceil(totalCount / pageSize));
-
-      // Calculate stats
-      const successPayments = allPayments.filter((p: any) => p.status === 'success');
-      const pendingPayments = allPayments.filter((p: any) => p.status === 'pending');
-      const failedPayments = allPayments.filter((p: any) => p.status === 'failed');
-
-      const totalAmount = allPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
-      const successAmount = successPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+      });
 
       setStats({
-        total_amount: totalAmount,
-        total_success: successAmount,
-        total_pending: pendingPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0),
-        total_failed: failedPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0),
-        success_count: successPayments.length,
-        pending_count: pendingPayments.length,
-        failed_count: failedPayments.length
+        total_gross: gross,
+        total_earnings: earnings,
+        total_fees: fees,
+        success_count: sCount,
+        pending_count: pCount,
+        failed_count: fCount
       });
+
     } catch (err: any) {
       console.error('[InstitutionPayments] Failed to load payments:', err);
-      const status = err.response?.status;
-      if (status === 401 || status === 403) {
-        setError('Session expired. Please refresh or log in again.');
-      } else {
-        setError(err.response?.data?.detail || 'Failed to load payments');
-      }
+      setError('Failed to load payment history.');
     } finally {
       setLoading(false);
     }
@@ -161,13 +165,10 @@ export default function InstitutionPayments() {
   if (institutionLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin">Loading institution...</div>
+        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
       </div>
     );
   }
-
-  const platformFee = +(stats.total_success * 0.05).toFixed(2);
-  const institutionShare = +(stats.total_success - platformFee).toFixed(2);
 
   return (
     <div>
@@ -182,83 +183,82 @@ export default function InstitutionPayments() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Total Amount */}
-        <div className="bg-white rounded-xl shadow p-6">
+        
+        {/* Card 1: Your Earnings (Total Creator Amount) */}
+        <div className="bg-white rounded-xl shadow p-6 border-l-4 border-teal-500">
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-sm text-gray-600 font-medium">Total Revenue</div>
-              <div className="text-3xl font-bold text-gray-900 mt-2">₦{stats.total_amount.toLocaleString()}</div>
-              <div className="text-xs text-gray-500 mt-2">From all course sales</div>
+              <div className="text-sm text-gray-600 font-medium">Your Earnings</div>
+              <div className="text-3xl font-bold text-teal-600 mt-2">₦{stats.total_earnings.toLocaleString()}</div>
+              <div className="text-xs text-gray-500 mt-2">Net income (95%)</div>
             </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-600" />
+            <div className="p-3 bg-teal-50 rounded-lg">
+              <DollarSign className="w-6 h-6 text-teal-600" />
             </div>
           </div>
         </div>
 
-        {/* Successful Payments */}
-        <div className="bg-white rounded-xl shadow p-6">
+        {/* Card 2: Successful Payments (Total Gross) */}
+        <div className="bg-white rounded-xl shadow p-6 border-l-4 border-green-500">
           <div className="flex items-start justify-between">
             <div>
               <div className="text-sm text-gray-600 font-medium">Successful Payments</div>
-              <div className="text-3xl font-bold text-green-600 mt-2">₦{stats.total_success.toLocaleString()}</div>
-              <div className="text-xs text-gray-500 mt-2">{stats.success_count} transactions</div>
+              <div className="text-3xl font-bold text-gray-900 mt-2">₦{stats.total_gross.toLocaleString()}</div>
+              <div className="text-xs text-gray-500 mt-2">{stats.success_count} successful transactions</div>
             </div>
-            <div className="p-3 bg-green-100 rounded-lg">
+            <div className="p-3 bg-green-50 rounded-lg">
               <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
           </div>
         </div>
 
-        {/* Platform Fee */}
-        <div className="bg-white rounded-xl shadow p-6">
+        {/* Card 3: Total Revenue (Same as Earnings per your request) */}
+        <div className="bg-white rounded-xl shadow p-6 border-l-4 border-blue-500">
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-sm text-gray-600 font-medium">Platform Fee (5%)</div>
-              <div className="text-3xl font-bold text-red-600 mt-2">₦{platformFee.toLocaleString()}</div>
-              <div className="text-xs text-gray-500 mt-2">Your contribution</div>
+              <div className="text-sm text-gray-600 font-medium">Total Revenue</div>
+              <div className="text-3xl font-bold text-blue-600 mt-2">₦{stats.total_earnings.toLocaleString()}</div>
+              <div className="text-xs text-gray-500 mt-2">Available for withdrawal</div>
             </div>
-            <div className="p-3 bg-red-100 rounded-lg">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Platform Fees */}
+        <div className="bg-white rounded-xl shadow p-6 border-l-4 border-red-500">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-sm text-gray-600 font-medium">Platform Fees</div>
+              <div className="text-3xl font-bold text-red-600 mt-2">₦{stats.total_fees.toLocaleString()}</div>
+              <div className="text-xs text-gray-500 mt-2">5% Service charge</div>
+            </div>
+            <div className="p-3 bg-red-50 rounded-lg">
               <TrendingUp className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
 
-        {/* Your Earnings */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-sm text-gray-600 font-medium">Your Earnings (95%)</div>
-              <div className="text-3xl font-bold text-teal-600 mt-2">₦{institutionShare.toLocaleString()}</div>
-              <div className="text-xs text-gray-500 mt-2">Net earnings</div>
-            </div>
-            <div className="p-3 bg-teal-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-teal-600" />
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Summary Row */}
+      {/* Secondary Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-          <div className="text-sm text-amber-700 font-medium">Pending Payments</div>
-          <div className="text-2xl font-bold text-amber-900 mt-2">₦{stats.total_pending.toLocaleString()}</div>
-          <div className="text-xs text-amber-600 mt-1">{stats.pending_count} transactions</div>
+          <div className="text-sm text-amber-700 font-medium">Pending</div>
+          <div className="text-2xl font-bold text-amber-900 mt-1">{stats.pending_count}</div>
         </div>
 
         <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-          <div className="text-sm text-red-700 font-medium">Failed Payments</div>
-          <div className="text-2xl font-bold text-red-900 mt-2">₦{stats.total_failed.toLocaleString()}</div>
-          <div className="text-xs text-red-600 mt-1">{stats.failed_count} transactions</div>
+          <div className="text-sm text-red-700 font-medium">Failed</div>
+          <div className="text-2xl font-bold text-red-900 mt-1">{stats.failed_count}</div>
         </div>
 
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <div className="text-sm text-blue-700 font-medium">Average Transaction</div>
-          <div className="text-2xl font-bold text-blue-900 mt-2">
-            ₦{payments.length > 0 ? (stats.total_amount / payments.length).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0'}
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="text-sm text-gray-700 font-medium">Avg. Ticket Size</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">
+            ₦{stats.success_count > 0 ? (stats.total_gross / stats.success_count).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0'}
           </div>
-          <div className="text-xs text-blue-600 mt-1">{payments.length} transactions shown</div>
         </div>
       </div>
 
@@ -274,14 +274,15 @@ export default function InstitutionPayments() {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-600">
-            <div className="inline-block animate-spin mb-2">Loading payments...</div>
+          <div className="p-12 text-center text-gray-600">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-green-600" />
+            <p>Loading transactions...</p>
           </div>
         ) : payments.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-12 text-center text-gray-500">
             <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p>No payment transactions yet.</p>
-            <p className="text-sm mt-2">Payments will appear here once students purchase your courses.</p>
+            <p className="text-lg font-medium">No payment transactions found.</p>
+            <p className="text-sm mt-1">Sales from your courses and diplomas will appear here.</p>
           </div>
         ) : (
           <>
@@ -289,37 +290,49 @@ export default function InstitutionPayments() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Student</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Course</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Amount</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Item</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Gross Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Your Earnings</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-200">
                   {payments.map((payment, idx) => (
-                    <tr key={payment.id || idx} className="border-b border-gray-200 hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {payment.user?.name || payment.user?.username || payment.student_name || payment.user || 'Unknown'}
+                    // Use composite key or payment ID to ensure React doesn't complain
+                    <tr key={`${payment.id}-${idx}`} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        {payment.user?.name || payment.user?.username || `User #${payment.user}`}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {payment.course?.title || payment.diploma_title || payment.course_name || payment.diploma_name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                        ₦{Number(payment.amount || 0).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          payment.status === 'success' ? 'bg-green-100 text-green-800' :
-                          payment.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {payment.status === 'success' && <CheckCircle className="w-3 h-3 mr-1" />}
-                          {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                        <div className="max-w-xs truncate" title={payment.course_title || payment.diploma_title}>
+                          {payment.course_title || payment.diploma_title || 'Unknown Item'}
+                        </div>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mt-1">
+                          {payment.kind ? payment.kind.toUpperCase() : 'COURSE'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {new Date(payment.created_at).toLocaleDateString()} {new Date(payment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        ₦{Number(payment.amount).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-teal-600">
+                        ₦{Number(payment.creator_amount || 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                          ${payment.status === 'success' ? 'bg-green-100 text-green-800' : 
+                            payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-red-100 text-red-800'}`}>
+                          {payment.status === 'success' && <CheckCircle className="w-3 h-3 mr-1" />}
+                          {payment.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {new Date(payment.created_at).toLocaleDateString()}
+                        <div className="text-xs text-gray-400">
+                          {new Date(payment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -327,7 +340,7 @@ export default function InstitutionPayments() {
               </table>
             </div>
 
-            {/* Pagination */}
+            {/* Pagination Controls */}
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="text-sm text-gray-600">
                 Page <span className="font-semibold">{page}</span> of <span className="font-semibold">{pageCount}</span>
@@ -336,14 +349,14 @@ export default function InstitutionPayments() {
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage(p => Math.max(1, p - 1))}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition"
+                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition font-medium text-sm shadow-sm"
                 >
                   Previous
                 </button>
                 <button
                   disabled={page >= pageCount}
                   onClick={() => setPage(p => Math.min(pageCount, p + 1))}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition"
+                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition font-medium text-sm shadow-sm"
                 >
                   Next
                 </button>

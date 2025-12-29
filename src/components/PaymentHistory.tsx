@@ -1,15 +1,15 @@
+// src/components/PaymentHistory.tsx
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
 import { Loader2, AlertCircle, DollarSign, CheckCircle, Clock, RefreshCw } from 'lucide-react'
 import { motion } from 'framer-motion'
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+// 1. Use Secure API
+import api from '../utils/axiosInterceptor'
 
 interface Transaction {
   id: number
-  amount: number
-  platform_fee: number
-  creator_amount: number
+  amount: number | string
+  platform_fee: number | string
+  creator_amount: number | string
   status: 'pending' | 'success' | 'failed'
   kind: 'course' | 'diploma' | 'unlock'
   course_title?: string
@@ -31,29 +31,31 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
 
   useEffect(() => {
     loadTransactions()
-    // Removed auto-refresh interval to avoid constant polling
     return () => {}
   }, [])
 
   const loadTransactions = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('access')
+      // Token is handled automatically by api instance
       let res
+      
       if (userRole === 'tutor') {
         // For tutors, fetch payments for courses they created
-        const me = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } })
+        const me = await api.get('/users/me/')
         const uid = me.data.id
-        res = await axios.get(`${API_BASE}/payments/?tutor=${uid}&page_size=1000`, {
-          headers: { Authorization: `Bearer ${token}` },
+        // page_size=1000 is a temporary way to get "all" history for calculation
+        // Ideally backend should provide a /stats endpoint
+        res = await api.get('/payments/', {
+            params: { tutor: uid, page_size: 1000 }
         })
       } else {
-        res = await axios.get(`${API_BASE}/payments/`, {
-          headers: { Authorization: `Bearer ${token}` },
+        res = await api.get('/payments/', {
+            params: { page_size: 1000 }
         })
       }
 
-      const trans = res.data.results || res.data
+      const trans = res.data.results || res.data || []
       setTransactions(trans)
 
       // Calculate totals
@@ -61,10 +63,14 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
       let earned = 0
 
       trans.forEach((t: Transaction) => {
+        // Safety parsing
+        const amount = parseFloat(t.amount?.toString() || '0')
+        const creatorAmt = parseFloat(t.creator_amount?.toString() || '0')
+
         if (userRole === 'student' && t.status === 'success') {
-          spent += parseFloat(t.amount.toString())
+          spent += amount
         } else if (['tutor', 'institution', 'master_admin'].includes(userRole) && t.status === 'success') {
-          earned += parseFloat(t.creator_amount.toString())
+          earned += creatorAmt
         }
       })
 
@@ -108,7 +114,7 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
     return 'Account Unlock'
   }
 
-  if (loading) {
+  if (loading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-green-600" />
@@ -179,12 +185,14 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Item</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Amount</th>
+                  
                   {['tutor', 'institution', 'master_admin'].includes(userRole) && (
                     <>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Your Share (95%)</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Platform Fee (5%)</th>
                     </>
                   )}
+                  
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
                 </tr>
@@ -199,23 +207,29 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
                   >
                     <td className="px-6 py-4">
                       <div>
-                        <p className="font-medium text-gray-900">{getItemTitle(transaction)}</p>
+                        <p className="font-medium text-gray-900 line-clamp-1">{getItemTitle(transaction)}</p>
                         <p className="text-xs text-gray-500 capitalize mt-1">{transaction.kind}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <p className="font-semibold text-gray-900">₦{parseFloat(transaction.amount.toString()).toLocaleString()}</p>
                     </td>
+                    
                     {['tutor', 'institution', 'master_admin'].includes(userRole) && (
                       <>
                         <td className="px-6 py-4">
-                          <p className="font-semibold text-green-600">₦{parseFloat(transaction.creator_amount.toString()).toLocaleString()}</p>
+                          <p className="font-semibold text-green-600">
+                            ₦{parseFloat(transaction.creator_amount?.toString() || '0').toLocaleString()}
+                          </p>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm text-gray-600">₦{parseFloat(transaction.platform_fee.toString()).toLocaleString()}</p>
+                          <p className="text-sm text-gray-600">
+                            ₦{parseFloat(transaction.platform_fee?.toString() || '0').toLocaleString()}
+                          </p>
                         </td>
                       </>
                     )}
+
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         {getStatusIcon(transaction.status)}

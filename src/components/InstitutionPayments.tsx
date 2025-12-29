@@ -300,10 +300,10 @@ export default function InstitutionPayments() {
                   {payments.map((payment, idx) => (
                     <tr key={payment.id || idx} className="border-b border-gray-200 hover:bg-gray-50 transition">
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {payment.user?.name || payment.user?.username || payment.student_name || 'Unknown'}
+                        {payment.user?.name || payment.user?.username || payment.student_name || payment.user || 'Unknown'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {payment.course?.title || payment.diploma?.title || payment.course_name || payment.diploma_name || 'N/A'}
+                        {payment.course?.title || payment.diploma_title || payment.course_name || payment.diploma_name || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                         ₦{Number(payment.amount || 0).toLocaleString()}

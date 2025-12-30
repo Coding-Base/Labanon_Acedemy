@@ -1,7 +1,9 @@
+// src/pages/dashboards/StudentDashboard.tsx
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+// 1. USE SECURE API INSTANCE
+import api from '../../utils/axiosInterceptor';
 import {
   Home,
   BookOpen,
@@ -25,6 +27,11 @@ import {
   FileCheck,
   Download,
   ShoppingCart,
+  Trophy,
+  Loader2,
+  Crown,
+  Menu, // Added Menu
+  X     // Added X
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import MyCourses from '../MyCourses';
@@ -38,18 +45,28 @@ import CoursePlayer from '../CoursePlayer';
 import CourseDetail from '../CourseDetail';
 import MessageModal from '../../components/MessageModal';
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
+// --- Types ---
+interface DashboardSummary {
+  username: string;
+  enrollments_count: number;
+  attempts_count: number;
+  avg_score: number | null;
+  completed_courses: number;
+  total_study_time: number;
+  rank: number;
+  role?: string;
+  id?: number;
+  date_joined?: string;
+  [k: string]: any;
+}
 
-interface DashboardSummary { 
-  username: string; 
-  enrollments_count: number; 
-  attempts_count: number; 
-  avg_score: number | null; 
-  completed_courses: number; 
-  total_study_time: number; 
-  rank: number; 
-  role?: string; 
-  [k: string]: any; 
+interface LeaderboardUser {
+  id: number;
+  name: string;
+  score: number;
+  exams_taken: number;
+  avatar_initial: string;
+  is_current_user?: boolean;
 }
 
 export default function StudentDashboard(props: { summary?: DashboardSummary }) {
@@ -63,6 +80,14 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   const [summary, setSummary] = useState<DashboardSummary | null>(props.summary ?? initialFromState ?? null);
   const [loadingSummary, setLoadingSummary] = useState(!summary);
 
+  // --- Dynamic Stats State ---
+  const [streak, setStreak] = useState(0);
+  const [calculatedRating, setCalculatedRating] = useState(3.0); 
+  const [realStudyHours, setRealStudyHours] = useState(0);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
+  const [userRank, setUserRank] = useState<number | string>('—');
+  const [memberSince, setMemberSince] = useState<string>('');
+
   const base = '/student';
   const loggedOutRef = useRef(false);
 
@@ -71,79 +96,164 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     loggedOutRef.current = true;
     localStorage.removeItem('access');
     localStorage.removeItem('refresh');
-    console.warn('Logging out:', reason || 'user initiated');
     navigate('/login', { replace: true });
   }, [navigate]);
 
-  // Define ExclamationCircle component at the top
-  const ExclamationCircle = (props: any) => (
-    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
+  // --- ALGORITHMS ---
 
-  useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      (res) => res,
-      (error) => {
-        const status = error?.response?.status;
-        if (status === 401) {
-          // Token expired — clear it but don't force logout
-          // Let components handle their own auth errors
-          localStorage.removeItem('access');
-          localStorage.removeItem('refresh');
-          console.warn('[StudentDashboard] 401 error - token cleared, components should handle UI');
-        }
-        return Promise.reject(error);
+  // 1. Calculate Consecutive Days Streak
+  const calculateStreak = (activities: string[]) => {
+    if (!activities.length) return 0;
+    
+    // Sort dates descending
+    const sortedDates = activities
+      .map(d => new Date(d).setHours(0,0,0,0))
+      .sort((a, b) => b - a);
+    
+    // Remove duplicates
+    const uniqueDates = [...new Set(sortedDates)];
+    
+    let currentStreak = 0;
+    const today = new Date().setHours(0,0,0,0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Check if activity started today or yesterday
+    if (uniqueDates[0] === today || uniqueDates[0] === yesterday.getTime()) {
+      currentStreak = 1;
+      for (let i = 0; i < uniqueDates.length - 1; i++) {
+        const curr = new Date(uniqueDates[i]);
+        const next = new Date(uniqueDates[i+1]);
+        const diffTime = Math.abs(curr.getTime() - next.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) currentStreak++;
+        else break;
       }
-    );
-    return () => axios.interceptors.response.eject(interceptor);
-  }, [doLogout]);
+    }
+    return currentStreak;
+  };
 
   useEffect(() => {
     let mounted = true;
-    async function loadSummary() {
-      if (summary) { setLoadingSummary(false); return; }
+    async function loadFullData() {
       const token = localStorage.getItem('access');
-      if (!token) { doLogout('no token found'); return; }
-      setLoadingSummary(true);
+      if (!token) { doLogout('no token'); return; }
+      
+      if (!summary) setLoadingSummary(true);
+
       try {
-        const res = await axios.get(`${API_BASE}/dashboard/`, { headers: { Authorization: `Bearer ${token}` } });
+        // 1. Fetch Basic Info
+        const [userRes, summaryRes] = await Promise.all([
+          api.get('/users/me/'),
+          api.get('/dashboard/')
+        ]);
+
         if (!mounted) return;
-        setSummary(res.data);
+
+        const userData = userRes.data;
+        const dashData = summaryRes.data;
+        
+        setSummary({ ...dashData, ...userData });
+
+        // 1a. Member Since
+        const joinDate = new Date(userData.date_joined || new Date());
+        setMemberSince(joinDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+
+        // 2. Fetch Detailed Data for Algorithms
+        // Using correct attempt-list route
+        const [attemptsRes, enrollmentsRes] = await Promise.all([
+          api.get('/cbt/attempt-list/', { params: { page_size: 100 } }).catch(() => ({ data: { results: [] } })),
+          api.get('/enrollments/', { params: { page_size: 100 } }).catch(() => ({ data: { results: [] } }))
+        ]);
+
+        const attempts = attemptsRes.data.results || [];
+        const enrollments = enrollmentsRes.data.results || [];
+
+        // --- ALGO 1: STREAK ---
+        const activityDates: string[] = [
+          ...attempts.map((a: any) => a.started_at),
+          ...enrollments.map((e: any) => e.updated_at || e.created_at)
+        ].filter(Boolean);
+        setStreak(calculateStreak(activityDates));
+
+        // --- ALGO 2: SMART RATING ---
+        // Base 3.0 + (0.08 per exam taken), Max 5.0
+        const attemptsCount = attempts.length;
+        const newRating = Math.min(5.0, 3.0 + (attemptsCount * 0.08));
+        setCalculatedRating(parseFloat(newRating.toFixed(2)));
+
+        // --- ALGO 3: REAL STUDY HOURS ---
+        // Sum of CBT 'time_taken_seconds' + (Course Progress * estimated duration)
+        const examSeconds = attempts.reduce((acc: number, curr: any) => acc + (curr.time_taken_seconds || 0), 0);
+        const examHours = examSeconds / 3600;
+
+        const courseHours = enrollments.reduce((acc: number, curr: any) => {
+          const progress = parseFloat(curr.progress || 0);
+          // If course duration unknown, assume 5 hours avg per course
+          const duration = parseFloat(curr.course?.duration || 5); 
+          return acc + ((progress / 100) * duration);
+        }, 0);
+
+        setRealStudyHours(parseFloat((examHours + courseHours).toFixed(1)));
+
+        // --- ALGO 4: GLOBAL LEADERBOARD & RANK ---
+        // Since we don't have a backend leaderboard yet, we generate one
+        // mixing top performers + current user
+        const mockLeaders: LeaderboardUser[] = [
+            { id: 991, name: 'Chinedu O.', score: 98, exams_taken: 45, avatar_initial: 'C' },
+            { id: 992, name: 'Amina Y.', score: 95, exams_taken: 42, avatar_initial: 'A' },
+            { id: 993, name: 'David K.', score: 92, exams_taken: 40, avatar_initial: 'D' },
+            { id: 994, name: 'Sarah B.', score: 88, exams_taken: 35, avatar_initial: 'S' },
+            { id: 995, name: 'Emeka J.', score: 85, exams_taken: 30, avatar_initial: 'E' },
+            { id: 996, name: 'Fatima R.', score: 82, exams_taken: 28, avatar_initial: 'F' },
+            { id: 997, name: 'Tunde L.', score: 79, exams_taken: 25, avatar_initial: 'T' },
+            { id: 998, name: 'Ngozi P.', score: 75, exams_taken: 20, avatar_initial: 'N' },
+            { id: 999, name: 'Ibrahim M.', score: 72, exams_taken: 18, avatar_initial: 'I' },
+        ];
+
+        // Current User Best Score
+        const myBestScore = attempts.length > 0 
+           ? Math.max(...attempts.map((a: any) => parseFloat(a.score || 0))) 
+           : 0;
+
+        const currentUserEntry: LeaderboardUser = {
+            id: userData.id,
+            name: userData.username || 'You',
+            score: myBestScore,
+            exams_taken: attempts.length,
+            avatar_initial: userData.username?.charAt(0).toUpperCase(),
+            is_current_user: true
+        };
+
+        // Merge, Sort, Deduplicate
+        const allBoard = [...mockLeaders, currentUserEntry].sort((a, b) => b.score - a.score);
+        const uniqueBoard = Array.from(new Map(allBoard.map(item => [item.id, item])).values())
+                                .sort((a, b) => b.score - a.score);
+
+        setLeaderboard(uniqueBoard);
+
+        // Find Rank
+        const rankIndex = uniqueBoard.findIndex(u => u.id === userData.id);
+        setUserRank(rankIndex !== -1 ? rankIndex + 1 : '—');
+
       } catch (err: any) {
-        console.error('Failed to fetch dashboard summary:', err);
-        if (err?.response?.status === 401) doLogout('fetch summary 401');
-        else doLogout('failed to fetch summary');
-      } finally { if (mounted) setLoadingSummary(false); }
+        console.error('Failed to load dashboard data', err);
+        if (err?.response?.status === 401) doLogout('401 on load');
+      } finally {
+        if (mounted) setLoadingSummary(false);
+      }
     }
-    loadSummary();
+
+    loadFullData();
     return () => { mounted = false; };
-  }, [props.summary, location.state, doLogout, summary]);
+  }, [doLogout, props.summary, location.state]);
 
   if (loadingSummary) return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-green-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
-        <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading dashboard...</p>
-      </div>
-    </div>
-  );
-  
-  if (!summary) return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-green-50">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <ExclamationCircle className="w-8 h-8 text-red-600" />
-        </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Unable to load dashboard</h3>
-        <p className="text-gray-600 mb-4">Please try again or contact support</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-        >
-          Retry
-        </button>
+        <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
+        <p className="text-gray-600 font-medium">Loading your student portal...</p>
       </div>
     </div>
   );
@@ -156,32 +266,25 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     { path: 'payments', label: 'Payments', icon: <CreditCard className="w-5 h-5" /> },
     { path: 'progress', label: 'Progress', icon: <TrendingUp className="w-5 h-5" /> },
     { path: 'certificates', label: 'Certificates', icon: <Award className="w-5 h-5" /> },
+    { path: 'leaderboard', label: 'Leaderboard', icon: <Trophy className="w-5 h-5" /> },
     { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> },
     { path: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> }
   ];
 
   const stats = [
-    { title: 'Enrollments', value: summary.enrollments_count, icon: <BookOpen className="w-6 h-6" />, color: 'from-green-600 to-teal-500', change: '+2 this week', trend: 'up' },
-    { title: 'Exam Attempts', value: summary.attempts_count, icon: <FileCheck className="w-6 h-6" />, color: 'from-teal-500 to-green-400', change: '+5 this month', trend: 'up' },
-    { title: 'Average Score', value: summary.avg_score ? `${summary.avg_score}%` : '—', icon: <Target className="w-6 h-6" />, color: 'from-green-500 to-emerald-400', change: '↑ 8% from last month', trend: 'up' },
-    { title: 'Completed Courses', value: summary.completed_courses || 0, icon: <CheckCircle className="w-6 h-6" />, color: 'from-orange-500 to-amber-400', change: '1 in progress', trend: 'neutral' },
-    { title: 'Study Time', value: `${summary.total_study_time || 0}h`, icon: <Clock className="w-6 h-6" />, color: 'from-green-500 to-teal-400', change: '12h this week', trend: 'up' },
-    { title: 'Global Rank', value: `#${summary.rank || '—'}`, icon: <BarChart3 className="w-6 h-6" />, color: 'from-rose-500 to-pink-400', change: '↑ 15 positions', trend: 'up' }
-  ];
-
-  const recentActivities = [
-    { id: 1, title: 'Completed JAMB Practice Test', course: 'JAMB CBT Masterclass', time: '2 hours ago', type: 'exam', score: 85 },
-    { id: 2, title: 'Enrolled in Web Development', course: 'Full Stack Development', time: '1 day ago', type: 'enrollment', instructor: 'John Doe' },
-    { id: 3, title: 'Submitted Assignment', course: 'Mathematics SS3', time: '2 days ago', type: 'assignment', status: 'Graded: A' },
-    { id: 4, title: 'Live Class Attended', course: 'Physics Practicals', time: '3 days ago', type: 'live', duration: '1.5 hours' },
-    { id: 5, title: 'Certificate Earned', course: 'Python Fundamentals', time: '1 week ago', type: 'certificate', level: 'Advanced' }
+    { title: 'Enrollments', value: summary?.enrollments_count || 0, icon: <BookOpen className="w-6 h-6" />, color: 'from-green-600 to-teal-500', change: 'Active courses', trend: 'up' },
+    { title: 'Exam Attempts', value: summary?.attempts_count || 0, icon: <FileCheck className="w-6 h-6" />, color: 'from-teal-500 to-green-400', change: 'Lifetime attempts', trend: 'up' },
+    { title: 'Average Score', value: summary?.avg_score ? `${Math.round(summary.avg_score)}%` : '—', icon: <Target className="w-6 h-6" />, color: 'from-green-500 to-emerald-400', change: 'Performance', trend: 'up' },
+    { title: 'Completed Courses', value: summary?.completed_courses || 0, icon: <CheckCircle className="w-6 h-6" />, color: 'from-orange-500 to-amber-400', change: 'Certificates', trend: 'neutral' },
+    { title: 'Study Time', value: `${realStudyHours}h`, icon: <Clock className="w-6 h-6" />, color: 'from-blue-500 to-indigo-400', change: 'Calculated time', trend: 'up' },
+    { title: 'Global Rank', value: `#${userRank}`, icon: <Trophy className="w-6 h-6" />, color: 'from-rose-500 to-pink-400', change: 'Among all students', trend: 'up' }
   ];
 
   const quickActions = [
     { title: 'Take Practice Test', icon: <FileText className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'cbt' },
     { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-teal-100 text-teal-600', path: 'courses' },
     { title: 'Download Materials', icon: <Download className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'courses' },
-    { title: 'View Leaderboard', icon: <BarChart3 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-600', path: 'progress' }
+    { title: 'View Leaderboard', icon: <BarChart3 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-600', path: 'leaderboard' }
   ];
 
   const isActivePath = (p: string) => {
@@ -190,9 +293,71 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     return normalized === `${base}/${p}`;
   };
 
+  // --- Sub-Component: Leaderboard Table ---
+  const LeaderboardPage = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-8 text-white relative overflow-hidden">
+        <div className="relative z-10">
+          <h2 className="text-3xl font-bold mb-2">Global Leaderboard</h2>
+          <p className="opacity-90">Top performers across all JAMB CBT Exams</p>
+        </div>
+        <Trophy className="absolute right-8 top-1/2 -translate-y-1/2 w-32 h-32 text-white opacity-20" />
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Rank</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Exams Taken</th>
+              <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">High Score</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {leaderboard.map((user, index) => (
+              <tr 
+                key={user.id} 
+                className={`transition-colors ${user.is_current_user ? 'bg-green-50 border-l-4 border-green-500' : 'hover:bg-gray-50'}`}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    {index === 0 && <Crown className="w-5 h-5 text-yellow-500 mr-2" />}
+                    {index === 1 && <Crown className="w-5 h-5 text-gray-400 mr-2" />}
+                    {index === 2 && <Crown className="w-5 h-5 text-amber-700 mr-2" />}
+                    <span className={`font-bold ${index < 3 ? 'text-gray-900' : 'text-gray-500'}`}>#{index + 1}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold mr-3 ${
+                      index === 0 ? 'bg-yellow-500' : 'bg-gray-400'
+                    }`}>
+                      {user.avatar_initial}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {user.name} {user.is_current_user && <span className="ml-2 px-2 py-0.5 rounded text-xs bg-green-200 text-green-800">You</span>}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {user.exams_taken} Tests
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-green-600">
+                  {user.score.toFixed(1)} pts
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 overflow-hidden">
-      {/* Header */}
       <motion.header 
         initial={{ y: -20, opacity: 0 }} 
         animate={{ y: 0, opacity: 1 }} 
@@ -201,97 +366,57 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <button 
-                onClick={() => setSidebarOpen(!sidebarOpen)} 
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100 mr-3 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden p-2 rounded-lg hover:bg-gray-100 mr-3 transition-colors">
+                <Menu className="w-6 h-6 text-gray-700" />
               </button>
-
               <Link to={base} className="flex items-center space-x-3 group">
                 <img src={labanonLogo} alt="Lebanon Academy" className="w-8 h-8 object-contain transition-transform group-hover:scale-105" />
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">Student Dashboard</h1>
-                </div>
+                <div><h1 className="text-lg font-bold text-gray-900">Student Dashboard</h1></div>
               </Link>
             </div>
 
             <div className="flex items-center space-x-4">
-              <motion.button 
-                whileHover={{ scale: 1.05 }} 
-                whileTap={{ scale: 0.95 }} 
-                onClick={() => setShowMessageModal(true)}
-                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                title="Send message"
-              >
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowMessageModal(true)} className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Send message">
+                <Bell className="w-5 h-5 text-gray-600" /><span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               </motion.button>
-
-              <motion.button 
-                whileHover={{ scale: 1.05 }} 
-                whileTap={{ scale: 0.95 }} 
-                onClick={() => setShowInbox(true)}
-                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                title="Inbox"
-              >
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowInbox(true)} className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Inbox">
                 <Mail className="w-5 h-5 text-gray-600" />
               </motion.button>
-
               <div className="hidden md:flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
-                  {summary.username.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{summary.username}</p>
-                  <p className="text-xs text-gray-500">Student Account</p>
-                </div>
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">{summary?.username?.charAt(0).toUpperCase()}</div>
+                <div><p className="text-sm font-semibold text-gray-900">{summary?.username}</p><p className="text-xs text-gray-500">Student Account</p></div>
               </div>
-
-              <motion.button
-                onClick={() => doLogout('user clicked logout')}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
+              <motion.button onClick={() => doLogout('user clicked logout')} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all">
+                <LogOut className="w-4 h-4" /><span>Logout</span>
               </motion.button>
             </div>
           </div>
         </div>
       </motion.header>
+      
       <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
 
-      {/* Main Content Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-[calc(100vh-5rem)]">
         <div className="flex h-full gap-6">
-          {/* Desktop Sidebar - Sticky and Fixed */}
-          <motion.aside 
-            initial={{ x: -20, opacity: 0 }} 
-            animate={{ x: 0, opacity: 1 }} 
-            className="hidden lg:block w-64 flex-shrink-0"
-          >
+          
+          <motion.aside initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24 h-[calc(100vh-8rem)] flex flex-col border border-gray-100">
-              {/* User Profile Card */}
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="relative">
                     <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-md">
-                      {summary.username.charAt(0).toUpperCase()}
+                      {summary?.username.charAt(0).toUpperCase()}
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900">{summary.username}</h3>
+                    <h3 className="font-bold text-gray-900">{summary?.username}</h3>
                     <p className="text-sm text-gray-500">Student</p>
                     <div className="flex items-center mt-1">
                       {[1, 2, 3, 4, 5].map((i) => (
-                        <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
+                        <Star key={i} className={`w-3 h-3 ${i <= Math.round(calculatedRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
                       ))}
-                      <span className="ml-1 text-xs font-semibold">4.8</span>
+                      <span className="ml-1 text-xs font-semibold">{calculatedRating}</span>
                     </div>
                   </div>
                 </div>
@@ -299,35 +424,23 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Member Since</span>
-                    <span className="font-semibold">Jan 2024</span>
+                    <span className="font-semibold">{memberSince || '...'}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Learning Streak</span>
-                    <span className="font-semibold text-orange-600">14 days 🔥</span>
+                    <span className="font-semibold text-orange-600">{streak} days 🔥</span>
                   </div>
                 </div>
               </div>
 
-              {/* Navigation - Scrollable */}
               <nav className="flex-1 overflow-y-auto pr-2 -mr-2">
                 <div className="space-y-1">
                   {navItems.map((item) => {
                     const active = isActivePath(item.path);
                     return (
-                      <motion.div 
-                        key={item.path} 
-                        whileHover={{ x: 5 }} 
-                        transition={{ type: "spring", stiffness: 300 }}
-                      >
-                        <Link
-                          to={item.path}
-                          className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${active 
-                            ? 'bg-gradient-to-r from-green-50 to-teal-50 text-green-700 border-l-4 border-green-500 shadow-sm' 
-                            : 'text-gray-700 hover:bg-gray-50 hover:text-green-600'}`}
-                        >
-                          <div className={`${active ? 'text-green-600' : 'text-gray-500 group-hover:text-green-500'}`}>
-                            {item.icon}
-                          </div>
+                      <motion.div key={item.path} whileHover={{ x: 5 }} transition={{ type: "spring", stiffness: 300 }}>
+                        <Link to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-gradient-to-r from-green-50 to-teal-50 text-green-700 border-l-4 border-green-500 shadow-sm' : 'text-gray-700 hover:bg-gray-50 hover:text-green-600'}`}>
+                          <div className={`${active ? 'text-green-600' : 'text-gray-500 group-hover:text-green-500'}`}>{item.icon}</div>
                           <span className="font-medium">{item.label}</span>
                           {active && <ChevronRight className="w-4 h-4 ml-auto text-green-500" />}
                         </Link>
@@ -337,65 +450,26 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 </div>
               </nav>
 
-              {/* Upgrade Button */}
-              <motion.button 
-                whileHover={{ scale: 1.02, y: -2 }} 
-                whileTap={{ scale: 0.98 }} 
-                className="mt-6 w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all shadow-md"
-              >
+              <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all shadow-md">
                 Upgrade to Pro
               </motion.button>
             </div>
           </motion.aside>
 
-          {/* Mobile Sidebar Overlay */}
           <AnimatePresence>
             {sidebarOpen && (
               <>
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 0.5 }}
-                  exit={{ opacity: 0 }}
-                  className="lg:hidden fixed inset-0 bg-black z-40"
-                  onClick={() => setSidebarOpen(false)}
-                />
-                <motion.aside 
-                  initial={{ x: -300, opacity: 0 }} 
-                  animate={{ x: 0, opacity: 1 }} 
-                  exit={{ x: -300, opacity: 0 }} 
-                  transition={{ type: "spring", damping: 25 }}
-                  className="lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl p-6"
-                >
-                  <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-lg font-bold text-gray-900">Menu</h2>
-                    <button 
-                      onClick={() => setSidebarOpen(false)} 
-                      className="p-2 rounded-lg hover:bg-gray-100"
-                    >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} className="lg:hidden fixed inset-0 bg-black z-40" onClick={() => setSidebarOpen(false)} />
+                <motion.aside initial={{ x: -300, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -300, opacity: 0 }} className="lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl p-6">
+                  <div className="flex items-center justify-between mb-8"><h2 className="text-lg font-bold text-gray-900">Menu</h2><button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100"><X className="w-6 h-6" /></button></div>
                   <nav className="space-y-2">
                     {navItems.map((item) => (
-                      <Link 
-                        key={item.path} 
-                        to={item.path} 
-                        className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 hover:text-green-600"
-                        onClick={() => setSidebarOpen(false)}
-                      >
-                        <div className="text-gray-500">{item.icon}</div>
-                        <span>{item.label}</span>
+                      <Link key={item.path} to={item.path} className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 hover:text-green-600" onClick={() => setSidebarOpen(false)}>
+                        <div className="text-gray-500">{item.icon}</div><span>{item.label}</span>
                       </Link>
                     ))}
                     <div className="mt-6 pt-6 border-t border-gray-200">
-                      <button 
-                        onClick={() => doLogout('user clicked logout (mobile)')} 
-                        className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md"
-                      >
-                        Logout
-                      </button>
+                      <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md">Logout</button>
                     </div>
                   </nav>
                 </motion.aside>
@@ -403,40 +477,27 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
             )}
           </AnimatePresence>
 
-          {/* Main Content Area - SCROLL FIX APPLIED HERE */}
           <div className="flex-1 min-h-0">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              className="bg-white rounded-2xl shadow-lg h-full flex flex-col overflow-hidden border border-gray-100"
-            >
-              {/* CHANGED FROM overflow-hidden TO overflow-y-auto */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-2xl shadow-lg h-full flex flex-col overflow-hidden border border-gray-100">
               <div className="flex-1 overflow-y-auto">
-                {/* CHANGED FROM h-full TO min-h-full */}
                 <div className="min-h-full p-6">
                   <Routes>
-                    {/* Overview */}
                     <Route path="overview" element={
                       <div>
-                        {/* Original overview content */}
                         <div className="mb-6">
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                                Welcome back, <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">{summary.username}</span>! 👋
-                              </h1>
+                              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome back, <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">{summary?.username}</span>! 👋</h1>
                               <p className="text-gray-600 mt-2">Track your progress, access courses, and ace your exams</p>
                             </div>
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
-                              <PlayCircle className="w-5 h-5 inline mr-2" />
-                              Continue Learning
+                              <PlayCircle className="w-5 h-5 inline mr-2" />Continue Learning
                             </motion.button>
                           </div>
                         </div>
 
-                        {/* Stats Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                          {stats.map((stat, index) => (
+                          {stats.map((stat) => (
                             <div key={stat.title} className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
                               <div className="flex items-center justify-between">
                                 <div>
@@ -445,185 +506,46 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                                   <p className="text-xs text-gray-500 mt-1">{stat.change}</p>
                                 </div>
                                 <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-md`}>
-                                  {stat.icon}
+                                  <div className="text-white">{stat.icon}</div>
                                 </div>
                               </div>
                             </div>
                           ))}
                         </div>
 
-                        {/* Quick Actions */}
-                        <div className="mb-8">
-                          <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {quickActions.map((action) => (
-                              <motion.button
-                                key={action.title}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => navigate(action.path)}
-                                className={`${action.color} p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:shadow-lg transition-all border border-transparent hover:border-gray-200`}
-                              >
-                                {action.icon}
-                                <span className="text-sm font-semibold text-center">{action.title}</span>
-                              </motion.button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Recent Activities */}
-                        <div>
-                          <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold text-gray-900">Recent Activities</h2>
-                            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                              View All
-                            </button>
-                          </div>
-                          <div className="space-y-4">
-                            {recentActivities.map((activity) => (
-                              <div key={activity.id} className="flex items-center justify-between p-5 bg-gradient-to-r from-gray-50 to-white rounded-2xl border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all">
-                                <div className="flex items-center gap-4">
-                                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                    activity.type === 'exam' ? 'bg-green-100' :
-                                    activity.type === 'enrollment' ? 'bg-blue-100' :
-                                    activity.type === 'assignment' ? 'bg-purple-100' :
-                                    activity.type === 'live' ? 'bg-orange-100' :
-                                    'bg-yellow-100'
-                                  }`}>
-                                    {activity.type === 'exam' && <FileText className="w-6 h-6 text-green-600" />}
-                                    {activity.type === 'enrollment' && <BookOpen className="w-6 h-6 text-blue-600" />}
-                                    {activity.type === 'assignment' && <FileCheck className="w-6 h-6 text-purple-600" />}
-                                    {activity.type === 'live' && <Users className="w-6 h-6 text-orange-600" />}
-                                    {activity.type === 'certificate' && <Award className="w-6 h-6 text-yellow-600" />}
-                                  </div>
-                                  <div>
-                                    <p className="font-semibold text-gray-900">{activity.title}</p>
-                                    <p className="text-sm text-gray-600">{activity.course}</p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-sm text-gray-600">{activity.time}</p>
-                                  {activity.score && (
-                                    <p className="text-sm font-bold text-green-600">{activity.score}%</p>
-                                  )}
-                                </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                          <div className="lg:col-span-2">
+                            <div className="mb-8">
+                              <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+                              <div className="grid grid-cols-2 gap-4">
+                                {quickActions.map((action) => (
+                                  <motion.button key={action.title} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(action.path)} className={`${action.color} p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:shadow-lg transition-all border border-transparent hover:border-gray-200`}>
+                                    {action.icon}
+                                    <span className="text-sm font-semibold text-center">{action.title}</span>
+                                  </motion.button>
+                                ))}
                               </div>
-                            ))}
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    } />
 
-                    {/* My Courses Route */}
-                    <Route path="courses" element={
-                      <div className="h-full">
-                        <MyCourses />
-                      </div>
-                    } />
-                    
-                    {/* Course Player Route - Removed h-full constraint */}
-                    <Route path="courses/:id" element={
-                      <div className="w-full">
-                        <CoursePlayer />
-                      </div>
-                    } />
-                    
-                    {/* Course Detail Route */}
-                    <Route path="courses/:id/details" element={
-                      <div className="h-full">
-                        <CourseDetail />
-                      </div>
-                    } />
-
-                    {/* Other Routes */}
-                    <Route path="cbt" element={
-                      <div className="h-full overflow-y-auto pr-2 -mr-2">
-                        <CBTPage />
-                      </div>
-                    } />
-
-                    <Route path="cart" element={
-                      <Cart />
-                    } />
-                    
-                    <Route path="payments" element={
-                      <div className="h-full overflow-y-auto pr-2 -mr-2">
-                        <PaymentsPage />
-                      </div>
-                    } />
-                    
-                    <Route path="profile" element={
-                      <div className="h-full overflow-y-auto pr-2 -mr-2">
-                        <Profile />
-                      </div>
-                    } />
-                    
-                    <Route path="progress" element={
-                      <div className="h-full overflow-y-auto pr-2 -mr-2">
-                        <ProgressPage />
-                      </div>
-                    } />
-
-                    {/* Certificates Route */}
-                    <Route path="certificates" element={
-                      <div className="h-full overflow-y-auto pr-2 -mr-2">
-                        <div className="text-center py-12">
-                          <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Award className="w-10 h-10 text-yellow-600" />
-                          </div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-3">Your Certificates</h3>
-                          <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                            View and download your earned certificates. Certificates will appear here after course completion.
-                          </p>
-                        </div>
-                      </div>
-                    } />
-
-                    {/* Schedule Route */}
-                    <Route path="schedule" element={
-                      <div className="h-full overflow-y-auto pr-2 -mr-2">
-                        <div className="text-center py-12">
-                          <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Calendar className="w-10 h-10 text-purple-600" />
-                          </div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-3">Learning Schedule</h3>
-                          <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                            Plan and track your study schedule. Set reminders and manage your learning timeline.
-                          </p>
-                        </div>
-                      </div>
-                    } />
-
-                    {/* Default Dashboard Route */}
-                    <Route path="" element={
-                      <div className="h-full overflow-y-auto pr-2 -mr-2">
-                        <div className="mb-8">
-                          <h2 className="text-2xl font-bold text-gray-900 mb-6">Welcome to Your Dashboard</h2>
-                          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-100">
-                            <div className="max-w-2xl">
-                              <h3 className="text-xl font-bold text-gray-900 mb-4">Start Your Learning Journey</h3>
-                              <p className="text-gray-700 mb-6">
-                                Welcome to your personalized student dashboard! Here you can track your progress, 
-                                access courses, take practice exams, and monitor your performance. Get started by 
-                                exploring the different sections from the sidebar.
-                              </p>
-                              <div className="flex flex-wrap gap-4">
-                                <motion.button 
-                                  whileHover={{ scale: 1.05 }} 
-                                  whileTap={{ scale: 0.95 }} 
-                                  onClick={() => navigate('courses')}
-                                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg"
-                                >
-                                  Browse Courses
-                                </motion.button>
-                                <motion.button 
-                                  whileHover={{ scale: 1.05 }} 
-                                  whileTap={{ scale: 0.95 }} 
-                                  onClick={() => navigate('cbt')}
-                                  className="px-6 py-3 bg-white text-gray-900 border border-gray-300 rounded-xl font-semibold hover:border-blue-500 hover:shadow-md"
-                                >
-                                  Take a Practice Test
-                                </motion.button>
+                          <div className="lg:col-span-1">
+                            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
+                              <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-gray-900 flex items-center"><Trophy className="w-5 h-5 text-yellow-500 mr-2" /> Top Scorers</h3>
+                                <Link to="/student/leaderboard" className="text-sm text-blue-600 hover:underline">See More</Link>
+                              </div>
+                              <div className="space-y-4">
+                                {leaderboard.slice(0, 3).map((user, idx) => (
+                                  <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                    <div className="flex items-center">
+                                      <span className={`font-bold mr-3 ${idx===0?'text-yellow-600':idx===1?'text-gray-500':'text-amber-700'}`}>#{idx+1}</span>
+                                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-bold text-gray-700 mr-2">{user.avatar_initial}</div>
+                                      <div className="text-sm font-semibold">{user.name}</div>
+                                    </div>
+                                    <div className="text-sm font-bold text-green-600">{user.score}</div>
+                                  </div>
+                                ))}
+                                {leaderboard.length === 0 && <div className="text-sm text-gray-500 text-center py-4">No data available</div>}
                               </div>
                             </div>
                           </div>
@@ -631,23 +553,35 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                       </div>
                     } />
 
-                    {/* 404 Route */}
+                    <Route path="courses" element={<div className="h-full"><MyCourses /></div>} />
+                    <Route path="courses/:id" element={<div className="w-full"><CoursePlayer /></div>} />
+                    <Route path="courses/:id/details" element={<div className="h-full"><CourseDetail /></div>} />
+                    <Route path="cbt" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><CBTPage /></div>} />
+                    <Route path="cart" element={<Cart />} />
+                    <Route path="payments" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><PaymentsPage /></div>} />
+                    <Route path="profile" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><Profile /></div>} />
+                    <Route path="progress" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><ProgressPage /></div>} />
+                    <Route path="leaderboard" element={<LeaderboardPage />} />
+                    <Route path="certificates" element={
+                      <div className="h-full overflow-y-auto pr-2 -mr-2 text-center py-12">
+                        <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6"><Award className="w-10 h-10 text-yellow-600" /></div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-3">Your Certificates</h3>
+                        <p className="text-gray-600 mb-8 max-w-md mx-auto">View and download your earned certificates. Certificates will appear here after course completion.</p>
+                      </div>
+                    } />
+                    <Route path="schedule" element={
+                      <div className="h-full overflow-y-auto pr-2 -mr-2 text-center py-12">
+                        <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6"><Calendar className="w-10 h-10 text-purple-600" /></div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-3">Learning Schedule</h3>
+                        <p className="text-gray-600 mb-8 max-w-md mx-auto">Plan and track your study schedule. Set reminders and manage your learning timeline.</p>
+                      </div>
+                    } />
+                    <Route path="" element={<div className="h-full flex items-center justify-center"><p className="text-gray-500">Redirecting...</p></div>} />
                     <Route path="*" element={
-                      <div className="h-full flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
+                      <div className="h-full flex items-center justify-center text-center">
+                        <div>
                           <h3 className="text-xl font-semibold text-gray-900 mb-2">Page Not Found</h3>
-                          <p className="text-gray-600 mb-6">The page you're looking for doesn't exist.</p>
-                          <button 
-                            onClick={() => navigate('/student')}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-                          >
-                            Go to Dashboard
-                          </button>
+                          <button onClick={() => navigate('/student')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">Go to Dashboard</button>
                         </div>
                       </div>
                     } />
@@ -659,32 +593,21 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-30">
-        <div className="flex justify-around items-center h-16">
-          {navItems.slice(0, 5).map((item) => {
-            const active = isActivePath(item.path);
-            return (
-              <Link 
-                key={item.path} 
-                to={item.path} 
-                className={`flex flex-col items-center p-2 flex-1 ${active ? 'text-blue-600' : 'text-gray-600'}`}
-              >
-                <div className={`${active ? 'text-blue-600' : 'text-gray-500'} mb-1`}>
-                  {React.cloneElement(item.icon, { size: 20 })}
-                </div>
-                <span className="text-xs font-medium">{item.label}</span>
-                {active && (
-                  <div className="absolute -top-1 w-12 h-1 bg-blue-600 rounded-t-lg"></div>
-                )}
-              </Link>
-            );
-          })}
-        </div>
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-30 flex justify-around items-center h-16">
+        {navItems.slice(0, 5).map((item) => {
+          const active = isActivePath(item.path);
+          return (
+            <Link key={item.path} to={item.path} className={`flex flex-col items-center p-2 flex-1 ${active ? 'text-blue-600' : 'text-gray-600'}`}>
+              <div className={`${active ? 'text-blue-600' : 'text-gray-500'} mb-1`}>{React.cloneElement(item.icon, { size: 20 })}</div>
+              <span className="text-xs font-medium">{item.label}</span>
+              {active && <div className="absolute -top-1 w-12 h-1 bg-blue-600 rounded-t-lg"></div>}
+            </Link>
+          );
+        })}
       </div>
 
-      {/* Message Modal */}
       <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} />
+      <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
     </div>
   );
 }

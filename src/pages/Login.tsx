@@ -25,9 +25,9 @@ export default function Login() {
     if (isSubAdmin) return '/admin'
     if (!role) return '/student'
     const roleMap: Record<string, string> = {
-      student: '/student',
-      institution: '/institution',
-      tutor: '/tutor',
+      student: '/student/overview',
+      institution: '/institution/overview',
+      tutor: '/tutor/overview',
       admin: '/admin',
       superadmin: '/admin',
     }

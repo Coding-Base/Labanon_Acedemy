@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 import HlsJs from 'hls.js'
@@ -9,6 +9,7 @@ interface VideoPlayerProps {
   title?: string
   controls?: boolean
   autoplay?: boolean
+  customHeaders?: Record<string, string>
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -16,10 +17,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   youtubeUrl,
   title = 'Video Player',
   controls = true,
-  autoplay = false
+  autoplay = false,
+  customHeaders = {}
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const playerRef = useRef<any>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!videoRef.current) return
@@ -62,6 +65,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           maxMaxBufferLength: 600,
           maxBufferSize: 60 * 1000 * 1000, // 60MB
           maxBufferHole: 0.5,
+          xhrSetup: (xhr, url) => {
+            // Add custom security headers to all HLS.js requests
+            Object.entries(customHeaders).forEach(([key, value]) => {
+              xhr.setRequestHeader(key, value)
+            })
+            
+            // Log header setup for debugging
+            if (Object.keys(customHeaders).length > 0) {
+              console.log(`[Video] Added custom headers to HLS requests:`, Object.keys(customHeaders))
+            }
+          }
         })
 
         hls.loadSource(src)
@@ -79,14 +93,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             switch (data.type) {
               case HlsJs.ErrorTypes.NETWORK_ERROR:
                 console.error('Network error, retrying...')
+                setError('Network error loading video')
                 hls.startLoad()
                 break
               case HlsJs.ErrorTypes.MEDIA_ERROR:
                 console.error('Media error, retrying...')
+                setError('Media error playing video')
                 hls.recoverMediaError()
                 break
               default:
                 console.error('HLS error:', data)
+                setError('Error loading video')
                 break
             }
           }
@@ -113,7 +130,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         playerRef.current = null
       }
     }
-  }, [src, controls, autoplay])
+  }, [src, controls, autoplay, customHeaders])
 
   const extractYouTubeId = (url: string): string | null => {
     const patterns = [
@@ -148,6 +165,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   return (
     <div className="w-full">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <p className="font-bold">Video Error</p>
+          <p>{error}</p>
+        </div>
+      )}
       <video
         ref={videoRef}
         className="video-js vjs-default-skin w-full"

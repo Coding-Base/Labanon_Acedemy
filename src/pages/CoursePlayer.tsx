@@ -10,8 +10,11 @@ import {
   CheckCircle,
   Clock,
   BookOpen,
-  User
+  User,
+  Settings, // <--- Added Settings Icon
+  Check     // <--- Added Check Icon for the menu
 } from 'lucide-react';
+import { useVideoAccess } from '../hooks/useVideoAccess';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -51,6 +54,13 @@ interface Course {
   price?: string | number;
   modules?: ModuleItem[];
   [k: string]: any;
+}
+
+// Helper interface for HLS Quality Levels
+interface QualityLevel {
+  height: number;
+  index: number;
+  bitrate: number;
 }
 
 /** Extract YouTube video ID from various URL formats */
@@ -102,12 +112,24 @@ function looksLikeHls(url?: string | null): boolean {
 export default function CoursePlayer(): JSX.Element {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
+  const { getSignedVideoUrl } = useVideoAccess();
+  
+  // Data State
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [lessonIndex, setLessonIndex] = useState<number>(0);
   const [enrolled, setEnrolled] = useState<boolean>(false);
   const [checkingEnroll, setCheckingEnroll] = useState<boolean>(true);
+  
+  // Video State
   const [videoLoadError, setVideoLoadError] = useState<boolean>(false);
+  const [signedVideoData, setSignedVideoData] = useState<any>(null);
+  const [loadingSignedUrl, setLoadingSignedUrl] = useState<boolean>(false);
+  
+  // Quality Selector State
+  const [qualities, setQualities] = useState<QualityLevel[]>([]);
+  const [currentQuality, setCurrentQuality] = useState<number>(-1); // -1 = Auto
+  const [showQualityMenu, setShowQualityMenu] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -218,10 +240,64 @@ export default function CoursePlayer(): JSX.Element {
     setLessonIndex((s) => Math.max(0, s - 1));
   }
 
-  // Reset video error
+  // Reset video error and quality state on lesson change
   useEffect(() => {
     setVideoLoadError(false);
+    setSignedVideoData(null);
+    setQualities([]); // Reset available qualities
+    setCurrentQuality(-1); // Reset to Auto
+    setShowQualityMenu(false);
   }, [currentLesson?.video, currentLesson?.video_s3_url, currentLesson?.youtube_url]);
+
+  // Fetch signed URL for S3 videos
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchSignedUrl = async () => {
+      if (!currentLesson?.video_s3_url || currentLesson?.youtube_url) {
+        return;
+      }
+
+      setLoadingSignedUrl(true);
+      try {
+        let videoIdToRequest: string | null = null;
+        if (currentLesson.video_s3) {
+          videoIdToRequest = String(currentLesson.video_s3);
+        } else if (currentLesson.video_s3_url) {
+          try {
+            const m = String(currentLesson.video_s3_url).match(/\/videos\/([^\/]+)/);
+            if (m && m[1]) videoIdToRequest = m[1];
+          } catch (e) {
+            // ignore
+          }
+        }
+
+        if (!videoIdToRequest) {
+          throw new Error('No video id available for signed URL request');
+        }
+
+        const data = await getSignedVideoUrl(videoIdToRequest);
+        if (isMounted) {
+          setSignedVideoData(data);
+        }
+      } catch (err: any) {
+        console.error('Failed to get signed URL:', err);
+        if (isMounted) {
+          setVideoLoadError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingSignedUrl(false);
+        }
+      }
+    };
+
+    fetchSignedUrl();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentLesson?.id, currentLesson?.video_s3_url, currentLesson?.youtube_url, getSignedVideoUrl]);
 
   // Setup HLS or native playback
   useEffect(() => {
@@ -234,7 +310,11 @@ export default function CoursePlayer(): JSX.Element {
     if (!videoEl) return;
 
     let rawUrl: string | null = null;
-    if (currentLesson?.video_s3_url) {
+    
+    // Use signed URL if available
+    if (signedVideoData?.url && currentLesson?.video_s3_url) {
+      rawUrl = signedVideoData.url;
+    } else if (currentLesson?.video_s3_url) {
       rawUrl = currentLesson.video_s3_url;
     } else if (currentLesson?.youtube_url) {
       rawUrl = currentLesson.youtube_url;
@@ -261,25 +341,48 @@ export default function CoursePlayer(): JSX.Element {
     if (looksLikeHls(resolved)) {
       const isSafari = !!(navigator.vendor && navigator.vendor.includes('Apple')) || /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
       if (isSafari && videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native Safari HLS
         videoEl.src = resolved;
         videoEl.crossOrigin = 'anonymous';
         videoEl.preload = 'metadata';
         videoEl.load();
+        // Safari handles adaptive bitrate internally, difficult to expose manual controls
       } else if (Hls.isSupported()) {
         const hls = new Hls({
           maxBufferLength: 30,
           maxMaxBufferLength: 60,
           enableWorker: true,
           lowLatencyMode: false,
+          xhrSetup: (xhr, url) => {
+             // No custom headers needed for signed URLs
+          }
         });
         hlsRef.current = hls;
+        
         hls.attachMedia(videoEl);
         hls.on(Hls.Events.MEDIA_ATTACHED, () => {
           hls.loadSource(resolved);
         });
+
+        // Listen for parsed manifest to get quality levels
+        hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+            const availableQualities: QualityLevel[] = data.levels.map((level, index) => ({
+                height: level.height,
+                bitrate: level.bitrate,
+                index: index
+            }));
+            
+            // Sort by height (resolution) descending
+            availableQualities.sort((a, b) => b.height - a.height);
+            
+            setQualities(availableQualities);
+        });
+
         hls.on(Hls.Events.ERROR, (event, data) => {
           console.error('hls.js error', event, data);
-          setVideoLoadError(true);
+          if (data.fatal) {
+             setVideoLoadError(true);
+          }
         });
       } else {
         setVideoLoadError(true);
@@ -287,6 +390,7 @@ export default function CoursePlayer(): JSX.Element {
       return;
     }
 
+    // Direct File Fallback
     const isDirect = /\.(mp4|webm|ogg|mov|m4v)$/i.test(resolved) || resolved.startsWith('blob:') || resolved.includes('/media/');
     if (isDirect) {
       videoEl.src = resolved;
@@ -297,8 +401,9 @@ export default function CoursePlayer(): JSX.Element {
     }
 
     setVideoLoadError(true);
-  }, [currentLesson?.video]);
+  }, [currentLesson?.video, signedVideoData]);
 
+  // Cleanup
   useEffect(() => {
     return () => {
       if (hlsRef.current) {
@@ -307,6 +412,16 @@ export default function CoursePlayer(): JSX.Element {
       }
     };
   }, []);
+
+  // --- Handlers ---
+  
+  const handleQualityChange = (index: number) => {
+      if (hlsRef.current) {
+          hlsRef.current.currentLevel = index; // -1 is Auto
+          setCurrentQuality(index);
+          setShowQualityMenu(false);
+      }
+  };
 
   const renderMediaPlayer = () => {
     const hasVideo = currentLesson?.video_s3_url || currentLesson?.youtube_url || currentLesson?.video;
@@ -340,6 +455,7 @@ export default function CoursePlayer(): JSX.Element {
     const youtubeVideoId = extractYouTubeVideoId(videoUrl);
 
     if (youtubeVideoId) {
+      // YouTube Embed
       return (
         <div className="relative pt-[56.25%] overflow-hidden youtube-iframe-container">
           <iframe
@@ -354,20 +470,6 @@ export default function CoursePlayer(): JSX.Element {
             loading="lazy"
             onError={() => setVideoLoadError(true)}
           />
-          <div className="absolute inset-0 pointer-events-none" onContextMenu={(e) => e.preventDefault()} />
-          {videoLoadError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-90">
-              <div className="text-center p-6">
-                <div className="text-white text-lg mb-2">Unable to load video</div>
-                <button
-                  onClick={() => setVideoLoadError(false)}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                >
-                  Retry
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       );
     }
@@ -386,8 +488,9 @@ export default function CoursePlayer(): JSX.Element {
       );
     }
 
+    // --- MAIN VIDEO PLAYER RENDER ---
     return (
-      <div className="w-full bg-black flex justify-center">
+      <div className="w-full bg-black flex justify-center relative group">
         <video
           ref={videoRef}
           className="w-full h-auto max-h-[70vh]"
@@ -401,6 +504,52 @@ export default function CoursePlayer(): JSX.Element {
           <track kind="captions" />
           Your browser does not support the video tag.
         </video>
+
+        {/* --- QUALITY SELECTOR OVERLAY --- */}
+        {qualities.length > 0 && (
+          <div className="absolute top-4 right-4 z-20">
+            <div className="relative">
+              {/* Gear Icon Button */}
+              <button
+                onClick={() => setShowQualityMenu(!showQualityMenu)}
+                className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
+                title="Video Quality"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showQualityMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-gray-900 rounded-lg shadow-xl border border-gray-700 overflow-hidden py-1 z-30">
+                  <div className="px-3 py-2 border-b border-gray-700 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Quality
+                  </div>
+                  
+                  {/* Auto Option */}
+                  <button
+                    onClick={() => handleQualityChange(-1)}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800 flex items-center justify-between"
+                  >
+                    <span>Auto</span>
+                    {currentQuality === -1 && <Check className="w-4 h-4 text-green-500" />}
+                  </button>
+
+                  {/* Specific Quality Levels */}
+                  {qualities.map((q) => (
+                    <button
+                      key={q.index}
+                      onClick={() => handleQualityChange(q.index)}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-800 flex items-center justify-between"
+                    >
+                      <span>{q.height}p</span>
+                      {currentQuality === q.index && <Check className="w-4 h-4 text-green-500" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -434,7 +583,6 @@ export default function CoursePlayer(): JSX.Element {
   }
 
   return (
-    // Changed from min-h-screen to w-full so it fits in the dashboard scroll area
     <div className="w-full bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
@@ -633,12 +781,12 @@ export default function CoursePlayer(): JSX.Element {
                 </div>
               </div>
 
-              {/* Media Player */}
+              {/* Media Player Container */}
               <div className="bg-black" onContextMenu={(e) => e.preventDefault()}>
                 {renderMediaPlayer()}
               </div>
 
-              {/* Lesson Content - KEEPING SCROLLBAR HERE */}
+              {/* Lesson Content */}
               <div className="p-6">
                 <div className="prose prose-lg max-w-none">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Lesson Content</h3>
@@ -651,7 +799,7 @@ export default function CoursePlayer(): JSX.Element {
                 </div>
               </div>
 
-              {/* Navigation Buttons - Now visible due to dashboard scrolling */}
+              {/* Navigation Buttons */}
               <div className="p-6 border-t bg-gray-50">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-sm text-gray-600">

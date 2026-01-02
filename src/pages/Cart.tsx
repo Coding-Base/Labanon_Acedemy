@@ -93,8 +93,14 @@ export default function Cart() {
       // For single item, initiate payment directly
       if (cartItems.length === 1) {
         const item = cartItems[0]
-        const kind = item.course ? 'course' : item.diploma ? 'diploma' : 'course'
+        // Determine type and ID
+        const itemType = item.course ? 'course' : item.diploma ? 'diploma' : 'course'
         const itemId = item.course?.id || item.diploma?.id || item.item_id
+        
+        // Calculate Amount (Item Price + 5% Fee)
+        const rawPrice = parseFloat(String(item.course?.price || item.diploma?.price || item.price || 0))
+        const platformFee = rawPrice * 0.05
+        const finalAmount = rawPrice + platformFee
         
         if (!itemId) {
           setError('Invalid cart item: missing item ID')
@@ -102,18 +108,20 @@ export default function Cart() {
           return
         }
 
+        // FIXED: URL changed to 'initiate' and payload updated to match backend expectations
         const res = await axios.post(
-          `${API_BASE}/payments/initialize/`,
+          `${API_BASE}/payments/initiate/`, 
           {
-            kind,
-            item_id: itemId,
+            item_type: itemType, // Matches 'item_type' in python
+            item_id: itemId,     // Matches 'item_id' in python
+            amount: finalAmount  // Matches 'amount' in python
           },
           { headers: { Authorization: `Bearer ${token}` } }
         )
 
         // Store info for verification
         sessionStorage.setItem('paymentReference', res.data.reference)
-        sessionStorage.setItem('paymentItemType', kind)
+        sessionStorage.setItem('paymentItemType', itemType)
         sessionStorage.setItem('paymentItemId', itemId.toString())
 
         // Redirect to Paystack hosted page or payment page
@@ -142,8 +150,9 @@ export default function Cart() {
     )
   }
 
+  // Calculate totals for display
   const total = cartItems.reduce((sum, item) => {
-    const price = parseFloat(item.course?.price || item.diploma?.price || item.price || 0)
+    const price = parseFloat(String(item.course?.price || item.diploma?.price || item.price || 0))
     return sum + (isNaN(price) ? 0 : price)
   }, 0)
   const platformFee = +(total * 0.05).toFixed(2)

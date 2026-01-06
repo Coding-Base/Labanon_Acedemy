@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { AlertCircle, Loader2, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import PaymentMethodSelector from './PaymentMethodSelector'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -29,6 +30,7 @@ export default function PaymentCheckout({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [processing, setProcessing] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave'>('paystack')
   const navigate = useNavigate()
 
   // Load Paystack script on mount
@@ -49,9 +51,14 @@ export default function PaymentCheckout({
         return
       }
 
+      // Determine endpoint based on selected payment method
+      const endpoint = paymentMethod === 'flutterwave'
+        ? `${API_BASE}/payments/flutterwave/initiate/`
+        : `${API_BASE}/payments/initiate/`
+
       // Call backend to initiate payment
       const res = await axios.post(
-        `${API_BASE}/payments/initiate/`,
+        endpoint,
         {
           item_type: itemType,
           item_id: itemId,
@@ -60,22 +67,27 @@ export default function PaymentCheckout({
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
-      const { authorization_url, reference } = res.data
+      const { authorization_url, link, reference } = res.data
 
-      // Option 1: Redirect to Paystack hosted page with callback to verification
+      // Store reference and method for verification after redirect
+      sessionStorage.setItem('paymentReference', reference)
+      sessionStorage.setItem('paymentItemType', itemType)
+      sessionStorage.setItem('paymentItemId', itemId.toString())
+      sessionStorage.setItem('paymentMethod', paymentMethod)
+
+      // Redirect to payment gateway (Paystack or Flutterwave)
       if (authorization_url) {
-        // Store reference for verification after redirect
-        sessionStorage.setItem('paymentReference', reference)
-        sessionStorage.setItem('paymentItemType', itemType)
-        sessionStorage.setItem('paymentItemId', itemId.toString())
-        // Redirect to Paystack (will redirect back to /payment/verify?reference=xxx after payment)
-        // Paystack will append the reference as query parameter automatically based on callback_url
         window.location.href = authorization_url
         return
       }
 
+      if (link) {
+        window.location.href = link
+        return
+      }
+
       // Option 2: Use Paystack Popup (if available)
-      if (window.PaystackPop) {
+      if (window.PaystackPop && paymentMethod === 'paystack') {
         const handler = window.PaystackPop.setup({
           key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_b5d0eaff52a5d2ed395c2ea99c881ec4ce62acc6',
           email: (await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } })).data.email,
@@ -104,8 +116,13 @@ export default function PaymentCheckout({
   const verifyPayment = async (reference: string, token: string) => {
     setProcessing(true)
     try {
+      // Determine endpoint based on payment method
+      const endpoint = paymentMethod === 'flutterwave'
+        ? `${API_BASE}/payments/flutterwave/verify/${reference}/`
+        : `${API_BASE}/payments/verify/${reference}/`
+
       const res = await axios.get(
-        `${API_BASE}/payments/verify/${reference}/`,
+        endpoint,
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
@@ -178,6 +195,13 @@ export default function PaymentCheckout({
         </div>
       </div>
 
+      {/* Payment Method Selector */}
+      <PaymentMethodSelector
+        selectedMethod={paymentMethod}
+        onMethodChange={setPaymentMethod}
+        disabled={loading || processing}
+      />
+
       <button
         onClick={initiatePayment}
         disabled={loading || processing}
@@ -190,13 +214,13 @@ export default function PaymentCheckout({
           </>
         ) : (
           <>
-            Proceed to Payment
+            Proceed to {paymentMethod === 'paystack' ? 'Paystack' : 'Flutterwave'}
           </>
         )}
       </button>
 
       <p className="text-xs text-gray-500 text-center">
-        Powered by Paystack. Your payment is secure and encrypted.
+        Your payment is secure and encrypted. You will be redirected to {paymentMethod === 'paystack' ? 'Paystack' : 'Flutterwave'} to complete payment.
       </p>
     </div>
   )

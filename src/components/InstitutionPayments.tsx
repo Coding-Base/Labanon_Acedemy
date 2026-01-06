@@ -4,6 +4,7 @@ import { DollarSign, TrendingUp, Calendar, AlertCircle, CheckCircle, Loader2 } f
 // 1. Use the secure API instance
 import api from '../utils/axiosInterceptor';
 import PaystackSubAccountForm from './PaystackSubAccountForm';
+import FlutterwaveSubAccountSetup from './FlutterwaveSubAccountSetup';
 
 export default function InstitutionPayments() {
   const [payments, setPayments] = useState<any[]>([]);
@@ -263,8 +264,9 @@ export default function InstitutionPayments() {
       </div>
 
       {/* Sub-account / Settlement setup */}
-      <div className="mb-8">
+      <div className="mb-8 space-y-4">
         <PaystackSubAccountForm />
+        <FlutterwaveSubAccountSetup />
       </div>
 
       {/* Payments Table */}

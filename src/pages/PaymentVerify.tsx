@@ -15,6 +15,7 @@ export default function PaymentVerify() {
     const verifyPayment = async () => {
       try {
         const reference = searchParams.get('reference')
+        const method = searchParams.get('method') || sessionStorage.getItem('paymentMethod') || 'paystack'
         const token = localStorage.getItem('access')
 
         if (!reference) {
@@ -31,9 +32,14 @@ export default function PaymentVerify() {
           return
         }
 
+        // Determine endpoint based on payment method
+        const endpoint = method === 'flutterwave'
+          ? `${API_BASE}/payments/flutterwave/verify/${reference}/`
+          : `${API_BASE}/payments/verify/${reference}/`
+
         // Verify payment with backend
         const res = await axios.get(
-          `${API_BASE}/payments/verify/${reference}/`,
+          endpoint,
           { headers: { Authorization: `Bearer ${token}` } }
         )
 
@@ -49,6 +55,7 @@ export default function PaymentVerify() {
           sessionStorage.removeItem('paymentReference')
           sessionStorage.removeItem('paymentItemType')
           sessionStorage.removeItem('paymentItemId')
+          sessionStorage.removeItem('paymentMethod')
           
           // Redirect after 2 seconds
           setTimeout(() => {

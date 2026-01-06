@@ -26,7 +26,10 @@ import {
   Trophy,
   Crown,
   Medal,
-  Award
+  Award,
+  CheckCircle,
+  CreditCard,
+  Edit3
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import ManageCourses from '../ManageCourses';
@@ -34,6 +37,7 @@ import ManageCourseDetail from '../ManageCourseDetail';
 import CreateCourse from '../CreateCourse';
 import PaymentHistory from '../../components/PaymentHistory';
 import PaystackSubAccountForm from '../../components/PaystackSubAccountForm';
+import FlutterwaveSubAccountSetup from '../../components/FlutterwaveSubAccountSetup';
 import MessageModal from '../../components/MessageModal';
 import UserMessages from '../../components/UserMessages';
 
@@ -71,6 +75,16 @@ interface LeaderboardTutor {
   is_current_user?: boolean;
 }
 
+// Added Interface for Flutterwave
+interface FlutterwaveSubAccount {
+    id: number;
+    bank_code: string;
+    account_number: string;
+    account_name: string;
+    subaccount_id: string;
+    is_active: boolean;
+}
+
 interface TutorDashboardProps {
   summary?: DashboardSummary;
 }
@@ -100,6 +114,10 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   const [calculatedCourses, setCalculatedCourses] = useState(0);
   const [calculatedRating, setCalculatedRating] = useState(4.0);
 
+  // Flutterwave State
+  const [fwAccount, setFwAccount] = useState<FlutterwaveSubAccount | null>(null);
+  const [showFwUpdateForm, setShowFwUpdateForm] = useState(false); // State to toggle update form
+
   // Leaderboard
   const [leaderboard, setLeaderboard] = useState<LeaderboardTutor[]>([]);
 
@@ -108,7 +126,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   const [studentPurchases, setStudentPurchases] = useState<any[]>([]);
   const [studentsPage, setStudentsPage] = useState(1);
   const [studentsPageCount, setStudentsPageCount] = useState(1);
-  
+   
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [salesByMonth, setSalesByMonth] = useState<any[]>([]);
 
@@ -136,11 +154,11 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   useEffect(() => {
     let mounted = true;
     async function loadDashboardData() {
-      if (summary && calculatedEarnings > 0) {
+      if (summary && calculatedEarnings > 0 && fwAccount) {
         setLoadingSummary(false);
         return;
       }
-      
+       
       const token = localStorage.getItem('access');
       if (!token) {
         window.location.href = '/login';
@@ -148,12 +166,13 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       }
 
       if(!summary) setLoadingSummary(true);
-      
+       
       try {
-        // 1. Fetch User & Summary
-        const [summaryRes, userRes] = await Promise.all([
+        // 1. Fetch User & Summary & Flutterwave Account
+        const [summaryRes, userRes, fwRes] = await Promise.all([
            api.get('/dashboard/'),
-           api.get('/users/me/')
+           api.get('/users/me/'),
+           api.get('/flutterwave-subaccounts/').catch(() => ({ data: null }))
         ]);
         
         if (!mounted) return;
@@ -162,12 +181,22 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         
         setSummary({ ...currentSummary, id: userId });
 
+        // Parse Flutterwave Data
+        if (fwRes.data) {
+            // Handle if it returns an array (list) or single object
+            const accData = Array.isArray(fwRes.data) ? fwRes.data[0] : fwRes.data;
+            // Check if object is not empty
+            if (accData && accData.account_number) {
+                setFwAccount(accData);
+            }
+        }
+
         // 2. Fetch Detailed Data for Algorithms
         const [paymentsRes, enrollmentsRes, coursesRes] = await Promise.all([
-            api.get('/payments/', { params: { tutor: userId, status: 'success', page_size: 1000 } }).catch(()=>({data:[]})),
-            // Fetch purchased enrollments for student count
-            api.get('/enrollments/', { params: { course__creator: userId, purchased: true, page_size: 1000 } }).catch(()=>({data:[]})),
-            api.get('/courses/', { params: { creator: userId, page_size: 1000 } }).catch(()=>({data:[]}))
+             api.get('/payments/', { params: { tutor: userId, status: 'success', page_size: 1000 } }).catch(()=>({data:[]})),
+             // Fetch purchased enrollments for student count
+             api.get('/enrollments/', { params: { course__creator: userId, purchased: true, page_size: 1000 } }).catch(()=>({data:[]})),
+             api.get('/courses/', { params: { creator: userId, page_size: 1000 } }).catch(()=>({data:[]}))
         ]);
 
         const paymentsList = Array.isArray(paymentsRes.data) ? paymentsRes.data : (paymentsRes.data.results || []);
@@ -184,7 +213,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         // 2. Unique Students Logic (Fixing the Zero issue)
         const uniqueStudentIds = new Set();
         enrollmentsList.forEach((e: any) => {
-             // Response has 'user' or sometimes 'student' depending on serializer
+              // Response has 'user' or sometimes 'student' depending on serializer
             const u = e.user || e.student || e.buyer; 
             // If user is object, get id, else use value
             const sId = (typeof u === 'object' && u !== null) ? u.id : u;
@@ -584,8 +613,8 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   <Route path="manage/:id" element={<ManageCourseDetail uploadCourseImageHandler={handleUploadCourseImage} uploadLessonMediaHandler={handleUploadLessonMedia} />} />
                   <Route path="students" element={<div><h2 className="text-xl font-semibold mb-4">Students</h2>{studentsLoading ? <div>Loading...</div> : (<div className="space-y-3">{studentPurchases.length === 0 && <div>No students found.</div>}{studentPurchases.map((p: any, idx) => (<div key={idx} className="p-3 border rounded flex justify-between"><div><div className="font-bold">{p.buyer?.name || p.user?.name || 'Student'}</div><div className="text-sm">{p.course?.title || 'Course'}</div></div><div className="font-bold">₦{Number(p.amount || 0).toLocaleString()}</div></div>))}</div>)}</div>} />
                   <Route path="analytics" element={<div className="grid md:grid-cols-2 gap-6"><div className="h-64"><ResponsiveContainer><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Legend/><Bar dataKey="Sales" fill="#10B981"/><Bar dataKey="Revenue" fill="#06b6d4"/></BarChart></ResponsiveContainer></div><div className="h-64"><ResponsiveContainer><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Legend/><Line type="monotone" dataKey="Revenue" stroke="#0ea5a4"/><Line type="monotone" dataKey="Sales" stroke="#059669"/></LineChart></ResponsiveContainer></div></div>} />
-                  
-                  {/* Earnings Tab - RESTORED ORIGINAL DESIGN EXACTLY */}
+                   
+                  {/* Earnings Tab - UPDATED to show both Active details AND update form */}
                   <Route path="earnings" element={
                     <div>
                       <h2 className="text-xl font-semibold mb-4">Earnings</h2>
@@ -617,7 +646,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                       <div className="flex items-center justify-between mb-6">
                         <div>
                           <h3 className="font-semibold">Payouts & Payment Method</h3>
-                          <p className="text-sm text-gray-500">Connect your Paystack account to receive payouts.</p>
+                          <p className="text-sm text-gray-500">Connect your Paystack/Flutterwave account to receive payouts.</p>
                         </div>
                       </div>
 
@@ -625,13 +654,59 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                         <div className="md:col-span-2">
                           <PaymentHistory userRole="tutor" />
                         </div>
-                        <div>
+                        <div className="space-y-6">
+                          {/* Paystack Section */}
                           <PaystackSubAccountForm />
+                          
+                          {/* Flutterwave Section */}
+                          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4">
+                            <h3 className="font-bold text-gray-800 border-b border-gray-100 pb-2">Flutterwave</h3>
+                            
+                            {/* 1. Show Existing Account Details if available */}
+                            {fwAccount && (
+                              <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+                                  <div className="flex items-center gap-2 mb-3">
+                                      <div className="p-1.5 bg-green-200 rounded-full">
+                                          <CreditCard className="w-4 h-4 text-green-700" />
+                                      </div>
+                                      <h4 className="font-bold text-green-800 text-sm">Active Account</h4>
+                                  </div>
+                                  <div className="space-y-1.5 text-sm">
+                                      <div className="flex justify-between">
+                                          <span className="text-gray-500">Name:</span>
+                                          <span className="font-semibold text-gray-800">{fwAccount.account_name}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                          <span className="text-gray-500">Account:</span>
+                                          <span className="font-semibold text-gray-800">{fwAccount.account_number}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                          <span className="text-gray-500">Bank Code:</span>
+                                          <span className="font-semibold text-gray-800">{fwAccount.bank_code}</span>
+                                      </div>
+                                      <div className="pt-2 mt-2 border-t border-green-100 flex items-center text-green-700 text-xs font-bold">
+                                          <CheckCircle className="w-3 h-3 mr-1" /> Verified & Active
+                                      </div>
+                                  </div>
+                              </div>
+                            )}
+
+                            {/* 2. Show Form for Updates/Creation */}
+                            <div className="pt-2">
+                                <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1">
+                                  <Edit3 className="w-3 h-3" />
+                                  {fwAccount ? 'Update Bank Details' : 'Add Bank Account'}
+                                </div>
+                                {/* Add the FlutterwaveSubAccountSetup component here */}
+                                <FlutterwaveSubAccountSetup />
+                            </div>
+                          </div>
+
                         </div>
                       </div>
                     </div>
                   } />
-                  
+                   
                   <Route path="leaderboard" element={<LeaderboardPage />} />
                   <Route path="schedule" element={<div className="text-center py-12"><Calendar className="w-16 h-16 mx-auto mb-4 text-gray-400"/><h3 className="text-xl font-bold">Schedule</h3></div>} />
                   <Route path="" element={<div><h2 className="text-2xl font-bold mb-4">Welcome</h2><div className="bg-green-50 p-8 rounded-xl"><Link to="/tutor/manage/create" className="px-6 py-3 bg-green-600 text-white rounded-lg">Create Course</Link></div></div>} />

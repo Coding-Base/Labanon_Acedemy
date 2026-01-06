@@ -8,9 +8,10 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 interface ManageCoursesProps {
   uploadCourseImageHandler?: (courseId: number) => Promise<void>
   uploadLessonMediaHandler?: (lessonId: number) => Promise<void>
+  isInstitution?: boolean  // Flag to determine routing context
 }
 
-export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMediaHandler }: ManageCoursesProps) {
+export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMediaHandler, isInstitution = false }: ManageCoursesProps) {
   const [courses, setCourses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -68,8 +69,12 @@ export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMe
                 <div className="text-sm text-gray-500">Price</div>
                 <div className="font-bold">₦{c.price}</div>
               </div>
-              {/* <-- Updated: open editor (CreateCourse) with courseId in query string so tutor can edit everything */}
-              <Link to={`/tutor/manage/create?courseId=${c.id}`} className="px-3 py-1 bg-green-600 text-white rounded">Manage</Link>
+              {/* Route based on context: institution vs tutor */}
+              {isInstitution ? (
+                <Link to={`/institution/courses/manage?courseId=${c.id}`} className="px-3 py-1 bg-green-600 text-white rounded">Manage</Link>
+              ) : (
+                <Link to={`/tutor/manage/create?courseId=${c.id}`} className="px-3 py-1 bg-green-600 text-white rounded">Manage</Link>
+              )}
             </div>
           </div>
         ))}

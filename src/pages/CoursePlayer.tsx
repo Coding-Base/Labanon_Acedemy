@@ -15,6 +15,7 @@ import {
   Check     // <--- Added Check Icon for the menu
 } from 'lucide-react';
 import { useVideoAccess } from '../hooks/useVideoAccess';
+import CourseCompletionModal from '../components/CourseCompletionModal';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -121,6 +122,10 @@ export default function CoursePlayer(): JSX.Element {
   const [enrolled, setEnrolled] = useState<boolean>(false);
   const [checkingEnroll, setCheckingEnroll] = useState<boolean>(true);
   
+  // Completion Modal State
+  const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
+  const [completionCourseData, setCompletionCourseData] = useState<{ courseName: string; username: string; courseId: number } | null>(null);
+  
   // Video State
   const [videoLoadError, setVideoLoadError] = useState<boolean>(false);
   const [signedVideoData, setSignedVideoData] = useState<any>(null);
@@ -145,6 +150,16 @@ export default function CoursePlayer(): JSX.Element {
         if (!mounted) return;
         setCourse(res.data);
         setLessonIndex(0);
+
+        // Get current user info for certificate modal
+        try {
+          const userRes = await axios.get(`${API_BASE}/users/me/`);
+          if (userRes.data?.username) {
+            localStorage.setItem('username', userRes.data.username);
+          }
+        } catch (err) {
+          console.error('Failed to fetch user info:', err);
+        }
       } catch (err) {
         console.error('Failed to load course', err);
         setCourse(null);
@@ -823,7 +838,13 @@ export default function CoursePlayer(): JSX.Element {
                           return;
                         }
                         if (lessonIndex >= lessons.length - 1) {
-                          alert('Congratulations! You have completed all available lessons.');
+                          // Show completion modal
+                          setCompletionCourseData({
+                            courseName: course.title,
+                            username: '', // Will be filled in modal
+                            courseId: course.id
+                          });
+                          setShowCompletionModal(true);
                         } else {
                           goNext();
                         }
@@ -866,6 +887,24 @@ export default function CoursePlayer(): JSX.Element {
           </main>
         </div>
       </div>
+
+      {/* Course Completion Modal */}
+      {completionCourseData && (
+        <CourseCompletionModal
+          isOpen={showCompletionModal}
+          onClose={() => {
+            setShowCompletionModal(false);
+            setCompletionCourseData(null);
+          }}
+          courseName={completionCourseData.courseName}
+          username={localStorage.getItem('username') || 'Student'}
+          courseId={completionCourseData.courseId}
+          onCertificateDownloaded={() => {
+            // Redirect to certificates page after successful download
+            navigate('/student/certificates');
+          }}
+        />
+      )}
     </div>
   );
 }

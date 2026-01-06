@@ -23,12 +23,13 @@ import {
   Globe,
   Save,
   Upload,
-  Loader2
+  Loader2,
+  CheckCircle,
+  CreditCard
 } from 'lucide-react';
 
 import labanonLogo from '../labanonlogo.png';
 import ManageCourses from '../ManageCourses';
-import ManageCourseDetail from '../ManageCourseDetail';
 import CreateCourse from '../CreateCourse';
 import InstitutionDiplomas from '../../components/InstitutionDiplomas';
 import InstitutionPortfolio from '../../components/InstitutionPortfolio';
@@ -55,6 +56,16 @@ interface DashboardSummary {
   total_earnings?: number;
   role?: string;
   [k: string]: any;
+}
+
+// Added Interface for Flutterwave
+interface FlutterwaveSubAccount {
+    id: number;
+    bank_code: string;
+    account_number: string;
+    account_name: string;
+    subaccount_id: string;
+    is_active: boolean;
 }
 
 // --- Sub-Component: Portfolio Editor ---
@@ -307,6 +318,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   const [calculatedRevenue, setCalculatedRevenue] = useState(0);
   const [calculatedStudents, setCalculatedStudents] = useState(0);
 
+  // Flutterwave State
+  const [fwAccount, setFwAccount] = useState<FlutterwaveSubAccount | null>(null);
+
   const base = '/institution';
 
   // Logout Function
@@ -356,8 +370,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
       setLoadingAnalytics(true);
 
       try {
-        // 1. Fetch Main Summary
+        // 1. Fetch Main Summary & Flutterwave Account
         const summaryReq = api.get('/dashboard/');
+        const fwReq = api.get('/flutterwave-subaccounts/').catch(() => ({ data: null }));
         
         // 2. Fetch Diplomas (to get count)
         const diplomaReq = api.get('/diploma-enrollments/');
@@ -377,15 +392,24 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
         });
 
         // Resolve remaining promises
-        const [summaryRes, diplomaRes, paymentsRes] = await Promise.all([
+        const [summaryRes, diplomaRes, paymentsRes, fwRes] = await Promise.all([
           summaryReq,
           diplomaReq.catch(() => ({ data: [] })), 
-          paymentsReq.catch(() => ({ data: [] }))
+          paymentsReq.catch(() => ({ data: [] })),
+          fwReq
         ]);
 
         if (!mounted) return;
 
         setSummary(summaryRes.data);
+
+        // Parse Flutterwave Data
+        if (fwRes.data) {
+            const accData = Array.isArray(fwRes.data) ? fwRes.data[0] : fwRes.data;
+            if (accData && accData.account_number) {
+                setFwAccount(accData);
+            }
+        }
 
         // Process Diploma Count 
         if (diplomaRes.data) {
@@ -679,20 +703,16 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             </button>
                           </div>
                           <ManageCourses 
-                            uploadCourseImageHandler={async () => { alert("Image upload handled in detail view"); }} 
-                            uploadLessonMediaHandler={async () => {}} 
+                            uploadCourseImageHandler={async () => { alert("Image upload handled in detail view"); }}
+                            uploadLessonMediaHandler={async () => {}}
+                            isInstitution={true}
                           />
                         </div>
                       )}
                     </div>
                   } />
                   <Route path="courses/create" element={<CreateCourse />} />
-                  <Route path="courses/:id" element={
-                    <ManageCourseDetail 
-                      uploadCourseImageHandler={async () => { alert("Implement institution image upload logic here similar to Tutor"); }} 
-                      uploadLessonMediaHandler={async () => { alert("Implement institution media upload logic here"); }} 
-                    />
-                  } />
+                  <Route path="courses/manage" element={<CreateCourse />} />
 
                   {/* Diploma Management */}
                   <Route path="diploma" element={<InstitutionDiplomas />} />
@@ -700,8 +720,40 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   {/* Portfolio Management */}
                   <Route path="portfolio" element={<InstitutionPortfolio />} />
 
-                  {/* Payments */}
-                  <Route path="payments" element={<InstitutionPayments />} />
+                  {/* Payments - UPDATED MOVED FLUTTERWAVE DETAILS TO BOTTOM */}
+                  <Route path="payments" element={
+                    <div>
+                        <InstitutionPayments />
+                        {/* Moved Flutterwave Section Below Payments */}
+                        {fwAccount && (
+                            <div className="mt-8 mb-6 bg-white rounded-lg shadow p-5 border border-green-200">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="p-2 bg-green-100 rounded-full">
+                                        <CreditCard className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <h3 className="font-bold text-gray-800">Flutterwave Subaccount</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                    <div className="flex flex-col">
+                                        <span className="text-gray-500">Account Name</span>
+                                        <span className="font-semibold text-lg">{fwAccount.account_name}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-gray-500">Account Number</span>
+                                        <span className="font-semibold text-lg">{fwAccount.account_number}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-gray-500">Bank Code</span>
+                                        <span className="font-semibold text-lg">{fwAccount.bank_code}</span>
+                                    </div>
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center text-green-600 text-xs font-bold">
+                                    <CheckCircle className="w-3 h-3 mr-1" /> Active for Payouts
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                  } />
 
                   {/* Default redirect to overview */}
                   <Route path="" element={

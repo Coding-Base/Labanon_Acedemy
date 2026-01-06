@@ -44,6 +44,7 @@ import ProgressPage from '../../components/cbt/ProgressPage';
 import CoursePlayer from '../CoursePlayer';
 import CourseDetail from '../CourseDetail';
 import MessageModal from '../../components/MessageModal';
+import CertificatesPage from '../CertificatesPage';
 
 // --- Types ---
 interface DashboardSummary {
@@ -562,13 +563,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     <Route path="profile" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><Profile /></div>} />
                     <Route path="progress" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><ProgressPage /></div>} />
                     <Route path="leaderboard" element={<LeaderboardPage />} />
-                    <Route path="certificates" element={
-                      <div className="h-full overflow-y-auto pr-2 -mr-2 text-center py-12">
-                        <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6"><Award className="w-10 h-10 text-yellow-600" /></div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-3">Your Certificates</h3>
-                        <p className="text-gray-600 mb-8 max-w-md mx-auto">View and download your earned certificates. Certificates will appear here after course completion.</p>
-                      </div>
-                    } />
+                    <Route path="certificates" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><CertificatesPage /></div>} />
                     <Route path="schedule" element={
                       <div className="h-full overflow-y-auto pr-2 -mr-2 text-center py-12">
                         <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6"><Calendar className="w-10 h-10 text-purple-600" /></div>

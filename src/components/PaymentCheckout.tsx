@@ -1,16 +1,18 @@
+// src/pages/PaymentCheckout.tsx
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { AlertCircle, Loader2, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PaymentMethodSelector from './PaymentMethodSelector'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
 interface PaymentCheckoutProps {
   itemId: number
   itemType: 'course' | 'diploma'
   amount: number
   itemTitle: string
+  isScheduled?: boolean // <--- New Prop
   onSuccess?: () => void
 }
 
@@ -25,6 +27,7 @@ export default function PaymentCheckout({
   itemType,
   amount,
   itemTitle,
+  isScheduled = false, // Default to false
   onSuccess,
 }: PaymentCheckoutProps) {
   const [loading, setLoading] = useState(false)
@@ -74,6 +77,9 @@ export default function PaymentCheckout({
       sessionStorage.setItem('paymentItemType', itemType)
       sessionStorage.setItem('paymentItemId', itemId.toString())
       sessionStorage.setItem('paymentMethod', paymentMethod)
+      
+      // Store scheduled flag so verification page knows where to redirect
+      sessionStorage.setItem('isScheduled', isScheduled ? 'true' : 'false')
 
       // Redirect to payment gateway (Paystack or Flutterwave)
       if (authorization_url) {
@@ -89,7 +95,7 @@ export default function PaymentCheckout({
       // Option 2: Use Paystack Popup (if available)
       if (window.PaystackPop && paymentMethod === 'paystack') {
         const handler = window.PaystackPop.setup({
-          key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_b5d0eaff52a5d2ed395c2ea99c881ec4ce62acc6',
+          key: (import.meta.env as any).VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_b5d0eaff52a5d2ed395c2ea99c881ec4ce62acc6',
           email: (await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } })).data.email,
           amount: amount * 100, // Convert to kobo
           ref: reference,
@@ -128,10 +134,16 @@ export default function PaymentCheckout({
 
       if (res.data.status === 'success') {
         alert('Payment successful! Your enrollment is now active.')
+        
         if (onSuccess) {
           onSuccess()
         } else {
-          navigate(`/student/${itemType}s/${itemId}`)
+          // Check if scheduled to determine redirect
+          if (isScheduled) {
+             navigate('/student/schedule')
+          } else {
+             navigate('/student/courses')
+          }
         }
       } else {
         setError('Payment verification failed. Please try again.')

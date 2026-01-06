@@ -15,7 +15,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Blog = lazy(() => import('./pages/Blog'))
 const BlogDetail = lazy(() => import('./pages/BlogDetail'))
 const PublicPortfolio = lazy(() => import('./pages/PublicPortfolio'))
-
+const TutorApplication = lazy(() => import('./components/TutorApplicationForm'))
 // role dashboards (lazy)
 const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'))
 const TutorDashboard = lazy(() => import('./pages/dashboards/TutorDashboard'))
@@ -65,8 +65,12 @@ export default function App() {
             <Route path="/performance/:attemptId" element={<PerformancePage />} />
             <Route path="/bulk-upload" element={<BulkUploadPage />} />
             
-            {/* Payment verification after redirect from Paystack */}
+            {/* Payment verification routes */}
+            {/* 1. Paystack Verification */}
             <Route path="/payment/verify" element={<PaymentVerify />} />
+            
+            {/* 2. Flutterwave Verification (ADDED THIS ROUTE) */}
+            <Route path="/payment/flutterwave/verify" element={<PaymentVerify />} />
 
             {/* other app routes */}
             <Route path="/marketplace" element={<Marketplace />} />
@@ -75,6 +79,7 @@ export default function App() {
             <Route path="/blog/:slug" element={<BlogDetail />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/portfolio/:token" element={<PublicPortfolio />} />
+            <Route path="/tutor-application" element={<TutorApplication />} />
             <Route path="/" element={<Home />} />
           </Routes>
         </Suspense>

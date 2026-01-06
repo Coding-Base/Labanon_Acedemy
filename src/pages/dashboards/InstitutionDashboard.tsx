@@ -25,7 +25,8 @@ import {
   Upload,
   Loader2,
   CheckCircle,
-  CreditCard
+  CreditCard,
+  Calendar // Added Calendar Icon
 } from 'lucide-react';
 
 import labanonLogo from '../labanonlogo.png';
@@ -36,6 +37,7 @@ import InstitutionPortfolio from '../../components/InstitutionPortfolio';
 import InstitutionPayments from '../../components/InstitutionPayments';
 import ContactAdminForm from '../../components/ContactAdminForm';
 import UserMessages from '../../components/UserMessages';
+import SchedulePage from '../../components/SchedulePage'; // Added SchedulePage
 
 // Recharts
 import {
@@ -467,6 +469,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
     { path: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" /> },
     { path: 'diploma', label: 'Diploma', icon: <GraduationCap className="w-5 h-5" /> },
     { path: 'portfolio', label: 'Portfolio', icon: <Briefcase className="w-5 h-5" /> },
+    { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> }, // Added Schedule
     { path: 'payments', label: 'Payments', icon: <DollarSign className="w-5 h-5" /> },
   ];
 
@@ -719,6 +722,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
 
                   {/* Portfolio Management */}
                   <Route path="portfolio" element={<InstitutionPortfolio />} />
+
+                  {/* Schedule Page */}
+                  <Route path="schedule" element={<div className="p-4"><SchedulePage userRole="institution" /></div>} />
 
                   {/* Payments - UPDATED MOVED FLUTTERWAVE DETAILS TO BOTTOM */}
                   <Route path="payments" element={

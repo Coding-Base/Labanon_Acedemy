@@ -45,6 +45,7 @@ import CoursePlayer from '../CoursePlayer';
 import CourseDetail from '../CourseDetail';
 import MessageModal from '../../components/MessageModal';
 import CertificatesPage from '../CertificatesPage';
+import SchedulePage from '../../components/SchedulePage'; // Added SchedulePage
 
 // --- Types ---
 interface DashboardSummary {
@@ -264,11 +265,11 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     { path: 'courses', label: 'My Courses', icon: <BookOpen className="w-5 h-5" /> },
     { path: 'cbt', label: 'CBT & Exams', icon: <FileText className="w-5 h-5" /> },
     { path: 'cart', label: 'Shopping Cart', icon: <ShoppingCart className="w-5 h-5" /> },
+    { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> }, // Added Schedule
     { path: 'payments', label: 'Payments', icon: <CreditCard className="w-5 h-5" /> },
     { path: 'progress', label: 'Progress', icon: <TrendingUp className="w-5 h-5" /> },
     { path: 'certificates', label: 'Certificates', icon: <Award className="w-5 h-5" /> },
     { path: 'leaderboard', label: 'Leaderboard', icon: <Trophy className="w-5 h-5" /> },
-    { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> },
     { path: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> }
   ];
 
@@ -283,7 +284,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
 
   const quickActions = [
     { title: 'Take Practice Test', icon: <FileText className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'cbt' },
-    { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-teal-100 text-teal-600', path: 'courses' },
+    { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-teal-100 text-teal-600', path: 'schedule' }, // Updated path
     { title: 'Download Materials', icon: <Download className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'courses' },
     { title: 'View Leaderboard', icon: <BarChart3 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-600', path: 'leaderboard' }
   ];
@@ -564,13 +565,13 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     <Route path="progress" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><ProgressPage /></div>} />
                     <Route path="leaderboard" element={<LeaderboardPage />} />
                     <Route path="certificates" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><CertificatesPage /></div>} />
+                    {/* Add the Schedule Route */}
                     <Route path="schedule" element={
-                      <div className="h-full overflow-y-auto pr-2 -mr-2 text-center py-12">
-                        <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6"><Calendar className="w-10 h-10 text-purple-600" /></div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-3">Learning Schedule</h3>
-                        <p className="text-gray-600 mb-8 max-w-md mx-auto">Plan and track your study schedule. Set reminders and manage your learning timeline.</p>
-                      </div>
+                        <div className="h-full overflow-y-auto pr-2 -mr-2">
+                            <SchedulePage userRole="student" />
+                        </div>
                     } />
+                    
                     <Route path="" element={<div className="h-full flex items-center justify-center"><p className="text-gray-500">Redirecting...</p></div>} />
                     <Route path="*" element={
                       <div className="h-full flex items-center justify-center text-center">

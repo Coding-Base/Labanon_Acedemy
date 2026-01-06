@@ -2,13 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Users, Star, BookOpen, ChevronLeft, ChevronRight, PlayCircle, Image } from 'lucide-react';
+import { Clock, Users, Star, BookOpen, ChevronLeft, ChevronRight, PlayCircle, Calendar, Video } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api';
 
-// Enhanced fallback course images - professional Unsplash images suitable for courses[citation:1][citation:2]
+// Enhanced fallback course images - professional Unsplash images suitable for courses
 const FALLBACK_IMAGES = [
-  // Professional education/learning themed images
   'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', // Books on table
   'https://images.unsplash.com/photo-1501504905252-473c47e087f8?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', // Notebook and pen
   'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', // Graduation cap
@@ -18,7 +17,6 @@ const FALLBACK_IMAGES = [
 
 // Function to get a consistent fallback image for each course
 function getFallbackImage(courseId: number) {
-  // Use course ID to consistently return the same image for the same course
   const index = courseId % FALLBACK_IMAGES.length;
   return FALLBACK_IMAGES[index];
 }
@@ -70,11 +68,6 @@ export default function MyCourses() {
   const handleImageError = (enrollmentId: number) => {
     setImageErrors(prev => new Set(prev).add(enrollmentId));
   };
-
-  // Generate random data for demo
-  const getRandomRating = () => (4 + Math.random()).toFixed(1);
-  const getRandomStudents = () => Math.floor(Math.random() * 5000) + 1000;
-  const getRandomDuration = () => `${Math.floor(Math.random() * 6) + 1}h ${Math.floor(Math.random() * 60)}m`;
 
   // Loading skeleton
   if (loading) {
@@ -157,18 +150,29 @@ export default function MyCourses() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pb-4">
             {enrollments.map((enrollment) => {
               const course = enrollment.course;
-              const rating = getRandomRating();
-              const studentCount = getRandomStudents();
-              const duration = getRandomDuration();
+              // Use real stats if available, otherwise 0/default
+              const rating = course?.stats?.rating || 0;
+              const studentCount = course?.stats?.students || 0;
+              const duration = course?.stats?.duration || '0h 0m';
+              
               const imageUrl = getCourseImage(course, enrollment.id);
               const hasImageError = imageErrors.has(enrollment.id) || !course?.image;
               const fallbackImage = getFallbackImage(course?.id || enrollment.id);
+              
+              // Determine if it's a scheduled course
+              const isScheduled = !!course.meeting_link;
 
               return (
                 <div 
                   key={enrollment.id}
                   className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 border border-gray-100 cursor-pointer group"
-                  onClick={() => navigate(`/student/courses/${course?.id}`)}
+                  onClick={() => {
+                    if (isScheduled) {
+                        navigate('/student/schedule');
+                    } else {
+                        navigate(`/student/courses/${course?.id}`);
+                    }
+                  }}
                 >
                   {/* Course Image */}
                   <div className="relative h-40 overflow-hidden">
@@ -179,11 +183,13 @@ export default function MyCourses() {
                       onError={() => handleImageError(enrollment.id)}
                       loading="lazy"
                     />
-                    {/* Overlay with "Course" text - subtle and professional */}
+                    {/* Overlay with "Course" text */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent flex items-end">
                       <div className="p-3 w-full">
                         <div className="bg-black/40 backdrop-blur-sm rounded-lg px-3 py-1 inline-block">
-                          <span className="text-white text-xs font-semibold tracking-wider">COURSE</span>
+                          <span className="text-white text-xs font-semibold tracking-wider">
+                            {isScheduled ? 'LIVE CLASS' : 'COURSE'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -197,10 +203,10 @@ export default function MyCourses() {
 
                   {/* Course Content */}
                   <div className="p-5">
-                    {/* Category Badge */}
+                    {/* Category Badge - Dynamic based on type */}
                     <div className="mb-2">
-                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
-                        {course?.category || 'Professional'}
+                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${isScheduled ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {isScheduled ? 'Scheduled Session' : (course?.category || 'Professional')}
                       </span>
                     </div>
 
@@ -225,9 +231,11 @@ export default function MyCourses() {
                           <Users size={14} />
                           <span>{(studentCount/1000).toFixed(1)}k</span>
                         </div>
+                        
+                        {/* Show Clock for Normal, Calendar for Scheduled */}
                         <div className="flex items-center gap-1">
-                          <Clock size={14} />
-                          <span>{duration}</span>
+                          {isScheduled ? <Calendar size={14} /> : <Clock size={14} />}
+                          <span>{isScheduled ? 'Weekly' : duration}</span>
                         </div>
                       </div>
                     </div>
@@ -236,11 +244,13 @@ export default function MyCourses() {
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                       <div>
                         <span className="text-xl font-bold text-gray-900">₦{course?.price || '0'}</span>
-                        <span className="text-gray-500 text-sm ml-2 line-through">₦{(course?.price * 1.5).toFixed(0)}</span>
+                        <span className="text-gray-500 text-sm ml-2 line-through">₦{((course?.price || 0) * 1.5).toFixed(0)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-blue-600">Continue</span>
-                        <PlayCircle size={18} className="text-blue-600" />
+                        <span className="text-sm font-medium text-blue-600">
+                            {isScheduled ? 'View Schedule' : 'Continue'}
+                        </span>
+                        {isScheduled ? <Video size={18} className="text-blue-600"/> : <PlayCircle size={18} className="text-blue-600" />}
                       </div>
                     </div>
                   </div>

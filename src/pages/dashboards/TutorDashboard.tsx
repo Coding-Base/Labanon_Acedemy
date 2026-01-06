@@ -40,6 +40,7 @@ import PaystackSubAccountForm from '../../components/PaystackSubAccountForm';
 import FlutterwaveSubAccountSetup from '../../components/FlutterwaveSubAccountSetup';
 import MessageModal from '../../components/MessageModal';
 import UserMessages from '../../components/UserMessages';
+import SchedulePage from '../../components/SchedulePage'; // Added SchedulePage
 
 // Recharts imports
 import {
@@ -443,10 +444,11 @@ export default function TutorDashboard(props: TutorDashboardProps) {
     },
   ];
 
+  // Updated paths to absolute URLs to fix routing issues
   const quickActions = [
     { title: 'Create New Course', icon: <PlusCircle className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: '/tutor/manage/create' },
-    { title: 'Schedule Live Class', icon: <Calendar className="w-5 h-5" />, color: 'bg-purple-100 text-purple-600', path: 'schedule' },
-    { title: 'Go Live', icon: <Sparkles className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'overview' }
+    { title: 'Schedule Live Class', icon: <Calendar className="w-5 h-5" />, color: 'bg-purple-100 text-purple-600', path: '/tutor/schedule' },
+    { title: 'Go Live', icon: <Sparkles className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: '/tutor/schedule' }
   ];
 
   const LeaderboardPage = () => (
@@ -708,7 +710,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   } />
                    
                   <Route path="leaderboard" element={<LeaderboardPage />} />
-                  <Route path="schedule" element={<div className="text-center py-12"><Calendar className="w-16 h-16 mx-auto mb-4 text-gray-400"/><h3 className="text-xl font-bold">Schedule</h3></div>} />
+                  <Route path="schedule" element={<div className="p-4"><SchedulePage userRole="tutor" /></div>} />
                   <Route path="" element={<div><h2 className="text-2xl font-bold mb-4">Welcome</h2><div className="bg-green-50 p-8 rounded-xl"><Link to="/tutor/manage/create" className="px-6 py-3 bg-green-600 text-white rounded-lg">Create Course</Link></div></div>} />
                 </Routes>
               </div>

@@ -20,98 +20,37 @@ import {
   BarChart3,
   Globe,
   Brain,
-  Target
+  Target,
+  ArrowRight // Added ArrowRight
 } from 'lucide-react';
 
 // Import logos and images
 import labanonLogo from './labanonlogo.png';
-import learningImage from './learningup.jpeg'; // Adjust the path if needed
+import learningImage from './learningup.jpeg'; 
 
 // Primary high-quality image for hero section
-const PRIMARY_HERO_IMAGE = learningImage; // Use local learningup.jpeg
+const PRIMARY_HERO_IMAGE = learningImage; 
 
 const IMAGES = {
-  hero: PRIMARY_HERO_IMAGE, // Use local learningup.jpeg image
-  fallbackHero: learningImage, // Your local image as fallback
+  hero: PRIMARY_HERO_IMAGE, 
+  fallbackHero: learningImage, 
   webDev: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=2072&q=80',
   math: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=2070&q=80',
   dataScience: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=2070&q=80',
   student1: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?auto=format&fit=crop&w=1974&q=80',
   student2: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=2070&q=80',
-  student3: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=2070&q=80'
+  student3: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=2070&q=80',
+  tutor: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=2070&q=80' // Added tutor image
 };
 
 // Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.8, ease: "easeOut" }
-  }
-};
-
-const fadeInLeft = {
-  hidden: { opacity: 0, x: -50 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.8, ease: "easeOut" }
-  }
-};
-
-const fadeInRight = {
-  hidden: { opacity: 0, x: 50 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.8, ease: "easeOut" }
-  }
-};
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.6, ease: "easeOut" }
-  }
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.3
-    }
-  }
-};
-
-const floatAnimation = {
-  initial: { y: 0 },
-  animate: {
-    y: [0, -10, 0],
-    transition: {
-      duration: 3,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  }
-};
-
-const pulseAnimation = {
-  initial: { scale: 1 },
-  animate: {
-    scale: [1, 1.05, 1],
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  }
-};
+const fadeInUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } };
+const fadeInLeft = { hidden: { opacity: 0, x: -50 }, visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: "easeOut" } } };
+const fadeInRight = { hidden: { opacity: 0, x: 50 }, visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: "easeOut" } } };
+const scaleIn = { hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: "easeOut" } } };
+const staggerContainer = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.3 } } };
+const floatAnimation = { initial: { y: 0 }, animate: { y: [0, -10, 0], transition: { duration: 3, repeat: Infinity, ease: "easeInOut" } } };
+const pulseAnimation = { initial: { scale: 1 }, animate: { scale: [1, 1.05, 1], transition: { duration: 2, repeat: Infinity, ease: "easeInOut" } } };
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,8 +89,7 @@ export default function Home() {
     { label: 'Courses', path: '/marketplace' },
     { label: 'Blog', path: '/blog' },
     { label: 'CBT Practice', path: '/register' },
-    { label: 'For Schools', path: '/register' },
-    { label: 'For Tutors', path: '/register' }
+    { label: 'Find a Tutor', path: '/tutor-application' }, // Updated Link
   ];
 
   const courses = [
@@ -809,6 +747,98 @@ export default function Home() {
           </motion.div>
         </div>
       </motion.section>
+
+      {/* --- NEW SECTION: FIND A TUTOR --- */}
+      <section className="py-20 bg-green-50 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-green-700 font-semibold text-sm mb-6 shadow-sm">
+                <Globe className="w-4 h-4" />
+                <span>Global Learning Access</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                Need a Personal <br/>
+                <span className="text-green-600">Home or Online Tutor?</span>
+              </h2>
+              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                Whether you are in Nigeria or in the diaspora, finding the perfect tutor for your child shouldn't be a hassle. 
+                We connect you with vetted, expert tutors for personalized one-on-one learning in any subject.
+              </p>
+              
+              <ul className="space-y-4 mb-10">
+                {[
+                  'Expert tutors for primary, secondary & exam prep',
+                  'Flexible schedules (Online or Physical)',
+                  'Tailored curriculum for specific learning goals',
+                  'Trusted by parents worldwide'
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-green-200 flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-green-700" />
+                    </div>
+                    <span className="text-gray-700 font-medium">{item}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Link 
+                  to="/tutor-application"
+                  className="inline-flex items-center px-8 py-4 bg-gray-900 text-white rounded-xl font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl"
+                >
+                  Request a Tutor Now <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
+              </motion.div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="relative"
+            >
+              <div className="absolute -inset-4 bg-gradient-to-tr from-green-500/20 to-teal-500/20 rounded-full blur-3xl" />
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
+                <img 
+                  src={IMAGES.tutor} 
+                  alt="Professional Tutor teaching online" 
+                  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
+                  <div className="text-white">
+                    <p className="font-bold text-xl">100% Verified Tutors</p>
+                    <p className="text-gray-200 text-sm">Quality education, guaranteed.</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Floating Badge */}
+              <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 3, repeat: Infinity }}
+                className="absolute -top-6 -right-6 bg-white p-4 rounded-xl shadow-xl flex items-center gap-3 max-w-[200px]"
+              >
+                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <Brain className="w-6 h-6 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-bold uppercase">Subject Mastery</p>
+                  <p className="text-sm font-bold text-gray-900">Any Topic</p>
+                </div>
+              </motion.div>
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
 
       {/* Testimonials */}
       <motion.section

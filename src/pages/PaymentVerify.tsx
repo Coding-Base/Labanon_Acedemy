@@ -1,34 +1,65 @@
 import React, { useEffect, useState } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
 export default function PaymentVerify() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('Verifying your payment...')
 
   useEffect(() => {
+    let mounted = true
+
     const verifyPayment = async () => {
       try {
-        const reference = searchParams.get('reference')
-        const method = searchParams.get('method') || sessionStorage.getItem('paymentMethod') || 'paystack'
+        // --- 1. Robust reference retrieval ---
+        // Paystack sends 'reference' or 'trxref'
+        // Flutterwave sends 'tx_ref'
+        const reference = searchParams.get('reference') || searchParams.get('trxref') || searchParams.get('tx_ref')
+        const fwStatus = searchParams.get('status') // Flutterwave sends 'status=completed' or 'cancelled'
+
+        // --- 2. Determine Method ---
+        const isFlutterwavePath = location.pathname.includes('flutterwave')
+        const hasFwParams = searchParams.has('tx_ref')
+        const storedMethod = sessionStorage.getItem('paymentMethod')
+        
+        let method = 'paystack'
+        if (isFlutterwavePath || hasFwParams || storedMethod === 'flutterwave') {
+            method = 'flutterwave'
+        }
+
         const token = localStorage.getItem('access')
 
-        if (!reference) {
-          setStatus('error')
-          setMessage('No payment reference found')
-          setTimeout(() => navigate('/student'), 3000)
+        if (!token) {
+          if(mounted) {
+            setStatus('error')
+            setMessage('Session expired. Please log in again.')
+            setTimeout(() => navigate('/login'), 3000)
+          }
           return
         }
 
-        if (!token) {
-          setStatus('error')
-          setMessage('Session expired. Please log in again.')
-          setTimeout(() => navigate('/login'), 3000)
+        // Handle Flutterwave "cancelled" state specifically
+        if (method === 'flutterwave' && fwStatus === 'cancelled') {
+            if(mounted) {
+                setStatus('error')
+                setMessage('Payment was cancelled.')
+                setTimeout(() => navigate('/student'), 3000)
+            }
+            return
+        }
+
+        if (!reference) {
+          if(mounted) {
+            setStatus('error')
+            setMessage('No payment reference found')
+            setTimeout(() => navigate('/student'), 3000)
+          }
           return
         }
 
@@ -43,44 +74,58 @@ export default function PaymentVerify() {
           { headers: { Authorization: `Bearer ${token}` } }
         )
 
-        if (res.data.status === 'success') {
-          setStatus('success')
-          setMessage('Payment verified! You now have access to the course/diploma.')
-          
-          // Get item type and id from sessionStorage
-          const itemType = sessionStorage.getItem('paymentItemType')
-          const itemId = sessionStorage.getItem('paymentItemId')
-          
-          // Clean up
-          sessionStorage.removeItem('paymentReference')
-          sessionStorage.removeItem('paymentItemType')
-          sessionStorage.removeItem('paymentItemId')
-          sessionStorage.removeItem('paymentMethod')
-          
-          // Redirect after 2 seconds
-          setTimeout(() => {
-            if (itemType && itemId) {
-              navigate(`/${itemType}/${itemId}`)
+        if (mounted) {
+            // Paystack returns {status: 'success', ...} inside data
+            // Flutterwave endpoint returns {status: 'success', ...} inside data
+            if (res.data.status === 'success') {
+                setStatus('success')
+                setMessage('Payment verified! You now have access to your content.')
+                
+                // --- 3. Determine Redirect Target ---
+                // Retrieve the flag we saved in PaymentCheckout.tsx
+                const isScheduled = sessionStorage.getItem('isScheduled') === 'true'
+                const itemType = sessionStorage.getItem('paymentItemType')
+                const itemId = sessionStorage.getItem('paymentItemId')
+
+                // Clean up session
+                sessionStorage.removeItem('paymentReference')
+                sessionStorage.removeItem('paymentItemType')
+                sessionStorage.removeItem('paymentItemId')
+                sessionStorage.removeItem('paymentMethod')
+                sessionStorage.removeItem('isScheduled')
+                
+                setTimeout(() => {
+                    if (isScheduled) {
+                        // Redirect Scheduled Live Courses to Schedule Page
+                        navigate('/student/schedule')
+                    } else if (itemType && itemId) {
+                        // Redirect Standard Courses to My Courses (or detail page if preferred)
+                        navigate('/student/courses')
+                    } else {
+                        // Fallback
+                        navigate('/student')
+                    }
+                }, 2000)
             } else {
-              navigate('/student')
+                setStatus('error')
+                setMessage('Payment verification failed. Please contact support.')
+                setTimeout(() => navigate('/student'), 3000)
             }
-          }, 2000)
-        } else {
-          setStatus('error')
-          setMessage('Payment verification failed. Please contact support.')
-          setTimeout(() => navigate('/student'), 3000)
         }
       } catch (err: any) {
         console.error(err)
-        const errorMsg = err.response?.data?.detail || 'Payment verification failed'
-        setStatus('error')
-        setMessage(errorMsg)
-        setTimeout(() => navigate('/student'), 3000)
+        if(mounted) {
+            const errorMsg = err.response?.data?.detail || 'Payment verification failed'
+            setStatus('error')
+            setMessage(errorMsg)
+            setTimeout(() => navigate('/student'), 3000)
+        }
       }
     }
 
     verifyPayment()
-  }, [searchParams, navigate])
+    return () => { mounted = false }
+  }, [searchParams, navigate, location])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -97,7 +142,7 @@ export default function PaymentVerify() {
             <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-green-600 mb-2">Payment Successful!</h2>
             <p className="text-gray-700">{message}</p>
-            <p className="text-sm text-gray-500 mt-4">Redirecting in 2 seconds...</p>
+            <p className="text-sm text-gray-500 mt-4">Redirecting...</p>
           </>
         )}
 
@@ -106,7 +151,7 @@ export default function PaymentVerify() {
             <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-red-600 mb-2">Verification Failed</h2>
             <p className="text-gray-700">{message}</p>
-            <p className="text-sm text-gray-500 mt-4">Redirecting in 3 seconds...</p>
+            <p className="text-sm text-gray-500 mt-4">Redirecting to dashboard...</p>
           </>
         )}
       </div>

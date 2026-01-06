@@ -1,6 +1,19 @@
+// src/components/InstitutionDiplomas.tsx
 import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
-import { Plus, Trash2, Edit2, Loader2, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { 
+  Plus, 
+  Trash2, 
+  Edit2, 
+  Loader2, 
+  AlertCircle, 
+  CheckCircle, 
+  Eye, 
+  EyeOff, 
+  Upload, 
+  Image as ImageIcon, 
+  GraduationCap 
+} from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
@@ -14,6 +27,7 @@ interface Diploma {
   start_date: string
   end_date: string
   meeting_place: string
+  image: string
   published: boolean
   created_at: string
 }
@@ -26,20 +40,24 @@ interface DiplomaFormData {
   start_date: string
   end_date: string
   meeting_place: string
-  image: string
+  image: string // Used for preview URL
 }
 
 export default function InstitutionDiplomas() {
   const [diplomas, setDiplomas] = useState<Diploma[]>([])
   const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [institutionId, setInstitutionId] = useState<number | null>(null)
   const [creatorId, setCreatorId] = useState<number | null>(null)
-  const [imageTab, setImageTab] = useState<'url' | 'upload'>('url')
-  const initializedRef = useRef(false)
+  
+  // Image handling
+  const [imageTab, setImageTab] = useState<'url' | 'upload'>('upload') 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  
   const [formData, setFormData] = useState<DiplomaFormData>({
     title: '',
     description: '',
@@ -54,7 +72,7 @@ export default function InstitutionDiplomas() {
   const loadDiplomas = async () => {
     try {
       setLoading(true)
-      setError('') // Clear error before attempting
+      setError('')
       const token = localStorage.getItem('access')
       if (!token) {
         setError('Not authenticated. Please log in.')
@@ -68,7 +86,6 @@ export default function InstitutionDiplomas() {
       console.error('[InstitutionDiplomas] Failed to load diplomas:', err)
       const status = err.response?.status
       if (status === 401 || status === 403) {
-        console.warn('[InstitutionDiplomas] Auth error - token may be invalid')
         setError('Session expired. Please refresh or log in again.')
       } else {
         setError('Failed to load diplomas')
@@ -83,16 +100,12 @@ export default function InstitutionDiplomas() {
     const loadIds = async () => {
       try {
         const token = localStorage.getItem('access')
-        if (!token) {
-          if (mounted) setError('Not authenticated. Please log in.')
-          return
-        }
+        if (!token) return
 
         // Get current user ID
         const userRes = await axios.get(`${API_BASE}/users/me/`, {
           headers: { Authorization: `Bearer ${token}` },
         }).catch((err) => {
-          // If token is invalid, don't keep retrying - just redirect once
           if (err.response?.status === 401) {
             localStorage.removeItem('access')
             window.location.href = '/login'
@@ -101,7 +114,6 @@ export default function InstitutionDiplomas() {
         })
         
         if (!mounted) return
-        console.log('User data:', userRes.data)
         setCreatorId(userRes.data.id)
 
         // Get institution for this user
@@ -110,45 +122,16 @@ export default function InstitutionDiplomas() {
             headers: { Authorization: `Bearer ${token}` },
           })
           if (mounted) {
-            console.log('Institution data:', instRes.data)
             setInstitutionId(instRes.data.id)
           }
         } catch (instError: any) {
           if (!mounted) return
-          // If endpoint returns 404, try to create an institution for this user
           if (instError.response?.status === 404) {
-            console.log('No institution found, creating one...')
-            try {
-              const createRes = await axios.post(`${API_BASE}/institutions/`, 
-                { name: `${userRes.data.username}'s Institution` },
-                { headers: { Authorization: `Bearer ${token}` } }
-              )
-              if (mounted) {
-                console.log('Institution created:', createRes.data)
-                setInstitutionId(createRes.data.id)
-              }
-            } catch (createError: any) {
-              if (mounted) {
-                console.error('Failed to create institution:', createError.response?.data || createError.message)
-                // Don't show error alert for institution creation - it's not critical
-              }
-            }
-          } else if (instError.response?.status === 401) {
-            localStorage.removeItem('access')
-            window.location.href = '/login'
-          } else {
-            if (mounted) throw instError
+             console.log('No institution found')
           }
         }
       } catch (err: any) {
-        if (mounted) {
-          console.error('Failed to load user/institution info:', err)
-          // Only show error if it's not a 401 (which we handle separately)
-          if (err.response?.status !== 401) {
-            const errorMsg = err.response?.data?.detail || err.message || 'Failed to load institution information'
-            setError(`Error: ${errorMsg}`)
-          }
-        }
+         // Error handling
       }
     }
     loadIds()
@@ -164,6 +147,16 @@ export default function InstitutionDiplomas() {
     setFormData({ ...formData, [name]: value })
   }
 
+  // Handle File Selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+      // Create a blob URL for preview immediately
+      setFormData({ ...formData, image: URL.createObjectURL(file) })
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -175,40 +168,55 @@ export default function InstitutionDiplomas() {
     }
 
     try {
-      setLoading(true)
+      setSubmitting(true)
       const token = localStorage.getItem('access')
 
       if (!institutionId || !creatorId) {
-        console.error('Missing IDs - institutionId:', institutionId, 'creatorId:', creatorId)
-        setError('Institution or user information not loaded. Please refresh the page.')
+        setError('Institution information not loaded. Please refresh.')
         return
       }
 
-      const payload = {
-        institution: institutionId,
-        creator: creatorId,
-        title: formData.title,
-        description: formData.description,
-        price: parseFloat(formData.price) || 0,
-        duration: formData.duration,
-        start_date: formData.start_date || null,
-        end_date: formData.end_date || null,
-        meeting_place: formData.meeting_place,
-        image: formData.image,
+      // --- USE FORM DATA FOR FILE UPLOAD ---
+      const payload = new FormData()
+      payload.append('institution', String(institutionId))
+      payload.append('creator', String(creatorId))
+      payload.append('title', formData.title)
+      payload.append('description', formData.description)
+      payload.append('price', formData.price)
+      payload.append('duration', formData.duration)
+      payload.append('meeting_place', formData.meeting_place)
+      
+      if (formData.start_date) payload.append('start_date', formData.start_date)
+      if (formData.end_date) payload.append('end_date', formData.end_date)
+
+      // Handle Image Logic
+      if (selectedFile) {
+          // If a file is selected, send it as 'image_upload' (matches serializer FileField)
+          payload.append('image_upload', selectedFile) 
+      } else if (imageTab === 'url' && formData.image && !formData.image.startsWith('blob:')) {
+          // If using URL mode and it's NOT a blob preview, send as 'image' (matches serializer CharField)
+          payload.append('image', formData.image)
+      }
+      // Note: If selectedFile is null and formData.image is a blob, we send nothing for image
+      // This preserves the existing image on the backend during an update.
+
+      const config = {
+        headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data' 
+        },
       }
 
       if (editingId) {
-        await axios.put(`${API_BASE}/diplomas/${editingId}/`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        // Use PATCH for updates (Fixes 400 Bad Request by allowing partial updates)
+        await axios.patch(`${API_BASE}/diplomas/${editingId}/`, payload, config)
         setSuccess('Diploma updated successfully!')
       } else {
-        await axios.post(`${API_BASE}/diplomas/`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        await axios.post(`${API_BASE}/diplomas/`, payload, config)
         setSuccess('Diploma created successfully!')
       }
 
+      // Reset Form
       setFormData({
         title: '',
         description: '',
@@ -219,13 +227,22 @@ export default function InstitutionDiplomas() {
         meeting_place: '',
         image: '',
       })
+      setSelectedFile(null)
       setShowForm(false)
       setEditingId(null)
       await loadDiplomas()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save diploma')
+      console.error(err)
+      // Extract specific field errors if available
+      const data = err.response?.data;
+      let msg = 'Failed to save diploma';
+      if (typeof data === 'object') {
+          const errors = Object.values(data).flat().join(', ');
+          if (errors) msg = errors;
+      }
+      setError(msg)
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
@@ -238,8 +255,9 @@ export default function InstitutionDiplomas() {
       start_date: diploma.start_date || '',
       end_date: diploma.end_date || '',
       meeting_place: diploma.meeting_place,
-      image: '',
+      image: diploma.image || '',
     })
+    setSelectedFile(null) 
     setEditingId(diploma.id)
     setShowForm(true)
   }
@@ -283,7 +301,7 @@ export default function InstitutionDiplomas() {
           onClick={() => {
             setShowForm(!showForm)
             setEditingId(null)
-            if (showForm) {
+            if (!showForm) {
               setFormData({
                 title: '',
                 description: '',
@@ -294,6 +312,7 @@ export default function InstitutionDiplomas() {
                 meeting_place: '',
                 image: '',
               })
+              setSelectedFile(null)
             }
           }}
           className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold flex items-center gap-2"
@@ -305,14 +324,14 @@ export default function InstitutionDiplomas() {
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
           <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600 text-sm">{error}</p>
         </div>
       )}
 
       {success && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-green-600">{success}</p>
+          <p className="text-green-600 text-sm">{success}</p>
         </div>
       )}
 
@@ -336,7 +355,7 @@ export default function InstitutionDiplomas() {
                   onChange={handleChange}
                   placeholder="e.g., Advanced Welding Certificate"
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  disabled={loading}
+                  disabled={submitting}
                   required
                 />
               </div>
@@ -349,7 +368,7 @@ export default function InstitutionDiplomas() {
                   onChange={handleChange}
                   placeholder="50000"
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  disabled={loading}
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -363,7 +382,7 @@ export default function InstitutionDiplomas() {
                 placeholder="Describe the diploma program..."
                 rows={3}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
-                disabled={loading}
+                disabled={submitting}
               />
             </div>
 
@@ -377,7 +396,7 @@ export default function InstitutionDiplomas() {
                   onChange={handleChange}
                   placeholder="e.g., 6 months"
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  disabled={loading}
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -389,7 +408,7 @@ export default function InstitutionDiplomas() {
                   onChange={handleChange}
                   placeholder="Physical venue location"
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  disabled={loading}
+                  disabled={submitting}
                   required
                 />
               </div>
@@ -404,7 +423,7 @@ export default function InstitutionDiplomas() {
                   value={formData.start_date}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  disabled={loading}
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -415,25 +434,15 @@ export default function InstitutionDiplomas() {
                   value={formData.end_date}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  disabled={loading}
+                  disabled={submitting}
                 />
               </div>
             </div>
 
+            {/* Image Upload Section */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">Diploma Image</label>
               <div className="flex gap-2 mb-3 border-b">
-                <button
-                  type="button"
-                  onClick={() => setImageTab('url')}
-                  className={`px-4 py-2 font-medium transition ${
-                    imageTab === 'url'
-                      ? 'text-green-600 border-b-2 border-green-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Image URL
-                </button>
                 <button
                   type="button"
                   onClick={() => setImageTab('upload')}
@@ -445,7 +454,48 @@ export default function InstitutionDiplomas() {
                 >
                   Upload Image
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setImageTab('url')}
+                  className={`px-4 py-2 font-medium transition ${
+                    imageTab === 'url'
+                      ? 'text-green-600 border-b-2 border-green-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Image URL
+                </button>
               </div>
+
+              {imageTab === 'upload' && (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50 hover:bg-gray-100 transition cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    id="image-upload"
+                    disabled={submitting}
+                  />
+                  <div className="flex flex-col items-center justify-center">
+                    {formData.image && formData.image.startsWith('blob:') ? (
+                        <img 
+                            src={formData.image} 
+                            alt="Selected" 
+                            className="h-32 object-cover rounded-md mb-2 shadow-sm"
+                        />
+                    ) : (
+                        <div className="mb-2 p-3 bg-green-100 rounded-full">
+                            <Upload className="w-6 h-6 text-green-600" />
+                        </div>
+                    )}
+                    <p className="font-medium text-gray-700">
+                        {selectedFile ? selectedFile.name : 'Click to upload or drag and drop'}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">JPG, PNG, GIF up to 5MB</p>
+                  </div>
+                </div>
+              )}
 
               {imageTab === 'url' && (
                 <input
@@ -455,43 +505,21 @@ export default function InstitutionDiplomas() {
                   onChange={handleChange}
                   placeholder="https://example.com/image.jpg"
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  disabled={loading}
+                  disabled={submitting}
                 />
               )}
 
-              {imageTab === 'upload' && (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        const reader = new FileReader()
-                        reader.onload = (event) => {
-                          setFormData({ ...formData, image: event.target?.result as string })
-                        }
-                        reader.readAsDataURL(file)
-                      }
-                    }}
-                    className="hidden"
-                    id="image-upload"
-                    disabled={loading}
-                  />
-                  <label htmlFor="image-upload" className="cursor-pointer">
-                    <p className="font-medium text-gray-700">Click to upload or drag and drop</p>
-                    <p className="text-sm text-gray-500 mt-1">JPG, PNG, GIF up to 5MB</p>
-                  </label>
-                </div>
-              )}
-
-              {formData.image && (
+              {/* Existing Image Preview (if not in upload mode or if no new file selected) */}
+              {imageTab === 'url' && formData.image && !formData.image.startsWith('blob:') && (
                 <div className="mt-3">
                   <p className="text-sm text-gray-600 mb-2">Preview:</p>
                   <img
                     src={formData.image}
                     alt="Diploma preview"
                     className="w-full max-w-xs h-40 object-cover rounded-lg border"
+                    onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=Invalid+Image';
+                    }}
                   />
                 </div>
               )}
@@ -500,11 +528,11 @@ export default function InstitutionDiplomas() {
             <div className="flex gap-3 pt-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting}
                 className="flex-1 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {loading ? 'Saving...' : editingId ? 'Update Diploma' : 'Create Diploma'}
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {submitting ? 'Saving...' : editingId ? 'Update Diploma' : 'Create Diploma'}
               </button>
               <button
                 type="button"
@@ -527,6 +555,9 @@ export default function InstitutionDiplomas() {
         </div>
       ) : diplomas.length === 0 ? (
         <div className="bg-gray-50 rounded-2xl border border-dashed border-gray-300 p-12 text-center">
+            <div className="mx-auto w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                <GraduationCap className="w-6 h-6 text-gray-500" />
+            </div>
           <p className="text-gray-500 text-lg">No diplomas yet. Create your first one!</p>
         </div>
       ) : (
@@ -536,11 +567,11 @@ export default function InstitutionDiplomas() {
               key={diploma.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
+              className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col h-full"
             >
               <div className="flex items-start justify-between mb-3">
-                <h3 className="font-bold text-gray-900 flex-1">{diploma.title}</h3>
-                <div className="flex gap-2">
+                <h3 className="font-bold text-gray-900 flex-1 text-lg line-clamp-2">{diploma.title}</h3>
+                <div className="flex gap-2 ml-2">
                   <button
                     onClick={() => handlePublish(diploma.id, diploma.published)}
                     className={`p-2 rounded-lg transition-colors ${
@@ -569,12 +600,25 @@ export default function InstitutionDiplomas() {
                 </div>
               </div>
 
-              <p className="text-sm text-gray-600 mb-3">{diploma.description}</p>
+              {diploma.image && (
+                  <div className="w-full h-32 mb-4 overflow-hidden rounded-lg bg-gray-100">
+                      <img 
+                        src={diploma.image.startsWith('http') ? diploma.image : `${API_BASE.replace('/api', '')}${diploma.image}`} 
+                        alt={diploma.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                  </div>
+              )}
 
-              <div className="space-y-2 text-sm">
+              <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">{diploma.description}</p>
+
+              <div className="space-y-2 text-sm border-t pt-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Price:</span>
-                  <span className="font-semibold">₦{diploma.price.toLocaleString()}</span>
+                  <span className="font-semibold text-green-700">₦{diploma.price.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Duration:</span>
@@ -582,7 +626,7 @@ export default function InstitutionDiplomas() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Location:</span>
-                  <span className="font-semibold">{diploma.meeting_place}</span>
+                  <span className="font-semibold truncate max-w-[150px]">{diploma.meeting_place}</span>
                 </div>
                 {diploma.start_date && (
                   <div className="flex justify-between">
@@ -592,7 +636,8 @@ export default function InstitutionDiplomas() {
                 )}
               </div>
 
-              <div className="mt-4 pt-4 border-t">
+              <div className="mt-4 pt-3 border-t flex justify-between items-center">
+                 <span className="text-xs text-gray-400">ID: {diploma.id}</span>
                 <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                   diploma.published
                     ? 'bg-green-100 text-green-800'

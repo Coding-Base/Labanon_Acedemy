@@ -16,11 +16,12 @@ import {
   Calendar,
   Target,
   ArrowLeft,
-  Loader2
+  Loader2,
+  Video
 } from 'lucide-react';
 import PaymentCheckout from '../components/PaymentCheckout';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api';
 
 // Professional fallback images for course details
 const FALLBACK_IMAGES = [
@@ -77,7 +78,13 @@ export default function CourseDetail() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         alert('Enrollment completed — you have access to this course');
-        navigate(`/student/courses/${course.id}`);
+        
+        // Redirect based on type
+        if (course.meeting_link) {
+            navigate('/student/schedule');
+        } else {
+            navigate(`/student/courses/${course.id}`);
+        }
       } catch (err: any) {
         alert(err?.response?.data?.detail || 'Enrollment failed');
       }
@@ -100,16 +107,18 @@ export default function CourseDetail() {
     return full;
   };
 
-  // Calculate course stats (using dummy data for demo)
-  const getCourseStats = () => ({
-    rating: 4.8,
-    students: course?.enrollments_count || 120,
-    duration: '15h 30m',
+  // Use real stats from backend (or fallback to 0 if new course)
+  const stats = {
+    rating: course?.stats?.rating || 0,
+    ratingsCount: course?.stats?.ratings_count || 0,
+    students: course?.stats?.students || 0,
+    duration: course?.stats?.duration || '0h 0m',
+    // Dynamic module/lesson counts from nested data
     modules: course?.modules?.length || 0,
-    lessons: course?.modules?.reduce((acc: number, module: any) => acc + (module.lessons?.length || 0), 0) || 0,
-  });
+    lessons: course?.modules?.reduce((acc: number, mod: any) => acc + (mod.lessons?.length || 0), 0) || 0
+  };
 
-  const stats = getCourseStats();
+  const isScheduled = !!course?.meeting_link;
 
   if (loading) {
     return (
@@ -165,8 +174,8 @@ export default function CourseDetail() {
             <div className="lg:col-span-2 order-2 lg:order-1">
               {/* Course Category */}
               <div className="flex items-center gap-4 mb-4">
-                <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">
-                  {course.category || 'Professional Development'}
+                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${isScheduled ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                  {isScheduled ? 'Live Scheduled Course' : (course.category || 'Professional Development')}
                 </span>
                 <span className="text-sm text-gray-600 flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-500 fill-current" />
@@ -187,18 +196,32 @@ export default function CourseDetail() {
               {/* Course Stats */}
               <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-6 text-sm sm:text-base">
                 <div className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                  <span className="font-bold text-gray-900">{stats.rating}</span>
-                  <span className="text-gray-600">({stats.students + 50} ratings)</span>
+                  <Star className={`w-5 h-5 ${stats.rating > 0 ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
+                  <span className="font-bold text-gray-900">{stats.rating > 0 ? stats.rating : 'New'}</span>
+                  {stats.ratingsCount > 0 && (
+                    <span className="text-gray-600">({stats.ratingsCount} ratings)</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-green-600" />
-                  <span className="text-gray-700">{stats.students.toLocaleString()} students</span>
+                  <span className="text-gray-700">
+                     {stats.students === 0 
+                        ? 'Be the first to join!' 
+                        : `${stats.students.toLocaleString()} students`}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-green-600" />
-                  <span className="text-gray-700">{stats.duration}</span>
-                </div>
+                {!isScheduled && (
+                    <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-green-600" />
+                    <span className="text-gray-700">{stats.duration}</span>
+                    </div>
+                )}
+                {isScheduled && (
+                    <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                    <span className="text-gray-700">Starts: {new Date(course.start_date).toLocaleDateString()}</span>
+                    </div>
+                )}
               </div>
 
               {/* Instructor Info */}
@@ -240,97 +263,138 @@ export default function CourseDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Course Content */}
           <div className="lg:col-span-2 space-y-8">
+            
+            {/* Scheduled Course Details (If applicable) */}
+            {isScheduled && (
+                <div className="bg-blue-50 rounded-2xl shadow-sm p-6 border border-blue-100">
+                    <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+                        <Video className="w-5 h-5"/> Live Class Schedule
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-blue-800">
+                        <div className="bg-white p-3 rounded-lg border border-blue-100">
+                            <div className="text-xs text-blue-500 uppercase font-bold">Time</div>
+                            <div className="font-medium">{course.meeting_time?.slice(0,5)} (Recurring)</div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-blue-100">
+                            <div className="text-xs text-blue-500 uppercase font-bold">Platform</div>
+                            <div className="font-medium capitalize">{course.meeting_place || 'Online'}</div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-blue-100">
+                            <div className="text-xs text-blue-500 uppercase font-bold">Start Date</div>
+                            <div className="font-medium">{course.start_date}</div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-blue-100">
+                            <div className="text-xs text-blue-500 uppercase font-bold">End Date</div>
+                            <div className="font-medium">{course.end_date}</div>
+                        </div>
+                    </div>
+                    <p className="text-sm text-blue-600 mt-4">
+                        * Enroll to get access to the live meeting link via your schedule dashboard.
+                    </p>
+                </div>
+            )}
+
             {/* What You'll Learn */}
             <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-gray-200">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">What you'll learn</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  'Master the fundamental concepts of the subject',
-                  'Build practical projects to apply your knowledge',
-                  'Develop problem-solving skills with real-world examples',
-                  'Prepare for certification exams and interviews',
-                  'Join a community of learners and get support',
-                  'Access additional resources and materials',
-                ].map((item, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 leading-snug">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Course Content Modules */}
-            <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-gray-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
-                <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>
-                <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full inline-block">
-                  {stats.modules} modules • {stats.lessons} lessons • {stats.duration}
-                </div>
-              </div>
-
-              {course.modules?.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
-                  <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No modules available yet.</p>
-                </div>
+              {course.outcome ? (
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">{course.outcome}</p>
               ) : (
-                <div className="space-y-4">
-                  {course.modules?.map((module: any, moduleIndex: number) => (
-                    <div key={module.id} className="border border-gray-200 rounded-xl overflow-hidden hover:border-green-300 transition-colors">
-                      <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                        <div className="flex items-center justify-between cursor-pointer">
-                          <div>
-                            <h3 className="font-bold text-gray-900 text-lg">
-                              Module {moduleIndex + 1}: {module.title}
-                            </h3>
-                            <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
-                              {module.lessons?.length || 0} lessons
-                            </p>
-                          </div>
-                          <ChevronRight className="w-5 h-5 text-gray-400" />
-                        </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      'Master the fundamental concepts of the subject',
+                      'Build practical projects to apply your knowledge',
+                      'Develop problem-solving skills with real-world examples',
+                      'Prepare for certification exams and interviews',
+                      'Join a community of learners and get support',
+                      'Access additional resources and materials',
+                    ].map((item, index) => (
+                      <div key={index} className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700 leading-snug">{item}</span>
                       </div>
-                      
-                      <div className="divide-y divide-gray-100">
-                        {module.lessons?.map((lesson: any, lessonIndex: number) => (
-                          <div key={lesson.id} className="px-6 py-4 hover:bg-green-50/50 transition-colors flex items-start gap-4">
-                            <div className="mt-1">
-                              <PlayCircle className="w-4 h-4 text-green-600" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-900 text-sm">
-                                {lessonIndex + 1}. {lesson.title}
-                              </h4>
-                            </div>
-                            <div className="text-xs text-gray-400 font-mono">
-                              15:00
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
               )}
             </div>
+
+            {/* Course Content Modules (Only for Normal) */}
+            {!isScheduled && (
+                <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
+                    <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>
+                    <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full inline-block">
+                    {stats.modules} modules • {stats.lessons} lessons • {stats.duration}
+                    </div>
+                </div>
+
+                {course.modules?.length === 0 ? (
+                    <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
+                    <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No modules available yet.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                    {course.modules?.map((module: any, moduleIndex: number) => (
+                        <div key={module.id} className="border border-gray-200 rounded-xl overflow-hidden hover:border-green-300 transition-colors">
+                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                            <div className="flex items-center justify-between cursor-pointer">
+                            <div>
+                                <h3 className="font-bold text-gray-900 text-lg">
+                                Module {moduleIndex + 1}: {module.title}
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
+                                {module.lessons?.length || 0} lessons
+                                </p>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-gray-400" />
+                            </div>
+                        </div>
+                        
+                        <div className="divide-y divide-gray-100">
+                            {module.lessons?.map((lesson: any, lessonIndex: number) => (
+                            <div key={lesson.id} className="px-6 py-4 hover:bg-green-50/50 transition-colors flex items-start gap-4">
+                                <div className="mt-1">
+                                <PlayCircle className="w-4 h-4 text-green-600" />
+                                </div>
+                                <div className="flex-1">
+                                <h4 className="font-medium text-gray-900 text-sm">
+                                    {lessonIndex + 1}. {lesson.title}
+                                </h4>
+                                </div>
+                                <div className="text-xs text-gray-400 font-mono">
+                                {lesson.duration_minutes ? `${lesson.duration_minutes}m` : '15:00'}
+                                </div>
+                            </div>
+                            ))}
+                        </div>
+                        </div>
+                    ))}
+                    </div>
+                )}
+                </div>
+            )}
 
             {/* Requirements */}
             <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-gray-200">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Requirements</h2>
-              <ul className="space-y-3 text-gray-700">
-                {[
-                  'Basic computer literacy and willingness to learn',
-                  'No prior experience needed - we start from scratch',
-                  'Access to a computer with internet connection',
-                  'Dedication and commitment to complete the course'
-                ].map((req, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 bg-green-600 rounded-full flex-shrink-0" />
-                    <span>{req}</span>
-                  </li>
-                ))}
-              </ul>
+              {course.required_tools ? (
+                  <p className="text-gray-700">{course.required_tools}</p>
+              ) : (
+                  <ul className="space-y-3 text-gray-700">
+                    {[
+                      'Basic computer literacy and willingness to learn',
+                      'No prior experience needed - we start from scratch',
+                      'Access to a computer with internet connection',
+                      'Dedication and commitment to complete the course'
+                    ].map((req, i) => (
+                      <li key={i} className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 bg-green-600 rounded-full flex-shrink-0" />
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+              )}
             </div>
           </div>
 
@@ -357,9 +421,11 @@ export default function CourseDetail() {
                         itemType="course"
                         amount={course.price}
                         itemTitle={course.title}
+                        isScheduled={isScheduled} // Pass flag to payment component
                         onSuccess={() => {
                           alert('Payment successful! You now have access to this course.');
-                          navigate(`/student/courses/${course.id}`);
+                          if(isScheduled) navigate('/student/schedule');
+                          else navigate(`/student/courses/${course.id}`);
                         }}
                       />
                     ) : (
@@ -383,6 +449,12 @@ export default function CourseDetail() {
                           return;
                         }
 
+                        // Scheduled Logic
+                        if (isScheduled && role === 'student') {
+                            navigate('/student/schedule');
+                            return;
+                        }
+
                         // Map role to appropriate dashboard
                         const dashboardMap: { [key: string]: string } = {
                           student: `/student/courses/${course.id}`,
@@ -396,8 +468,8 @@ export default function CourseDetail() {
                       }}
                       className="w-full py-3.5 bg-white border-2 border-green-600 text-green-700 font-bold rounded-xl hover:bg-green-50 transition-colors duration-300 flex items-center justify-center gap-2"
                     >
-                      <BookOpen className="w-5 h-5" />
-                      Open Course Player
+                      {isScheduled ? <Calendar className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+                      {isScheduled ? 'Open Schedule' : 'Open Course Player'}
                     </button>
                   </div>
 
@@ -413,7 +485,10 @@ export default function CourseDetail() {
                   <h3 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wide">This course includes:</h3>
                   <div className="space-y-3 text-sm">
                     {[
-                      { icon: <Clock className="w-4 h-4 text-green-600" />, text: `${stats.duration} on-demand video` },
+                      { 
+                        icon: isScheduled ? <Video className="w-4 h-4 text-green-600"/> : <Clock className="w-4 h-4 text-green-600" />, 
+                        text: isScheduled ? 'Live interactive sessions' : `${stats.duration} on-demand video` 
+                      },
                       { icon: <FileText className="w-4 h-4 text-green-600" />, text: 'Downloadable resources' },
                       { icon: <Award className="w-4 h-4 text-green-600" />, text: 'Certificate of completion' },
                       { icon: <Target className="w-4 h-4 text-green-600" />, text: 'Assignments and quizzes' },

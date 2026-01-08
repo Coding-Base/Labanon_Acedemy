@@ -26,6 +26,7 @@ import {
 
 import labanonLogo from './labanonlogo.png';
 import learningImage from './learningup.jpeg'; 
+import flyerImage from './lebanonflyer.jpg'; // Imported the flyer image
 
 const PRIMARY_HERO_IMAGE = learningImage; 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api';
@@ -171,7 +172,7 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch real courses on load
+  // Fetch real courses on load (Keep existing logic)
   useEffect(() => {
     const fetchCourses = async () => {
       const dummyCourses: DisplayCourse[] = [
@@ -448,9 +449,9 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-teal-500/5" />
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Hero Content */}
-            <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-8">
-              <motion.div variants={fadeInUp}>
+            {/* Hero Content - Updated for Mobile Centering */}
+            <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-8 text-center md:text-left">
+              <motion.div variants={fadeInUp} className="flex justify-center md:justify-start">
                 <motion.div className="inline-flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
                   <Sparkles className="w-4 h-4" /><span>Nigeria's #1 Digital Learning Platform</span>
                 </motion.div>
@@ -461,12 +462,12 @@ export default function Home() {
                   <span className="block bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Ace Exams</span>
                 </h1>
               </motion.div>
-              <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-600 max-w-2xl" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
+              <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto md:mx-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
                 Transform your learning experience with premium courses, interactive CBT practice, and live tutoring from top instructors across Africa.
               </motion.p>
               
-              {/* Desktop CTA Buttons (Search is now in header) */}
-              <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 pt-4">
+              {/* Desktop CTA Buttons (Search is now in header) - Updated for Mobile Centering */}
+              <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 pt-4 justify-center md:justify-start">
                   <Link to="/register" className="px-8 py-4 bg-green-600 text-white rounded-xl font-bold text-lg hover:bg-green-700 hover:shadow-lg transition-all">Join for Free</Link>
                   <Link to="/marketplace" className="px-8 py-4 bg-white text-gray-800 border-2 border-gray-200 rounded-xl font-bold text-lg hover:border-green-600 hover:text-green-600 transition-all">Explore Courses</Link>
               </motion.div>
@@ -474,7 +475,7 @@ export default function Home() {
               {/* Quick Stats */}
               <motion.div variants={fadeInUp} className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-gray-200/60" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
                 {stats.map((stat, index) => (
-                  <div key={index} className="text-left">
+                  <div key={index} className="text-center md:text-left">
                     <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
                     <div className="text-sm text-gray-600">{stat.label}</div>
                   </div>
@@ -482,8 +483,8 @@ export default function Home() {
               </motion.div>
             </motion.div>
 
-            {/* Hero Image */}
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: "easeOut" }} className="relative mt-6 md:mt-0">
+            {/* Hero Image - Updated margin top for mobile spacing */}
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: "easeOut" }} className="relative mt-8 md:mt-0">
               <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-teal-600/20 backdrop-blur-sm " />
                 <div className="relative w-full h-full hero-image-container">
@@ -533,6 +534,86 @@ export default function Home() {
           </div>
         </div>
       </motion.section>
+
+      {/* --- NEW SECTION: EXAM SUCCESS / FLYER --- */}
+      <section className="py-20 bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center gap-12">
+            {/* Text Content */}
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="flex-1 space-y-6"
+            >
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-bold uppercase tracking-wider">
+                <Sparkles className="w-4 h-4" />
+                <span>Exam Success Guaranteed</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
+                Prepare for <span className="text-red-600">JAMB & WAEC</span> <br/>
+                the Smart Way
+              </h2>
+              <p className="text-lg text-gray-600">
+                Master your exams with our comprehensive CBT platform. Practice with over 5,000+ past questions and predicted questions designed to match the real exam format.
+              </p>
+              
+              <div className="grid sm:grid-cols-2 gap-4">
+                {[
+                  'Real CBT Practice Interface',
+                  'Instant Scoring & Corrections',
+                  'Performance Tracking',
+                  '5000+ Past Questions',
+                  'Study Anytime, Anywhere',
+                  'Improve Speed & Accuracy'
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-red-600" />
+                    </div>
+                    <span className="text-gray-700 font-medium">{item}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-4">
+                <Link 
+                  to="/register" 
+                  className="inline-flex items-center px-8 py-4 bg-red-600 text-white rounded-xl font-bold text-lg hover:bg-red-700 hover:shadow-lg hover:shadow-red-500/30 transition-all transform hover:-translate-y-1"
+                >
+                  Start Practicing Now
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
+                <p className="mt-4 text-sm text-gray-500">Perfect for Candidates, Schools & Lesson Centres</p>
+              </div>
+            </motion.div>
+
+            {/* Flyer Image */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="flex-1 relative"
+            >
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white transform rotate-2 hover:rotate-0 transition-transform duration-500">
+                 <img 
+                   src={flyerImage} 
+                   alt="Lebanon Academy JAMB & WAEC Flyer" 
+                   className="w-full h-auto object-cover"
+                 />
+                 {/* Overlay gradient for depth */}
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+              </div>
+              
+              {/* Decor elements */}
+              <div className="absolute -z-10 -bottom-10 -right-10 w-64 h-64 bg-red-100 rounded-full blur-3xl opacity-50" />
+              <div className="absolute -z-10 -top-10 -left-10 w-64 h-64 bg-blue-100 rounded-full blur-3xl opacity-50" />
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
       {/* Featured Courses */}
       <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-gray-50">

@@ -1,10 +1,10 @@
 // src/shared/CoursesList.tsx
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Link } from 'react-router-dom'
-import { Search, ShoppingCart, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Search, ShoppingCart, ChevronLeft, ChevronRight, Loader2, BookOpen } from 'lucide-react'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
 // Curated list of high-quality Unsplash images for education/tech
 const PLACEHOLDERS = [
@@ -33,9 +33,25 @@ export default function CoursesList() {
   const [page, setPage] = useState(1)
   const [pageSize] = useState(9)
   const [count, setCount] = useState(0)
-  const [search, setSearch] = useState('')
+  
+  // URL Params hook to read 'search' from URL
+  const [searchParams, setSearchParams] = useSearchParams()
+  
+  // Initialize search state from URL param
+  const [search, setSearch] = useState(searchParams.get('search') || '')
+  
   const [loading, setLoading] = useState(false)
   const [addingIds, setAddingIds] = useState<number[]>([])
+
+  // Sync state with URL params if they change externally (e.g. navigation)
+  useEffect(() => {
+    const query = searchParams.get('search') || ''
+    if (query !== search) {
+        setSearch(query)
+        setPage(1)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   useEffect(() => {
     load()
@@ -70,6 +86,15 @@ export default function CoursesList() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Handle typing in search box
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setSearch(val)
+    setPage(1)
+    // Update URL query param to reflect local state (optional but good UX)
+    setSearchParams(val ? { search: val } : {})
   }
 
   const totalPages = Math.max(1, Math.ceil(count / pageSize))
@@ -149,9 +174,9 @@ export default function CoursesList() {
           </div>
           <input 
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm transition duration-150 ease-in-out" 
-            placeholder="Search courses..." 
+            placeholder="Search courses (e.g. Python, Business)..." 
             value={search} 
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }} 
+            onChange={handleSearchChange} 
           />
         </div>
       </div>
@@ -175,7 +200,7 @@ export default function CoursesList() {
         <div className="space-y-8">
           {courses.length === 0 ? (
             <div className="text-center py-16 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-              <Search className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+              <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-gray-900">No courses found</h3>
               <p className="text-gray-500">Try adjusting your search terms.</p>
             </div>
@@ -233,7 +258,7 @@ export default function CoursesList() {
                         ) : (
                           <>
                             <ShoppingCart className="h-4 w-4" />
-                            <span>Add to Cart</span>
+                            <span>Add</span>
                           </>
                         )}
                       </button>

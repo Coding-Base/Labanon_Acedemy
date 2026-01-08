@@ -37,16 +37,16 @@ export default function App() {
     // Show loader for minimum 2.5 seconds for visual impact
     const timer = setTimeout(() => {
       setIsInitialLoading(false)
-    }, 2500)
+    }, -1)
 
     return () => clearTimeout(timer)
   }, [])
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-100">
-        {isInitialLoading && <Loader />}
-        <Suspense fallback={<Loader />}>
+      <div className="min-h-screen bg-gray-100"> 
+        {isInitialLoading }
+         <Suspense >
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -82,8 +82,8 @@ export default function App() {
             <Route path="/tutor-application" element={<TutorApplication />} />
             <Route path="/" element={<Home />} />
           </Routes>
-        </Suspense>
-      </div>
+       </Suspense> 
+      </div> 
     </BrowserRouter>
   )
 }

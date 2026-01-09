@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { login } from '../api/auth'
 import axios from 'axios'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, KeyRound } from 'lucide-react'
 import labanonLogo from './labanonlogo.png'
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api'
@@ -17,7 +17,6 @@ export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // if register sent a next param, it will appear in URL as ?next=...
   const params = new URLSearchParams(location.search)
   const nextParam = params.get('next')
 
@@ -42,22 +41,18 @@ export default function Login() {
     try {
       const data = await login({ username, password })
 
-      // Save tokens
       localStorage.setItem('access', data.access)
       localStorage.setItem('refresh', data.refresh)
 
-      // if a next param was present (redirect target), go there
       if (nextParam) {
         navigate(nextParam, { replace: true })
         return
       }
 
-      // Try to read role from login response (some APIs include it)
       let role: string | undefined = (data.role as string) || (data.user && (data.user.role as string))
-
-      // If role not provided, fetch summary to determine role (and also fetch summary if role present)
       let summary: any = undefined
       let isSubAdmin = false
+      
       try {
         const token = data.access
         const res = await axios.get(`${API_BASE}/dashboard/`, {
@@ -66,19 +61,15 @@ export default function Login() {
         summary = res.data
         role = role || res.data?.role
         
-        // Check if user is a sub-admin
         try {
           const subAdminRes = await axios.get(`${API_BASE}/subadmin/me/`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           if (subAdminRes.data) {
             isSubAdmin = true
-            // Store sub-admin permissions in summary for use in dashboard
             summary = { ...summary, subadmin_profile: subAdminRes.data }
           }
-        } catch (err) {
-          // User is not a sub-admin, that's fine
-        }
+        } catch (err) { }
       } catch (fetchErr) {
         console.warn('Could not fetch summary after login', fetchErr)
       }
@@ -122,10 +113,12 @@ export default function Login() {
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="w-4 h-4" />
+              <input type="checkbox" className="w-4 h-4 text-green-600 rounded focus:ring-green-500" />
               <span className="text-gray-600">Remember me</span>
             </label>
-            <Link to="/forgot" className="text-green-600 hover:underline">Forgot?</Link>
+            <Link to="/forgot-password" className="text-green-600 hover:underline flex items-center gap-1">
+               <KeyRound className="w-3 h-3" /> Forgot?
+            </Link>
           </div>
 
           <button type="submit" disabled={loading} className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-green-600 to-teal-600 shadow-md hover:opacity-95 disabled:opacity-60">

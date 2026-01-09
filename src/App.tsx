@@ -21,6 +21,8 @@ const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'
 const TutorDashboard = lazy(() => import('./pages/dashboards/TutorDashboard'))
 const InstitutionDashboard = lazy(() => import('./pages/dashboards/InstitutionDashboard'))
 const MasterAdminDashboard = lazy(() => import('./pages/dashboards/MasterAdminDashboard'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 
 // CBT pages (lazy)
 const PerformancePage = lazy(() => import('./components/cbt/PerformancePage'))
@@ -80,6 +82,8 @@ export default function App() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/portfolio/:token" element={<PublicPortfolio />} />
             <Route path="/tutor-application" element={<TutorApplication />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />   
             <Route path="/" element={<Home />} />
           </Routes>
        </Suspense> 

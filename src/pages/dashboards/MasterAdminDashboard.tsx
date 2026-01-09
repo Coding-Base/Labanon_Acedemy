@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
   Building,
@@ -46,25 +46,16 @@ interface MasterProps {
   summary?: any
 }
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: "easeOut" }
-  }
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2
-    }
-  }
-};
+// Define permission keys strictly to match backend
+type PermissionKey = 
+  | 'can_manage_users'
+  | 'can_manage_institutions'
+  | 'can_manage_courses'
+  | 'can_manage_cbt'
+  | 'can_view_payments'
+  | 'can_manage_blog'
+  | 'can_view_messages' // Ensure this matches backend serializer
+  | 'can_manage_subadmins'; // Implicit permission for Master Admin
 
 export default function MasterAdminDashboard({ summary: propSummary }: MasterProps) {
   const location = useLocation()
@@ -105,29 +96,33 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [blogsLoading, setBlogsLoading] = useState(false)
   const [showBlogForm, setShowBlogForm] = useState(false)
   const [blogFormData, setBlogFormData] = useState({title: '', content: '', image: '', excerpt: ''})
-  const [subadminPermissions, setSubadminPermissions] = useState<any>(null)
+  const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const [settingsData, setSettingsData] = useState({firstName: '', lastName: '', email: ''})
   const [passwordData, setPasswordData] = useState({old_password: '', new_password: '', confirm_password: ''})
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
 
-  // Define tabs early so they can be used in useEffect hooks
+  // Define tabs
   const allTabs = [
-    { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" />, permission: 'can_manage_users' },
-    { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' },
-    { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' },
-    { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' },
-    { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' },
-    { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' },
-    { id: 'messages', label: 'Messages', icon: <Mail className="w-5 h-5" />, permission: 'can_view_messages' },
-    { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_courses' },
+    { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
+    { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
+    { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
+    { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
+    { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
+    { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
+    { id: 'messages', label: 'Messages', icon: <Mail className="w-5 h-5" />, permission: 'can_view_messages' as PermissionKey },
+    // Bulk upload tied to course management permission usually
+    { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
   ]
 
-  // Filter tabs based on sub-admin permissions
+  // Filter tabs based on permissions
   const tabs = subadminPermissions 
-    ? allTabs.filter(tab => subadminPermissions[tab.permission] === true)
-    : allTabs
+    ? allTabs.filter(tab => {
+        // Explicit check: strictly true or undefined (fallback logic if needed, but strictly true is safer)
+        return subadminPermissions[tab.permission] === true;
+      })
+    : allTabs;
 
   // Load sub-admin permissions from summary
   useEffect(() => {
@@ -136,18 +131,23 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
   }, [summary])
 
-  // Ensure current tab is accessible to sub-admin
+  // Ensure current tab is accessible
   useEffect(() => {
+    // Only redirect if permissions are loaded and tabs are calculated
     if (subadminPermissions && tabs.length > 0) {
-      const currentTabAllowed = tabs.some(t => t.id === tab)
+      const currentTabAllowed = tabs.some(t => t.id === tab);
       if (!currentTabAllowed) {
-        // Switch to first available tab
-        setTab(tabs[0].id)
+        setTab(tabs[0].id); // Default to first allowed tab
       }
+    } else if (subadminPermissions && tabs.length === 0) {
+        // Edge case: Subadmin exists but has 0 permissions
+        // Maybe handle this UI state? currently it just shows empty
     }
-  }, [subadminPermissions, tabs])
+  }, [subadminPermissions, tabs, tab])
 
+  // Data Loading Effects
   useEffect(() => {
+    // Only load if the tab is actually active/allowed
     if (tab === 'users') loadUsers()
     if (tab === 'bulk') loadExams()
     if (tab === 'institutions') loadInstitutions()
@@ -185,6 +185,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     loadSummary()
     return () => { mounted = false }
   }, [propSummary, navSummary, summary])
+
+  // --- API Functions ---
 
   async function loadUsers(page = 1) {
     setLoading(true)
@@ -250,7 +252,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setCbtAnalytics(res.data)
     } catch (err) { 
       console.error(err)
-      // Fallback analytics if endpoint doesn't exist
       setCbtAnalytics({
         total_attempts: 0,
         total_exams: exams.length,
@@ -421,7 +422,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setUsers((u) => u.filter((x) => x.id !== id))
       setSelectedUser(null)
       setDeleteConfirmation({open: false, userId: null, userName: ''})
-      // Show success feedback
     } catch (err) { 
       console.error(err); 
       alert('Failed to delete user. Please try again.') 
@@ -463,15 +463,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
     
     try {
-      // Parse the JSON array from textarea
       let questionsArray = JSON.parse(bulkData)
-      
-      // If the user pasted the full object with exam_id and year, extract just the questions array
       if (questionsArray.questions && Array.isArray(questionsArray.questions)) {
         questionsArray = questionsArray.questions
       }
       
-      // Ensure it's an array
       if (!Array.isArray(questionsArray)) {
         alert('JSON must be an array of questions or an object with a "questions" array')
         return
@@ -526,7 +522,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       </div>
     </div>
   )
-  
+   
   if (!summary) return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 flex items-center justify-center">
       <div className="text-center">
@@ -563,7 +559,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{summary.username}</p>
-                  <p className="text-xs text-gray-500">Master Administrator</p>
+                  <p className="text-xs text-gray-500">
+                    {subadminPermissions ? 'Restricted Access' : 'Master Administrator'}
+                  </p>
                 </div>
               </div>
               <button
@@ -617,10 +615,14 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900">{summary.username}</h3>
-                    <p className="text-sm text-gray-500">Master Administrator</p>
+                    <p className="text-sm text-gray-500">
+                      {subadminPermissions ? 'Sub-Admin' : 'Master Administrator'}
+                    </p>
                     <div className="flex items-center mt-1 text-xs">
                       <Database className="w-3 h-3 text-green-500 mr-1" />
-                      <span className="font-medium">Full System Access</span>
+                      <span className="font-medium">
+                        {subadminPermissions ? 'Limited Access' : 'Full System Access'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -688,7 +690,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 Welcome back, <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">{summary.username}</span>
               </h1>
-              <p className="text-gray-600 mt-2">Manage users, courses, exams, and system configurations</p>
+              <p className="text-gray-600 mt-2">
+                {subadminPermissions 
+                  ? 'Accessing authorized modules and configurations.' 
+                  : 'Manage users, courses, exams, and system configurations'}
+              </p>
             </motion.div>
 
             {/* Tab Content */}
@@ -718,6 +724,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               {/* Dynamic Content */}
               <div className="p-6">
                 {tab === 'users' && (
+                  // ... (User management JSX content) ...
                   <div>
                     {/* Search and Filter */}
                     <div className="mb-6">
@@ -1543,7 +1550,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     "explanation": "Convert to Kelvin...",
     "subject": "Chemistry"
   }
-]`}</pre>
+]`}
+                          </pre>
                         </div>
                       </div>
                     </div>

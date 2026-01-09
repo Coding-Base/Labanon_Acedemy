@@ -27,18 +27,51 @@ export default function CourseCompletionModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   
-  // Store the course creator string (e.g. "OurSaviour (institution)")
+  // Store the course creator string and potential institution signature details
   const [courseCreator, setCourseCreator] = useState<string>('');
+  // UPDATED: State now includes position
+  const [instSignature, setInstSignature] = useState<{url: string, name: string, position?: string} | null>(null);
 
   // Fetch course details when modal opens to get the creator info
   useEffect(() => {
     if (isOpen && courseId) {
         api.get(`/courses/${courseId}/`)
-           .then(res => {
-               // Store the raw creator string. Generator handles parsing.
-               setCourseCreator(res.data.creator || '');
-           })
-           .catch(err => console.error("Failed to fetch course details for certificate", err));
+            .then(async res => {
+                const data = res.data;
+                // Store the raw creator string. Generator handles parsing.
+                setCourseCreator(data.creator || '');
+                
+                let institutionData = null;
+
+                // 1. Try fetching via direct link (for new courses)
+                if (data.institution) {
+                    try {
+                        const instRes = await api.get(`/institutions/${data.institution}/`);
+                        institutionData = instRes.data;
+                    } catch (e) { console.error("Failed to fetch institution by ID", e); }
+                } 
+                // 2. Fallback: Search via creator username (for legacy courses like ID 19)
+                else if (data.creator_username) {
+                    try {
+                        const searchRes = await api.get(`/institutions/?search=${data.creator_username}`);
+                        // Find the one owned by this creator
+                        if (searchRes.data.results && searchRes.data.results.length > 0) {
+                            const found = searchRes.data.results.find((i: any) => i.owner_username === data.creator_username);
+                            if (found) institutionData = found;
+                        }
+                    } catch (e) { console.error("Failed to search institution", e); }
+                }
+
+                // 3. Set Signature State if data found
+                if (institutionData && institutionData.signature_image && institutionData.signer_name) {
+                    setInstSignature({
+                        url: institutionData.signature_image,
+                        name: institutionData.signer_name,
+                        position: institutionData.signer_position // <--- Captured Position
+                    });
+                }
+            })
+            .catch(err => console.error("Failed to fetch course details for certificate", err));
     }
   }, [isOpen, courseId]);
 
@@ -64,14 +97,17 @@ export default function CourseCompletionModal({
       });
 
       // 3. Generate PDF
-      // Pass the fetched courseCreator to instructorName
+      // Pass the fetched courseCreator and potential institution signature
       const certificateBlob = await generateCertificate({
         studentName: username,
         courseTitle: courseName,
         completionDate: displayDate,
         certificateId: certData.certificate_id || 'PENDING',
         instructorName: courseCreator, // Generator checks for "(institution)" here
-        verificationUrl: `https://lebanonacademy.ng/verify/${certData.certificate_id}`
+        verificationUrl: `https://lebanonacademy.ng/verify/${certData.certificate_id}`,
+        institutionSignatureUrl: instSignature?.url,
+        institutionSignerName: instSignature?.name,
+        institutionSignerPosition: instSignature?.position // <--- Passed Position
       });
 
       // 4. Download

@@ -19,14 +19,14 @@ interface Portfolio {
   theme_color?: string;
 }
 
-export default function InstitutionPortfolio() {
+// Accept props from the Dashboard
+export default function InstitutionPortfolio({ institutionId }: { institutionId?: number }) {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState(false);
-  const [institutionId, setInstitutionId] = useState<number | null>(null);
   
   const [formData, setFormData] = useState<Partial<Portfolio>>({
     title: '',
@@ -47,76 +47,50 @@ export default function InstitutionPortfolio() {
     file: null as File | null 
   });
 
-  const loadInstitution = async () => {
-    try {
-      // API instance handles the token automatically
-      const instRes = await api.get('/institutions/my_institution/');
-      setInstitutionId(instRes.data.id);
-    } catch (instError: any) {
-      if (instError.response?.status === 404) {
-        try {
-          const userRes = await api.get('/users/me/');
-          const createRes = await api.post('/institutions/', { 
-            name: `${userRes.data.username}'s Institution` 
-          });
-          setInstitutionId(createRes.data.id);
-        } catch (createError) {
-          setError('Failed to set up institution account');
-        }
-      }
-    }
-  };
-
   const loadPortfolio = async () => {
+    if (!institutionId) return; // Wait until ID is passed
+    
     try {
       setLoading(true);
-      const token = localStorage.getItem('access');
-      if (!token) {
-        setError('Please log in to access this page');
-        return;
-      }
-
-      console.log('[InstitutionPortfolio] Loading portfolio...');
-      const res = await api.get('/portfolios/');
       
-      if (res.data && res.data.length > 0) {
-        const port = res.data[0];
-        setPortfolio(port);
+      // Fetch ONLY portfolios belonging to THIS institution
+      const res = await api.get('/portfolios/', {
+        params: { institution: institutionId } 
+      });
+      
+      // Check if we found a portfolio for this institution
+      const myPortfolio = res.data.find((p: any) => p.institution === institutionId) || (res.data.length > 0 ? res.data[0] : null);
+
+      if (myPortfolio) {
+        setPortfolio(myPortfolio);
         setFormData({
-          title: port.title,
-          description: port.description,
-          overview: port.overview,
-          website: port.website,
-          location: port.location,
-          phone: port.phone,
-          email: port.email,
-          theme_color: port.theme_color || '#0ea5a4',
-          image: port.image
+          title: myPortfolio.title,
+          description: myPortfolio.description,
+          overview: myPortfolio.overview,
+          website: myPortfolio.website,
+          location: myPortfolio.location,
+          phone: myPortfolio.phone,
+          email: myPortfolio.email,
+          theme_color: myPortfolio.theme_color || '#0ea5a4',
+          image: myPortfolio.image
         });
+      } else {
+        console.log("No portfolio found, user can create one.");
       }
     } catch (err: any) {
-      const status = err.response?.status;
-      if (status === 401 || status === 403) {
-        setError('Your session has expired. Please log in again.');
-      } else if (err.message === 'Network Error') {
-        setError('Network error. Please check your connection.');
-      } else {
-        setError('Failed to load portfolio.');
-      }
+       console.error('Failed to load portfolio', err);
+       setError('Failed to load portfolio data.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadInstitution();
     loadPortfolio();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [institutionId]);
 
   useEffect(() => {
     if (portfolio?.id) fetchGallery();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolio?.id]);
 
   const fetchGallery = async () => {
@@ -148,11 +122,13 @@ export default function InstitutionPortfolio() {
     }
   };
 
+  // FIX: Updated URL to match courses/urls.py
   const uploadImage = async (file: File) => {
     const data = new FormData();
     data.append('file', file);
     try {
-      const res = await api.post('/uploads/courses/image/', data, {
+      // Corrected Endpoint
+      const res = await api.post('/courses/upload-image/', data, { 
          headers: { 'Content-Type': 'multipart/form-data' }
       });
       return res.data.url || res.data.url;
@@ -207,6 +183,8 @@ export default function InstitutionPortfolio() {
         return;
       }
 
+      // Prepare payload with current formData
+      // Note: Image upload is handled by the onChange handler of the file input immediately
       const payload = {
         ...formData,
         institution: institutionId,
@@ -224,7 +202,7 @@ export default function InstitutionPortfolio() {
       await loadPortfolio();
     } catch (err: any) {
       console.error('Save error:', err.response?.data || err.message);
-      setError(err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Failed to save portfolio');
+      setError(err.response?.data?.detail || 'Failed to save portfolio');
     } finally {
       setSaving(false);
     }
@@ -382,8 +360,8 @@ export default function InstitutionPortfolio() {
                 if (!f) return;
                 try {
                   const url = await uploadImage(f);
-                  setFormData({ ...formData, image: url });
-                  setSuccess('Image uploaded');
+                  setFormData(prev => ({ ...prev, image: url })); // Functional update for safety
+                  setSuccess('Image uploaded successfully');
                 } catch (err) {
                   setError('Upload failed');
                 }

@@ -27,6 +27,16 @@ interface PaginatedResponse {
   results: Certificate[];
 }
 
+// Helper to ensure URLs are absolute
+const getAbsoluteUrl = (url: string | null | undefined): string | undefined => {
+  if (!url) return undefined;
+  if (url.startsWith('http')) return url;
+  // Remove /api prefix if it exists in the URL to avoid double api/api
+  const cleanPath = url.replace(/^\/api/, '');
+  const baseUrl = (import.meta.env as any).VITE_API_BASE?.replace('/api', '') || 'http://localhost:8000';
+  return `${baseUrl}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
+};
+
 export default function CertificatesPage() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,32 +70,72 @@ export default function CertificatesPage() {
   const handleReprint = async (cert: Certificate) => {
     setReprintingId(cert.id);
     try {
-      // 1. Fetch Course Details to get the 'creator' string (e.g. "OurSaviour (institution)")
-      // We need this to determine if we should display an Institution Name
+      // 1. Fetch Course Details
       const courseRes = await api.get(`/courses/${cert.course}/`);
-      const creatorString = courseRes.data.creator; // "Name (role)"
+      const courseData = courseRes.data;
+      const creatorString = courseData.creator || ""; 
+      const creatorUsername = courseData.creator_username;
 
-      // 2. Format Date
+      let instSignerName = undefined;
+      let instSignerPosition = undefined; // <--- New Variable
+      let instSignatureUrl = undefined;
+
+      // 2. Logic to find Institution Signature
+      try {
+        let institutionData = null;
+
+        // Path A: Course is directly linked to an institution (Ideal)
+        if (courseData.institution) {
+            const instRes = await api.get(`/institutions/${courseData.institution}/`);
+            institutionData = instRes.data;
+        } 
+        // Path B: Fallback - Search for institution by creator username
+        // This fixes legacy courses that have "institution": null
+        else if (creatorUsername) {
+            const searchRes = await api.get(`/institutions/?search=${creatorUsername}`);
+            // Find the one owned by this creator
+            if (searchRes.data.results && searchRes.data.results.length > 0) {
+                 // Assuming the search returns relevant results, take the first one
+                 institutionData = searchRes.data.results[0];
+            }
+        }
+
+        // If we found institution data, extract signature details
+        if (institutionData) {
+            if (institutionData.signer_name) instSignerName = institutionData.signer_name;
+            if (institutionData.signer_position) instSignerPosition = institutionData.signer_position; // <--- Extract Position
+            if (institutionData.signature_image) {
+                instSignatureUrl = getAbsoluteUrl(institutionData.signature_image);
+            }
+        }
+      } catch (instErr) {
+        console.warn("Could not fetch institution signature", instErr);
+      }
+
+      // 3. Format Date
       const dateStr = new Date(cert.completion_date || cert.created_at).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric'
       });
 
-      // 3. Generate PDF
+      // 4. Generate PDF
       const blob = await generateCertificate({
         studentName: cert.username,
         courseTitle: cert.course_title,
         completionDate: dateStr,
         certificateId: cert.certificate_id,
-        instructorName: creatorString || "", // Pass the raw creator string
-        verificationUrl: `https://lebanonacademy.ng/verify/${cert.certificate_id}`
+        instructorName: creatorString,
+        verificationUrl: `https://lebanonacademy.ng/verify/${cert.certificate_id}`,
+        institutionSignerName: instSignerName,
+        institutionSignerPosition: instSignerPosition, // <--- Pass Position to Generator
+        institutionSignatureUrl: instSignatureUrl
       });
 
-      // 4. Download
+      // 5. Download
       downloadCertificate(blob, cert.course_title, cert.username);
 
-      // 5. Update Stat
+      // 6. Update Stat
       await api.post(`/certificates/${cert.id}/mark_downloaded/`);
-      fetchCertificates(); // Refresh UI to show new download count
+      fetchCertificates(); 
 
     } catch (error: any) {
       console.error('Failed to reprint:', error);

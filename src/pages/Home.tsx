@@ -453,7 +453,7 @@ export default function Home() {
             <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-8 text-center md:text-left">
               <motion.div variants={fadeInUp} className="flex justify-center md:justify-start">
                 <motion.div className="inline-flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                  <Sparkles className="w-4 h-4" /><span>Nigeria's #1 Digital Learning Platform</span>
+                  <Sparkles className="w-4 h-4" /><span>Your #1 Digital Learning Platform</span>
                 </motion.div>
               </motion.div>
               <motion.div variants={fadeInLeft}>

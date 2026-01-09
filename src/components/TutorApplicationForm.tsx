@@ -10,19 +10,21 @@ import {
   Send, 
   CheckCircle,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  GraduationCap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
 // API Base URL
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api';
 
 export default function TutorApplicationForm() {
   const [formData, setFormData] = useState({
     fullName: '',
     country: '',
     subject: '',
+    academicLevel: '', // Free text field
     whatsappNumber: '',
     email: '',
     address: '',
@@ -46,15 +48,12 @@ export default function TutorApplicationForm() {
     setError('');
 
     try {
-      // NOTE: Ensure you create this endpoint in your Django backend
-      // It should receive this data and trigger the Mailgun email
+      // Send data to backend
       await axios.post(`${API_BASE}/tutor-application/`, formData);
       setSubmitted(true);
       window.scrollTo(0, 0);
     } catch (err) {
       console.error('Submission error:', err);
-      // For demo purposes, if backend isn't ready, you might want to fake success:
-      // setSubmitted(true); 
       setError('Failed to submit application. Please check your connection or try again later.');
     } finally {
       setLoading(false);
@@ -199,6 +198,23 @@ export default function TutorApplicationForm() {
                   />
                 </div>
 
+                {/* NEW FIELD: Academic Level / Class (Free Text Input) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Student's Level / Class</label>
+                  <div className="relative">
+                    <GraduationCap className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      name="academicLevel"
+                      required
+                      value={formData.academicLevel}
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      placeholder="e.g. JSS 2, Grade 5, 100 Level, Adult Learner"
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
@@ -253,7 +269,7 @@ export default function TutorApplicationForm() {
                 value={formData.additionalInfo}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
-                placeholder="Tell us more about the student's level, specific goals, preferred schedule, or any special requirements..."
+                placeholder="Specific goals, preferred schedule (e.g. Weekends only), gender preference for tutor, or any special requirements..."
               />
             </div>
 

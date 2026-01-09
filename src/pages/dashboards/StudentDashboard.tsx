@@ -30,8 +30,8 @@ import {
   Trophy,
   Loader2,
   Crown,
-  Menu, // Added Menu
-  X     // Added X
+  Menu,
+  X 
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import MyCourses from '../MyCourses';
@@ -45,7 +45,7 @@ import CoursePlayer from '../CoursePlayer';
 import CourseDetail from '../CourseDetail';
 import MessageModal from '../../components/MessageModal';
 import CertificatesPage from '../CertificatesPage';
-import SchedulePage from '../../components/SchedulePage'; // Added SchedulePage
+import SchedulePage from '../../components/SchedulePage'; 
 
 // --- Types ---
 interface DashboardSummary {
@@ -265,7 +265,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     { path: 'courses', label: 'My Courses', icon: <BookOpen className="w-5 h-5" /> },
     { path: 'cbt', label: 'CBT & Exams', icon: <FileText className="w-5 h-5" /> },
     { path: 'cart', label: 'Shopping Cart', icon: <ShoppingCart className="w-5 h-5" /> },
-    { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> }, // Added Schedule
+    { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> }, 
     { path: 'payments', label: 'Payments', icon: <CreditCard className="w-5 h-5" /> },
     { path: 'progress', label: 'Progress', icon: <TrendingUp className="w-5 h-5" /> },
     { path: 'certificates', label: 'Certificates', icon: <Award className="w-5 h-5" /> },
@@ -284,7 +284,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
 
   const quickActions = [
     { title: 'Take Practice Test', icon: <FileText className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'cbt' },
-    { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-teal-100 text-teal-600', path: 'schedule' }, // Updated path
+    { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-teal-100 text-teal-600', path: 'schedule' }, 
     { title: 'Download Materials', icon: <Download className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'courses' },
     { title: 'View Leaderboard', icon: <BarChart3 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-600', path: 'leaderboard' }
   ];
@@ -565,7 +565,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     <Route path="progress" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><ProgressPage /></div>} />
                     <Route path="leaderboard" element={<LeaderboardPage />} />
                     <Route path="certificates" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><CertificatesPage /></div>} />
-                    {/* Add the Schedule Route */}
                     <Route path="schedule" element={
                         <div className="h-full overflow-y-auto pr-2 -mr-2">
                             <SchedulePage userRole="student" />

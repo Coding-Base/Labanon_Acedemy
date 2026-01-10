@@ -102,6 +102,19 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [passwordData, setPasswordData] = useState({old_password: '', new_password: '', confirm_password: ''})
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  
+  // Manual Question Upload State
+  const [manualQuestion, setManualQuestion] = useState({
+    text: '',
+    optionA: '', optionB: '', optionC: '', optionD: '',
+    correctAnswer: 'A',
+    explanation: '',
+    image: null as File | null
+  })
+  const [bulkFile, setBulkFile] = useState<File | null>(null)
+  const [manualLoading, setManualLoading] = useState(false)
+  const [manualMessage, setManualMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [uploadMode, setUploadMode] = useState<'json' | 'file' | 'manual'>('json')
 
   // Define tabs
   const allTabs = [
@@ -1477,10 +1490,23 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 {tab === 'bulk' && (
                   <div>
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Bulk Question Upload</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Management</h3>
                       <p className="text-gray-600">
-                        Upload questions in bulk using JSON format. Select an exam and subject first.
+                        Upload questions via JSON, CSV, or manually.
                       </p>
+                    </div>
+
+                    {/* Upload Mode Selection */}
+                    <div className="flex space-x-4 mb-6">
+                      <button onClick={() => setUploadMode('json')} className={`px-4 py-2 rounded-lg font-medium ${uploadMode === 'json' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        JSON Paste
+                      </button>
+                      <button onClick={() => setUploadMode('file')} className={`px-4 py-2 rounded-lg font-medium ${uploadMode === 'file' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        CSV/Excel File
+                      </button>
+                      <button onClick={() => setUploadMode('manual')} className={`px-4 py-2 rounded-lg font-medium ${uploadMode === 'manual' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        Manual Entry
+                      </button>
                     </div>
                     
                     {/* Exam and Subject Selection */}
@@ -1530,6 +1556,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       </div>
                     </div>
                     
+                    {uploadMode === 'json' && (
+                    <>
                     <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl p-6 mb-6">
                       <div className="flex items-start space-x-3 mb-4">
                         <Database className="w-6 h-6 text-green-600 mt-1" />
@@ -1594,6 +1622,161 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </motion.button>
                       </div>
                     </div>
+                    </>
+                    )}
+
+                    {uploadMode === 'file' && (
+                      <div className="bg-white p-6 rounded-xl border border-gray-200">
+                        <h4 className="font-semibold mb-4">Upload CSV or Excel File</h4>
+                        <p className="text-sm text-gray-600 mb-4">
+                          File should have columns: question_text, option_a, option_b, option_c, option_d, correct_answer, explanation.
+                        </p>
+                        <input 
+                          type="file" 
+                          accept=".csv, .xlsx, .xls"
+                          onChange={(e) => setBulkFile(e.target.files ? e.target.files[0] : null)}
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                        />
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={async () => {
+                            if (!bulkFile || !selectedExam || !selectedSubject) return alert('Please select exam, subject and file')
+                            const formData = new FormData()
+                            formData.append('file', bulkFile)
+                            formData.append('exam_id', selectedExam)
+                            formData.append('subject', selectedSubject)
+                            formData.append('year', new Date().getFullYear().toString())
+                            
+                            try {
+                              const token = localStorage.getItem('access')
+                              const res = await axios.post(`${API_BASE}/cbt/bulk-upload/`, formData, {
+                                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+                              })
+                              alert(`Success! Created ${res.data.success} questions.`)
+                            } catch (err: any) {
+                              alert('Upload failed: ' + (err.response?.data?.detail || err.message))
+                            }
+                          }}
+                          className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg font-semibold"
+                        >
+                          Upload File
+                        </motion.button>
+                      </div>
+                    )}
+
+                    {uploadMode === 'manual' && (
+                      <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">
+                        <h4 className="font-semibold">Add Single Question</h4>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Question Text</label>
+                          <textarea 
+                            value={manualQuestion.text}
+                            onChange={e => setManualQuestion({...manualQuestion, text: e.target.value})}
+                            className="w-full mt-1 p-2 border rounded-lg"
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Image (Optional)</label>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={e => setManualQuestion({...manualQuestion, image: e.target.files ? e.target.files[0] : null})}
+                            className="mt-1 block w-full text-sm text-gray-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">Option A</label>
+                            <input type="text" value={manualQuestion.optionA} onChange={e => setManualQuestion({...manualQuestion, optionA: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">Option B</label>
+                            <input type="text" value={manualQuestion.optionB} onChange={e => setManualQuestion({...manualQuestion, optionB: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">Option C</label>
+                            <input type="text" value={manualQuestion.optionC} onChange={e => setManualQuestion({...manualQuestion, optionC: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">Option D</label>
+                            <input type="text" value={manualQuestion.optionD} onChange={e => setManualQuestion({...manualQuestion, optionD: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">Correct Answer</label>
+                            <select value={manualQuestion.correctAnswer} onChange={e => setManualQuestion({...manualQuestion, correctAnswer: e.target.value})} className="w-full mt-1 p-2 border rounded-lg">
+                              <option value="A">A</option>
+                              <option value="B">B</option>
+                              <option value="C">C</option>
+                              <option value="D">D</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">Explanation</label>
+                            <input type="text" value={manualQuestion.explanation} onChange={e => setManualQuestion({...manualQuestion, explanation: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+                          </div>
+                        </div>
+
+                        {manualMessage && (
+                          <div className={`p-4 rounded-lg flex items-center ${manualMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                            {manualMessage.type === 'success' ? <CheckCircle className="w-5 h-5 mr-2" /> : <AlertCircle className="w-5 h-5 mr-2" />}
+                            {manualMessage.text}
+                          </div>
+                        )}
+
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={async () => {
+                            if (!selectedExam || !selectedSubject || !manualQuestion.text) {
+                              setManualMessage({type: 'error', text: 'Please fill in all required fields (Exam, Subject, Question Text)'})
+                              return
+                            }
+                            const subj = subjects.find(s => s.name === selectedSubject)
+                            if (!subj) return setManualMessage({type: 'error', text: 'Invalid subject selected'})
+
+                            setManualLoading(true)
+                            setManualMessage(null)
+                            const formData = new FormData()
+                            formData.append('subject', subj.id)
+                            formData.append('text', manualQuestion.text)
+                            if (manualQuestion.image) formData.append('image', manualQuestion.image)
+                            
+                            const opts = [
+                              { text: manualQuestion.optionA, key: 'A' },
+                              { text: manualQuestion.optionB, key: 'B' },
+                              { text: manualQuestion.optionC, key: 'C' },
+                              { text: manualQuestion.optionD, key: 'D' }
+                            ]
+                            const choices = opts.map(opt => ({
+                              text: opt.text,
+                              is_correct: opt.key === manualQuestion.correctAnswer
+                            }))
+                            formData.append('choices_json', JSON.stringify(choices))
+
+                            try {
+                              const token = localStorage.getItem('access')
+                              await axios.post(`${API_BASE}/cbt/questions/`, formData, {
+                                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+                              })
+                              setManualMessage({type: 'success', text: 'Question created successfully!'})
+                              setManualQuestion({ text: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A', explanation: '', image: null })
+                            } catch (err: any) {
+                              setManualMessage({type: 'error', text: 'Failed: ' + (err.response?.data?.detail || err.message)})
+                            } finally {
+                              setManualLoading(false)
+                            }
+                          }}
+                          disabled={manualLoading}
+                          className={`px-6 py-2 rounded-lg font-semibold flex items-center justify-center ${manualLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 text-white'}`}
+                        >
+                          {manualLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Add Question'}
+                        </motion.button>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -7,6 +7,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 interface Question {
   id: number
   text: string
+  image?: string
   choices: { id: number; text: string }[]
   user_answer_id: number | null
   is_answered: boolean
@@ -205,6 +206,16 @@ export default function ExamInterface({
               {questions.map((question) => (
                 <div key={question.id} className="bg-white p-6 rounded-lg shadow">
                   <h3 className="text-lg font-bold mb-6">{question.text}</h3>
+                  
+                  {question.image && (
+                    <div className="mb-6">
+                      <img 
+                        src={question.image.startsWith('http') ? question.image : `${API_BASE.replace('/api', '')}${question.image}`} 
+                        alt="Question" 
+                        className="max-w-full h-auto rounded-lg border border-gray-200" 
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-3">
                     {question.choices.map((choice) => (

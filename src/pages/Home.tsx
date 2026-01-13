@@ -233,8 +233,10 @@ export default function Home() {
   const navItems = [
     { label: 'Courses', path: '/marketplace' },
     { label: 'CBT Practice', path: '/register' },
-    { label: 'Interview Questions', path: '/register' }, // Explicit link to register
+    { label: 'Interview Questions', path: '/register' },
     { label: 'Blog', path: '/blog' },
+    { label: 'Documentation', path: '/documentation' },
+    { label: 'About', path: '/about' },
     { label: 'Find a Tutor', path: '/tutor-application' }, 
   ];
 
@@ -744,8 +746,9 @@ export default function Home() {
               <h4 className="font-bold mb-4">Resources</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link to="/blog" className="hover:text-white">Blog</Link></li>
-                <li><Link to="#" className="hover:text-white">Help Center</Link></li>
-                <li><Link to="#" className="hover:text-white">Privacy Policy</Link></li>
+                <li><Link to="/documentation" className="hover:text-white">Documentation</Link></li>
+                <li><Link to="/about" className="hover:text-white">About Us</Link></li>
+                <li><Link to="/privacy-policy" className="hover:text-white">Privacy Policy</Link></li>
               </ul>
             </div>
             <div>

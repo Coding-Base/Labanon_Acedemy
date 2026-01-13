@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import MathDisplay from './MathDisplay'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -205,7 +206,9 @@ export default function ExamInterface({
             <div className="space-y-8 max-w-4xl">
               {questions.map((question) => (
                 <div key={question.id} className="bg-white p-6 rounded-lg shadow">
-                  <h3 className="text-lg font-bold mb-6">{question.text}</h3>
+                  <div className="text-lg font-bold mb-6">
+                    <MathDisplay content={question.text} />
+                  </div>
                   
                   {question.image && (
                     <div className="mb-6">
@@ -231,7 +234,9 @@ export default function ExamInterface({
                           onChange={() => handleAnswerSelect(question.id, choice.id)}
                           className="w-4 h-4 text-green-600"
                         />
-                        <span className="ml-3 flex-1">{choice.text}</span>
+                        <span className="ml-3 flex-1">
+                          <MathDisplay content={choice.text} />
+                        </span>
                       </label>
                     ))}
                   </div>

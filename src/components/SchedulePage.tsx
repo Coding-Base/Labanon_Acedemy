@@ -16,6 +16,7 @@ interface ScheduleItem {
   institution_name?: string
   // Calculated on frontend
   isLive: boolean
+  canJoin: boolean // Can join (live or up to 1 hour late)
   nextMeeting: Date | null
   timeUntil: string
 }
@@ -70,12 +71,22 @@ export default function SchedulePage({ userRole }: SchedulePageProps) {
     const now = new Date()
     const [hours, minutes] = course.meeting_time.split(':').map(Number)
     
+    // Check if within date range of the course
+    const startDate = new Date(course.start_date)
+    const endDate = new Date(course.end_date)
+    // Fix comparison for end date to include the full day
+    endDate.setHours(23, 59, 59)
+
     // Determine next meeting date
     let nextDate = new Date()
     nextDate.setHours(hours, minutes, 0, 0)
 
-    // If time passed today, assume tomorrow
-    if (nextDate < now) {
+    // Calculate the late join end time for TODAY
+    const todayLateJoinEnd = new Date(nextDate.getTime() + 60 * 60000) // 1 hour after today's start time
+    
+    // If we're past the late join window for today, move to tomorrow
+    // Otherwise, keep today's date (we might still be in the join window)
+    if (now > todayLateJoinEnd) {
       nextDate.setDate(nextDate.getDate() + 1)
     }
 
@@ -84,17 +95,15 @@ export default function SchedulePage({ userRole }: SchedulePageProps) {
     const windowStart = new Date(nextDate.getTime() - 15 * 60000)
     const windowEnd = new Date(nextDate.getTime() + 120 * 60000) // 2 hour duration assumption
     
-    // Check if within date range of the course
-    const startDate = new Date(course.start_date)
-    const endDate = new Date(course.end_date)
-    // Fix comparison for end date to include the full day
-    endDate.setHours(23, 59, 59)
-
     const isLive = now >= windowStart && now <= windowEnd && nextDate >= startDate && nextDate <= endDate
+    
+    // Late join window: up to 1 hour after class start (for students who arrive late)
+    const lateJoinEnd = new Date(nextDate.getTime() + 60 * 60000) // 1 hour after start
+    const canJoin = now >= nextDate && now <= lateJoinEnd && nextDate >= startDate && nextDate <= endDate
     
     // If next meeting is past end date, it's finished
     if (nextDate > endDate) {
-        return { ...course, isLive: false, nextMeeting: null, timeUntil: 'Course Ended' }
+        return { ...course, isLive: false, canJoin: false, nextMeeting: null, timeUntil: 'Course Ended' }
     }
 
     // Calculate time until
@@ -104,12 +113,15 @@ export default function SchedulePage({ userRole }: SchedulePageProps) {
     
     let timeUntil = ''
     if (isLive) timeUntil = 'Happening Now'
+    else if (canJoin && !isLive) timeUntil = 'Late Join Available'
     else if (diffHrs > 24) timeUntil = `in ${Math.floor(diffHrs/24)} days`
-    else timeUntil = `in ${diffHrs}h ${diffMins}m`
+    else if (diffHrs >= 0) timeUntil = `in ${diffHrs}h ${diffMins}m`
+    else timeUntil = 'Starting Soon'
 
     return {
       ...course,
       isLive,
+      canJoin: isLive || canJoin,
       nextMeeting: nextDate,
       timeUntil
     }
@@ -174,33 +186,39 @@ export default function SchedulePage({ userRole }: SchedulePageProps) {
 
                   {userRole === 'student' ? (
                     <a 
-                      href={item.isLive ? item.meeting_link : undefined}
+                      href={item.canJoin ? item.meeting_link : undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all ${
-                        item.isLive 
-                          ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-green-200' 
+                        item.canJoin 
+                          ? item.isLive
+                            ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-green-200' 
+                            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-blue-200'
                           : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       }`}
-                      onClick={(e) => !item.isLive && e.preventDefault()}
+                      onClick={(e) => !item.canJoin && e.preventDefault()}
+                      title={!item.canJoin ? 'Class has ended' : item.isLive ? 'Join ongoing class' : 'Join late (within 1 hour of start)'}
                     >
                       <Video className="w-4 h-4" />
-                      Join Class
+                      {item.isLive ? 'Join Class' : item.canJoin ? 'Join Late' : 'Join Class'}
                     </a>
                   ) : (
                     <a 
-                      href={item.isLive ? item.meeting_link : undefined}
+                      href={item.canJoin ? item.meeting_link : undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all ${
-                        item.isLive 
-                          ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg' 
+                        item.canJoin 
+                          ? item.isLive
+                            ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg' 
+                            : 'bg-orange-600 text-white hover:bg-orange-700 shadow-lg'
                           : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       }`}
-                      onClick={(e) => !item.isLive && e.preventDefault()}
+                      onClick={(e) => !item.canJoin && e.preventDefault()}
+                      title={!item.canJoin ? 'Class has ended' : item.isLive ? 'Go live' : 'Class in progress (within 1 hour of start)'}
                     >
                       <Video className="w-4 h-4" />
-                      Go Live
+                      {item.isLive ? 'Go Live' : item.canJoin ? 'Go Live' : 'Go Live'}
                     </a>
                   )}
                 </div>

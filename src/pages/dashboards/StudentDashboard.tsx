@@ -200,19 +200,24 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         setRealStudyHours(parseFloat((examHours + courseHours).toFixed(1)));
 
         // --- ALGO 4: GLOBAL LEADERBOARD & RANK ---
-        // Since we don't have a backend leaderboard yet, we generate one
-        // mixing top performers + current user
-        const mockLeaders: LeaderboardUser[] = [
-            { id: 991, name: 'Chinedu O.', score: 98, exams_taken: 45, avatar_initial: 'C' },
-            { id: 992, name: 'Amina Y.', score: 95, exams_taken: 42, avatar_initial: 'A' },
-            { id: 993, name: 'David K.', score: 92, exams_taken: 40, avatar_initial: 'D' },
-            { id: 994, name: 'Sarah B.', score: 88, exams_taken: 35, avatar_initial: 'S' },
-            { id: 995, name: 'Emeka J.', score: 85, exams_taken: 30, avatar_initial: 'E' },
-            { id: 996, name: 'Fatima R.', score: 82, exams_taken: 28, avatar_initial: 'F' },
-            { id: 997, name: 'Tunde L.', score: 79, exams_taken: 25, avatar_initial: 'T' },
-            { id: 998, name: 'Ngozi P.', score: 75, exams_taken: 20, avatar_initial: 'N' },
-            { id: 999, name: 'Ibrahim M.', score: 72, exams_taken: 18, avatar_initial: 'I' },
-        ];
+        // Fetch real leaderboard data from backend
+        let leaderboardData: LeaderboardUser[] = [];
+        try {
+          const leaderboardRes = await api.get('/cbt/leaderboard/', { params: { limit: 50 } }).catch(() => null);
+          if (leaderboardRes?.data) {
+            const data = Array.isArray(leaderboardRes.data) ? leaderboardRes.data : (leaderboardRes.data.results || []);
+            leaderboardData = data.map((item: any, idx: number) => ({
+              id: item.id || item.user_id || idx,
+              name: item.username || item.user?.username || item.name || 'Student',
+              score: item.avg_score !== undefined ? item.avg_score : (item.high_score || item.best_score || 0),
+              exams_taken: item.attempts_count !== undefined ? item.attempts_count : (item.exams_taken || 0),
+              avatar_initial: (item.name || item.username || item.user?.username || 'S').charAt(0).toUpperCase()
+            }));
+            console.log('Student leaderboard data:', leaderboardData); // Debug log
+          }
+        } catch (err) {
+          console.error('Failed to fetch leaderboard:', err);
+        }
 
         // Current User Best Score
         const myBestScore = attempts.length > 0 
@@ -228,8 +233,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
             is_current_user: true
         };
 
-        // Merge, Sort, Deduplicate
-        const allBoard = [...mockLeaders, currentUserEntry].sort((a, b) => b.score - a.score);
+        // Merge real data with current user, Sort, Deduplicate
+        const allBoard = [...leaderboardData, currentUserEntry].sort((a, b) => b.score - a.score);
         const uniqueBoard = Array.from(new Map(allBoard.map(item => [item.id, item])).values())
                                 .sort((a, b) => b.score - a.score);
 

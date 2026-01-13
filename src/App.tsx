@@ -16,6 +16,9 @@ const Blog = lazy(() => import('./pages/Blog'))
 const BlogDetail = lazy(() => import('./pages/BlogDetail'))
 const PublicPortfolio = lazy(() => import('./pages/PublicPortfolio'))
 const TutorApplication = lazy(() => import('./components/TutorApplicationForm'))
+const Documentation = lazy(() => import('./pages/Documentation'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
+const About = lazy(() => import('./pages/About'))
 // role dashboards (lazy)
 const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'))
 const TutorDashboard = lazy(() => import('./pages/dashboards/TutorDashboard'))
@@ -82,6 +85,9 @@ export default function App() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/portfolio/:token" element={<PublicPortfolio />} />
             <Route path="/tutor-application" element={<TutorApplication />} />
+            <Route path="/documentation" element={<Documentation />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/about" element={<About />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />   
             <Route path="/" element={<Home />} />

@@ -116,6 +116,21 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [manualMessage, setManualMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const [uploadMode, setUploadMode] = useState<'json' | 'file' | 'manual'>('json')
 
+  // Exam & Subject Management State
+  const [examsManagement, setExamsManagement] = useState<any[]>([])
+  const [showExamForm, setShowExamForm] = useState(false)
+  const [showSubjectForm, setShowSubjectForm] = useState(false)
+  const [examFormData, setExamFormData] = useState({title: '', description: '', time_limit_minutes: 120, slug: ''})
+  const [subjectFormData, setSubjectFormData] = useState({exam: '', name: '', description: ''})
+  const [selectedExamForSubjects, setSelectedExamForSubjects] = useState<any | null>(null)
+  const [subjectList, setSubjectList] = useState<any[]>([])
+  const [examManagementLoading, setExamManagementLoading] = useState(false)
+  const [savingExam, setSavingExam] = useState(false)
+  const [savingSubject, setSavingSubject] = useState(false)
+  const [examMessage, setExamMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [editingExam, setEditingExam] = useState<any | null>(null)
+  const [editingSubject, setEditingSubject] = useState<any | null>(null)
+
   // Define tabs
   const allTabs = [
     { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
@@ -125,6 +140,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
     { id: 'messages', label: 'Messages', icon: <Mail className="w-5 h-5" />, permission: 'can_view_messages' as PermissionKey },
+    { id: 'exams', label: 'Exams & Subjects', icon: <GraduationCap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     // Bulk upload tied to course management permission usually
     { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
   ]
@@ -168,6 +184,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     if (tab === 'cbt') loadCbtAnalytics()
     if (tab === 'payments') loadPayments()
     if (tab === 'blog') loadBlogs()
+    if (tab === 'exams') loadExamsManagement()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
@@ -411,6 +428,151 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setSettingsMessage({ type: 'error', text: err.response?.data?.error || 'Failed to change password' })
     } finally {
       setSettingsSaving(false)
+    }
+  }
+
+  // --- Exam & Subject Management Functions ---
+
+  async function loadExamsManagement() {
+    setExamManagementLoading(true)
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/cbt/exams/`, { headers: { Authorization: `Bearer ${token}` } })
+      const data = res.data.results || res.data
+      setExamsManagement(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Failed to load exams:', err)
+      setExamsManagement([])
+    } finally {
+      setExamManagementLoading(false)
+    }
+  }
+
+  async function createOrUpdateExam() {
+    if (!examFormData.title.trim()) {
+      setExamMessage({ type: 'error', text: 'Exam title is required' })
+      return
+    }
+    setSavingExam(true)
+    try {
+      const token = localStorage.getItem('access')
+      const payload = {
+        title: examFormData.title,
+        description: examFormData.description,
+        time_limit_minutes: parseInt(examFormData.time_limit_minutes.toString()) || 120,
+        slug: examFormData.slug || examFormData.title.toLowerCase().replace(/\s+/g, '-')
+      }
+
+      if (editingExam) {
+        await axios.put(`${API_BASE}/cbt/exams/${editingExam.id}/`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setExamMessage({ type: 'success', text: 'Exam updated successfully' })
+      } else {
+        await axios.post(`${API_BASE}/cbt/exams/`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setExamMessage({ type: 'success', text: 'Exam created successfully' })
+      }
+
+      setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '' })
+      setEditingExam(null)
+      setShowExamForm(false)
+      loadExamsManagement()
+      setTimeout(() => setExamMessage(null), 3000)
+    } catch (err: any) {
+      console.error('Failed to save exam:', err)
+      setExamMessage({ type: 'error', text: err.response?.data?.title?.[0] || 'Failed to save exam' })
+    } finally {
+      setSavingExam(false)
+    }
+  }
+
+  async function deleteExam(examId: number) {
+    if (!confirm('Are you sure you want to delete this exam? All subjects and questions will be removed.')) return
+    try {
+      const token = localStorage.getItem('access')
+      await axios.delete(`${API_BASE}/cbt/exams/${examId}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setExamMessage({ type: 'success', text: 'Exam deleted successfully' })
+      loadExamsManagement()
+      setTimeout(() => setExamMessage(null), 3000)
+    } catch (err) {
+      console.error('Failed to delete exam:', err)
+      setExamMessage({ type: 'error', text: 'Failed to delete exam' })
+    }
+  }
+
+  async function loadSubjectsForExam(examId: number) {
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/cbt/exams/${examId}/subjects/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setSubjectList(Array.isArray(res.data) ? res.data : res.data.results || [])
+    } catch (err) {
+      console.error('Failed to load subjects:', err)
+      setSubjectList([])
+    }
+  }
+
+  async function createOrUpdateSubject() {
+    if (!subjectFormData.exam || !subjectFormData.name.trim()) {
+      setExamMessage({ type: 'error', text: 'Exam and subject name are required' })
+      return
+    }
+    setSavingSubject(true)
+    try {
+      const token = localStorage.getItem('access')
+      const payload = {
+        exam: parseInt(subjectFormData.exam),
+        name: subjectFormData.name,
+        description: subjectFormData.description
+      }
+
+      if (editingSubject) {
+        await axios.put(`${API_BASE}/cbt/subjects/${editingSubject.id}/`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setExamMessage({ type: 'success', text: 'Subject updated successfully' })
+      } else {
+        await axios.post(`${API_BASE}/cbt/subjects/`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setExamMessage({ type: 'success', text: 'Subject created successfully' })
+      }
+
+      setSubjectFormData({ exam: '', name: '', description: '' })
+      setEditingSubject(null)
+      setShowSubjectForm(false)
+      if (selectedExamForSubjects) {
+        loadSubjectsForExam(selectedExamForSubjects.id)
+      }
+      setTimeout(() => setExamMessage(null), 3000)
+    } catch (err: any) {
+      console.error('Failed to save subject:', err)
+      setExamMessage({ type: 'error', text: err.response?.data?.name?.[0] || 'Failed to save subject' })
+    } finally {
+      setSavingSubject(false)
+    }
+  }
+
+  async function deleteSubject(subjectId: number) {
+    if (!confirm('Are you sure you want to delete this subject? All questions will be removed.')) return
+    try {
+      const token = localStorage.getItem('access')
+      await axios.delete(`${API_BASE}/cbt/subjects/${subjectId}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setExamMessage({ type: 'success', text: 'Subject deleted successfully' })
+      if (selectedExamForSubjects) {
+        loadSubjectsForExam(selectedExamForSubjects.id)
+      }
+      setTimeout(() => setExamMessage(null), 3000)
+    } catch (err) {
+      console.error('Failed to delete subject:', err)
+      setExamMessage({ type: 'error', text: 'Failed to delete subject' })
     }
   }
 
@@ -1267,6 +1429,347 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             </div>
                           )}
                         </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {tab === 'exams' && (
+                  <div>
+                    {examMessage && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`mb-4 p-4 rounded-lg ${examMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
+                      >
+                        {examMessage.text}
+                      </motion.div>
+                    )}
+
+                    {examManagementLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 text-green-600 animate-spin mr-3" />
+                        <span className="text-gray-600">Loading exams...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-8">
+                        {/* Exam Management Section */}
+                        <div>
+                          <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900">Manage Exams</h2>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => {
+                                setShowExamForm(!showExamForm)
+                                setEditingExam(null)
+                                setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '' })
+                              }}
+                              className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                            >
+                              + Add New Exam
+                            </motion.button>
+                          </div>
+
+                          {showExamForm && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-white border-2 border-green-200 rounded-xl p-6 mb-6"
+                            >
+                              <h3 className="text-lg font-semibold mb-4 text-gray-900">
+                                {editingExam ? 'Edit Exam' : 'Create New Exam'}
+                              </h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Exam Title *</label>
+                                  <input
+                                    type="text"
+                                    value={examFormData.title}
+                                    onChange={(e) => setExamFormData({ ...examFormData, title: e.target.value })}
+                                    placeholder="e.g., JAMB CBT, NECO, WAEC"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Slug</label>
+                                  <input
+                                    type="text"
+                                    value={examFormData.slug}
+                                    onChange={(e) => setExamFormData({ ...examFormData, slug: e.target.value })}
+                                    placeholder="Auto-generated if empty"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  />
+                                </div>
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                  <textarea
+                                    value={examFormData.description}
+                                    onChange={(e) => setExamFormData({ ...examFormData, description: e.target.value })}
+                                    placeholder="Exam description"
+                                    rows={3}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Time Limit (minutes)</label>
+                                  <input
+                                    type="number"
+                                    value={examFormData.time_limit_minutes}
+                                    onChange={(e) => setExamFormData({ ...examFormData, time_limit_minutes: parseInt(e.target.value) || 120 })}
+                                    min="1"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex gap-3 mt-6">
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={createOrUpdateExam}
+                                  disabled={savingExam}
+                                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50"
+                                >
+                                  {savingExam ? 'Saving...' : editingExam ? 'Update Exam' : 'Create Exam'}
+                                </motion.button>
+                                <button
+                                  onClick={() => {
+                                    setShowExamForm(false)
+                                    setEditingExam(null)
+                                    setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '' })
+                                  }}
+                                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-all"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {examsManagement.length === 0 ? (
+                            <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+                              <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                              <p className="text-gray-500 text-lg">No exams found. Create your first exam!</p>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {examsManagement.map((exam) => (
+                                <motion.div
+                                  key={exam.id}
+                                  whileHover={{ y: -5 }}
+                                  className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
+                                >
+                                  <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                      <h4 className="font-semibold text-gray-900 text-lg">{exam.title}</h4>
+                                      <p className="text-xs text-gray-500 mt-1">{exam.slug}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <motion.button
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => {
+                                          setEditingExam(exam)
+                                          setExamFormData({
+                                            title: exam.title,
+                                            description: exam.description || '',
+                                            time_limit_minutes: exam.time_limit_minutes || 120,
+                                            slug: exam.slug
+                                          })
+                                          setShowExamForm(true)
+                                        }}
+                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                        title="Edit"
+                                      >
+                                        <FileText className="w-4 h-4" />
+                                      </motion.button>
+                                      <motion.button
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => deleteExam(exam.id)}
+                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                        title="Delete"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </motion.button>
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{exam.description || 'No description'}</p>
+                                  <div className="space-y-1 mb-4">
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-gray-600">Subjects:</span>
+                                      <span className="font-semibold text-gray-900">{exam.subjects?.length || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-gray-600">Time Limit:</span>
+                                      <span className="font-semibold text-gray-900">{exam.time_limit_minutes} mins</span>
+                                    </div>
+                                  </div>
+                                  <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => {
+                                      setSelectedExamForSubjects(exam)
+                                      setShowSubjectForm(false)
+                                      loadSubjectsForExam(exam.id)
+                                    }}
+                                    className="w-full px-4 py-2 bg-gradient-to-r from-green-50 to-teal-50 text-green-700 rounded-lg font-medium hover:from-green-100 hover:to-teal-100 transition-all border border-green-200"
+                                  >
+                                    Manage Subjects
+                                  </motion.button>
+                                </motion.div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Subject Management Section */}
+                        {selectedExamForSubjects && (
+                          <div>
+                            <div className="flex items-center justify-between mb-6 pb-4 border-t-2 border-gray-200 pt-8">
+                              <div>
+                                <button
+                                  onClick={() => {
+                                    setSelectedExamForSubjects(null)
+                                    setShowSubjectForm(false)
+                                    setEditingSubject(null)
+                                  }}
+                                  className="text-gray-600 hover:text-gray-900 mb-2 flex items-center gap-2 text-sm"
+                                >
+                                  <ChevronLeft className="w-4 h-4" /> Back to Exams
+                                </button>
+                                <h2 className="text-2xl font-bold text-gray-900">
+                                  Subjects: {selectedExamForSubjects.title}
+                                </h2>
+                              </div>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => {
+                                  setShowSubjectForm(!showSubjectForm)
+                                  setEditingSubject(null)
+                                  setSubjectFormData({ exam: selectedExamForSubjects.id.toString(), name: '', description: '' })
+                                }}
+                                className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                              >
+                                + Add Subject
+                              </motion.button>
+                            </div>
+
+                            {showSubjectForm && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-white border-2 border-green-200 rounded-xl p-6 mb-6"
+                              >
+                                <h3 className="text-lg font-semibold mb-4 text-gray-900">
+                                  {editingSubject ? 'Edit Subject' : 'Create New Subject'}
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
+                                    <input
+                                      type="text"
+                                      value={subjectFormData.name}
+                                      onChange={(e) => setSubjectFormData({ ...subjectFormData, name: e.target.value })}
+                                      placeholder="e.g., Mathematics, Chemistry, Physics"
+                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    />
+                                  </div>
+                                  <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                    <textarea
+                                      value={subjectFormData.description}
+                                      onChange={(e) => setSubjectFormData({ ...subjectFormData, description: e.target.value })}
+                                      placeholder="Subject description"
+                                      rows={3}
+                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex gap-3 mt-6">
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={createOrUpdateSubject}
+                                    disabled={savingSubject}
+                                    className="px-6 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50"
+                                  >
+                                    {savingSubject ? 'Saving...' : editingSubject ? 'Update Subject' : 'Create Subject'}
+                                  </motion.button>
+                                  <button
+                                    onClick={() => {
+                                      setShowSubjectForm(false)
+                                      setEditingSubject(null)
+                                      setSubjectFormData({ exam: selectedExamForSubjects.id.toString(), name: '', description: '' })
+                                    }}
+                                    className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-all"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {subjectList.length === 0 ? (
+                              <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+                                <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-500 text-lg">No subjects found for this exam</p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {subjectList.map((subject) => (
+                                  <motion.div
+                                    key={subject.id}
+                                    whileHover={{ y: -5 }}
+                                    className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
+                                  >
+                                    <div className="flex items-start justify-between mb-4">
+                                      <div className="flex-1">
+                                        <h4 className="font-semibold text-gray-900 text-lg">{subject.name}</h4>
+                                        <p className="text-xs text-gray-500 mt-1">ID: {subject.id}</p>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <motion.button
+                                          whileHover={{ scale: 1.1 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          onClick={() => {
+                                            setEditingSubject(subject)
+                                            setSubjectFormData({
+                                              exam: selectedExamForSubjects.id.toString(),
+                                              name: subject.name,
+                                              description: subject.description || ''
+                                            })
+                                            setShowSubjectForm(true)
+                                          }}
+                                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                          title="Edit"
+                                        >
+                                          <FileText className="w-4 h-4" />
+                                        </motion.button>
+                                        <motion.button
+                                          whileHover={{ scale: 1.1 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          onClick={() => deleteSubject(subject.id)}
+                                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                          title="Delete"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </motion.button>
+                                      </div>
+                                    </div>
+                                    <p className="text-sm text-gray-600 line-clamp-2">{subject.description || 'No description'}</p>
+                                    <div className="mt-4 pt-4 border-t border-gray-200">
+                                      <p className="text-xs text-gray-500">
+                                        Questions: <span className="font-semibold text-gray-900">{subject.questions?.length || 0}</span>
+                                      </p>
+                                    </div>
+                                  </motion.div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

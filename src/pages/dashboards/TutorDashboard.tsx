@@ -233,13 +233,24 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         rating = Math.min(5.0, rating);
         setCalculatedRating(parseFloat(rating.toFixed(1)));
 
-        // 5. Tutor Leaderboard (Mock + Current User)
-        const mockTutors: LeaderboardTutor[] = [
-          { id: 901, name: 'Dr. Sarah Connor', sales: 1250, courses_created: 15, avatar_initial: 'S' },
-          { id: 902, name: 'Prof. John Wick', sales: 980, courses_created: 8, avatar_initial: 'J' },
-          { id: 903, name: 'Jane Doe', sales: 850, courses_created: 12, avatar_initial: 'J' },
-          { id: 904, name: 'Michael Scott', sales: 600, courses_created: 5, avatar_initial: 'M' },
-        ];
+        // 5. Tutor Leaderboard (Real data from backend)
+        let tutorLeaderboardData: LeaderboardTutor[] = [];
+        try {
+          const leaderboardRes = await api.get('/tutors/leaderboard/', { params: { limit: 50 } }).catch(() => null);
+          if (leaderboardRes?.data) {
+            const data = Array.isArray(leaderboardRes.data) ? leaderboardRes.data : (leaderboardRes.data.results || []);
+            tutorLeaderboardData = data.map((item: any, idx: number) => ({
+              id: item.id || item.user_id || idx,
+              name: item.name || item.username || item.user?.username || item.first_name || 'Tutor',
+              sales: item.sales !== undefined ? parseInt(item.sales) : (item.total_enrollments || 0),
+              courses_created: item.courses_created !== undefined ? item.courses_created : (item.courses_count || 0),
+              avatar_initial: (item.name || item.username || item.user?.username || 'T').charAt(0).toUpperCase()
+            }));
+            console.log('Tutor leaderboard data:', tutorLeaderboardData); // Debug log
+          }
+        } catch (err) {
+          console.error('Failed to fetch tutors leaderboard:', err);
+        }
 
         const currentUserEntry: LeaderboardTutor = {
           id: userId,
@@ -250,10 +261,20 @@ export default function TutorDashboard(props: TutorDashboardProps) {
           is_current_user: true
         };
 
-        const combined = [...mockTutors, currentUserEntry].sort((a, b) => b.sales - a.sales);
-        const uniqueBoard = Array.from(new Map(combined.map(item => [item.id, item])).values())
-                                .sort((a, b) => b.sales - a.sales);
-        
+        // Prefer server-provided leaderboard entries. Only add the current user
+        // if they are not already present in `tutorLeaderboardData` to avoid
+        // overwriting authoritative `sales` values from the backend.
+        const existing = tutorLeaderboardData.find(t => t.id === currentUserEntry.id);
+        let uniqueBoard = [] as LeaderboardTutor[];
+        if (!existing) {
+          uniqueBoard = [...tutorLeaderboardData, currentUserEntry];
+        } else {
+          uniqueBoard = [...tutorLeaderboardData];
+        }
+
+        uniqueBoard = Array.from(new Map(uniqueBoard.map(item => [item.id, item])).values())
+                        .sort((a, b) => b.sales - a.sales);
+
         setLeaderboard(uniqueBoard);
 
       } catch (err) {

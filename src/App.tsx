@@ -31,6 +31,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const PerformancePage = lazy(() => import('./components/cbt/PerformancePage'))
 const BulkUploadPage = lazy(() => import('./pages/BulkUploadPage'))
 const PaymentVerify = lazy(() => import('./pages/PaymentVerify'))
+const ActivateCheckout = lazy(() => import('./pages/ActivateCheckout'))
 
 export default function App() {
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -76,6 +77,9 @@ export default function App() {
             
             {/* 2. Flutterwave Verification (ADDED THIS ROUTE) */}
             <Route path="/payment/flutterwave/verify" element={<PaymentVerify />} />
+
+            {/* Activation / Checkout for exam / subject unlocks */}
+            <Route path="/activate" element={<ActivateCheckout />} />
 
             {/* other app routes */}
             <Route path="/marketplace" element={<Marketplace />} />

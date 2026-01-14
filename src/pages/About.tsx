@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Zap,
   Target,
@@ -15,288 +16,260 @@ import {
   Sparkles
 } from 'lucide-react'
 
-const About = () => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  }
+type ValueItem = { icon: React.ComponentType<any>; title: string; description: string }
+type StatItem = { number: string; label: string }
+type FeatureItem = { icon: React.ComponentType<any>; title: string; description: string }
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  }
+const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.08 } } }
+const itemVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
 
-  const values = [
-    {
-      icon: Target,
-      title: 'Mission-Driven',
-      description: 'Democratizing quality education for everyone, everywhere.'
-    },
-    {
-      icon: Heart,
-      title: 'Student-Centric',
-      description: 'Every feature designed with learner success in mind.'
-    },
-    {
-      icon: Globe,
-      title: 'Globally Connected',
-      description: 'Connecting learners, educators, and institutions worldwide.'
-    },
-    {
-      icon: Zap,
-      title: 'Innovation',
-      description: 'Constantly evolving with cutting-edge educational technology.'
-    }
-  ]
+const values: ValueItem[] = [
+  { icon: Target, title: 'Mission-Driven', description: 'Democratizing quality education for everyone.' },
+  { icon: Heart, title: 'Student-Centric', description: 'Every feature designed to help learners succeed.' },
+  { icon: Globe, title: 'Globally Connected', description: 'Connecting learners, educators and institutions.' },
+  { icon: Zap, title: 'Innovation', description: 'Constantly evolving with modern learning tech.' }
+]
 
-  const stats = [
-    { number: '50K+', label: 'Active Learners' },
-    { number: '1000+', label: 'Courses' },
-    { number: '500+', label: 'Instructors' },
-    { number: '100+', label: 'Institutions' }
-  ]
+const stats: StatItem[] = [
+  { number: '50K+', label: 'Active Learners' },
+  { number: '1K+', label: 'Courses' },
+  { number: '500+', label: 'Instructors' },
+  { number: '100+', label: 'Institutions' }
+]
 
-  const features = [
-    { icon: BookOpen, title: 'Comprehensive Learning', description: 'From beginner to advanced courses' },
-    { icon: Award, title: 'Verified Certificates', description: 'Recognized digital credentials' },
-    { icon: TrendingUp, title: 'Progress Analytics', description: 'Track your learning journey' },
-    { icon: Users, title: 'Expert Instructors', description: 'Learn from industry professionals' },
-    { icon: Globe, title: 'Global Community', description: 'Connect with learners worldwide' },
-    { icon: Sparkles, title: 'Interactive Content', description: 'Engaging videos and practice exams' }
-  ]
+const features: FeatureItem[] = [
+  { icon: BookOpen, title: 'Comprehensive Learning', description: 'From beginner to advanced courses.' },
+  { icon: Award, title: 'Verified Certificates', description: 'Recognized digital credentials.' },
+  { icon: TrendingUp, title: 'Progress Analytics', description: 'Track your learning journey.' },
+  { icon: Users, title: 'Expert Instructors', description: 'Learn from industry professionals.' },
+  { icon: Globe, title: 'Global Community', description: 'Connect with learners worldwide' },
+  { icon: Sparkles, title: 'Interactive Content', description: 'Engaging videos and practice exams.' }
+]
+
+const StatCard: React.FC<{ stat: StatItem }> = ({ stat }) => (
+  <motion.div variants={itemVariants} className="bg-white rounded-xl p-8 shadow-lg text-center hover:shadow-xl transition-shadow">
+    <div className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-teal-500 mb-2">
+      {stat.number}
+    </div>
+    <p className="text-slate-600 font-semibold">{stat.label}</p>
+  </motion.div>
+)
+
+const ValueCard: React.FC<{ item: ValueItem }> = ({ item }) => {
+  const Icon = item.icon
+  return (
+    <motion.div variants={itemVariants} className="bg-white p-6 rounded-xl shadow hover:shadow-xl transition-all hover:-translate-y-2">
+      <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 bg-gradient-to-br from-green-500 to-teal-500 text-white">
+        <Icon className="w-6 h-6" />
+      </div>
+      <h3 className="text-lg font-bold mb-1 text-slate-900">{item.title}</h3>
+      <p className="text-slate-600 text-sm">{item.description}</p>
+    </motion.div>
+  )
+}
+
+const FeatureCard: React.FC<{ feature: FeatureItem }> = ({ feature }) => {
+  const Icon = feature.icon
+  return (
+    <motion.div variants={itemVariants} className="bg-white bg-opacity-8 backdrop-blur-sm p-6 rounded-lg border border-white/10 hover:bg-opacity-12 transition-all">
+      <div className="flex items-center gap-4 mb-3">
+        <div className="w-10 h-10 rounded-md flex items-center justify-center bg-gradient-to-r from-green-500 to-teal-500 text-white">
+          <Icon className="w-5 h-5" />
+        </div>
+        <h4 className="font-semibold text-slate-900">{feature.title}</h4>
+      </div>
+      {/* changed from text-teal-100 (low contrast on translucent white) -> text-white for readable contrast */}
+      <p className="text-sm text-white">{feature.description}</p>
+    </motion.div>
+  )
+}
+
+const About: React.FC = () => {
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      {/* Top Navigation */}
+      <header className="bg-white border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} aria-label="Go back" className="px-3 py-2 rounded-md hover:bg-slate-100">← Back</button>
+            <nav className="hidden sm:flex items-center gap-3">
+              <Link to="/" className="text-slate-700 hover:text-green-600">Home</Link>
+              <Link to="/docs" className="text-slate-700 hover:text-green-600">Docs</Link>
+              <Link to="/privacy" className="text-slate-700 hover:text-green-600">Privacy</Link>
+            </nav>
+          </div>
+          <div>
+            <Link to="/register" className="bg-green-600 text-white px-3 py-2 rounded-md shadow-sm hover:opacity-90">Sign up</Link>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-green-600 via-teal-600 to-cyan-600 text-white py-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>
+        <div aria-hidden className="absolute inset-0 opacity-10">
+          <div className="absolute top-[-8%] left-[-8%] w-96 h-96 rounded-full bg-white/80 filter blur-2xl" />
+          <div className="absolute bottom-[-8%] right-[-8%] w-96 h-96 rounded-full bg-white/80 filter blur-2xl" />
         </div>
 
         <div className="max-w-6xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">About Lebanon Academy</h1>
-            <p className="text-xl text-purple-100 max-w-2xl leading-relaxed">
-              We're reimagining education by connecting learners, instructors, and institutions on a single powerful platform designed for the future of learning.
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <h1 className="text-4xl md:text-6xl font-extrabold mb-4">About Lebanon Academy</h1>
+            <p className="text-lg md:text-xl max-w-2xl leading-relaxed text-teal-100">
+              Reimagining education by connecting learners, tutors, and institutions on a single, modern learning platform built to scale.
             </p>
+
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link to="/register" aria-label="Get started" className="inline-flex items-center gap-2 bg-white text-green-600 font-semibold px-5 py-3 rounded-lg shadow hover:shadow-lg transition">
+                Get Started <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <Link to="/contact" aria-label="Contact us" className="inline-flex items-center gap-2 border border-white/30 text-white px-5 py-3 rounded-lg hover:bg-white/10 transition">
+                Contact Us
+              </Link>
+            </div>
           </motion.div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Stats Section */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid md:grid-cols-4 gap-6 -mt-16 relative z-20 mb-16"
-        >
-          {stats.map((stat, index) => (
-            <motion.div
-              key={index}
-              variants={itemVariants}
-              className="bg-white rounded-xl p-8 shadow-lg text-center hover:shadow-xl transition-shadow"
-            >
-              <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-2">
-                {stat.number}
-              </div>
-              <p className="text-slate-600 font-semibold">{stat.label}</p>
-            </motion.div>
+      <main className="max-w-6xl mx-auto px-4 py-12">
+        {/* Stats */}
+        <motion.section variants={containerVariants} initial="hidden" animate="visible" className="grid md:grid-cols-4 gap-6 -mt-16 mb-12">
+          {stats.map((s) => (
+            <StatCard key={s.label} stat={s} />
           ))}
-        </motion.div>
+        </motion.section>
 
         {/* Our Story */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          className="my-16"
-        >
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl font-bold mb-6 text-slate-900">Our Story</h2>
-              <p className="text-slate-700 text-lg leading-relaxed mb-4">
-                Lebanon Academy was founded with a simple vision: to make quality education accessible to everyone, regardless of their location or background. We recognized that traditional educational systems often fail to reach those who need them most.
-              </p>
-              <p className="text-slate-700 text-lg leading-relaxed mb-4">
-                Starting from a small group of passionate educators, we've grown into a thriving ecosystem where thousands of students access world-class courses, tutors share their expertise globally, and institutions scale their educational impact.
-              </p>
-              <p className="text-slate-700 text-lg leading-relaxed">
-                Today, Lebanon Academy stands as a testament to what's possible when education meets technology and community.
-              </p>
-            </div>
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl p-8 text-white">
-            `{'>'}`
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">Founded on Trust</h3>
-                    <p className="text-purple-100">Built by educators, for learners</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">Rapid Growth</h3>
-                    <p className="text-purple-100">50K+ learners and counting</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <CheckCircle className="w-6 h-6 flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">Global Impact</h3>
-                    <p className="text-purple-100">Learners from 100+ countries</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+        <section className="mb-16 grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <motion.h2 initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Our Story
+            </motion.h2>
+
+            <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} className="text-slate-700 text-lg leading-relaxed mb-4">
+              Lebanon Academy started with a simple idea: quality education should be accessible. From a small team of educators to a global platform, our mission hasn't changed — make learning possible for everyone.
+            </motion.p>
+
+            <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.7 }} className="text-slate-700 text-lg leading-relaxed">
+              We combine careful curation, modern tech, and community to help learners reach their goals — whether that's exam prep, career growth, or lifelong learning.
+            </motion.p>
           </div>
-        </motion.div>
+
+          <motion.aside initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl p-8 text-white shadow-lg">
+            <ul className="space-y-6">
+              <li className="flex items-start gap-4">
+                <CheckCircle className="w-6 h-6 flex-shrink-0" />
+                <div>
+                  <h4 className="font-bold">Founded on Trust</h4>
+                  <p className="text-teal-100 text-sm">Built by educators, for learners.</p>
+                </div>
+              </li>
+              <li className="flex items-start gap-4">
+                <CheckCircle className="w-6 h-6 flex-shrink-0" />
+                <div>
+                  <h4 className="font-bold">Rapid Growth</h4>
+                  <p className="text-teal-100 text-sm">50K+ learners and counting.</p>
+                </div>
+              </li>
+              <li className="flex items-start gap-4">
+                <CheckCircle className="w-6 h-6 flex-shrink-0" />
+                <div>
+                  <h4 className="font-bold">Global Impact</h4>
+                  <p className="text-teal-100 text-sm">Learners from 100+ countries.</p>
+                </div>
+              </li>
+            </ul>
+          </motion.aside>
+        </section>
 
         {/* Core Values */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          className="my-20"
-        >
-          <h2 className="text-4xl font-bold text-center mb-12 text-slate-900">Our Core Values</h2>
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {values.map((value, index) => {
-              const Icon = value.icon
-              return (
-                <motion.div
-                  key={index}
-                  variants={itemVariants}
-                  className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-2"
-                >
-                  <div className="bg-gradient-to-br from-green-500 to-teal-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2 text-slate-900">{value.title}</h3>
-                  <p className="text-slate-600">{value.description}</p>
-                </motion.div>
-              )
-            })}
+        <section className="mb-16">
+          <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} className="text-3xl md:text-4xl font-bold text-center text-slate-900 mb-10">
+            Our Core Values
+          </motion.h2>
+
+          <motion.div variants={containerVariants} initial="hidden" whileInView="visible" className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {values.map((v) => (
+              <ValueCard key={v.title} item={v} />
+            ))}
           </motion.div>
-        </motion.div>
+        </section>
 
         {/* Features */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          className="my-20 bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-12 text-white">
-        `{'>'}`
-          <h2 className="text-4xl font-bold mb-12 text-center">Why Choose Lebanon Academy</h2>
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            {features.map((feature, index) => {
-              const Icon = feature.icon
-              return (
-                <motion.div
-                  key={index}
-                  variants={itemVariants}
-                  className="bg-white bg-opacity-10 backdrop-blur-sm p-6 rounded-lg border border-white border-opacity-20 hover:bg-opacity-20 transition-all"
-                >
-                  <Icon className="w-8 h-8 mb-3" />
-                  <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                  <p className="text-purple-100">{feature.description}</p>
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </motion.div>
+        <section className="mb-16">
+          <motion.div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-10 text-white" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }}>
+            <h3 className="text-2xl font-bold mb-8 text-center">Why Choose Lebanon Academy</h3>
 
-        {/* Our Commitment */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          className="my-20 bg-white rounded-2xl p-12 border-2 border-slate-200"
-        >
+            <motion.div variants={containerVariants} initial="hidden" whileInView="visible" className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {features.map((f) => (
+                <FeatureCard key={f.title} feature={f} />
+              ))}
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* Commitment */}
+        <section className="mb-20">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-4xl font-bold mb-6 text-slate-900">Our Commitment to You</h2>
+              <motion.h2 initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                Our Commitment to You
+              </motion.h2>
+
               <div className="space-y-4">
                 {[
-                  'Secure, transparent, and ethical platform practices',
+                  'Secure, transparent and ethical platform practices',
                   'Quality-assured courses and instructors',
-                  'Fair pricing for all learners',
+                  'Fair pricing for learners',
                   'Responsive support and community',
                   'Continuous innovation and improvement',
                   'Protection of your privacy and data'
-                ].map((commitment, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center gap-3"
-                  >
+                ].map((c, i) => (
+                  <motion.div key={c} initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }} className="flex items-center gap-3">
                     <Star className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-slate-700 font-medium">{commitment}</span>
+                    <span className="text-slate-700">{c}</span>
                   </motion.div>
                 ))}
               </div>
             </div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8 }}
-              className="bg-gradient-to-br from-green-100 to-teal-100 rounded-xl p-8"
-            >
+
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="bg-white rounded-xl p-8 border border-slate-100">
               <div className="text-center">
-                <div className="text-5xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-4">
+                <div className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-teal-500 mb-3">
                   100%
                 </div>
                 <p className="text-lg font-semibold text-slate-900 mb-2">Committed to Excellence</p>
-                <p className="text-slate-600">Every decision we make is guided by our commitment to learners, educators, and the future of education.</p>
+                <p className="text-slate-600">We measure success by learner outcomes and continuous improvement.</p>
               </div>
             </motion.div>
           </div>
-        </motion.div>
+        </section>
 
-        {/* Call to Action */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="my-20 bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-12 text-white text-center"
-        >
-          <h2 className="text-4xl font-bold mb-6">Join the Learning Revolution</h2>
-          <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
-            Be part of a global community transforming education. Start learning, teaching, or building your institution today.
-          </p>
-          <button className="bg-white text-green-600 px-8 py-4 rounded-lg font-bold text-lg hover:shadow-lg transition-all inline-flex items-center gap-2 hover:bg-green-50">
-            Get Started Now <ArrowRight className="w-5 h-5" />
-          </button>
-        </motion.div>
-      </div>
+        {/* CTA */}
+        <section className="mb-12 text-center">
+          <motion.h3 initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} className="text-3xl font-bold mb-4 text-slate-900">
+            Join the Learning Revolution
+          </motion.h3>
+          <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="text-lg text-teal-100 mb-6 max-w-2xl mx-auto">
+            Be part of a global community transforming education — start learning, teaching, or building with us today.
+          </motion.p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/register" className="inline-flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition">
+              Get Started <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link to="/register" className="inline-flex items-center gap-2 border border-green-600 text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 transition">
+              Become an Instructor
+            </Link>
+          </div>
+        </section>
+      </main>
     </div>
   )
 }
 
 export default About
+
+

@@ -9,11 +9,12 @@ const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:800
 
 interface PaymentCheckoutProps {
   itemId: number
-  itemType: 'course' | 'diploma'
+  itemType: 'course' | 'diploma' | 'activation'
   amount: number
   itemTitle: string
   isScheduled?: boolean // <--- New Prop
   onSuccess?: () => void
+  meta?: Record<string, any>
 }
 
 declare global {
@@ -29,6 +30,7 @@ export default function PaymentCheckout({
   itemTitle,
   isScheduled = false, // Default to false
   onSuccess,
+  meta,
 }: PaymentCheckoutProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -59,16 +61,16 @@ export default function PaymentCheckout({
         ? `${API_BASE}/payments/flutterwave/initiate/`
         : `${API_BASE}/payments/initiate/`
 
-      // Call backend to initiate payment
-      const res = await axios.post(
-        endpoint,
-        {
-          item_type: itemType,
-          item_id: itemId,
-          amount: amount,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      // Call backend to initiate payment (include optional meta)
+      const payload: any = {
+        item_type: itemType,
+        item_id: itemId,
+        amount: amount,
+      }
+      if (meta) {
+        Object.assign(payload, meta)
+      }
+      const res = await axios.post(endpoint, payload, { headers: { Authorization: `Bearer ${token}` } })
 
       const { authorization_url, link, reference } = res.data
 
@@ -182,7 +184,7 @@ export default function PaymentCheckout({
       <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <p className="text-gray-600 text-sm">You're about to purchase:</p>
+            <p className="text-gray-600 text-sm">{itemType === 'activation' ? 'Activate access for:' : 'You\'re about to purchase:'}</p>
             <h3 className="text-xl font-bold text-gray-900 mt-1">{itemTitle}</h3>
           </div>
         </div>
@@ -192,14 +194,23 @@ export default function PaymentCheckout({
             <span className="text-gray-600">Subtotal:</span>
             <span className="font-semibold text-gray-900">₦{amount.toLocaleString()}</span>
           </div>
-          <div className="text-sm text-gray-500 flex justify-between mb-4">
-            <span>Platform fee (5%):</span>
-            <span>₦{(amount * 0.05).toLocaleString()}</span>
-          </div>
-          <div className="text-sm text-gray-500 flex justify-between pb-4 border-b border-green-200 mb-4">
-            <span>Creator gets (95%):</span>
-            <span className="font-medium text-green-700">₦{(amount * 0.95).toLocaleString()}</span>
-          </div>
+          {itemType === 'activation' ? (
+            <div className="text-sm text-gray-500 flex justify-between mb-4">
+              <span>Platform receives:</span>
+              <span>₦{amount.toLocaleString()}</span>
+            </div>
+          ) : (
+            <>
+              <div className="text-sm text-gray-500 flex justify-between mb-4">
+                <span>Platform fee (5%):</span>
+                <span>₦{(amount * 0.05).toLocaleString()}</span>
+              </div>
+              <div className="text-sm text-gray-500 flex justify-between pb-4 border-b border-green-200 mb-4">
+                <span>Creator gets (95%):</span>
+                <span className="font-medium text-green-700">₦{(amount * 0.95).toLocaleString()}</span>
+              </div>
+            </>
+          )}
           <div className="flex justify-between">
             <span className="text-lg font-bold text-gray-900">Total:</span>
             <span className="text-2xl font-bold text-green-600">₦{amount.toLocaleString()}</span>

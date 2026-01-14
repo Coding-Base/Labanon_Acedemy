@@ -91,6 +91,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [payments, setPayments] = useState<any[]>([])
   const [paymentStats, setPaymentStats] = useState<any>(null)
   const [paymentsLoading, setPaymentsLoading] = useState(false)
+  const [activationFees, setActivationFees] = useState<any[]>([])
+  const [activationLoading, setActivationLoading] = useState(false)
+  const [showActivationForm, setShowActivationForm] = useState(false)
+  const [activationForm, setActivationForm] = useState({ id: null as number | null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' })
+  const [activationMessage, setActivationMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [blogs, setBlogs] = useState<any[]>([])
   const [blogsLoading, setBlogsLoading] = useState(false)
@@ -315,6 +320,69 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       })
     } finally {
       setPaymentsLoading(false)
+      // also refresh activation fees for master admin view
+      try { loadActivationFees() } catch (e) { /* ignore */ }
+    }
+  }
+
+  async function loadActivationFees() {
+    setActivationLoading(true)
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/courses/payments/admin/activation-fees/`, { headers: { Authorization: `Bearer ${token}` } })
+      const data = res.data?.results || res.data || []
+      setActivationFees(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Failed to load activation fees', err)
+      setActivationFees([])
+    } finally {
+      setActivationLoading(false)
+    }
+  }
+
+  async function saveActivationFee() {
+    // basic validation
+    if (!activationForm.amount || Number(activationForm.amount) <= 0) {
+      setActivationMessage({ type: 'error', text: 'Amount must be greater than 0' })
+      return
+    }
+    try {
+      const token = localStorage.getItem('access')
+      const payload: any = {
+        type: activationForm.type,
+        exam_identifier: activationForm.exam_identifier || null,
+        subject_id: activationForm.subject_id || null,
+        currency: activationForm.currency,
+        amount: Number(activationForm.amount)
+      }
+      // Backend supports POST for create and update (include id to update)
+      if (activationForm.id) payload.id = activationForm.id
+      await axios.post(`${API_BASE}/courses/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+      setActivationMessage({ type: 'success', text: activationForm.id ? 'Activation fee updated' : 'Activation fee created' })
+      setShowActivationForm(false)
+      setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' })
+      loadActivationFees()
+      setTimeout(() => setActivationMessage(null), 3000)
+    } catch (err: any) {
+      console.error('Failed to save activation fee', err)
+      setActivationMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to save activation fee' })
+    }
+  }
+
+  async function deleteActivationFee(id: number) {
+    if (!confirm('Delete this activation fee?')) return
+    try {
+      const token = localStorage.getItem('access')
+      // The admin API does not expose DELETE; set amount to 0 to disable
+      const fee = activationFees.find(f => f.id === id)
+      const payload = { id, type: fee?.type, exam_identifier: fee?.exam_identifier || null, subject_id: fee?.subject_id || null, currency: fee?.currency || 'NGN', amount: 0 }
+      await axios.post(`${API_BASE}/courses/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+      setActivationMessage({ type: 'success', text: 'Activation fee disabled (amount set to 0)' })
+      loadActivationFees()
+      setTimeout(() => setActivationMessage(null), 3000)
+    } catch (err) {
+      console.error('Failed to delete activation fee', err)
+      setActivationMessage({ type: 'error', text: 'Failed to delete activation fee' })
     }
   }
 
@@ -1774,6 +1842,105 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     )}
                   </div>
                 )}
+
+                        {/* Activation Fees Management */}
+                        <div className="mt-8">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Activation Fees</h3>
+                            <div className="flex items-center space-x-3">
+                              <button onClick={() => { setShowActivationForm(true); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' }) }} className="px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:shadow-lg">+ New Fee</button>
+                            </div>
+                          </div>
+
+                          {activationMessage && (
+                            <div className={`p-3 rounded-lg mb-4 ${activationMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                              {activationMessage.text}
+                            </div>
+                          )}
+
+                          {showActivationForm && (
+                            <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                  <select value={activationForm.type} onChange={(e) => setActivationForm({ ...activationForm, type: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
+                                    <option value="exam">Exam</option>
+                                    <option value="interview_subject">Interview Subject</option>
+                                    <option value="account">Tutor/Institution Account</option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                                  <input value={activationForm.currency} onChange={(e) => setActivationForm({ ...activationForm, currency: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Exam Identifier (slug or id)</label>
+                                  <input value={activationForm.exam_identifier} onChange={(e) => setActivationForm({ ...activationForm, exam_identifier: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject ID (optional)</label>
+                                  <input value={activationForm.subject_id} onChange={(e) => setActivationForm({ ...activationForm, subject_id: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                                  <input value={activationForm.amount} onChange={(e) => setActivationForm({ ...activationForm, amount: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
+                                </div>
+
+                                <div className="flex items-end justify-end">
+                                  <div className="flex space-x-2">
+                                    <button onClick={() => { setShowActivationForm(false); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' }) }} className="px-4 py-2 bg-gray-100 rounded-lg">Cancel</button>
+                                    <button onClick={() => saveActivationFee()} className="px-4 py-2 bg-green-600 text-white rounded-lg">Save</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="bg-white rounded-xl p-6 border border-gray-200">
+                            <h4 className="text-md font-semibold text-gray-900 mb-4">Configured Activation Fees</h4>
+                            {activationLoading ? (
+                              <div className="py-8 text-center text-gray-500">Loading activation fees...</div>
+                            ) : activationFees.length === 0 ? (
+                              <div className="py-8 text-center text-gray-500">No activation fees configured</div>
+                            ) : (
+                              <div className="overflow-x-auto">
+                                <table className="w-full">
+                                  <thead>
+                                    <tr className="border-b border-gray-200">
+                                      <th className="text-left px-4 py-2 text-sm font-semibold">ID</th>
+                                      <th className="text-left px-4 py-2 text-sm font-semibold">Type</th>
+                                      <th className="text-left px-4 py-2 text-sm font-semibold">Exam / Subject</th>
+                                      <th className="text-left px-4 py-2 text-sm font-semibold">Currency</th>
+                                      <th className="text-left px-4 py-2 text-sm font-semibold">Amount</th>
+                                      <th className="text-left px-4 py-2 text-sm font-semibold">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {activationFees.map((f: any) => (
+                                      <tr key={f.id} className="border-b border-gray-100 hover:bg-gray-50">
+                                        <td className="px-4 py-3 text-sm text-gray-900">#{f.id}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{f.type}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{f.exam_identifier || f.subject_id || '—'}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{f.currency}</td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">{parseFloat(f.amount).toFixed(2)}</td>
+                                        <td className="px-4 py-3 text-sm">
+                                          <div className="flex items-center space-x-2">
+                                            <button onClick={() => { setActivationForm({ id: f.id, type: f.type, exam_identifier: f.exam_identifier || '', subject_id: f.subject_id || '', currency: f.currency || 'NGN', amount: String(f.amount) }); setShowActivationForm(true) }} className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg">Edit</button>
+                                            <button onClick={() => deleteActivationFee(f.id)} className="px-3 py-1 bg-red-100 text-red-700 rounded-lg">Delete</button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
                 {tab === 'payments' && (
                   <div>

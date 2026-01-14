@@ -1,208 +1,147 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   BookOpen,
   Users,
   GraduationCap,
   Building2,
-  CheckCircle,
+  Award,
+  BarChart3,
+  Shield,
+  MessageSquare,
+  Zap,
+  Search,
   ArrowRight,
   ChevronDown,
-  ChevronUp,
-  Zap,
-  Shield,
-  BarChart3,
-  MessageSquare,
-  Search,
-  Award
+  ChevronUp
 } from 'lucide-react'
 
-const Documentation = () => {
+type Step = {
+  step: number
+  title: string
+  description: string
+}
+
+type Section = {
+  id: string
+  title: string
+  icon: React.ComponentType<any>
+  colorKey: 'green' | 'purple' | 'emerald'
+  content: Step[]
+}
+
+const colorMap: Record<
+  Section['colorKey'],
+  { gradient: string; borderColor: string }
+> = {
+  // kept purple mapping in case you want it later, but we will use green for tutor now
+  green: { gradient: 'from-green-500 to-teal-500', borderColor: 'border-green-500' },
+  purple: { gradient: 'from-purple-500 to-pink-500', borderColor: 'border-pink-500' },
+  emerald: { gradient: 'from-emerald-500 to-green-600', borderColor: 'border-emerald-500' }
+}
+
+const Documentation: React.FC = () => {
+  const navigate = useNavigate()
   const [expandedSection, setExpandedSection] = useState<string | null>('student')
 
-  const sections = [
+  const sections: Section[] = [
     {
       id: 'student',
       title: 'For Students',
       icon: GraduationCap,
-      color: 'from-green-500 to-teal-500',
+      colorKey: 'green',
       content: [
-        {
-          step: 1,
-          title: 'Create Your Account',
-          description: 'Sign up on Lebanon Academy with your email address. Verify your email and complete your profile with your name, institution, and learning goals.'
-        },
-        {
-          step: 2,
-          title: 'Browse Courses & Exams',
-          description: 'Explore our comprehensive catalog of courses and CBT exams. Use filters to find courses that match your interests and skill level.'
-        },
-        {
-          step: 3,
-          title: 'Enroll in Courses',
-          description: 'Click "Enroll" to join a course. Payment may be required for premium courses. Access course materials immediately after enrollment.'
-        },
-        {
-          step: 4,
-          title: 'Access Learning Materials',
-          description: 'View video lectures, download notes, and read course content. Track your progress and access materials anytime.'
-        },
-        {
-          step: 5,
-          title: 'Take Practice Exams',
-          description: 'Complete CBT practice exams to test your knowledge. Review detailed answers and track your performance metrics.'
-        },
-        {
-          step: 6,
-          title: 'Get Your Certificate',
-          description: 'Upon course completion, download your digital certificate. Share your achievements on your professional profiles.'
-        }
+        { step: 1, title: 'Create Your Account', description: 'Sign up on Lebanon Academy with your email address. Verify your email and complete your profile with your name, institution, and learning goals.' },
+        { step: 2, title: 'Explore the Dashboard', description: 'Once logged in you’ll see tabs like My Courses, Schedule, CBT Exams, and Profile. Use the sidebar to navigate quickly.' },
+        { step: 3, title: 'Browse & Enroll in Courses', description: 'Open My Courses or Marketplace to browse available courses. Click "Enroll", make payment for premium courses and gain immediate access to materials.' },
+        { step: 4, title: 'Course Player & Progress', description: 'Play video lessons, read notes and complete modules. Your progress is saved automatically; complete the course to earn a certificate.' },
+        { step: 5, title: 'CBT Exams (JAMB, NECO, WAEC, etc.)', description: 'Go to the CBT Exams tab to select an exam. Some exams require a one-time unlock payment. After unlocking you can specify the number of questions and time limit, then start the exam.' },
+        { step: 6, title: 'Review & Certificates', description: 'After completing courses or CBTs you can review answers, see performance metrics, and download or share certificates from your profile.' }
       ]
     },
     {
       id: 'tutor',
       title: 'For Tutors',
       icon: Users,
-      color: 'from-purple-500 to-pink-500',
+      // switched tutor from purple -> green so the UI is consistent
+      colorKey: 'green',
       content: [
-        {
-          step: 1,
-          title: 'Register as a Tutor',
-          description: 'Sign up as a tutor and complete your profile with qualifications, expertise, and teaching experience.'
-        },
-        {
-          step: 2,
-          title: 'Create Courses',
-          description: 'Click "Create Course" and fill in course details: title, description, level, and pricing. Add your course cover image.'
-        },
-        {
-          step: 3,
-          title: 'Upload Video Content',
-          description: 'Record or upload video lectures. Support for MP4, WebM formats. Add chapters and organize content into modules.'
-        },
-        {
-          step: 4,
-          title: 'Add Course Materials',
-          description: 'Attach PDFs, documents, and resources. Create lecture notes and study materials for your students.'
-        },
-        {
-          step: 5,
-          title: 'Manage CBT Exams',
-          description: 'Create multiple-choice question banks. Organize questions by topic and difficulty level. Set time limits for exams.'
-        },
-        {
-          step: 6,
-          title: 'Track Student Progress',
-          description: 'View student enrollment, completion rates, and exam scores. Provide feedback and monitor learning outcomes.'
-        },
-        {
-          step: 7,
-          title: 'Earn Revenue',
-          description: 'Get paid based on course sales and enrollment. Withdraw earnings monthly through secure payment channels.'
-        }
+        { step: 1, title: 'Register & Unlock Tutor Account', description: 'Sign up and submit the required verification to unlock tutor features (qualification, ID, portfolio). Admin approves and you gain access to tutor tools.' },
+        { step: 2, title: 'Create Courses (Modules & Lessons)', description: 'Use Create Course to add title, description, price, requirements, and course cover. Structure content by modules; each module holds lessons (video, text, attachments).' },
+        { step: 3, title: 'Upload & Organize Video Content', description: 'Upload MP4/WebM or link streaming sources. Add chapters, timestamps and supplemental files per lesson for a polished learning experience.' },
+        { step: 4, title: 'Manage Courses & Publishing', description: 'From Manage Course you can edit drafts, publish, unpublish, or remove courses. You can also view enrollment counts and edit pricing.' },
+        { step: 5, title: 'Payments, Payouts & Subaccounts', description: 'Track sales and earnings on the Payments tab. Configure payout preferences and create subaccounts (if supported) to split revenue automatically.' },
+        { step: 6, title: 'Leaderboard & Performance', description: 'See course rankings and your position on the tutor leaderboard (bestseller, top-rated). Use analytics to optimize content and pricing.' },
+        { step: 7, title: 'Support & Refunds', description: 'Access tutor support, respond to student queries, and view refund/claim workflows from the dashboard.' }
       ]
     },
     {
       id: 'institution',
       title: 'For Institutions',
       icon: Building2,
-      color: 'from-green-500 to-emerald-500',
+      colorKey: 'emerald',
       content: [
-        {
-          step: 1,
-          title: 'Create Institutional Account',
-          description: 'Register your institution on Lebanon Academy. Verify your organization and complete administrative details.'
-        },
-        {
-          step: 2,
-          title: 'Set Up Your Workspace',
-          description: 'Configure your institution dashboard. Add institutional branding and customize your learning portal.'
-        },
-        {
-          step: 3,
-          title: 'Invite Instructors',
-          description: 'Add instructors to your institution. Assign roles and manage permissions for different team members.'
-        },
-        {
-          step: 4,
-          title: 'Bulk Upload Courses',
-          description: 'Import existing courses in bulk. Use our CSV template to quickly populate course catalog.'
-        },
-        {
-          step: 5,
-          title: 'Manage Batch CBT Exams',
-          description: 'Administer exams to student batches. Set exam schedules, configure settings, and manage question banks.'
-        },
-        {
-          step: 6,
-          title: 'Monitor Analytics',
-          description: 'View comprehensive dashboards with student performance, course completion rates, and revenue reports.'
-        },
-        {
-          step: 7,
-          title: 'Issue Certificates',
-          description: 'Automatically generate and send certificates to students upon course completion.'
-        }
+        { step: 1, title: 'Create Institutional Account', description: 'Register your institution on Lebanon Academy. Verify your organization and complete administrative details.' },
+        { step: 2, title: 'Set Up Your Workspace', description: 'Configure your institution dashboard. Add branding and establish admin roles for staff and instructors.' },
+        { step: 3, title: 'Invite Instructors', description: 'Add and invite instructors, assign roles and permissions, and group them by department or course set.' },
+        { step: 4, title: 'Bulk Upload Courses', description: 'Import course catalogs using our CSV template to populate your learning portal quickly.' },
+        { step: 5, title: 'Manage Batch CBT Exams', description: 'Schedule CBT exams for batches, configure timings, and assign question banks to specific cohorts.' },
+        { step: 6, title: 'Monitor Analytics', description: 'Access dashboards for student performance, completion rates, course engagement, and revenue reports.' },
+        { step: 7, title: 'Issue Certificates', description: 'Automatically generate and email certificates to students upon successful course completion.' }
       ]
     }
   ]
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  }
+  const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }
+  const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      {/* Top Navigation */}
+      <header className="bg-white border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} aria-label="Go back" className="px-3 py-2 rounded-md hover:bg-slate-100">← Back</button>
+            <nav className="hidden sm:flex items-center gap-3">
+              <Link to="/" className="text-slate-700 hover:text-green-600">Home</Link>
+              <Link to="/about" className="text-slate-700 hover:text-green-600">About</Link>
+              <Link to="/privacy" className="text-slate-700 hover:text-green-600">Privacy</Link>
+            </nav>
+          </div>
+          <div>
+            <Link to="/register" className="bg-green-600 text-white px-3 py-2 rounded-md shadow-sm hover:opacity-90">Sign up</Link>
+          </div>
+        </div>
+      </header>
+
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="flex items-center gap-3 mb-4">
               <BookOpen className="w-10 h-10" />
               <h1 className="text-4xl md:text-5xl font-bold">Documentation</h1>
             </div>
-            <p className="text-lg text-green-100 max-w-2xl">
-              Complete setup guides and instructions for students, tutors, and institutions to get started on Lebanon Academy.
-            </p>
+            <p className="text-lg text-green-100 max-w-2xl">Complete setup guides and instructions for students, tutors, and institutions to get started on Lebanon Academy.</p>
           </motion.div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-16">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-6"
-        >
+      <main className="max-w-6xl mx-auto px-4 py-16">
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
           {sections.map((section) => {
             const Icon = section.icon
             const isExpanded = expandedSection === section.id
+            const color = colorMap[section.colorKey]
 
             return (
-              <motion.div
-                key={section.id}
-                variants={itemVariants}
-                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-              >
-                {/* Section Header */}
+              <motion.div key={section.id} variants={itemVariants} className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <button
                   onClick={() => setExpandedSection(isExpanded ? null : section.id)}
-                  className={`w-full p-6 bg-gradient-to-r ${section.color} text-white flex items-center justify-between hover:opacity-90 transition-opacity`}
+                  aria-expanded={isExpanded}
+                  className={`w-full p-6 bg-gradient-to-r ${color.gradient} text-white flex items-center justify-between`}
                 >
                   <div className="flex items-center gap-4">
                     <Icon className="w-8 h-8" />
@@ -210,62 +149,37 @@ const Documentation = () => {
                       <h2 className="text-2xl font-bold">{section.title}</h2>
                     </div>
                   </div>
-                  {isExpanded ? (
-                    <ChevronUp className="w-6 h-6" />
-                  ) : (
-                    <ChevronDown className="w-6 h-6" />
-                  )}
+                  {isExpanded ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
                 </button>
 
-                {/* Section Content */}
-                <motion.div
-                  initial={false}
-                  animate={{ height: isExpanded ? 'auto' : 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <div className="p-8 bg-slate-50">
-                    <motion.div
-                      variants={containerVariants}
-                      initial="hidden"
-                      animate={isExpanded ? 'visible' : 'hidden'}
-                      className="grid md:grid-cols-2 gap-6"
-                    >
-                      {section.content.map((item, index) => (
-                        <motion.div
-                          key={index}
-                          variants={itemVariants}
-                          className="bg-white p-6 rounded-lg border-l-4 border-gradient-to-r"
-                          style={{
-                            borderLeftColor: section.color.split(' ')[1]
-                          }}
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className={`bg-gradient-to-r ${section.color} text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm`}>
-                              {item.step}
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-lg mb-2 text-slate-900">{item.title}</h3>
-                              <p className="text-slate-600 text-sm leading-relaxed">{item.description}</p>
-                            </div>
-                          </div>
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div key="content" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28 }} className="overflow-hidden">
+                      <div className="p-8 bg-slate-50">
+                        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid md:grid-cols-2 gap-6">
+                          {section.content.map((item) => (
+                            <motion.div key={item.step} variants={itemVariants} className={`bg-white p-6 rounded-lg border-l-4 ${color.borderColor} shadow-sm`}>
+                              <div className="flex items-start gap-4">
+                                <div className={`rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm bg-gradient-to-r ${color.gradient} text-white`}>{item.step}</div>
+                                <div>
+                                  <h3 className="font-bold text-lg mb-2 text-slate-900">{item.title}</h3>
+                                  <p className="text-slate-600 text-sm leading-relaxed">{item.description}</p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
                         </motion.div>
-                      ))}
+                      </div>
                     </motion.div>
-                  </div>
-                </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )
           })}
         </motion.div>
 
         {/* Key Features */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mt-16 bg-gradient-to-r from-green-600 to-teal-600 rounded-xl p-8 text-white">
-        `{'>'}`
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mt-16 bg-gradient-to-r from-green-600 to-teal-600 rounded-xl p-8 text-white">
           <h3 className="text-2xl font-bold mb-6">Platform Features</h3>
           <div className="grid md:grid-cols-2 gap-4">
             {[
@@ -285,24 +199,17 @@ const Documentation = () => {
               )
             })}
           </div>
-        </motion.div>
+        </motion.section>
 
         {/* Contact Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="mt-12 bg-white rounded-xl p-8 border-2 border-slate-200 text-center"
-        >
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }} className="mt-12 bg-white rounded-xl p-8 border-2 border-slate-200 text-center">
           <h3 className="text-2xl font-bold mb-4 text-slate-900">Need Help?</h3>
-          <p className="text-slate-600 mb-6">
-            Can't find what you're looking for? Our support team is here to help.
-          </p>
-          <button className="bg-gradient-to-r from-green-600 to-teal-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2 mx-auto">
+          <p className="text-slate-600 mb-6">Can't find what you're looking for? Our support team is here to help.</p>
+          <Link to="/contact" aria-label="Contact support" className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-teal-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
             Contact Support <ArrowRight className="w-4 h-4" />
-          </button>
-        </motion.div>
-      </div>
+          </Link>
+        </motion.section>
+      </main>
     </div>
   )
 }

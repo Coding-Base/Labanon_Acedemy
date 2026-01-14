@@ -39,17 +39,59 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null)
 
   const handleSelectExam = (exam: Exam) => {
+    // Check if exam is globally unlocked for this user
     setSelectedExam(exam)
-    setShowExamTypeModal(false)
-    setShowSubjectModal(true)
     setError(null)
+    (async () => {
+      try {
+        const token = localStorage.getItem('access')
+        if (!token) { window.location.href = '/login'; return }
+        const res = await fetch(`${API_BASE}/payments/activation-status/?exam=${exam.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        if (res.ok && data.unlocked) {
+          setShowExamTypeModal(false)
+          setShowSubjectModal(true)
+        } else {
+          // Redirect to activation/checkout page
+          const qs = new URLSearchParams({ type: 'exam', exam_id: String(exam.id), exam_title: exam.title })
+          navigate(`/activate?${qs.toString()}`)
+        }
+      } catch (err) {
+        // If check fails, fall back to subject modal but show error
+        console.error('Activation check failed', err)
+        setShowExamTypeModal(false)
+        setShowSubjectModal(true)
+      }
+    })()
   }
 
   const handleSelectSubject = (subject: Subject) => {
+    // For interview-style exams we check subject-level activation
     setSelectedSubject(subject)
-    setShowSubjectModal(false)
-    setShowSettingsModal(true)
     setError(null)
+    (async () => {
+      try {
+        const token = localStorage.getItem('access')
+        if (!token) { window.location.href = '/login'; return }
+        const res = await fetch(`${API_BASE}/payments/activation-status/?exam=${selectedExam?.id}&subject=${subject.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        if (res.ok && data.unlocked) {
+          setShowSubjectModal(false)
+          setShowSettingsModal(true)
+        } else {
+          const qs = new URLSearchParams({ type: 'interview', exam_id: String(selectedExam?.id || ''), subject_id: String(subject.id), subject_name: subject.name })
+          navigate(`/activate?${qs.toString()}`)
+        }
+      } catch (err) {
+        console.error('Activation check failed', err)
+        setShowSubjectModal(false)
+        setShowSettingsModal(true)
+      }
+    })()
   }
 
   const handleStartExam = async (numQuestions: number, timeLimitMinutes: number) => {

@@ -24,6 +24,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 
+import ContactForm from '../components/ContactForm';
+
 import labanonLogo from './labanonlogo.png';
 import learningImage from './learningup.jpeg'; 
 import flyerImage from './lebanonflyer.jpg'; // Imported the flyer image
@@ -37,9 +39,9 @@ const IMAGES = {
   webDev: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=2072&q=80',
   math: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=2070&q=80',
   dataScience: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=2070&q=80',
-  student1: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?auto=format&fit=crop&w=1974&q=80',
-  student2: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=2070&q=80',
-  student3: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=2070&q=80',
+  student1: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHVuaXZlcnNpdHklMjBzdHVkZW50fGVufDB8fDB8fHww',
+  student2: 'https://images.unsplash.com/photo-1612214495858-4f32b96155a7?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8YmxhY2slMjBzdHVkZW50fGVufDB8fDB8fHww',
+  student3: 'https://img.freepik.com/free-photo/graduation-concept-with-portrait-happy-man_23-2148201881.jpg?semt=ais_hybrid&w=740&q=80',
   tutor: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=2070&q=80'
 };
 
@@ -262,6 +264,35 @@ export default function Home() {
     { value: '1K+', label: 'Courses Available' },
     { value: '98%', label: 'Success Rate' }
   ];
+
+  // --- HERO SLIDER CONFIGURATION ---
+  const slides = [
+    { src: IMAGES.hero, caption: 'Students learning together — Lebanon Academy' },
+    { src: IMAGES.student1, caption: 'Focused students collaborating on coursework' },
+    { src: IMAGES.student2, caption: 'Interactive classroom discussion and debate' },
+    { src: IMAGES.student3, caption: 'Peer study group improving skills together' },
+    { src: IMAGES.tutor, caption: 'Experienced tutors guiding hands-on practice' },
+    { src: IMAGES.webDev, caption: 'Project-based practical learning sessions' },
+    { src: IMAGES.math, caption: 'Exam practice and concept mastery' },
+    { src: IMAGES.dataScience, caption: 'Applied data projects and real-world problems' },
+    { src: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=2000&q=80', caption: 'Students collaborating on campus projects' },
+    { src: flyerImage, caption: 'Lebanon Academy — community, campus, and success' }
+  ];
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  // autoplay
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => {
+      setCurrentSlide(s => (s + 1) % slides.length);
+    }, 5500);
+    return () => clearInterval(t);
+  }, [paused]);
+
+  const nextSlide = () => setCurrentSlide(s => (s + 1) % slides.length);
+  const prevSlide = () => setCurrentSlide(s => (s - 1 + slides.length) % slides.length);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 overflow-x-hidden">
@@ -490,19 +521,50 @@ export default function Home() {
               <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-teal-600/20 backdrop-blur-sm " />
                 <div className="relative w-full h-full hero-image-container">
-                  {heroImageError ? (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-600 to-teal-600">
-                      <div className="text-center p-8">
-                        <div className="text-white text-2xl font-bold">Lebanon Academy</div>
-                        <div className="text-white/80">Future Ready Learning</div>
-                      </div>
+                  {/* Slider: animated, fullscreen-cover images with caption, dots, and controls */}
+                  <div
+                    className="absolute inset-0"
+                    onMouseEnter={() => setPaused(true)}
+                    onMouseLeave={() => setPaused(false)}
+                  >
+                    {slides.map((slide, idx) => (
+                      <AnimatePresence key={slide.src}>
+                        {currentSlide === idx && (
+                          <motion.img
+                            key={slide.src}
+                            src={slide.src}
+                            alt={slide.caption}
+                            initial={{ opacity: 0, scale: 1.03 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            transition={{ duration: 0.9, ease: 'easeOut' }}
+                            className="w-full h-full object-cover absolute inset-0"
+                            loading="eager"
+                          />
+                        )}
+                      </AnimatePresence>
+                    ))}
+
+                    {/* Dark gradient overlay for legibility */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+
+                    {/* No captions: clean visual hero */}
+
+                    {/* Controls: Prev / Next */}
+                    <button aria-label="Previous" onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full shadow backdrop-blur">
+                      <ChevronRight className="w-5 h-5 transform rotate-180" />
+                    </button>
+                    <button aria-label="Next" onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full shadow backdrop-blur">
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+
+                    {/* Dots */}
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-6 flex gap-2">
+                      {slides.map((_, i) => (
+                        <button key={i} onClick={() => setCurrentSlide(i)} className={`w-3 h-3 rounded-full ${i === currentSlide ? 'bg-white' : 'bg-white/50'}`} aria-label={`Go to slide ${i+1}`} />
+                      ))}
                     </div>
-                  ) : (
-                    <>
-                      <img src={IMAGES.hero} alt="Students learning together" className={`w-full h-full object-cover transition-opacity duration-500`} onLoad={handleHeroImageLoad} onError={handleHeroImageError} loading="eager" />
-                      {!heroImageLoaded && !heroImageError && <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-teal-500/20 animate-pulse" />}
-                    </>
-                  )}
+                  </div>
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                 
@@ -720,6 +782,13 @@ export default function Home() {
       </motion.section>
 
       {/* Footer */}
+      {/* Contact form section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ContactForm />
+        </div>
+      </section>
+
       <footer className="bg-black text-white pt-16 pb-8">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">

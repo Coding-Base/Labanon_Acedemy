@@ -108,6 +108,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   const initialFromState = (location.state as any)?.summary;
   const [summary, setSummary] = useState<DashboardSummary | null>(props.summary ?? initialFromState ?? null);
   const [loadingSummary, setLoadingSummary] = useState(!summary);
+  const [accountLocked, setAccountLocked] = useState(false);
 
   // Calculated Real-Time Stats
   const [calculatedEarnings, setCalculatedEarnings] = useState(0);
@@ -181,6 +182,13 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         const userId = userRes.data.id;
         
         setSummary({ ...currentSummary, id: userId });
+        // account unlocked check
+        try {
+          const isUnlocked = userRes.data?.is_unlocked === true || userRes.data?.is_unlocked === 'true';
+          setAccountLocked(!isUnlocked);
+        } catch (e) {
+          setAccountLocked(false);
+        }
 
         // Parse Flutterwave Data
         if (fwRes.data) {
@@ -538,7 +546,19 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   if (!summary) return <div className="min-h-screen flex items-center justify-center">Unable to load dashboard.</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 relative">
+      {accountLocked && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black opacity-40"></div>
+          <div className="bg-white rounded-lg shadow-lg p-6 z-50 max-w-md mx-4">
+            <h3 className="text-lg font-bold mb-2">Account Locked</h3>
+            <p className="text-sm text-gray-600 mb-4">Your tutor account is currently locked. Please activate your account to access all features.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => navigate(`/activate?type=account&return_to=${encodeURIComponent('/tutor/overview')}`)} className="px-4 py-2 bg-green-600 text-white rounded">Unlock Account</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Top Header */}
       <motion.header initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -566,7 +586,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         </div>
       </motion.header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={accountLocked ? { filter: 'blur(4px)', pointerEvents: 'none' } : {}}>
         <div className="flex flex-col lg:flex-row gap-6">
           <motion.aside initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24">

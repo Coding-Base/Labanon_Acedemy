@@ -20,6 +20,7 @@ export default function ActivateCheckout() {
   const type = query.get('type') || 'exam'
   const exam_id = query.get('exam_id')
   const subject_id = query.get('subject_id')
+  const return_to_q = query.get('return_to')
 
   useEffect(() => {
     let mounted = true
@@ -68,6 +69,8 @@ export default function ActivateCheckout() {
   const meta: any = { activation_type: type }
   if (exam_id) meta.exam_id = exam_id
   if (subject_id) meta.subject_id = subject_id
+  const defaultReturn = `/student/cbt${exam_id ? `?exam_id=${encodeURIComponent(exam_id)}` : ''}${subject_id ? `${exam_id ? '&' : '?'}subject_id=${encodeURIComponent(subject_id)}` : ''}`
+  const returnTo = return_to_q ? decodeURIComponent(return_to_q) : defaultReturn
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -80,8 +83,9 @@ export default function ActivateCheckout() {
         amount={amount}
         itemTitle={title}
         meta={meta}
+        returnTo={returnTo}
         onSuccess={() => {
-          navigate('/student/cbt')
+          navigate(returnTo)
         }}
       />
     </div>

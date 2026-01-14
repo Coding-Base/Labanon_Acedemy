@@ -87,6 +87,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   const initialFromState = (location.state as any)?.summary;
   const [summary, setSummary] = useState<DashboardSummary | null>(props.summary ?? initialFromState ?? null);
   const [loadingSummary, setLoadingSummary] = useState(!summary);
+  const [accountLocked, setAccountLocked] = useState(false);
   
   // Institution Identity
   const [institutionId, setInstitutionId] = useState<number | null>(null);
@@ -161,6 +162,13 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
         // 2. Fetch Basic Dashboard Summary
         const summaryRes = await api.get('/dashboard/');
         if (mounted) setSummary(summaryRes.data);
+        // account unlocked check
+        try {
+          const isUnlocked = userRes.data?.is_unlocked === true || userRes.data?.is_unlocked === 'true';
+          setAccountLocked(!isUnlocked);
+        } catch (e) {
+          setAccountLocked(false);
+        }
 
         // 3. Fetch Institution Profile
         let currentInstId = null;
@@ -278,7 +286,19 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gray-50 font-sans relative">
+      {accountLocked && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black opacity-40"></div>
+          <div className="bg-white rounded-lg shadow-lg p-6 z-50 max-w-md mx-4">
+            <h3 className="text-lg font-bold mb-2">Account Locked</h3>
+            <p className="text-sm text-gray-600 mb-4">Your institution account is locked. Please activate your account to access the dashboard.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => navigate(`/activate?type=account&return_to=${encodeURIComponent('/institution/overview')}`)} className="px-4 py-2 bg-green-600 text-white rounded">Unlock Account</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
@@ -327,7 +347,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
         </div>
       </motion.header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={accountLocked ? { filter: 'blur(4px)', pointerEvents: 'none' } : {}}>
         <div className="flex flex-col lg:flex-row gap-8">
           
           {/* Sidebar - Desktop */}

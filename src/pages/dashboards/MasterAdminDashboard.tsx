@@ -329,7 +329,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     setActivationLoading(true)
     try {
       const token = localStorage.getItem('access')
-      const res = await axios.get(`${API_BASE}/courses/payments/admin/activation-fees/`, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await axios.get(`${API_BASE}/payments/admin/activation-fees/`, { headers: { Authorization: `Bearer ${token}` } })
       const data = res.data?.results || res.data || []
       setActivationFees(Array.isArray(data) ? data : [])
     } catch (err) {
@@ -357,7 +357,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       }
       // Backend supports POST for create and update (include id to update)
       if (activationForm.id) payload.id = activationForm.id
-      await axios.post(`${API_BASE}/courses/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+      await axios.post(`${API_BASE}/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
       setActivationMessage({ type: 'success', text: activationForm.id ? 'Activation fee updated' : 'Activation fee created' })
       setShowActivationForm(false)
       setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' })
@@ -373,11 +373,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     if (!confirm('Delete this activation fee?')) return
     try {
       const token = localStorage.getItem('access')
-      // The admin API does not expose DELETE; set amount to 0 to disable
-      const fee = activationFees.find(f => f.id === id)
-      const payload = { id, type: fee?.type, exam_identifier: fee?.exam_identifier || null, subject_id: fee?.subject_id || null, currency: fee?.currency || 'NGN', amount: 0 }
-      await axios.post(`${API_BASE}/courses/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
-      setActivationMessage({ type: 'success', text: 'Activation fee disabled (amount set to 0)' })
+      // Call DELETE endpoint to remove the fee
+      await axios.delete(`${API_BASE}/payments/admin/activation-fees/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+      setActivationMessage({ type: 'success', text: 'Activation fee deleted' })
       loadActivationFees()
       setTimeout(() => setActivationMessage(null), 3000)
     } catch (err) {
@@ -1843,12 +1841,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   </div>
                 )}
 
-                        {/* Activation Fees Management */}
-                        <div className="mt-8">
+                        {/* Activation Fees Management - only show on Exams & Subjects tab */}
+                        {tab === 'exams' && (
+                          <div className="mt-8">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-900">Activation Fees</h3>
                             <div className="flex items-center space-x-3">
-                              <button onClick={() => { setShowActivationForm(true); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' }) }} className="px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:shadow-lg">+ New Fee</button>
+                              <button onClick={() => { setShowActivationForm(true); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' }); if (examsManagement.length === 0) loadExamsManagement() }} className="px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:shadow-lg">+ New Fee</button>
                             </div>
                           </div>
 
@@ -1875,15 +1874,29 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   <input value={activationForm.currency} onChange={(e) => setActivationForm({ ...activationForm, currency: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
                                 </div>
 
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Exam Identifier (slug or id)</label>
-                                  <input value={activationForm.exam_identifier} onChange={(e) => setActivationForm({ ...activationForm, exam_identifier: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
-                                </div>
+                                {(activationForm.type === 'exam' || activationForm.type === 'interview_subject') && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Exam</label>
+                                    <select value={activationForm.exam_identifier} onChange={(e) => { setActivationForm({ ...activationForm, exam_identifier: e.target.value }); if (activationForm.type === 'interview_subject') loadSubjectsForExam(Number(e.target.value)) }} className="w-full px-3 py-2 border rounded-lg">
+                                      <option value="">Choose an exam...</option>
+                                      {examsManagement.map((ex) => (
+                                        <option key={ex.id} value={ex.id}>{ex.title}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
 
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject ID (optional)</label>
-                                  <input value={activationForm.subject_id} onChange={(e) => setActivationForm({ ...activationForm, subject_id: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
-                                </div>
+                                {activationForm.type === 'interview_subject' && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Subject</label>
+                                    <select value={activationForm.subject_id} onChange={(e) => setActivationForm({ ...activationForm, subject_id: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
+                                      <option value="">Choose a subject...</option>
+                                      {subjectList.map((s) => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
 
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
@@ -1929,7 +1942,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                         <td className="px-4 py-3 text-sm font-semibold text-gray-900">{parseFloat(f.amount).toFixed(2)}</td>
                                         <td className="px-4 py-3 text-sm">
                                           <div className="flex items-center space-x-2">
-                                            <button onClick={() => { setActivationForm({ id: f.id, type: f.type, exam_identifier: f.exam_identifier || '', subject_id: f.subject_id || '', currency: f.currency || 'NGN', amount: String(f.amount) }); setShowActivationForm(true) }} className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg">Edit</button>
+                                            <button onClick={() => { setActivationForm({ id: f.id, type: f.type, exam_identifier: f.exam_identifier || '', subject_id: f.subject_id || '', currency: f.currency || 'NGN', amount: String(f.amount) }); setShowActivationForm(true); if (examsManagement.length === 0) loadExamsManagement(); if (f.type === 'interview_subject' && f.exam_identifier) loadSubjectsForExam(Number(f.exam_identifier)) }} className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg">Edit</button>
                                             <button onClick={() => deleteActivationFee(f.id)} className="px-3 py-1 bg-red-100 text-red-700 rounded-lg">Delete</button>
                                           </div>
                                         </td>
@@ -1940,7 +1953,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               </div>
                             )}
                           </div>
-                        </div>
+                          </div>
+                        )}
 
                 {tab === 'payments' && (
                   <div>

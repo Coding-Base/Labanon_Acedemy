@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useRef, useEffect } from 'react'
 import axios from 'axios'
 import ExamTypeModal from './ExamTypeModal'
 import SubjectModal from './SubjectModal'
@@ -32,16 +33,20 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
 
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null)
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+  const selectedSubjectSetterRef = useRef<typeof setSelectedSubject | null>(null)
+
+  useEffect(() => {
+    selectedSubjectSetterRef.current = setSelectedSubject
+  }, [setSelectedSubject])
   const [examAttemptId, setExamAttemptId] = useState<number | null>(null)
   const [selectedNumQuestions, setSelectedNumQuestions] = useState(10)
   const [selectedTimeLimitMinutes, setSelectedTimeLimitMinutes] = useState(60)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const handleSelectExam = (exam: Exam) => {
     // Check if exam is globally unlocked for this user
-    setSelectedExam(exam)
-    setError(null)
+    console.log('DEBUG setSelectedExam type:', typeof setSelectedExam, 'value:', setSelectedExam)
+    try { setSelectedExam(exam) } catch (e) { console.error('DEBUG setSelectedExam call error', e) }
     (async () => {
       try {
         const token = localStorage.getItem('access')
@@ -69,8 +74,15 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
 
   const handleSelectSubject = (subject: Subject) => {
     // For interview-style exams we check subject-level activation
-    setSelectedSubject(subject)
-    setError(null)
+    try {
+      if (typeof selectedSubjectSetterRef.current === 'function') {
+        selectedSubjectSetterRef.current(subject)
+      } else {
+        console.error('selectedSubject setter not a function', selectedSubjectSetterRef.current)
+      }
+    } catch (e) {
+      console.error('Error calling selectedSubject setter', e, selectedSubjectSetterRef.current)
+    }
     (async () => {
       try {
         const token = localStorage.getItem('access')
@@ -98,7 +110,6 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     if (!selectedExam || !selectedSubject) return
 
     setIsLoading(true)
-    setError(null)
 
     try {
       const token = localStorage.getItem('access')
@@ -115,7 +126,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
       setShowSettingsModal(false)
       setShowExamInterface(true)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to start exam')
+      console.error('Failed to start exam', err)
+      alert(err.response?.data?.detail || 'Failed to start exam')
     } finally {
       setIsLoading(false)
     }
@@ -153,11 +165,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      {error && (
-        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-40">
-          {error}
-        </div>
-      )}
+      {/* Activation / error banners handled inline via navigation or alerts */}
 
       <ExamTypeModal
         isOpen={showExamTypeModal}

@@ -86,6 +86,7 @@ export default function PaymentVerify() {
                 const isScheduled = sessionStorage.getItem('isScheduled') === 'true'
                 const itemType = sessionStorage.getItem('paymentItemType')
                 const itemId = sessionStorage.getItem('paymentItemId')
+                const returnTo = sessionStorage.getItem('paymentReturnTo')
 
                 // Clean up session
                 sessionStorage.removeItem('paymentReference')
@@ -93,14 +94,19 @@ export default function PaymentVerify() {
                 sessionStorage.removeItem('paymentItemId')
                 sessionStorage.removeItem('paymentMethod')
                 sessionStorage.removeItem('isScheduled')
+                sessionStorage.removeItem('paymentReturnTo')
                 
                 setTimeout(() => {
                     if (isScheduled) {
                         // Redirect Scheduled Live Courses to Schedule Page
                         navigate('/student/schedule')
-                    } else if (itemType && itemId) {
-                        // Redirect Standard Courses to My Courses (or detail page if preferred)
-                        navigate('/student/courses')
+                  } else if (itemType === 'activation') {
+                    // Activation payments should return to CBT/exam flow
+                    if (returnTo) navigate(returnTo)
+                    else navigate('/student/cbt')
+                  } else if (itemType && itemId) {
+                    // Redirect Standard Courses to My Courses (or detail page if preferred)
+                    navigate('/student/courses')
                     } else {
                         // Fallback
                         navigate('/student')

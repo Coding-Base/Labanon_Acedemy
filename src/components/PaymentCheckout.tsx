@@ -15,6 +15,7 @@ interface PaymentCheckoutProps {
   isScheduled?: boolean // <--- New Prop
   onSuccess?: () => void
   meta?: Record<string, any>
+  returnTo?: string
 }
 
 declare global {
@@ -31,6 +32,7 @@ export default function PaymentCheckout({
   isScheduled = false, // Default to false
   onSuccess,
   meta,
+  returnTo,
 }: PaymentCheckoutProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -82,6 +84,8 @@ export default function PaymentCheckout({
       
       // Store scheduled flag so verification page knows where to redirect
       sessionStorage.setItem('isScheduled', isScheduled ? 'true' : 'false')
+      // Optional return path for activation flows
+      if (returnTo) sessionStorage.setItem('paymentReturnTo', returnTo)
 
       // Redirect to payment gateway (Paystack or Flutterwave)
       if (authorization_url) {

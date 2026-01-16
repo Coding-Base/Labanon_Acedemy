@@ -49,6 +49,8 @@ export default function Register() {
   const nextParam = params.get('next') || '';
 
   const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -56,6 +58,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
 
@@ -105,9 +108,10 @@ export default function Register() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
     
     // Validation
-    if (!username || !email || !password || !confirmPassword) {
+    if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
       setError('All fields are required');
       return;
     }
@@ -125,7 +129,7 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      await register({ username, email, password, role });
+      await register({ username, email, password, role, first_name: firstName, last_name: lastName });
       // After successful registration, redirect to login preserving `next` if present
       const qs = nextParam ? `?next=${encodeURIComponent(nextParam)}` : '';
       // small success delay for UX
@@ -133,14 +137,37 @@ export default function Register() {
         navigate(`/login${qs}`, { replace: true });
       }, 800);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Registration failed. Please try again.');
+      // DRF/Djoser typically returns field errors as an object: { username: [..], email:[..] }
+      const resp = err?.response?.data;
+      if (resp && typeof resp === 'object') {
+        // collect field errors
+        const fields: Record<string, string[]> = {};
+        let general: string | null = null;
+        if (Array.isArray(resp)) {
+          general = resp.join(' ');
+        } else {
+          for (const k of Object.keys(resp)) {
+            const v = resp[k];
+            if (Array.isArray(v)) fields[k] = v.map(String);
+            else fields[k] = [String(v)];
+          }
+          // try to pick a sensible general error
+          if (fields.username && fields.username.length) general = fields.username.join(' ');
+          else if (fields.email && fields.email.length) general = fields.email.join(' ');
+          else if (fields.non_field_errors) general = fields.non_field_errors.join(' ');
+        }
+        setFieldErrors(fields);
+        setError(general || 'Registration failed. Please check your input.');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   }
 
   const isFormValid = () => {
-    return username && email && password && confirmPassword && 
+    return firstName && lastName && username && email && password && confirmPassword && 
            password === confirmPassword &&
            passwordRequirements.every(req => req.met);
   };
@@ -163,17 +190,17 @@ export default function Register() {
             {/* Header */}
             <div className="text-center mb-8">
               <Link to="/" className="inline-flex items-center space-x-2 mb-4">
-                <img src={labanonLogo} alt="Lebanon Academy" className="w-10 h-10 object-contain" />
+                <img src={labanonLogo} alt="LightHub Academy" className="w-10 h-10 object-contain" />
                 <div className="text-left">
                   <h1 className="text-xl font-bold text-gray-900">
-                    Lebanon Academy
+                    LightHub Academy
                   </h1>
                   <p className="text-xs text-gray-500">Future Ready Learning</p>
                 </div>
               </Link>
               
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Join <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Lebanon Academy</span>
+                Join <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">LightHub Academy</span>
               </h2>
               <p className="text-gray-600">Start your learning journey today</p>
             </div>
@@ -304,6 +331,41 @@ export default function Register() {
 
                 {/* Form Fields */}
                 <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        First name
+                      </label>
+                      <input
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First name"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        required
+                      />
+                      {fieldErrors.first_name && (
+                        <p className="mt-2 text-sm text-red-600">{fieldErrors.first_name.join(' ')}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Last name
+                      </label>
+                      <input
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last name"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        required
+                      />
+                      {fieldErrors.last_name && (
+                        <p className="mt-2 text-sm text-red-600">{fieldErrors.last_name.join(' ')}</p>
+                      )}
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <User className="w-4 h-4 inline mr-2" />
@@ -317,6 +379,9 @@ export default function Register() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                       required
                     />
+                    {fieldErrors.username && (
+                      <p className="mt-2 text-sm text-red-600">{fieldErrors.username.join(' ')}</p>
+                    )}
                   </div>
 
                   <div>
@@ -332,6 +397,9 @@ export default function Register() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                       required
                     />
+                    {fieldErrors.email && (
+                      <p className="mt-2 text-sm text-red-600">{fieldErrors.email.join(' ')}</p>
+                    )}
                   </div>
 
                   <div>
@@ -552,7 +620,7 @@ export default function Register() {
                   </div>
                 </div>
                 <p className="italic text-lg">
-                  "Lebanon Academy transformed how I teach and reach students. The platform's tools helped me create engaging courses that students love."
+                  "LightHub Academy transformed how I teach and reach students. The platform's tools helped me create engaging courses that students love."
                 </p>
               </motion.div>
             </div>

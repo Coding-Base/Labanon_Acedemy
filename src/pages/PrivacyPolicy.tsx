@@ -89,11 +89,11 @@ Contact our privacy team via the Contact page to exercise these rights.`
 const offPlatformWarnings: OffPlatformWarning[] = [
   {
     role: 'Students',
-    warning: 'Do NOT accept payment requests, bank transfers, or money transfers outside this platform. All legitimate transactions occur through our secure payment gateway. Any off-platform transactions are NOT the responsibility of Lebanon Academy management.'
+    warning: 'Do NOT accept payment requests, bank transfers, or money transfers outside this platform. All legitimate transactions occur through our secure payment gateway. Any off-platform transactions are NOT the responsibility of LightHub Academy management.'
   },
   {
     role: 'Tutors',
-    warning: 'Do NOT solicit students for payments outside this platform. All course payments must be processed through Lebanon Academy. Tutors caught conducting off-platform transactions will face immediate suspension and permanent removal from the platform.'
+    warning: 'Do NOT solicit students for payments outside this platform. All course payments must be processed through LightHub Academy. Tutors caught conducting off-platform transactions will face immediate suspension and permanent removal from the platform.'
   },
   {
     role: 'Institutions',
@@ -171,7 +171,7 @@ const PrivacyPolicy: React.FC = () => {
               <Shield className="w-10 h-10" />
               <h1 className="text-4xl md:text-5xl font-bold">Privacy Policy</h1>
             </div>
-            <p className="text-lg text-teal-100 max-w-2xl">Lebanon Academy is committed to protecting your privacy and ensuring transparency about how we handle your data.</p>
+            <p className="text-lg text-teal-100 max-w-2xl">LightHub Academy is committed to protecting your privacy and ensuring transparency about how we handle your data.</p>
           </motion.div>
         </div>
       </div>
@@ -192,7 +192,7 @@ const PrivacyPolicy: React.FC = () => {
                 <AlertTriangle className="w-8 h-8 text-green-600 flex-shrink-0 mt-1" />
                 <div>
                   <h2 className="text-3xl font-bold text-slate-900 mb-2">⚠️ Critical Warning — Off-Platform Transactions</h2>
-                  <p className="text-green-600 font-semibold text-lg">Lebanon Academy is not responsible for transactions conducted outside the platform.</p>
+                  <p className="text-green-600 font-semibold text-lg">LightHub Academy is not responsible for transactions conducted outside the platform.</p>
                 </div>
               </div>
 
@@ -206,8 +206,8 @@ const PrivacyPolicy: React.FC = () => {
                   <li className="flex items-start gap-3"><span className="text-green-600 font-bold">•</span><span><strong>Immediate Account Suspension:</strong> Accounts involved in off-platform transactions will be suspended immediately pending investigation.</span></li>
                   <li className="flex items-start gap-3"><span className="text-green-600 font-bold">•</span><span><strong>Permanent Removal:</strong> Users caught conducting off-platform transactions will be permanently banned from the platform.</span></li>
                   <li className="flex items-start gap-3"><span className="text-green-600 font-bold">•</span><span><strong>Refund Denial:</strong> No refunds will be issued for off-platform transaction disputes.</span></li>
-                  <li className="flex items-start gap-3"><span className="text-green-600 font-bold">•</span><span><strong>Legal Action:</strong> Lebanon Academy may pursue legal action against violators for fraud and unauthorized transactions.</span></li>
-                  <li className="flex items-start gap-3"><span className="text-green-600 font-bold">•</span><span><strong>Blacklisting:</strong> Violators will be blacklisted from all Lebanon Academy services permanently.</span></li>
+                  <li className="flex items-start gap-3"><span className="text-green-600 font-bold">•</span><span><strong>Legal Action:</strong> LightHub Academy may pursue legal action against violators for fraud and unauthorized transactions.</span></li>
+                  <li className="flex items-start gap-3"><span className="text-green-600 font-bold">•</span><span><strong>Blacklisting:</strong> Violators will be blacklisted from all LightHub Academy services permanently.</span></li>
                 </ul>
               </div>
             </div>
@@ -220,7 +220,7 @@ const PrivacyPolicy: React.FC = () => {
             <Lock className="w-8 h-8 flex-shrink-0 mt-1" />
             <div>
               <h3 className="text-2xl font-bold mb-4">Policy Acknowledgment</h3>
-              <p className="mb-4 leading-relaxed">By using Lebanon Academy, you acknowledge that you have read and understood this Privacy Policy. You agree to comply with all terms and conditions, including the strict prohibition of off-platform transactions. By continuing to use our platform, you consent to our data collection and usage practices.</p>
+              <p className="mb-4 leading-relaxed">By using LightHub Academy, you acknowledge that you have read and understood this Privacy Policy. You agree to comply with all terms and conditions, including the strict prohibition of off-platform transactions. By continuing to use our platform, you consent to our data collection and usage practices.</p>
               <p className="text-teal-100">Last Updated: {formattedDate}</p>
             </div>
           </div>

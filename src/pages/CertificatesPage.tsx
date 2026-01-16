@@ -117,9 +117,25 @@ export default function CertificatesPage() {
         year: 'numeric', month: 'long', day: 'numeric'
       });
 
-      // 4. Generate PDF
+      // 4. Fetch current user profile to obtain first/last name (fallback to username)
+      let userFirstName: string | undefined = undefined;
+      let userLastName: string | undefined = undefined;
+      try {
+        const userRes = await api.get('/users/me/');
+        const userData = userRes.data as any;
+        userFirstName = userData.first_name || userData.firstName;
+        userLastName = userData.last_name || userData.lastName;
+      } catch (userErr) {
+        // Not critical — we'll fall back to username
+        console.warn('Could not fetch user profile for certificate names', userErr);
+      }
+
+      // 5. Generate PDF
       const blob = await generateCertificate({
         studentName: cert.username,
+        first_name: userFirstName,
+        last_name: userLastName,
+        username: cert.username,
         courseTitle: cert.course_title,
         completionDate: dateStr,
         certificateId: cert.certificate_id,

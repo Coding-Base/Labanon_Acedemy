@@ -11,6 +11,10 @@ export interface CertificateData {
   institutionSignatureUrl?: string;
   institutionSignerName?: string;
   institutionSignerPosition?: string; // <--- Added this new field
+  // Optional fallbacks
+  first_name?: string;
+  last_name?: string;
+  username?: string;
 }
 
 // --- Helper: Load Image ---
@@ -116,7 +120,7 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   doc.setFont('times', 'bold');
   doc.setTextColor(10, 35, 66); 
 
-  let headerText = 'LEBANON ACADEMY';
+  let headerText = 'LightHub Academy';
   if (institutionName) {
     doc.setFontSize(24);
     headerText = institutionName.toUpperCase();
@@ -138,11 +142,24 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   doc.text(data.completionDate, centerX, currentY, { align: 'center' });
   currentY += 15;
 
-  // Student Name
+  // Student Name: prefer first + last name, fall back to studentName or username
+  const fn = (data.first_name || (data as any).firstName || '').toString().trim();
+  const ln = (data.last_name || (data as any).lastName || '').toString().trim();
+  let studentDisplayName = '';
+  if (fn || ln) {
+    studentDisplayName = [fn, ln].filter(Boolean).join(' ');
+  } else if (data.studentName && data.studentName.toString().trim()) {
+    studentDisplayName = data.studentName.toString();
+  } else if (data.username && data.username.toString().trim()) {
+    studentDisplayName = data.username.toString();
+  } else {
+    studentDisplayName = 'Student';
+  }
+
   doc.setFont('times', 'bolditalic');
   doc.setFontSize(42);
   doc.setTextColor(10, 35, 66);
-  doc.text(data.studentName, centerX, currentY, { align: 'center' });
+  doc.text(studentDisplayName, centerX, currentY, { align: 'center' });
   
   doc.setDrawColor(212, 175, 55);
   doc.setLineWidth(0.5);
@@ -184,7 +201,7 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   doc.setFont('times', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(22, 163, 74);
-  doc.text('Lebanon Academy', centerX, currentY, { align: 'center' });
+  doc.text('LightHub Academy', centerX, currentY, { align: 'center' });
 
   // --- 6. Footer & Signatures ---
   
@@ -217,7 +234,7 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(100, 100, 100);
-  doc.text('CEO, Lebanon Academy', 35, footerY + 16);
+  doc.text('CEO, LightHub Academy', 35, footerY + 16);
 
 
   // --- RIGHT SIDE & SEAL PLACEMENT ---
@@ -299,7 +316,7 @@ export const downloadCertificate = (blob: Blob, courseName: string, studentName:
 };
 
 export const shareToSocialMedia = async (platform: string, courseName: string, certificateUrl: string = window.location.href) => {
-    const text = `I just successfully completed the course "${courseName}" on Lebanon Academy! 🎓`;
+    const text = `I just successfully completed the course "${courseName}" on LightHub Academy! 🎓`;
     const url = certificateUrl; 
 
     if (platform === 'native' && navigator.share) {

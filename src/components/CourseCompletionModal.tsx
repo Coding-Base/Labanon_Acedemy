@@ -96,10 +96,25 @@ export default function CourseCompletionModal({
         year: 'numeric', month: 'long', day: 'numeric'
       });
 
+      // 2b. Fetch current user's first/last name to prefer real name over username
+      let userFirstName: string | undefined = undefined;
+      let userLastName: string | undefined = undefined;
+      try {
+        const userRes = await api.get('/users/me/');
+        const userData = userRes.data as any;
+        userFirstName = userData.first_name || userData.firstName;
+        userLastName = userData.last_name || userData.lastName;
+      } catch (userErr) {
+        console.warn('Could not fetch user profile for certificate names', userErr);
+      }
+
       // 3. Generate PDF
       // Pass the fetched courseCreator and potential institution signature
       const certificateBlob = await generateCertificate({
         studentName: username,
+        first_name: userFirstName,
+        last_name: userLastName,
+        username: username,
         courseTitle: courseName,
         completionDate: displayDate,
         certificateId: certData.certificate_id || 'PENDING',
@@ -110,8 +125,9 @@ export default function CourseCompletionModal({
         institutionSignerPosition: instSignature?.position // <--- Passed Position
       });
 
-      // 4. Download
-      downloadCertificate(certificateBlob, courseName, username);
+      // 4. Download — prefer first+last for filename when present
+      const displayName = [userFirstName || '', userLastName || ''].filter(Boolean).join(' ') || username;
+      downloadCertificate(certificateBlob, courseName, displayName);
 
       if (onCertificateDownloaded) {
         onCertificateDownloaded(certData);

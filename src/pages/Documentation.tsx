@@ -52,7 +52,7 @@ const Documentation: React.FC = () => {
       icon: GraduationCap,
       colorKey: 'green',
       content: [
-        { step: 1, title: 'Create Your Account', description: 'Sign up on Lebanon Academy with your email address. Verify your email and complete your profile with your name, institution, and learning goals.' },
+        { step: 1, title: 'Create Your Account', description: 'Sign up on LightHub Academy with your email address. Verify your email and complete your profile with your name, institution, and learning goals.' },
         { step: 2, title: 'Explore the Dashboard', description: 'Once logged in you’ll see tabs like My Courses, Schedule, CBT Exams, and Profile. Use the sidebar to navigate quickly.' },
         { step: 3, title: 'Browse & Enroll in Courses', description: 'Open My Courses or Marketplace to browse available courses. Click "Enroll", make payment for premium courses and gain immediate access to materials.' },
         { step: 4, title: 'Course Player & Progress', description: 'Play video lessons, read notes and complete modules. Your progress is saved automatically; complete the course to earn a certificate.' },
@@ -82,7 +82,7 @@ const Documentation: React.FC = () => {
       icon: Building2,
       colorKey: 'emerald',
       content: [
-        { step: 1, title: 'Create Institutional Account', description: 'Register your institution on Lebanon Academy. Verify your organization and complete administrative details.' },
+        { step: 1, title: 'Create Institutional Account', description: 'Register your institution on LightHub Academy. Verify your organization and complete administrative details.' },
         { step: 2, title: 'Set Up Your Workspace', description: 'Configure your institution dashboard. Add branding and establish admin roles for staff and instructors.' },
         { step: 3, title: 'Invite Instructors', description: 'Add and invite instructors, assign roles and permissions, and group them by department or course set.' },
         { step: 4, title: 'Bulk Upload Courses', description: 'Import course catalogs using our CSV template to populate your learning portal quickly.' },
@@ -123,7 +123,7 @@ const Documentation: React.FC = () => {
               <BookOpen className="w-10 h-10" />
               <h1 className="text-4xl md:text-5xl font-bold">Documentation</h1>
             </div>
-            <p className="text-lg text-green-100 max-w-2xl">Complete setup guides and instructions for students, tutors, and institutions to get started on Lebanon Academy.</p>
+            <p className="text-lg text-green-100 max-w-2xl">Complete setup guides and instructions for students, tutors, and institutions to get started on LightHub Academy.</p>
           </motion.div>
         </div>
       </div>

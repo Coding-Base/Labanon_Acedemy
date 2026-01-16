@@ -785,7 +785,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
-              <img src={labanonLogo} alt="Lebanon Academy" className="w-8 h-8 object-contain" />
+              <img src={labanonLogo} alt="LightHub Academy" className="w-8 h-8 object-contain" />
               <div>
                 <h1 className="text-lg font-bold text-gray-900">
                   {subadminPermissions ? 'Sub-Admin Dashboard' : 'Master Admin Dashboard'}

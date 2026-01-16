@@ -568,7 +568,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                 {sidebarOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
               </button>
               <Link to={base} className="flex items-center space-x-3">
-                <img src={labanonLogo} alt="Lebanon Academy" className="w-8 h-8 object-contain" />
+                <img src={labanonLogo} alt="LightHub Academy" className="w-8 h-8 object-contain" />
                 <div>
                   <h1 className="text-lg font-bold text-gray-900">Tutor Dashboard</h1>
                 </div>

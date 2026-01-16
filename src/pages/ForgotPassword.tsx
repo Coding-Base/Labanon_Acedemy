@@ -28,7 +28,7 @@ export default function ForgotPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-6">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <img src={labanonLogo} alt="Lebanon Academy" className="w-10 h-10 object-contain" />
+          <img src={labanonLogo} alt="LightHub Academy" className="w-10 h-10 object-contain" />
           <h1 className="text-xl font-bold text-gray-900">Reset Password</h1>
         </div>
 

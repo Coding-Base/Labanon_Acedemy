@@ -254,7 +254,7 @@ export default function Home() {
 
   const testimonials = [
     { text: "The JAMB CBT practice platform helped me score 325! The questions were exactly like the real exam.", name: "Chioma Adeyemi", role: "Student", avatar: IMAGES.student1 },
-    { text: "As an institution, Lebanon Academy gave us tools to digitally transform our teaching methods.", name: "Dr. Tunde Ojo", role: "School Administrator", avatar: IMAGES.student2 },
+    { text: "As an institution, LightHub Academy gave us tools to digitally transform our teaching methods.", name: "Dr. Tunde Ojo", role: "School Administrator", avatar: IMAGES.student2 },
     { text: "The course marketplace allowed me to monetize my expertise with full control over pricing.", name: "Sarah Johnson", role: "Instructor", avatar: IMAGES.student3 }
   ];
 
@@ -267,7 +267,7 @@ export default function Home() {
 
   // --- HERO SLIDER CONFIGURATION ---
   const slides = [
-    { src: IMAGES.hero, caption: 'Students learning together — Lebanon Academy' },
+    { src: IMAGES.hero, caption: 'Students learning together — LightHub Academy' },
     { src: IMAGES.student1, caption: 'Focused students collaborating on coursework' },
     { src: IMAGES.student2, caption: 'Interactive classroom discussion and debate' },
     { src: IMAGES.student3, caption: 'Peer study group improving skills together' },
@@ -276,7 +276,7 @@ export default function Home() {
     { src: IMAGES.math, caption: 'Exam practice and concept mastery' },
     { src: IMAGES.dataScience, caption: 'Applied data projects and real-world problems' },
     { src: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=2000&q=80', caption: 'Students collaborating on campus projects' },
-    { src: flyerImage, caption: 'Lebanon Academy — community, campus, and success' }
+    { src: flyerImage, caption: 'LightHub Academy — community, campus, and success' }
   ];
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -312,9 +312,9 @@ export default function Home() {
             {/* Left: Logo & Explore Button */}
             <div className="flex items-center gap-2 md:gap-6">
               <Link to="/" className="flex items-center space-x-2 flex-shrink-0">
-                <img src={labanonLogo} alt="Lebanon Academy" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                <img src={labanonLogo} alt="LightHub Academy" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
                 <div className="hidden sm:block">
-                  <h1 className="text-lg md:text-xl font-bold text-gray-900 leading-none">Lebanon<br/>Academy</h1>
+                  <h1 className="text-lg md:text-xl font-bold text-gray-900 leading-none">LightHub<br/>Academy</h1>
                 </div>
               </Link>
 
@@ -483,9 +483,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Hero Content - Updated for Mobile Centering */}
-            <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-8 text-center md:text-left">
+            <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-8 text-center md:text-left order-2 lg:order-1">
               <motion.div variants={fadeInUp} className="flex justify-center md:justify-start">
-                <motion.div className="inline-flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                <motion.div className="hidden md:inline-flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
                   <Sparkles className="w-4 h-4" /><span>Your #1 Digital Learning Platform</span>
                 </motion.div>
               </motion.div>
@@ -500,7 +500,7 @@ export default function Home() {
               </motion.p>
               
               {/* Desktop CTA Buttons (Search is now in header) - Updated for Mobile Centering */}
-              <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 pt-4 justify-center md:justify-start">
+                <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 pt-4 justify-center md:justify-start">
                   <Link to="/register" className="px-8 py-4 bg-green-600 text-white rounded-xl font-bold text-lg hover:bg-green-700 hover:shadow-lg transition-all">Join for Free</Link>
                   <Link to="/marketplace" className="px-8 py-4 bg-white text-gray-800 border-2 border-gray-200 rounded-xl font-bold text-lg hover:border-green-600 hover:text-green-600 transition-all">Explore Courses</Link>
               </motion.div>
@@ -516,8 +516,8 @@ export default function Home() {
               </motion.div>
             </motion.div>
 
-            {/* Hero Image - Updated margin top for mobile spacing */}
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: "easeOut" }} className="relative mt-8 md:mt-0">
+            {/* Hero Image - Updated margin top for mobile spacing; placed before text on small screens */}
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: "easeOut" }} className="relative mt-8 md:mt-0 order-1 lg:order-2">
               <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-teal-600/20 backdrop-blur-sm " />
                 <div className="relative w-full h-full hero-image-container">
@@ -544,6 +544,14 @@ export default function Home() {
                         )}
                       </AnimatePresence>
                     ))}
+
+                    {/* Mobile-only badge overlay */}
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="absolute top-4 left-4 z-30 md:hidden">
+                      <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/80 text-green-700 rounded-full text-sm font-medium backdrop-blur">
+                        <Sparkles className="w-4 h-4" />
+                        <span>Your #1 Digital Learning Platform</span>
+                      </div>
+                    </motion.div>
 
                     {/* Dark gradient overlay for legibility */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
@@ -584,7 +592,7 @@ export default function Home() {
       <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <motion.div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why learn with <span className="text-green-600">Lebanon?</span></h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why learn with <span className="text-green-600">LightHub Academy?</span></h2>
             <p className="text-xl text-gray-600">A complete ecosystem for your academic and professional growth</p>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -664,7 +672,7 @@ export default function Home() {
               <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white transform rotate-2 hover:rotate-0 transition-transform duration-500">
                  <img 
                    src={flyerImage} 
-                   alt="Lebanon Academy JAMB & WAEC Flyer" 
+                   alt="LightHub Academy JAMB & WAEC Flyer" 
                    className="w-full h-auto object-cover"
                  />
                  {/* Overlay gradient for depth */}
@@ -795,7 +803,7 @@ export default function Home() {
             <div className="col-span-2">
               <Link to="/" className="flex items-center space-x-2 mb-4">
                 <img src={labanonLogo} className="w-8 h-8" alt="Logo"/>
-                <span className="text-xl font-bold">Lebanon Academy</span>
+                <span className="text-xl font-bold">LightHub Academy</span>
               </Link>
               <p className="text-gray-400 max-w-sm">Africa's premier digital learning ecosystem, transforming education through technology.</p>
             </div>
@@ -823,14 +831,14 @@ export default function Home() {
             <div>
               <h4 className="font-bold mb-4">Contact</h4>
               <ul className="space-y-2 text-gray-400">
-                <li>hello@lebanonacademy.ng</li>
+                <li>info@lighthubacademy.org.ng</li>
                 <li>+234 800 123 4567</li>
                 <li>Lagos, Nigeria</li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-gray-500 text-sm">
-            © {new Date().getFullYear()} Lebanon Academy Limited. All rights reserved.
+            © {new Date().getFullYear()} LightHub Academy Limited. All rights reserved.
           </div>
         </div>
       </footer>

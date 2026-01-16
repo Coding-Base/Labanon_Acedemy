@@ -115,7 +115,7 @@ const About: React.FC = () => {
 
         <div className="max-w-6xl mx-auto relative z-10">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <h1 className="text-4xl md:text-6xl font-extrabold mb-4">About Lebanon Academy</h1>
+            <h1 className="text-4xl md:text-6xl font-extrabold mb-4">About LightHub Academy</h1>
             <p className="text-lg md:text-xl max-w-2xl leading-relaxed text-teal-100">
               Reimagining education by connecting learners, tutors, and institutions on a single, modern learning platform built to scale.
             </p>
@@ -149,7 +149,7 @@ const About: React.FC = () => {
             </motion.h2>
 
             <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} className="text-slate-700 text-lg leading-relaxed mb-4">
-              Lebanon Academy started with a simple idea: quality education should be accessible. From a small team of educators to a global platform, our mission hasn't changed — make learning possible for everyone.
+              LightHub Academy started with a simple idea: quality education should be accessible. From a small team of educators to a global platform, our mission hasn't changed — make learning possible for everyone.
             </motion.p>
 
             <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.7 }} className="text-slate-700 text-lg leading-relaxed">
@@ -200,7 +200,7 @@ const About: React.FC = () => {
         {/* Features */}
         <section className="mb-16">
           <motion.div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-10 text-white" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }}>
-            <h3 className="text-2xl font-bold mb-8 text-center">Why Choose Lebanon Academy</h3>
+            <h3 className="text-2xl font-bold mb-8 text-center">Why Choose LightHub Academy</h3>
 
             <motion.div variants={containerVariants} initial="hidden" whileInView="visible" className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {features.map((f) => (

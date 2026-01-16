@@ -97,7 +97,7 @@ export default function BlogPage() {
             animate="visible"
             className="text-4xl md:text-5xl font-bold text-white mb-4"
           >
-            Lebanon Academy Blog
+            LightHub Academy Blog
           </motion.h1>
           <motion.p
             variants={fadeInUp}

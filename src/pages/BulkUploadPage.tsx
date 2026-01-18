@@ -27,8 +27,43 @@ export default function BulkUploadPage() {
       const reader = new FileReader()
       reader.onload = (event) => {
         const content = event.target?.result as string
-        setJsonInput(content)
-        setParseError(null)
+        // Handle JSON or CSV formats
+        if (file.name.toLowerCase().endsWith('.csv')) {
+          // Basic CSV validation: check headers
+          const lines = content.split('\n').map(l => l.trim()).filter(Boolean)
+          if (lines.length === 0) {
+            setParseError('CSV appears empty')
+            return
+          }
+          const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+          const required = ['id', 'question_text', 'optiona', 'optionb', 'optionc', 'optiond', 'correct_answer', 'subject']
+          const missing = required.filter(r => !headers.includes(r))
+          if (missing.length > 0) {
+            setParseError(`CSV missing required columns: ${missing.join(', ')}`)
+            return
+          }
+          // If CSV looks OK, convert to internal JSON structure for preview/upload
+          try {
+            const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()))
+            const questions = rows.map(cols => ({
+              id: cols[0],
+              question_text: cols[1],
+              options: { A: cols[2], B: cols[3], C: cols[4], D: cols[5] },
+              correct_answer: cols[6],
+              explanation: cols[7] || '',
+              subject: cols[8] || ''
+            }))
+            const json = JSON.stringify({ exam_id: 'CSV_IMPORT', year: new Date().getFullYear(), questions }, null, 2)
+            setJsonInput(json)
+            setParseError(null)
+          } catch (e) {
+            setParseError('Failed to parse CSV. Ensure it uses commas and has the correct columns.')
+          }
+        } else {
+          // Treat as JSON
+          setJsonInput(content)
+          setParseError(null)
+        }
       }
       reader.readAsText(file)
     }

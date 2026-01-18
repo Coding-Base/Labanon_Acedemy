@@ -91,6 +91,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [payments, setPayments] = useState<any[]>([])
   const [paymentStats, setPaymentStats] = useState<any>(null)
   const [paymentsLoading, setPaymentsLoading] = useState(false)
+  const [paymentPage, setPaymentPage] = useState(1)
+  const [paymentPageInfo, setPaymentPageInfo] = useState<{count: number; next: string | null; previous: string | null}>({count: 0, next: null, previous: null})
   const [activationFees, setActivationFees] = useState<any[]>([])
   const [activationLoading, setActivationLoading] = useState(false)
   const [showActivationForm, setShowActivationForm] = useState(false)
@@ -100,7 +102,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [blogs, setBlogs] = useState<any[]>([])
   const [blogsLoading, setBlogsLoading] = useState(false)
   const [showBlogForm, setShowBlogForm] = useState(false)
-  const [blogFormData, setBlogFormData] = useState({title: '', content: '', image: '', excerpt: ''})
+  const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
+  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; excerpt: string}>({title: '', content: '', image: null, excerpt: ''})
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const [settingsData, setSettingsData] = useState({firstName: '', lastName: '', email: ''})
@@ -119,6 +122,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [bulkFile, setBulkFile] = useState<File | null>(null)
   const [manualLoading, setManualLoading] = useState(false)
   const [manualMessage, setManualMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [bulkMessage, setBulkMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
+  const [usersMessage, setUsersMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [uploadMode, setUploadMode] = useState<'json' | 'file' | 'manual'>('json')
 
   // Exam & Subject Management State
@@ -136,6 +141,14 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [editingExam, setEditingExam] = useState<any | null>(null)
   const [editingSubject, setEditingSubject] = useState<any | null>(null)
 
+  // Gospel Video State
+  const [gospelVideos, setGospelVideos] = useState<any[]>([])
+  const [gospelLoading, setGospelLoading] = useState(false)
+  const [showGospelForm, setShowGospelForm] = useState(false)
+  const [gospelFormData, setGospelFormData] = useState({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
+  const [editingGospel, setEditingGospel] = useState<any | null>(null)
+  const [gospelMessage, setGospelMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+
   // Define tabs
   const allTabs = [
     { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
@@ -144,6 +157,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
+    { id: 'gospel', label: 'Gospel', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
     { id: 'messages', label: 'Messages', icon: <Mail className="w-5 h-5" />, permission: 'can_view_messages' as PermissionKey },
     { id: 'exams', label: 'Exams & Subjects', icon: <GraduationCap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     // Bulk upload tied to course management permission usually
@@ -187,9 +201,14 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     if (tab === 'institutions') loadInstitutions()
     if (tab === 'courses') loadCourses()
     if (tab === 'cbt') loadCbtAnalytics()
-    if (tab === 'payments') loadPayments()
+    if (tab === 'payments') loadPayments(paymentPage)
     if (tab === 'blog') loadBlogs()
-    if (tab === 'exams') loadExamsManagement()
+    if (tab === 'gospel') loadGospels()
+    if (tab === 'exams') {
+      loadExamsManagement()
+      // Ensure activation fees are also loaded for exams view
+      try { loadActivationFees() } catch (e) { /* ignore */ }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
@@ -298,20 +317,27 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
   }
 
-  async function loadPayments() {
+  async function loadPayments(page: number = 1) {
     setPaymentsLoading(true)
     try {
       const token = localStorage.getItem('access')
       const [paymentsRes, statsRes] = await Promise.all([
-        axios.get(`${API_BASE}/payments/admin_list/`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE}/payments/admin_list/`, { params: { page }, headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_BASE}/payments/stats/`, { headers: { Authorization: `Bearer ${token}` } })
       ])
       const paymentData = paymentsRes.data.results || paymentsRes.data
       setPayments(Array.isArray(paymentData) ? paymentData : [])
+      setPaymentPageInfo({
+        count: paymentsRes.data.count || 0,
+        next: paymentsRes.data.next,
+        previous: paymentsRes.data.previous
+      })
       setPaymentStats(statsRes.data)
+      setPaymentPage(page)
     } catch (err) { 
       console.error(err)
       setPayments([])
+      setPaymentPageInfo({count: 0, next: null, previous: null})
       setPaymentStats({
         total_revenue: 0,
         total_transactions: 0,
@@ -401,22 +427,39 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
   async function saveBlog() {
     if (!blogFormData.title.trim() || !blogFormData.content.trim()) {
-      alert('Title and content are required')
+      // use in-UI message instead of alert
+      setActivationMessage({ type: 'error', text: 'Title and content are required' })
       return
     }
     try {
       const token = localStorage.getItem('access')
-      const payload = {
-        title: blogFormData.title,
-        content: blogFormData.content,
-        image: blogFormData.image,
-        excerpt: blogFormData.excerpt
-      }
-
-      if (editingBlog) {
-        await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+      // If an image file is provided, send multipart/form-data
+      let headers: any = { Authorization: `Bearer ${token}` }
+      let res
+      if (blogFormData.image instanceof File) {
+        const fd = new FormData()
+        fd.append('title', blogFormData.title)
+        fd.append('content', blogFormData.content)
+        fd.append('excerpt', blogFormData.excerpt)
+        fd.append('image', blogFormData.image)
+        headers['Content-Type'] = 'multipart/form-data'
+        if (editingBlog) {
+          res = await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, fd, { headers })
+        } else {
+          res = await axios.post(`${API_BASE}/blog/`, fd, { headers })
+        }
       } else {
-        await axios.post(`${API_BASE}/blog/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+        const payload = {
+          title: blogFormData.title,
+          content: blogFormData.content,
+          image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
+          excerpt: blogFormData.excerpt
+        }
+        if (editingBlog) {
+          res = await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, payload, { headers })
+        } else {
+          res = await axios.post(`${API_BASE}/blog/`, payload, { headers })
+        }
       }
       
       setShowBlogForm(false)
@@ -425,7 +468,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       loadBlogs()
     } catch (err) {
       console.error(err)
-      alert('Failed to save blog')
+      setBlogMessage({ type: 'error', text: 'Failed to save blog' })
+      setTimeout(() => setBlogMessage(null), 4000)
     }
   }
 
@@ -436,7 +480,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       loadBlogs()
     } catch (err) {
       console.error(err)
-      alert('Failed to publish blog')
+      setBlogMessage({ type: 'error', text: 'Failed to publish blog' })
+      setTimeout(() => setBlogMessage(null), 4000)
     }
   }
 
@@ -448,7 +493,72 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       loadBlogs()
     } catch (err) {
       console.error(err)
-      alert('Failed to delete blog')
+      setBlogMessage({ type: 'error', text: 'Failed to delete blog' })
+      setTimeout(() => setBlogMessage(null), 4000)
+    }
+  }
+
+  // Gospel Video Functions
+  async function loadGospels() {
+    setGospelLoading(true)
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/gospel-videos/`, { headers: { Authorization: `Bearer ${token}` } })
+      const data = res.data.results || res.data
+      setGospelVideos(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Failed to load gospel videos:', err)
+      setGospelVideos([])
+    } finally {
+      setGospelLoading(false)
+    }
+  }
+
+  async function saveGospel() {
+    if (!gospelFormData.youtube_url.trim()) {
+      setGospelMessage({ type: 'error', text: 'YouTube URL is required' })
+      return
+    }
+    try {
+      const token = localStorage.getItem('access')
+      const payload = {
+        youtube_url: gospelFormData.youtube_url,
+        scheduled_time: gospelFormData.scheduled_time,
+        title: gospelFormData.title,
+        description: gospelFormData.description,
+        is_active: gospelFormData.is_active
+      }
+
+      if (editingGospel) {
+        await axios.patch(`${API_BASE}/gospel-videos/${editingGospel.id}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+        setGospelMessage({ type: 'success', text: 'Gospel video updated successfully' })
+      } else {
+        await axios.post(`${API_BASE}/gospel-videos/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+        setGospelMessage({ type: 'success', text: 'Gospel video created successfully' })
+      }
+
+      setShowGospelForm(false)
+      setGospelFormData({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
+      setEditingGospel(null)
+      loadGospels()
+      setTimeout(() => setGospelMessage(null), 3000)
+    } catch (err: any) {
+      console.error('Failed to save gospel video:', err)
+      setGospelMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to save gospel video' })
+    }
+  }
+
+  async function deleteGospel(gospelId: number) {
+    if (!confirm('Delete this gospel video?')) return
+    try {
+      const token = localStorage.getItem('access')
+      await axios.delete(`${API_BASE}/gospel-videos/${gospelId}/`, { headers: { Authorization: `Bearer ${token}` } })
+      setGospelMessage({ type: 'success', text: 'Gospel video deleted successfully' })
+      loadGospels()
+      setTimeout(() => setGospelMessage(null), 3000)
+    } catch (err: any) {
+      console.error('Failed to delete gospel video:', err)
+      setGospelMessage({ type: 'error', text: 'Failed to delete gospel video' })
     }
   }
 
@@ -665,7 +775,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setDeleteConfirmation({open: false, userId: null, userName: ''})
     } catch (err) { 
       console.error(err); 
-      alert('Failed to delete user. Please try again.') 
+      setUsersMessage({ type: 'error', text: 'Failed to delete user. Please try again.' })
+      setTimeout(() => setUsersMessage(null), 4000)
     }
   }
 
@@ -679,7 +790,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setDeleteConfirmation({open: false, userId: null, userName: ''})
     } catch (err) { 
       console.error(err); 
-      alert('Failed to delete user. Please try again.') 
+      setUsersMessage({ type: 'error', text: 'Failed to delete user. Please try again.' })
+      setTimeout(() => setUsersMessage(null), 4000)
     }
   }
 
@@ -691,15 +803,18 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
   async function submitBulk() {
     if (!selectedExam) {
-      alert('Please select an exam')
+      setBulkMessage({ type: 'error', text: 'Please select an exam' })
+      setTimeout(() => setBulkMessage(null), 4000)
       return
     }
     if (!selectedSubject) {
-      alert('Please select a subject')
+      setBulkMessage({ type: 'error', text: 'Please select a subject' })
+      setTimeout(() => setBulkMessage(null), 4000)
       return
     }
     if (!bulkData.trim()) {
-      alert('Please enter questions data')
+      setBulkMessage({ type: 'error', text: 'Please enter questions data' })
+      setTimeout(() => setBulkMessage(null), 4000)
       return
     }
     
@@ -710,7 +825,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       }
       
       if (!Array.isArray(questionsArray)) {
-        alert('JSON must be an array of questions or an object with a "questions" array')
+        setBulkMessage({ type: 'error', text: 'JSON must be an array of questions or an object with a "questions" array' })
+        setTimeout(() => setBulkMessage(null), 5000)
         return
       }
       
@@ -723,13 +839,35 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       }
       
       const res = await axios.post(`${API_BASE}/cbt/bulk-upload/`, payload, { headers: { Authorization: `Bearer ${token}` } })
-      alert(`✅ Successfully uploaded ${res.data.success || questionsArray.length} questions!`)
+      
+      // Show success message with count
+      let successMsg = `✅ Successfully uploaded ${res.data.success || 0} questions!`
+      if (res.data.errors && res.data.errors.length > 0) {
+        successMsg += ` (${res.data.errors.length} errors: ${res.data.errors.slice(0, 2).join('; ')}${res.data.errors.length > 2 ? '...' : ''})`
+      }
+      setBulkMessage({ type: res.data.success > 0 ? 'success' : 'error', text: successMsg })
+      setTimeout(() => setBulkMessage(null), 7000)
 
       setBulkData('')
     } catch (err: any) {
       console.error(err)
-      const errorMsg = err.response?.data?.detail || 'Failed to upload questions. Please check your JSON format and try again.'
-      alert('❌ ' + errorMsg)
+      let errorMsg = 'Failed to upload questions. '
+      
+      // Check for backend errors array
+      if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+        errorMsg = `❌ ${err.response.data.errors.join('; ')}`
+      } else if (err.response?.data?.detail) {
+        errorMsg += err.response.data.detail
+      } else if (err.response?.data?.error) {
+        errorMsg += err.response.data.error
+      } else if (err.message) {
+        errorMsg += err.message
+      } else {
+        errorMsg += 'Please check your file format and try again.'
+      }
+      
+      setBulkMessage({ type: 'error', text: errorMsg })
+      setTimeout(() => setBulkMessage(null), 8000)
     }
   }
 
@@ -879,7 +1017,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       setTab(item.id)
                       setSidebarOpen(false)
                     }}
-                    className={`flex items-center space-x-3 w-full px-4 py-3 rounded-xl transition-all duration-300 ${
+                      className={`flex items-center space-x-3 w-full h-12 px-4 py-3 rounded-xl transition-all duration-300 ${
                       tab === item.id
                         ? 'bg-gradient-to-r from-green-50 to-teal-50 text-green-600 border-l-4 border-green-500'
                         : 'text-gray-700 hover:bg-gray-50'
@@ -888,7 +1026,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     <div className={`${tab === item.id ? 'text-green-600' : 'text-gray-500'}`}>
                       {item.icon}
                     </div>
-                    <span className="font-medium">{item.label}</span>
+                      <span className="font-medium whitespace-nowrap">{item.label}</span>
                   </motion.button>
                 ))}
               </nav>
@@ -967,6 +1105,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 {tab === 'users' && (
                   // ... (User management JSX content) ...
                   <div>
+                    {usersMessage && (
+                      <div className={`p-3 rounded-lg mb-4 ${usersMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                        {usersMessage.text}
+                      </div>
+                    )}
                     {/* Search and Filter */}
                     <div className="mb-6">
                       <div className="grid md:grid-cols-3 gap-4">
@@ -1977,7 +2120,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               </div>
                             </div>
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Total Revenue</h3>
-                            <p className="text-3xl font-bold text-green-900">${(paymentStats?.total_revenue || 0).toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-green-900 break-words">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats?.total_revenue || 0)}</p>
                           </motion.div>
 
                           <motion.div
@@ -2003,7 +2146,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               </div>
                             </div>
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Platform Commission</h3>
-                            <p className="text-3xl font-bold text-teal-900">${(paymentStats?.platform_commission || 0).toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-teal-900 break-words">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats?.platform_commission || 0)}</p>
                           </motion.div>
 
                           <motion.div
@@ -2016,7 +2159,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               </div>
                             </div>
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Pending Payouts</h3>
-                            <p className="text-3xl font-bold text-orange-900">${(paymentStats?.pending_payouts || 0).toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-orange-900 break-words">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats?.pending_payouts || 0)}</p>
                           </motion.div>
                         </div>
 
@@ -2036,16 +2179,26 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">ID</th>
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Course</th>
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Amount</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-gray-900">Gateway</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-gray-900">Reference</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-gray-900">Gateway Fee</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-gray-900">Platform Fee</th>
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Status</th>
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Date</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {payments.slice(0, 10).map((payment) => (
+                                  {payments.map((payment) => (
                                     <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
                                       <td className="px-4 py-3 text-sm text-gray-900">#{payment.id}</td>
-                                      <td className="px-4 py-3 text-sm text-gray-600">{payment.course_title || 'N/A'}</td>
-                                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">${parseFloat(payment.amount || 0).toFixed(2)}</td>
+                                      <td className="px-4 py-3 text-sm text-gray-600">
+                                        {payment.course_title || (payment.kind === 'unlock' ? 'Account Activation' : payment.diploma_title || 'Payment')}
+                                      </td>
+                                      <td className="px-4 py-3 text-sm text-gray-900 font-semibold">₦{parseFloat(payment.amount || 0).toLocaleString()}</td>
+                                      <td className="px-4 py-3 text-sm text-gray-600 capitalize">{payment.gateway || '—'}</td>
+                                      <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs">{payment.reference ? payment.reference.substring(0, 12) + '...' : '—'}</td>
+                                      <td className="px-4 py-3 text-sm text-gray-600">₦{parseFloat(payment.gateway_fee || 0).toLocaleString()}</td>
+                                      <td className="px-4 py-3 text-sm text-gray-600">₦{parseFloat(payment.merchant_fee || 0).toLocaleString()}</td>
                                       <td className="px-4 py-3 text-sm">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                                           payment.status === 'success' ? 'bg-green-100 text-green-800' :
@@ -2063,6 +2216,45 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               </table>
                             </div>
                           )}
+
+                          {/* Pagination */}
+                          {payments.length > 0 && (
+                            <div className="mt-6 flex items-center justify-between px-6 py-4 border-t border-gray-200">
+                              <div className="text-sm text-gray-600">
+                                Showing {(paymentPage - 1) * 10 + 1} to {Math.min(paymentPage * 10, paymentPageInfo.count)} of {paymentPageInfo.count?.toLocaleString() || '0'} transactions
+                              </div>
+                              <div className="flex space-x-2">
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => loadPayments(paymentPage - 1)}
+                                  disabled={!paymentPageInfo.previous}
+                                  className={`px-4 py-2 rounded-lg font-medium flex items-center ${
+                                    paymentPageInfo.previous
+                                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                      : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                  }`}
+                                >
+                                  <ChevronLeft className="w-4 h-4 mr-1" />
+                                  Previous
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => loadPayments(paymentPage + 1)}
+                                  disabled={!paymentPageInfo.next}
+                                  className={`px-4 py-2 rounded-lg font-medium flex items-center ${
+                                    paymentPageInfo.next
+                                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                      : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                  }`}
+                                >
+                                  Next
+                                  <ChevronRight className="w-4 h-4 ml-1" />
+                                </motion.button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -2071,6 +2263,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                 {tab === 'blog' && (
                   <div>
+                    {blogMessage && (
+                      <div className={`p-3 rounded-lg mb-4 ${blogMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                        {blogMessage.text}
+                      </div>
+                    )}
                     {blogsLoading ? (
                       <div className="flex items-center justify-center py-12">
                         <Loader2 className="w-8 h-8 text-green-600 animate-spin mr-3" />
@@ -2171,6 +2368,206 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   </div>
                 )}
 
+                {tab === 'gospel' && (
+                  <div>
+                    {gospelMessage && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`mb-4 p-4 rounded-lg ${gospelMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
+                      >
+                        {gospelMessage.text}
+                      </motion.div>
+                    )}
+
+                    {gospelLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 text-green-600 animate-spin mr-3" />
+                        <span className="text-gray-600">Loading gospel videos...</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="mb-6 flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900">Gospel Videos</h3>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                              setShowGospelForm(true)
+                              setEditingGospel(null)
+                              setGospelFormData({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
+                            }}
+                            className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                          >
+                            + Add Gospel Video
+                          </motion.button>
+                        </div>
+
+                        {showGospelForm && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white border-2 border-green-200 rounded-xl p-6 mb-6"
+                          >
+                            <h3 className="text-lg font-semibold mb-4 text-gray-900">
+                              {editingGospel ? 'Edit Gospel Video' : 'Add New Gospel Video'}
+                            </h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">YouTube URL *</label>
+                                <input
+                                  type="text"
+                                  value={gospelFormData.youtube_url}
+                                  onChange={(e) => setGospelFormData({ ...gospelFormData, youtube_url: e.target.value })}
+                                  placeholder="https://www.youtube.com/watch?v=..."
+                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Scheduled Time (HH:MM) *</label>
+                                  <input
+                                    type="time"
+                                    value={gospelFormData.scheduled_time}
+                                    onChange={(e) => setGospelFormData({ ...gospelFormData, scheduled_time: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                                  <input
+                                    type="text"
+                                    value={gospelFormData.title}
+                                    onChange={(e) => setGospelFormData({ ...gospelFormData, title: e.target.value })}
+                                    placeholder="Gospel Message"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <textarea
+                                  value={gospelFormData.description}
+                                  onChange={(e) => setGospelFormData({ ...gospelFormData, description: e.target.value })}
+                                  placeholder="Optional description for the video"
+                                  rows={3}
+                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                />
+                              </div>
+
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={gospelFormData.is_active}
+                                  onChange={(e) => setGospelFormData({ ...gospelFormData, is_active: e.target.checked })}
+                                  className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                                />
+                                <label className="ml-2 text-sm font-medium text-gray-700">Active (will display to users at scheduled time)</label>
+                              </div>
+
+                              <div className="flex gap-3">
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={saveGospel}
+                                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                                >
+                                  {editingGospel ? 'Update Video' : 'Add Video'}
+                                </motion.button>
+                                <button
+                                  onClick={() => {
+                                    setShowGospelForm(false)
+                                    setEditingGospel(null)
+                                    setGospelFormData({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
+                                  }}
+                                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-all"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {gospelVideos.length === 0 ? (
+                          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+                            <Mail className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-500 text-lg">No gospel videos configured yet</p>
+                            <p className="text-gray-400 text-sm mt-2">Create your first gospel video to start broadcasting to your community</p>
+                          </div>
+                        ) : (
+                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {gospelVideos.map((gospel) => (
+                              <motion.div
+                                key={gospel.id}
+                                whileHover={{ y: -5 }}
+                                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all"
+                              >
+                                <div className="aspect-video bg-black flex items-center justify-center relative">
+                                  <Globe className="w-12 h-12 text-gray-600" />
+                                  <div className="absolute top-2 right-2">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                                      gospel.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {gospel.is_active ? '🟢 Active' : '⚫ Inactive'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="p-4">
+                                  <h4 className="font-semibold text-gray-900 mb-1">{gospel.title}</h4>
+                                  <p className="text-xs text-gray-500 mb-3 line-clamp-2">{gospel.description || 'No description'}</p>
+
+                                  <div className="space-y-2 mb-4">
+                                    <div className="flex items-center text-sm">
+                                      <Clock className="w-4 h-4 text-gray-400 mr-2" />
+                                      <span className="text-gray-600">Scheduled: {gospel.scheduled_time}</span>
+                                    </div>
+                                    <div className="flex items-center text-xs text-gray-500">
+                                      <span>Created: {new Date(gospel.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2">
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => {
+                                        setEditingGospel(gospel)
+                                        setGospelFormData({
+                                          youtube_url: gospel.youtube_url,
+                                          scheduled_time: gospel.scheduled_time,
+                                          title: gospel.title,
+                                          description: gospel.description,
+                                          is_active: gospel.is_active
+                                        })
+                                        setShowGospelForm(true)
+                                      }}
+                                      className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-all text-sm"
+                                    >
+                                      Edit
+                                    </motion.button>
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => deleteGospel(gospel.id)}
+                                      className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition-all text-sm"
+                                    >
+                                      Delete
+                                    </motion.button>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {tab === 'bulk' && (
                   <div>
                     <div className="mb-6">
@@ -2242,6 +2639,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     
                     {uploadMode === 'json' && (
                     <>
+                    {bulkMessage && (
+                      <div className={`p-3 rounded-lg mb-4 ${bulkMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                        {bulkMessage.text}
+                      </div>
+                    )}
                     <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl p-6 mb-6">
                       <div className="flex items-start space-x-3 mb-4">
                         <Database className="w-6 h-6 text-green-600 mt-1" />
@@ -2311,6 +2713,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                     {uploadMode === 'file' && (
                       <div className="bg-white p-6 rounded-xl border border-gray-200">
+                        {bulkMessage && (
+                          <div className={`p-3 rounded-lg mb-4 ${bulkMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                            {bulkMessage.text}
+                          </div>
+                        )}
                         <h4 className="font-semibold mb-4">Upload CSV or Excel File</h4>
                         <p className="text-sm text-gray-600 mb-4">
                           File should have columns: question_text, option_a, option_b, option_c, option_d, correct_answer, explanation.
@@ -2324,8 +2731,12 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={async () => {
-                            if (!bulkFile || !selectedExam || !selectedSubject) return alert('Please select exam, subject and file')
+                            onClick={async () => {
+                            if (!bulkFile || !selectedExam || !selectedSubject) {
+                              setBulkMessage({ type: 'error', text: 'Please select exam, subject and file' })
+                              setTimeout(() => setBulkMessage(null), 4000)
+                              return
+                            }
                             const formData = new FormData()
                             formData.append('file', bulkFile)
                             formData.append('exam_id', selectedExam)
@@ -2337,9 +2748,24 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               const res = await axios.post(`${API_BASE}/cbt/bulk-upload/`, formData, {
                                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
                               })
-                              alert(`Success! Created ${res.data.success} questions.`)
+                              setBulkMessage({ type: 'success', text: `Success! Created ${res.data.success} questions.` })
+                              setTimeout(() => setBulkMessage(null), 5000)
                             } catch (err: any) {
-                              alert('Upload failed: ' + (err.response?.data?.detail || err.message))
+                              console.error('Bulk file upload error:', err)
+                              let msg = 'Upload failed: '
+                              if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+                                msg += err.response.data.errors.join('; ')
+                              } else if (err.response?.data?.detail) {
+                                msg += err.response.data.detail
+                              } else if (err.response?.data?.error) {
+                                msg += err.response.data.error
+                              } else if (err.message) {
+                                msg += err.message
+                              } else {
+                                msg += 'Unknown error'
+                              }
+                              setBulkMessage({ type: 'error', text: msg })
+                              setTimeout(() => setBulkMessage(null), 6000)
                             }
                           }}
                           className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg font-semibold"
@@ -2535,14 +2961,19 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Image (upload)</label>
                   <input
-                    type="text"
-                    value={blogFormData.image}
-                    onChange={(e) => setBlogFormData({...blogFormData, image: e.target.value})}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setBlogFormData({...blogFormData, image: e.target.files?.[0] ?? null})}
+                    className="w-full"
                   />
+                  {typeof blogFormData.image === 'string' && blogFormData.image && (
+                    <img src={blogFormData.image} alt="preview" className="mt-2 w-32 h-20 object-cover rounded" />
+                  )}
+                  {blogFormData.image instanceof File && (
+                    <p className="mt-2 text-sm text-gray-600">Selected file: {blogFormData.image.name}</p>
+                  )}
                 </div>
               </div>
             </div>

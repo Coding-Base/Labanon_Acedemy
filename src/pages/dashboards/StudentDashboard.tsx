@@ -45,7 +45,8 @@ import CoursePlayer from '../CoursePlayer';
 import CourseDetail from '../CourseDetail';
 import MessageModal from '../../components/MessageModal';
 import CertificatesPage from '../CertificatesPage';
-import SchedulePage from '../../components/SchedulePage'; 
+import SchedulePage from '../../components/SchedulePage';
+import GospelVideoModal from '../../components/GospelVideoModal';
 
 // --- Types ---
 interface DashboardSummary {
@@ -353,7 +354,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   {user.exams_taken} Tests
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-green-600">
-                  {user.score.toFixed(1)} pts
+                  {parseFloat(user.score.toFixed(1))} pts
                 </td>
               </tr>
             ))}
@@ -365,6 +366,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 overflow-hidden">
+      <GospelVideoModal />
       <motion.header 
         initial={{ y: -20, opacity: 0 }} 
         animate={{ y: 0, opacity: 1 }} 
@@ -549,7 +551,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                                       <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-bold text-gray-700 mr-2">{user.avatar_initial}</div>
                                       <div className="text-sm font-semibold">{user.name}</div>
                                     </div>
-                                    <div className="text-sm font-bold text-green-600">{user.score}</div>
+                                    <div className="text-sm font-bold text-green-600">{parseFloat(user.score.toFixed(1))}</div>
                                   </div>
                                 ))}
                                 {leaderboard.length === 0 && <div className="text-sm text-gray-500 text-center py-4">No data available</div>}

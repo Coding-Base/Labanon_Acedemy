@@ -10,6 +10,10 @@ interface Transaction {
   amount: number | string
   platform_fee: number | string
   creator_amount: number | string
+  gateway?: string
+  reference?: string
+  merchant_fee?: number | string
+  gateway_fee?: number | string
   status: 'pending' | 'success' | 'failed'
   kind: 'course' | 'diploma' | 'unlock'
   course_title?: string
@@ -28,13 +32,15 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
   const [error, setError] = useState('')
   const [totalSpent, setTotalSpent] = useState(0)
   const [totalEarned, setTotalEarned] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageInfo, setPageInfo] = useState({ count: 0, next: null, previous: null })
 
   useEffect(() => {
-    loadTransactions()
+    loadTransactions(1)
     return () => {}
   }, [])
 
-  const loadTransactions = async () => {
+  const loadTransactions = async (page: number = 1) => {
     try {
       setLoading(true)
       // Token is handled automatically by api instance
@@ -44,19 +50,23 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
         // For tutors, fetch payments for courses they created
         const me = await api.get('/users/me/')
         const uid = me.data.id
-        // page_size=1000 is a temporary way to get "all" history for calculation
-        // Ideally backend should provide a /stats endpoint
         res = await api.get('/payments/', {
-            params: { tutor: uid, page_size: 1000 }
+            params: { tutor: uid, page: page, page_size: 10 }
         })
       } else {
         res = await api.get('/payments/', {
-            params: { page_size: 1000 }
+            params: { page: page, page_size: 10 }
         })
       }
 
-      const trans = res.data.results || res.data || []
+      const trans = res.data.results || []
       setTransactions(trans)
+      setCurrentPage(page)
+      setPageInfo({
+        count: res.data.count || 0,
+        next: res.data.next || null,
+        previous: res.data.previous || null
+      })
 
       // Calculate totals
       let spent = 0
@@ -110,8 +120,10 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
       return transaction.course_title
     } else if (transaction.kind === 'diploma' && transaction.diploma_title) {
       return transaction.diploma_title
+    } else if (transaction.kind === 'unlock') {
+      return 'Account Activation'
     }
-    return 'Account Unlock'
+    return transaction.kind ? transaction.kind.charAt(0).toUpperCase() + transaction.kind.slice(1) : 'Payment'
   }
 
   if (loading && transactions.length === 0) {
@@ -184,12 +196,15 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Item</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Gateway</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Reference</th>
                   
                   {['tutor', 'institution', 'master_admin'].includes(userRole) && (
                     <>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Your Share (95%)</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Platform Fee (5%)</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Gateway Fee</th>
                     </>
                   )}
                   
@@ -211,8 +226,14 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
                         <p className="text-xs text-gray-500 capitalize mt-1">{transaction.kind}</p>
                       </div>
                     </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {transaction.gateway || '—'}
+                    </td>
                     <td className="px-6 py-4">
                       <p className="font-semibold text-gray-900">₦{parseFloat(transaction.amount.toString()).toLocaleString()}</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {transaction.reference || '—'}
                     </td>
                     
                     {['tutor', 'institution', 'master_admin'].includes(userRole) && (
@@ -225,6 +246,11 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
                         <td className="px-6 py-4">
                           <p className="text-sm text-gray-600">
                             ₦{parseFloat(transaction.platform_fee?.toString() || '0').toLocaleString()}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm text-gray-600">
+                            ₦{parseFloat((transaction.gateway_fee ?? 0).toString()).toLocaleString()}
                           </p>
                         </td>
                       </>
@@ -248,6 +274,35 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {transactions.length > 0 && (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white rounded-xl">
+          <div className="text-sm text-gray-600">
+            Showing page {currentPage} of {Math.ceil(pageInfo.count / 10)} ({pageInfo.count?.toLocaleString() || '0'} total)
+          </div>
+          <div className="flex space-x-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => loadTransactions(currentPage - 1)}
+              disabled={!pageInfo.previous || loading}
+              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors"
+            >
+              ← Previous
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => loadTransactions(currentPage + 1)}
+              disabled={!pageInfo.next || loading}
+              className="px-4 py-2 rounded-lg bg-green-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
+            >
+              Next →
+            </motion.button>
+          </div>
+        </div>
+      )}
     </motion.div>
   )
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { X, AlertCircle, CheckCircle, Trash2, Loader2 } from 'lucide-react'
+import { X, AlertCircle, CheckCircle, Trash2, Loader2, UserCog } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
@@ -52,6 +52,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
   const [success, setSuccess] = useState('')
   const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([])
   const [showForm, setShowForm] = useState(true)
+  const [editingId, setEditingId] = useState<number | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -90,8 +91,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
     e.preventDefault()
     setError('')
     setSuccess('')
-
-    // Validation
+    // Basic validation
     if (!formData.username.trim()) {
       setError('Username is required')
       return
@@ -100,28 +100,29 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
       setError('Email is required')
       return
     }
-    if (!formData.password) {
-      setError('Password is required')
-      return
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters')
-      return
+
+    // Only require password when creating a new sub-admin
+    if (!editingId) {
+      if (!formData.password) {
+        setError('Password is required')
+        return
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match')
+        return
+      }
+      if (formData.password.length < 6) {
+        setError('Password must be at least 6 characters')
+        return
+      }
     }
 
     try {
       setLoading(true)
       const token = localStorage.getItem('access')
-      console.debug('SubAdminForm: create token present?', !!token)
-      
-      const payload = {
-        username: formData.username.trim(),
-        email: formData.email.trim(),
-        password: formData.password,
+
+      // Prepare permissions payload
+      const permsPayload = {
         can_manage_users: formData.can_manage_users,
         can_manage_institutions: formData.can_manage_institutions,
         can_manage_courses: formData.can_manage_courses,
@@ -132,16 +133,24 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
         can_manage_subadmins: formData.can_manage_subadmins,
       }
 
-      await axios.post(
-        `${API_BASE}/subadmin/create_subadmin/`,
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` }
+      if (editingId) {
+        // Update permissions for existing sub-admin (do not require password)
+        await axios.patch(`${API_BASE}/subadmin/${editingId}/`, permsPayload, { headers: { Authorization: `Bearer ${token}` } })
+        setSuccess('Sub-admin updated successfully')
+        setEditingId(null)
+      } else {
+        // Create new sub-admin
+        const payload = {
+          username: formData.username.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+          ...permsPayload
         }
-      )
 
-      setSuccess('Sub-admin created successfully!')
-      
+        await axios.post(`${API_BASE}/subadmin/create_subadmin/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+        setSuccess('Sub-admin created successfully!')
+      }
+
       // Reset form
       setFormData({
         username: '',
@@ -162,10 +171,29 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
       await fetchSubAdmins()
       onSuccess()
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create sub-admin')
+      setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to save sub-admin')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEdit = (sub: SubAdmin) => {
+    setShowForm(true)
+    setEditingId(sub.id)
+    setFormData({
+      username: sub.user.username,
+      email: sub.user.email,
+      password: '',
+      confirmPassword: '',
+      can_manage_users: !!sub.can_manage_users,
+      can_manage_institutions: !!sub.can_manage_institutions,
+      can_manage_courses: !!sub.can_manage_courses,
+      can_manage_cbt: !!sub.can_manage_cbt,
+      can_view_payments: !!sub.can_view_payments,
+      can_manage_blog: !!sub.can_manage_blog,
+      can_view_messages: !!sub.can_view_messages,
+      can_manage_subadmins: !!sub.can_manage_subadmins,
+    })
   }
 
   const handleDelete = async (id: number) => {
@@ -213,14 +241,17 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
           {/* Tabs */}
           <div className="flex gap-2 mb-6 border-b border-gray-200">
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                setShowForm(true)
+                if (!editingId) setError('')
+              }}
               className={`px-4 py-2 font-medium border-b-2 transition-colors ${
                 showForm
                   ? 'border-green-500 text-green-600'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Create New Sub-Admin
+              {editingId ? '🔐 Update Permissions' : '➕ Create New Sub-Admin'}
             </button>
             <button
               onClick={() => setShowForm(false)}
@@ -252,6 +283,13 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
           {showForm ? (
             /* Create Form */
             <form onSubmit={handleSubmit} className="space-y-6">
+              {editingId && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-blue-700 text-sm">You are updating permissions for an existing sub-admin. Username and email cannot be changed.</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">Username</label>
@@ -262,7 +300,8 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                     onChange={handleChange}
                     placeholder="Enter username"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                    disabled={!!editingId}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -275,35 +314,40 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                     onChange={handleChange}
                     placeholder="Enter email"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                    disabled={!!editingId}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Password</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Enter password"
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-                  />
-                </div>
+                {!editingId && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Password</label>
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Enter password"
+                        required={!editingId}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Confirm Password</label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm password"
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Confirm Password</label>
+                      <input
+                        type="password"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="Confirm password"
+                        required={!editingId}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Permissions */}
@@ -349,7 +393,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white font-semibold rounded-lg hover:from-green-700 hover:to-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Create Sub-Admin
+                  {editingId ? 'Update Permissions' : 'Create Sub-Admin'}
                 </button>
               </div>
             </form>
@@ -419,15 +463,26 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                         <p className="text-xs text-gray-500">
                           Created: {new Date(subadmin.created_at).toLocaleDateString()}
                         </p>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handleDelete(subadmin.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete sub-admin"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </motion.button>
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleEdit(subadmin)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit sub-admin"
+                          >
+                            <UserCog className="w-4 h-4" />
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleDelete(subadmin.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete sub-admin"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </motion.button>
+                        </div>
                       </div>
                     </div>
                   ))}

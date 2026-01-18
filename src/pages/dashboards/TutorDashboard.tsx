@@ -40,7 +40,8 @@ import PaystackSubAccountForm from '../../components/PaystackSubAccountForm';
 import FlutterwaveSubAccountSetup from '../../components/FlutterwaveSubAccountSetup';
 import MessageModal from '../../components/MessageModal';
 import UserMessages from '../../components/UserMessages';
-import SchedulePage from '../../components/SchedulePage'; // Added SchedulePage
+import SchedulePage from '../../components/SchedulePage';
+import GospelVideoModal from '../../components/GospelVideoModal';
 
 // Recharts imports
 import {
@@ -426,7 +427,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   }, [salesByMonth]);
 
   const platformFee = +(calculatedEarnings * 0.05).toFixed(2);
-  const tutorShare = calculatedEarnings;
+  const tutorShare = +(calculatedEarnings - platformFee).toFixed(2);
 
   const navItems = [
     { path: 'overview', label: 'Overview', icon: <Home className="w-5 h-5" /> },
@@ -547,6 +548,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 relative">
+      <GospelVideoModal />
       {accountLocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black opacity-40"></div>
@@ -661,28 +663,27 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   <Route path="earnings" element={
                     <div>
                       <h2 className="text-xl font-semibold mb-4">Earnings</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div className="bg-white rounded p-6 shadow">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow border border-green-200">
                           <div className="flex items-start justify-between">
                             <div>
-                              <div className="text-sm text-gray-500">Total Earnings</div>
-                              <div className="text-3xl font-bold mt-2">₦{(calculatedEarnings || 0).toLocaleString()}</div>
-                              <div className="text-xs text-gray-500 mt-1">Gross revenue from course sales</div>
+                              <div className="text-sm text-green-700 font-medium">Net Earnings</div>
+                              <div className="text-3xl font-bold mt-2 text-green-900">₦{(tutorShare || 0).toLocaleString()}</div>
+                              <div className="text-xs text-green-600 mt-1">After platform fee (5%) and gateway fees</div>
                             </div>
                             <div className="text-4xl text-green-600 font-bold">₦</div>
                           </div>
                         </div>
 
-                        <div className="bg-white rounded p-6 shadow">
-                          <div className="text-sm text-gray-500">Platform Fee (5%)</div>
-                          <div className="text-2xl font-bold mt-2">₦{platformFee.toLocaleString()}</div>
-                          <div className="text-xs text-gray-500 mt-1">This is the platform's share per sale (display only)</div>
-                        </div>
-
-                        <div className="bg-white rounded p-6 shadow">
-                          <div className="text-sm text-gray-500">Your share</div>
-                          <div className="text-2xl font-bold mt-2">₦{tutorShare.toLocaleString()}</div>
-                          <div className="text-xs text-gray-500 mt-1">Amount available to you (approx)</div>
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow border border-blue-200">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="text-sm text-blue-700 font-medium">Total Revenue</div>
+                              <div className="text-3xl font-bold mt-2 text-blue-900">₦{(calculatedEarnings || 0).toLocaleString()}</div>
+                              <div className="text-xs text-blue-600 mt-1">Gross amount from all course sales</div>
+                            </div>
+                            <div className="text-4xl text-blue-600 font-bold">₦</div>
+                          </div>
                         </div>
                       </div>
 

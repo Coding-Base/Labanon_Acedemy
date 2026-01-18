@@ -39,8 +39,9 @@ import InstitutionPortfolio from '../../components/InstitutionPortfolio';
 import InstitutionPayments from '../../components/InstitutionPayments';
 import ContactAdminForm from '../../components/ContactAdminForm';
 import UserMessages from '../../components/UserMessages';
-import SchedulePage from '../../components/SchedulePage'; 
+import SchedulePage from '../../components/SchedulePage';
 import InstitutionSignature from '../../components/InstitutionSignature';
+import GospelVideoModal from '../../components/GospelVideoModal';
 
 // Recharts
 import {
@@ -287,6 +288,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans relative">
+      <GospelVideoModal />
       {accountLocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black opacity-40"></div>

@@ -185,7 +185,11 @@ export default function Home() {
       ];
 
       try {
-        const res = await axios.get(`${API_BASE}/courses/?page_size=4`);
+        // Use a local axios instance without the global interceptors
+        // to avoid sending an expired/invalid Authorization header
+        // for public homepage requests.
+        const publicApi = axios.create({ baseURL: API_BASE });
+        const res = await publicApi.get(`/courses/?page_size=4`);
         const realCourses = res.data.results || res.data || [];
         
         const formattedRealCourses: DisplayCourse[] = realCourses.map((c: any) => ({
@@ -208,6 +212,8 @@ export default function Home() {
         setDisplayCourses(combined);
 
       } catch (err) {
+        // If fetching real courses fails (e.g., 401 due to expired token),
+        // fallback to dummy courses so the homepage remains public.
         console.error("Failed to fetch courses, using dummy data", err);
         setDisplayCourses(dummyCourses);
       }

@@ -1174,44 +1174,46 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                       : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                                   }`}
                                 >
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-4">
-                                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                    <div className="grid grid-cols-2 items-center gap-4">
+                                    <div className="flex items-center space-x-4 min-w-0">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                                         {user.username?.charAt(0).toUpperCase()}
                                       </div>
-                                      <div>
-                                        <h4 className="font-semibold text-gray-900">{user.username}</h4>
+                                      <div className="min-w-0">
+                                        <h4 className="font-semibold text-gray-900 truncate">{user.username}</h4>
                                         <div className="flex items-center mt-1 space-x-3">
                                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
                                             {getRoleIcon(user.role)}
                                             <span className="ml-1">{user.role}</span>
                                           </span>
-                                          <span className="text-sm text-gray-500">{user.email}</span>
+                                          <span className="text-sm text-gray-500 truncate">{user.email}</span>
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex items-center space-x-2 justify-end">
                                       <motion.button
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
                                         onClick={(e) => {
                                           e.stopPropagation()
                                           setSelectedUser(user)
                                         }}
-                                        className="p-2 text-gray-500 hover:text-green-600"
+                                        className="p-1 text-gray-500 hover:text-green-600 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded"
+                                        title="View"
                                       >
-                                        <Eye className="w-5 h-5" />
+                                        <Eye className="w-4 h-4" />
                                       </motion.button>
                                       <motion.button
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
                                         onClick={(e) => {
                                           e.stopPropagation()
                                           setDeleteConfirmation({open: true, userId: user.id, userName: user.username})
                                         }}
-                                        className="p-2 text-gray-500 hover:text-red-600"
+                                        className="p-1 text-gray-500 hover:text-red-600 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded"
+                                        title="Delete"
                                       >
-                                        <Trash2 className="w-5 h-5" />
+                                        <Trash2 className="w-4 h-4" />
                                       </motion.button>
                                     </div>
                                   </div>

@@ -77,6 +77,10 @@ export default function CreateCourse() {
   const [errors, setErrors] = useState<Record<string, any>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
 
+  // Encoding feedback state
+  const [isEncodingVideo, setIsEncodingVideo] = useState(false)
+  const [encodingVideoId, setEncodingVideoId] = useState<string | null>(null)
+
   // Polling refs for background video status checks
   const videoPollingRefs = useRef<Record<string, number>>({})
 
@@ -127,7 +131,12 @@ export default function CreateCourse() {
   function startPollingForVideo(videoId: string, moduleIdx: number, lessonIdx: number) {
     const token = localStorage.getItem('access')
     if (!videoId || !token) return
-    if (videoPollingRefs.current[videoId]) return 
+    if (videoPollingRefs.current[videoId]) return
+    
+    // Start encoding feedback
+    setIsEncodingVideo(true)
+    setEncodingVideoId(videoId)
+    
     const interval = window.setInterval(async () => {
       try {
         const res = await axios.get(`${API_BASE}/videos/${videoId}/`, { headers: { Authorization: `Bearer ${token}` } })
@@ -143,6 +152,11 @@ export default function CreateCourse() {
           })
           window.clearInterval(videoPollingRefs.current[videoId])
           delete videoPollingRefs.current[videoId]
+          
+          // Stop encoding feedback
+          setIsEncodingVideo(false)
+          setEncodingVideoId(null)
+          
           try { alert('Video encoding complete — URL attached to lesson.') } catch { }
         }
       } catch (err) {}
@@ -839,6 +853,61 @@ export default function CreateCourse() {
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={cancelDelete} className="px-4 py-2 bg-gray-100 rounded">Cancel</button>
               <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Encoding Feedback Overlay */}
+      {isEncodingVideo && encodingVideoId && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center">
+          {/* Blur background */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-md" />
+          
+          {/* Content */}
+          <div className="relative z-71 flex flex-col items-center justify-center gap-6 bg-white rounded-lg p-8 w-[90%] md:w-1/3 shadow-2xl">
+            {/* Loader Animation */}
+            <div className="flex items-center justify-center">
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 border-4 border-gray-200 rounded-full" />
+                <div className="absolute inset-0 border-4 border-blue-600 rounded-full animate-spin border-r-transparent border-t-transparent" />
+              </div>
+            </div>
+
+            {/* Text */}
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Encoding Video</h3>
+              <p className="text-sm text-gray-600">Your video is being processed and optimized for playback. This may take a few minutes.</p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => {
+                  setIsEncodingVideo(false)
+                  setEncodingVideoId(null)
+                  if (encodingVideoId && videoPollingRefs.current[encodingVideoId]) {
+                    window.clearInterval(videoPollingRefs.current[encodingVideoId])
+                    delete videoPollingRefs.current[encodingVideoId]
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+              >
+                Quiet
+              </button>
+              <button
+                onClick={() => {
+                  setIsEncodingVideo(false)
+                  setEncodingVideoId(null)
+                  if (encodingVideoId && videoPollingRefs.current[encodingVideoId]) {
+                    window.clearInterval(videoPollingRefs.current[encodingVideoId])
+                    delete videoPollingRefs.current[encodingVideoId]
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

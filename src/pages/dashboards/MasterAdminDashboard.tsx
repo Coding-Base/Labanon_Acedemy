@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
+import useTokenRefresher from '../../utils/useTokenRefresher'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -211,6 +212,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
+
+  // Keep token refreshed while master admin dashboard is open
+  useTokenRefresher(50)
 
   // fetch summary if not provided
   useEffect(() => {

@@ -4,6 +4,7 @@ import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion';
 // 1. USE SECURE API INSTANCE
 import api from '../../utils/axiosInterceptor';
+import useTokenRefresher from '../../utils/useTokenRefresher';
 import {
   Home,
   BookOpen,
@@ -153,6 +154,8 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   const STUDENTS_PAGE_SIZE = 10;
 
   // --- 2. EFFECTS & ALGORITHMS ---
+  // Start token refresher to extend access token while user is active on this dashboard
+  useTokenRefresher(50) // refresh every 50 minutes
 
   useEffect(() => {
     let mounted = true;

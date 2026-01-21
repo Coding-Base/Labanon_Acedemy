@@ -26,6 +26,7 @@ const InstitutionDashboard = lazy(() => import('./pages/dashboards/InstitutionDa
 const MasterAdminDashboard = lazy(() => import('./pages/dashboards/MasterAdminDashboard'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 // CBT pages (lazy)
 const PerformancePage = lazy(() => import('./components/cbt/PerformancePage'))
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />   
             <Route path="/" element={<Home />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
        </Suspense> 
       </div> 

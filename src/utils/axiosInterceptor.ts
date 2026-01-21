@@ -21,10 +21,15 @@ const attachInterceptors = (instance: AxiosInstance) => {
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
-        console.warn('[Axios] 401 Unauthorized - Token might be expired.');
-        // Optional: Clear storage or redirect, but be careful of loops
-        // localStorage.removeItem('access'); 
-        // window.location.href = '/login'; 
+        console.warn('[Axios] 401 Unauthorized - Token might be expired. Redirecting to login.');
+        try {
+          localStorage.removeItem('access')
+          localStorage.removeItem('refresh')
+        } catch (e) {
+          // ignore
+        }
+        // Redirect to login page
+        if (typeof window !== 'undefined') window.location.href = '/login'
       }
       return Promise.reject(error);
     }

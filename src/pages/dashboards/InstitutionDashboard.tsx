@@ -3,6 +3,7 @@ import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion';
 // 1. IMPORT SECURE API INSTANCE
 import api from '../../utils/axiosInterceptor'; 
+import useTokenRefresher from '../../utils/useTokenRefresher';
 import {
   Home,
   BookOpen,
@@ -116,6 +117,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
     localStorage.removeItem('refresh');
     navigate('/login', { replace: true });
   };
+
+  // keep token refreshed while on institution dashboard
+  useTokenRefresher(50)
 
   // Helper: Process payments for chart
   const processRevenueData = (payments: any[]) => {

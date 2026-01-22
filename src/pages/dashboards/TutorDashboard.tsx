@@ -37,6 +37,7 @@ import ManageCourses from '../ManageCourses';
 import ManageCourseDetail from '../ManageCourseDetail';
 import CreateCourse from '../CreateCourse';
 import PaymentHistory from '../../components/PaymentHistory';
+import PayoutScheduleInfo from '../../components/PayoutScheduleInfo';
 import PaystackSubAccountForm from '../../components/PaystackSubAccountForm';
 import FlutterwaveSubAccountSetup from '../../components/FlutterwaveSubAccountSetup';
 import MessageModal from '../../components/MessageModal';
@@ -695,6 +696,11 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                           <h3 className="font-semibold">Payouts & Payment Method</h3>
                           <p className="text-sm text-gray-500">Connect your Paystack/Flutterwave account to receive payouts.</p>
                         </div>
+                      </div>
+
+                      {/* Payout Schedule Information Banner */}
+                      <div className="mb-6">
+                        <PayoutScheduleInfo variant="banner" userRole="tutor" />
                       </div>
 
                       <div className="grid md:grid-cols-3 gap-6 mt-6">

@@ -38,6 +38,7 @@ import CreateCourse from '../CreateCourse';
 import InstitutionDiplomas from '../../components/InstitutionDiplomas';
 import InstitutionPortfolio from '../../components/InstitutionPortfolio';
 import InstitutionPayments from '../../components/InstitutionPayments';
+import PayoutScheduleInfo from '../../components/PayoutScheduleInfo';
 import ContactAdminForm from '../../components/ContactAdminForm';
 import UserMessages from '../../components/UserMessages';
 import SchedulePage from '../../components/SchedulePage';
@@ -663,7 +664,11 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   {/* Payments & Flutterwave */}
                   <Route path="payments" element={
                     <div>
-                        <InstitutionPayments />
+                        <PayoutScheduleInfo variant="banner" userRole="institution" />
+                        
+                        <div className="mt-6">
+                            <InstitutionPayments />
+                        </div>
                         
                         {/* Flutterwave Section */}
                         {fwAccount ? (

@@ -170,10 +170,10 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
         </div>
       )}
 
-      {/* Transactions Table */}
+      {/* Transactions - Desktop Table & Mobile Cards */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-gray-900">Payment History</h3>
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900">Payment History</h3>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -187,107 +187,192 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
         </div>
 
         {transactions.length === 0 ? (
-          <div className="px-6 py-12 text-center">
+          <div className="px-4 sm:px-6 py-12 text-center">
             <p className="text-gray-500">No transactions yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Item</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Gateway</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Reference</th>
-                  
-                  {['tutor', 'institution', 'master_admin'].includes(userRole) && (
-                    <>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Your Share (95%)</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Platform Fee (5%)</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Gateway Fee</th>
-                    </>
-                  )}
-                  
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {transactions.map((transaction) => (
-                  <motion.tr
-                    key={transaction.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-medium text-gray-900 line-clamp-1">{getItemTitle(transaction)}</p>
-                        <p className="text-xs text-gray-500 capitalize mt-1">{transaction.kind}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {transaction.gateway || '—'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-900">₦{parseFloat(transaction.amount.toString()).toLocaleString()}</p>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {transaction.reference || '—'}
-                    </td>
+          <>
+            {/* Desktop: Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Item</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Gateway</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Amount</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Reference</th>
                     
                     {['tutor', 'institution', 'master_admin'].includes(userRole) && (
                       <>
-                        <td className="px-6 py-4">
-                          <p className="font-semibold text-green-600">
-                            ₦{parseFloat(transaction.creator_amount?.toString() || '0').toLocaleString()}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-gray-600">
-                            ₦{parseFloat(transaction.platform_fee?.toString() || '0').toLocaleString()}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Your Share (95%)</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Platform Fee (5%)</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase hidden lg:table-cell">Gateway Fee</th>
+                      </>
+                    )}
+                    
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {transactions.map((transaction) => (
+                    <motion.tr
+                      key={transaction.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 sm:px-6 py-4">
+                        <div>
+                          <p className="font-medium text-gray-900 line-clamp-1 text-sm">{getItemTitle(transaction)}</p>
+                          <p className="text-xs text-gray-500 capitalize mt-1">{transaction.kind}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
+                        {transaction.gateway || '—'}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <p className="font-semibold text-gray-900 text-sm">₦{parseFloat(transaction.amount.toString()).toLocaleString()}</p>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
+                        <span className="line-clamp-1">{transaction.reference || '—'}</span>
+                      </td>
+                      
+                      {['tutor', 'institution', 'master_admin'].includes(userRole) && (
+                        <>
+                          <td className="px-4 sm:px-6 py-4">
+                            <p className="font-semibold text-green-600 text-sm">
+                              ₦{parseFloat(transaction.creator_amount?.toString() || '0').toLocaleString()}
+                            </p>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4">
+                            <p className="text-sm text-gray-600">
+                              ₦{parseFloat(transaction.platform_fee?.toString() || '0').toLocaleString()}
+                            </p>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 hidden lg:table-cell">
+                            <p className="text-sm text-gray-600">
+                              ₦{parseFloat((transaction.gateway_fee ?? 0).toString()).toLocaleString()}
+                            </p>
+                          </td>
+                        </>
+                      )}
+
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(transaction.status)}
+                          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusBadge(transaction.status).bg} ${getStatusBadge(transaction.status).text}`}>
+                            {transaction.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-600">
+                        {new Date(transaction.created_at).toLocaleDateString()}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile: Card View */}
+            <div className="md:hidden space-y-3 p-4 sm:p-6">
+              {transactions.map((transaction) => (
+                <motion.div
+                  key={transaction.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors bg-gray-50"
+                >
+                  <div className="space-y-3">
+                    {/* Item Title */}
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">Item</p>
+                      <p className="font-semibold text-gray-900 text-sm">{getItemTitle(transaction)}</p>
+                      <p className="text-xs text-gray-500 capitalize mt-0.5">{transaction.kind}</p>
+                    </div>
+
+                    {/* Amount Row */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">Amount</p>
+                        <p className="font-semibold text-gray-900 text-sm">₦{parseFloat(transaction.amount.toString()).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">Status</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {getStatusIcon(transaction.status)}
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${getStatusBadge(transaction.status).bg} ${getStatusBadge(transaction.status).text}`}>
+                            {transaction.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gateway & Date Row */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">Gateway</p>
+                        <p className="text-sm text-gray-700">{transaction.gateway || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">Date</p>
+                        <p className="text-sm text-gray-700">{new Date(transaction.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+
+                    {/* Reference */}
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">Reference</p>
+                      <p className="text-xs text-gray-700 font-mono break-all">{transaction.reference || '—'}</p>
+                    </div>
+
+                    {/* Tutor/Institution Breakdown */}
+                    {['tutor', 'institution', 'master_admin'].includes(userRole) && (
+                      <div className="pt-3 border-t border-gray-300 space-y-2">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wider">Your Share (95%)</p>
+                            <p className="font-semibold text-green-600 text-sm">
+                              ₦{parseFloat(transaction.creator_amount?.toString() || '0').toLocaleString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wider">Platform Fee (5%)</p>
+                            <p className="text-sm text-gray-600">
+                              ₦{parseFloat(transaction.platform_fee?.toString() || '0').toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider">Gateway Fee</p>
                           <p className="text-sm text-gray-600">
                             ₦{parseFloat((transaction.gateway_fee ?? 0).toString()).toLocaleString()}
                           </p>
-                        </td>
-                      </>
-                    )}
-
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(transaction.status)}
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusBadge(transaction.status).bg} ${getStatusBadge(transaction.status).text}`}>
-                          {transaction.status}
-                        </span>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(transaction.created_at).toLocaleDateString()}
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
       {/* Pagination */}
       {transactions.length > 0 && (
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white rounded-xl">
-          <div className="text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 border-t border-gray-200 bg-white rounded-xl">
+          <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
             Showing page {currentPage} of {Math.ceil(pageInfo.count / 10)} ({pageInfo.count?.toLocaleString() || '0'} total)
           </div>
-          <div className="flex space-x-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => loadTransactions(currentPage - 1)}
               disabled={!pageInfo.previous || loading}
-              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors"
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-gray-200 text-gray-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors"
             >
               ← Previous
             </motion.button>
@@ -296,7 +381,7 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
               whileTap={{ scale: 0.95 }}
               onClick={() => loadTransactions(currentPage + 1)}
               disabled={!pageInfo.next || loading}
-              className="px-4 py-2 rounded-lg bg-green-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-green-600 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
             >
               Next →
             </motion.button>

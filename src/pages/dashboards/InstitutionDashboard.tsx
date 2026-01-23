@@ -546,7 +546,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             {/* Quick Actions */}
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                                 <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+                                
                                 <div className="space-y-3">
+                                   <Link to="/institution/courses" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
                                     <button onClick={() => setCreatingCourse(true)} className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-green-200 hover:bg-green-50 transition-all group">
                                         <div className="flex items-center">
                                             <div className="bg-green-100 p-2 rounded-lg text-green-600 mr-3 group-hover:bg-green-200">
@@ -556,7 +558,8 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                                         </div>
                                         <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-green-600" />
                                     </button>
-                                    <Link to="diploma" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
+                                    </Link>
+                                    <Link to="/institution/diploma" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
                                         <div className="flex items-center">
                                             <div className="bg-blue-100 p-2 rounded-lg text-blue-600 mr-3 group-hover:bg-blue-200">
                                                 <GraduationCap className="w-5 h-5" />
@@ -565,7 +568,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                                         </div>
                                         <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
                                     </Link>
-                                    <Link to="portfolio" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all group">
+                                    <Link to="/institution/portfolio" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all group">
                                         <div className="flex items-center">
                                             <div className="bg-purple-100 p-2 rounded-lg text-purple-600 mr-3 group-hover:bg-purple-200">
                                                 <Briefcase className="w-5 h-5" />

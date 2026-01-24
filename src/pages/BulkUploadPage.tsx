@@ -45,13 +45,16 @@ export default function BulkUploadPage() {
           // If CSV looks OK, convert to internal JSON structure for preview/upload
           try {
             const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()))
+            // Find year column index (optional)
+            const yearIdx = headers.indexOf('year')
             const questions = rows.map(cols => ({
               id: cols[0],
               question_text: cols[1],
               options: { A: cols[2], B: cols[3], C: cols[4], D: cols[5] },
               correct_answer: cols[6],
               explanation: cols[7] || '',
-              subject: cols[8] || ''
+              subject: cols[8] || '',
+              year: yearIdx >= 0 && cols[yearIdx] ? cols[yearIdx] : ''
             }))
             const json = JSON.stringify({ exam_id: 'CSV_IMPORT', year: new Date().getFullYear(), questions }, null, 2)
             setJsonInput(json)
@@ -177,7 +180,7 @@ export default function BulkUploadPage() {
                     setJsonInput(e.target.value)
                     setParseError(null)
                   }}
-                  placeholder='{"exam_id": "JAMB_CHEM_2014", "year": 2014, "questions": [...]}'
+                  placeholder='{"exam_id": "JAMB_CHEM_2014", "year": 2014, "questions": [{"question_text": "...", "year": "2014", ...}]}'
                   className="w-full h-64 px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -213,9 +216,15 @@ export default function BulkUploadPage() {
             </div>
 
             {/* Example Format */}
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="font-semibold text-blue-900 mb-2">JSON Format Example:</p>
-              <pre className="text-xs text-blue-800 overflow-x-auto">
+            <div className="mt-6 space-y-4">
+              <div className="bg-purple-50 border-l-4 border-purple-600 rounded p-4">
+                <p className="font-bold text-purple-900 text-sm">📌 Year Field Requirement</p>
+                <p className="text-xs text-purple-800 mt-1">Include a <strong>"year"</strong> field in EACH question object to display the question year when students take exams. Example: <code className="bg-purple-100 px-1 rounded">"year": "2014"</code></p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="font-semibold text-blue-900 mb-2">JSON Format Example:</p>
+                <pre className="text-xs text-blue-800 overflow-x-auto">
 {`{
   "exam_id": "JAMB_CHEM_2014",
   "year": 2014,
@@ -231,11 +240,34 @@ export default function BulkUploadPage() {
       },
       "correct_answer": "A",
       "explanation": "...",
-      "subject": "Chemistry"
+      "subject": "Chemistry",
+      "year": "2014"
     }
   ]
 }`}
-              </pre>
+                </pre>
+                <p className="text-xs text-blue-700 mt-2 font-semibold">✓ IMPORTANT: Include "year" field in each question (e.g., "year": "2014")</p>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="font-semibold text-green-900 mb-2">CSV Format Example:</p>
+                <pre className="text-xs text-green-800 overflow-x-auto whitespace-pre-wrap break-words">
+{`id,question_text,optionA,optionB,optionC,optionD,correct_answer,explanation,subject,year
+2014_1,"What is the chemical formula for salt?","H2O","NaCl","H2SO4","KCl","B","NaCl is the chemical formula for common salt","Chemistry","2014"
+2014_2,"What is the atomic number of Carbon?","6","12","8","4","A","Carbon has an atomic number of 6","Chemistry","2014"`}
+                </pre>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="font-semibold text-yellow-900 mb-2">CSV Format Guide:</p>
+                <ul className="text-xs text-yellow-800 space-y-1 list-disc list-inside">
+                  <li><strong>Required columns:</strong> id, question_text, optionA, optionB, optionC, optionD, correct_answer, subject</li>
+                  <li><strong>Optional columns:</strong> explanation, year</li>
+                  <li>The <strong>year</strong> column is optional but recommended for better organization</li>
+                  <li>If year is not provided in CSV, questions won't display a year when students take the exam</li>
+                  <li>Wrap text containing commas in quotes: "text, with, comma"</li>
+                </ul>
+              </div>
             </div>
           </div>
 
@@ -277,7 +309,7 @@ export default function BulkUploadPage() {
                             <p className="text-sm font-medium text-gray-900">{q.id}</p>
                             <p className="text-xs text-gray-600 mt-1">{q.question_text.substring(0, 80)}...</p>
                             <p className="text-xs text-gray-500 mt-1">
-                              Subject: {q.subject} | Options: {Object.keys(q.options || {}).length}
+                              Subject: {q.subject} {q.year && `| Year: ${q.year}`} | Options: {Object.keys(q.options || {}).length}
                             </p>
                           </div>
                         ))}

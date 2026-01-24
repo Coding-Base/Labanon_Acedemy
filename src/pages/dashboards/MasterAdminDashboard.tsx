@@ -118,6 +118,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     optionA: '', optionB: '', optionC: '', optionD: '',
     correctAnswer: 'A',
     explanation: '',
+    year: '',
     image: null as File | null
   })
   const [bulkFile, setBulkFile] = useState<File | null>(null)
@@ -2655,10 +2656,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         <Database className="w-6 h-6 text-green-600 mt-1" />
                         <div>
                           <h4 className="font-semibold text-gray-900 mb-1">JSON Format Example</h4>
-                          <p className="text-xs text-gray-600 mb-3">Paste just the questions array below:</p>
+                          <p className="text-xs text-gray-600 mb-3">Paste just the questions array below. Include an optional <strong>"year"</strong> field in each question object (e.g., "year": "2014").</p>
                           <pre className="text-xs bg-white p-3 rounded-lg overflow-x-auto">
 {`[
   {
+    "id": "chem_1",
     "question_text": "What is the molar volume...",
     "options": {
       "A": "0.89 mol",
@@ -2668,7 +2670,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     },
     "correct_answer": "A",
     "explanation": "Convert to Kelvin...",
-    "subject": "Chemistry"
+    "subject": "Chemistry",
+    "year": "2014"
   }
 ]`}
                           </pre>
@@ -2831,9 +2834,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Explanation</label>
-                            <input type="text" value={manualQuestion.explanation} onChange={e => setManualQuestion({...manualQuestion, explanation: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+                            <label className="block text-sm font-medium text-gray-700">Year (Optional)</label>
+                            <input type="text" placeholder="e.g., 2014" value={manualQuestion.year} onChange={e => setManualQuestion({...manualQuestion, year: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
                           </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Explanation</label>
+                          <input type="text" value={manualQuestion.explanation} onChange={e => setManualQuestion({...manualQuestion, explanation: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
                         </div>
 
                         {manualMessage && (
@@ -2860,6 +2867,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             formData.append('subject', subj.id)
                             formData.append('text', manualQuestion.text)
                             if (manualQuestion.image) formData.append('image', manualQuestion.image)
+                            if (manualQuestion.year) formData.append('year', manualQuestion.year)
                             
                             const opts = [
                               { text: manualQuestion.optionA, key: 'A' },
@@ -2879,7 +2887,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
                               })
                               setManualMessage({type: 'success', text: 'Question created successfully!'})
-                              setManualQuestion({ text: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A', explanation: '', image: null })
+                              setManualQuestion({ text: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A', explanation: '', year: '', image: null })
                             } catch (err: any) {
                               setManualMessage({type: 'error', text: 'Failed: ' + (err.response?.data?.detail || err.message)})
                             } finally {

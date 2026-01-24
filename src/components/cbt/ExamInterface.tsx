@@ -12,6 +12,7 @@ interface Question {
   choices: { id: number; text: string }[]
   user_answer_id: number | null
   is_answered: boolean
+  year?: string
 }
 
 interface ExamInterfaceProps {
@@ -206,8 +207,15 @@ export default function ExamInterface({
             <div className="space-y-8 max-w-4xl">
               {questions.map((question) => (
                 <div key={question.id} className="bg-white p-6 rounded-lg shadow">
-                  <div className="text-lg font-bold mb-6">
-                    <MathDisplay content={question.text} />
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="text-lg font-bold mb-2">
+                        <MathDisplay content={question.text} />
+                      </div>
+                      {question.year && (
+                        <p className="text-xs text-gray-500 italic">Year: {question.year}</p>
+                      )}
+                    </div>
                   </div>
                   
                   {question.image && (

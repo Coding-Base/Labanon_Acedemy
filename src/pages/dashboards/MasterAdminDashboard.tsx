@@ -832,10 +832,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           // Using a hypothetical endpoint for JSON array upload or iterating
           // Adapting to single create or batch create if available
           // Assuming backend accepts a list at a bulk endpoint
-            await axios.post(`${API_BASE}/cbt/bulk-upload/`, { // backend exposes /api/cbt/bulk-upload/
-              exam_slug: selectedExam,
-              subject_name: selectedSubject,
-              questions: parsed
+              await axios.post(`${API_BASE}/cbt/bulk-upload/`, { // backend exposes /api/cbt/bulk-upload/
+                exam_id: selectedExam,
+                subject: selectedSubject,
+                questions: parsed
           }, {
               headers: { Authorization: `Bearer ${token}` }
           })

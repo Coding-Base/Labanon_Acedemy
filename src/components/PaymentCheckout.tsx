@@ -38,6 +38,8 @@ export default function PaymentCheckout({
   const [error, setError] = useState('')
   const [processing, setProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave'>('paystack')
+  const [tutorShare, setTutorShare] = useState<number>(95)
+  const [institutionShare, setInstitutionShare] = useState<number>(95)
   const navigate = useNavigate()
 
   // Load Paystack script on mount
@@ -45,6 +47,25 @@ export default function PaymentCheckout({
     const script = document.createElement('script')
     script.src = 'https://js.paystack.co/v1/inline.js'
     document.body.appendChild(script)
+  }, [])
+
+  // Load configured split from backend so UI reflects admin settings
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const token = localStorage.getItem('access')
+        if (!token) return
+        const res = await axios.get(`${API_BASE}/payments/admin/split-config/`, { headers: { Authorization: `Bearer ${token}` } })
+        if (!mounted) return
+        setTutorShare(typeof res.data.tutor_share === 'number' ? res.data.tutor_share : Number(res.data.tutor_share))
+        setInstitutionShare(typeof res.data.institution_share === 'number' ? res.data.institution_share : Number(res.data.institution_share))
+      } catch (e) {
+        // keep defaults on error
+        console.warn('Failed to load split config, using defaults')
+      }
+    })()
+    return () => { mounted = false }
   }, [])
 
   const initiatePayment = async () => {
@@ -205,14 +226,26 @@ export default function PaymentCheckout({
             </div>
           ) : (
             <>
-              <div className="text-sm text-gray-500 flex justify-between mb-4">
-                <span>Platform fee (5%):</span>
-                <span>₦{(amount * 0.05).toLocaleString()}</span>
-              </div>
-              <div className="text-sm text-gray-500 flex justify-between pb-4 border-b border-green-200 mb-4">
-                <span>Creator gets (95%):</span>
-                <span className="font-medium text-green-700">₦{(amount * 0.95).toLocaleString()}</span>
-              </div>
+              {(() => {
+                // Decide which creator share to use. Default to tutorShare; if item appears to be an institution-led purchase,
+                // server-side will use institution_share when initiating payment. For display here we use tutorShare as a best-effort.
+                const creatorShare = tutorShare
+                const platformPercent = Math.max(0, 100 - creatorShare)
+                const platformAmount = Math.round((amount * (platformPercent / 100)) * 100) / 100
+                const creatorAmount = Math.round((amount - platformAmount) * 100) / 100
+                return (
+                  <>
+                    <div className="text-sm text-gray-500 flex justify-between mb-4">
+                      <span>Platform fee ({platformPercent}%):</span>
+                      <span>₦{platformAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="text-sm text-gray-500 flex justify-between pb-4 border-b border-green-200 mb-4">
+                      <span>Creator gets ({creatorShare}%):</span>
+                      <span className="font-medium text-green-700">₦{creatorAmount.toLocaleString()}</span>
+                    </div>
+                  </>
+                )
+              })()}
             </>
           )}
           <div className="flex justify-between">

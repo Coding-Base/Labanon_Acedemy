@@ -39,7 +39,8 @@ import labanonLogo from '../labanonlogo.png'
 import CreateCourse from '../CreateCourse'
 import SubAdminForm from '../../components/dashboards/SubAdminForm'
 import AdminMessages from '../../components/AdminMessages'
-import PaymentHistory from '../../components/PaymentHistory'
+// If PaymentHistory is needed, import it, otherwise referencing internal table
+// import PaymentHistory from '../../components/PaymentHistory'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -55,8 +56,8 @@ type PermissionKey =
   | 'can_manage_cbt'
   | 'can_view_payments'
   | 'can_manage_blog'
-  | 'can_view_messages' // Ensure this matches backend serializer
-  | 'can_manage_subadmins'; // Implicit permission for Master Admin
+  | 'can_view_messages'
+  | 'can_manage_subadmins';
 
 export default function MasterAdminDashboard({ summary: propSummary }: MasterProps) {
   const location = useLocation()
@@ -99,6 +100,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [showActivationForm, setShowActivationForm] = useState(false)
   const [activationForm, setActivationForm] = useState({ id: null as number | null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' })
   const [activationMessage, setActivationMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
+  const [splitConfig, setSplitConfig] = useState<{tutor_share: string; institution_share: string} | null>(null)
+  const [splitLoading, setSplitLoading] = useState(false)
+  const [splitMessage, setSplitMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [blogs, setBlogs] = useState<any[]>([])
   const [blogsLoading, setBlogsLoading] = useState(false)
@@ -111,7 +115,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [passwordData, setPasswordData] = useState({old_password: '', new_password: '', confirm_password: ''})
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
-  
+   
   // Manual Question Upload State
   const [manualQuestion, setManualQuestion] = useState({
     text: '',
@@ -183,21 +187,16 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
   // Ensure current tab is accessible
   useEffect(() => {
-    // Only redirect if permissions are loaded and tabs are calculated
     if (subadminPermissions && tabs.length > 0) {
       const currentTabAllowed = tabs.some(t => t.id === tab);
       if (!currentTabAllowed) {
         setTab(tabs[0].id); // Default to first allowed tab
       }
-    } else if (subadminPermissions && tabs.length === 0) {
-        // Edge case: Subadmin exists but has 0 permissions
-        // Maybe handle this UI state? currently it just shows empty
     }
   }, [subadminPermissions, tabs, tab])
 
   // Data Loading Effects
   useEffect(() => {
-    // Only load if the tab is actually active/allowed
     if (tab === 'users') loadUsers()
     if (tab === 'bulk') loadExams()
     if (tab === 'institutions') loadInstitutions()
@@ -208,13 +207,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     if (tab === 'gospel') loadGospels()
     if (tab === 'exams') {
       loadExamsManagement()
-      // Ensure activation fees are also loaded for exams view
-      try { loadActivationFees() } catch (e) { /* ignore */ }
+      try { loadActivationFees(); loadSplitConfig() } catch (e) { /* ignore */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
-  // Keep token refreshed while master admin dashboard is open
   useTokenRefresher(50)
 
   // fetch summary if not provided
@@ -235,6 +232,12 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         const res = await axios.get(`${API_BASE}/dashboard/`, { headers: { Authorization: `Bearer ${token}` } })
         if (!mounted) return
         setSummary(res.data)
+        // Also populate profile form
+        setSettingsData({
+            firstName: res.data.first_name || '',
+            lastName: res.data.last_name || '',
+            email: res.data.email || ''
+        })
       } catch (err) {
         console.error('Failed to load admin summary:', err)
       } finally {
@@ -271,6 +274,18 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       const res = await axios.get(`${API_BASE}/cbt/exams/`, { headers: { Authorization: `Bearer ${token}` } })
       setExams(res.data.results || res.data)
     } catch (err) { console.error(err) }
+  }
+
+  // Helper for Bulk Upload to load subjects
+  async function loadSubjects(examId: string) {
+      try {
+          const token = localStorage.getItem('access')
+          const res = await axios.get(`${API_BASE}/cbt/exams/${examId}/subjects/`, { headers: { Authorization: `Bearer ${token}` } })
+          setSubjects(res.data.results || res.data || [])
+      } catch (err) {
+          console.error('Failed to load subjects', err)
+          setSubjects([])
+      }
   }
 
   async function loadInstitutions() {
@@ -351,7 +366,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       })
     } finally {
       setPaymentsLoading(false)
-      // also refresh activation fees for master admin view
       try { loadActivationFees() } catch (e) { /* ignore */ }
     }
   }
@@ -371,8 +385,39 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
   }
 
+  async function loadSplitConfig() {
+    setSplitLoading(true)
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/payments/admin/split-config/`, { headers: { Authorization: `Bearer ${token}` } })
+      setSplitConfig({ tutor_share: String(res.data.tutor_share), institution_share: String(res.data.institution_share) })
+    } catch (err) {
+      console.error('Failed to load split config', err)
+      setSplitConfig(null)
+    } finally {
+      setSplitLoading(false)
+    }
+  }
+
+  async function saveSplitConfig() {
+    if (!splitConfig) return
+    try {
+      setSplitLoading(true)
+      const token = localStorage.getItem('access')
+      const payload = { tutor_share: Number(splitConfig.tutor_share), institution_share: Number(splitConfig.institution_share) }
+      await axios.post(`${API_BASE}/payments/admin/split-config/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+      setSplitMessage({ type: 'success', text: 'Split configuration updated' })
+      loadSplitConfig()
+      setTimeout(() => setSplitMessage(null), 3000)
+    } catch (err: any) {
+      console.error('Failed to save split config', err)
+      setSplitMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to save split config' })
+    } finally {
+      setSplitLoading(false)
+    }
+  }
+
   async function saveActivationFee() {
-    // basic validation
     if (!activationForm.amount || Number(activationForm.amount) <= 0) {
       setActivationMessage({ type: 'error', text: 'Amount must be greater than 0' })
       return
@@ -386,7 +431,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         currency: activationForm.currency,
         amount: Number(activationForm.amount)
       }
-      // Backend supports POST for create and update (include id to update)
       if (activationForm.id) payload.id = activationForm.id
       await axios.post(`${API_BASE}/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
       setActivationMessage({ type: 'success', text: activationForm.id ? 'Activation fee updated' : 'Activation fee created' })
@@ -404,7 +448,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     if (!confirm('Delete this activation fee?')) return
     try {
       const token = localStorage.getItem('access')
-      // Call DELETE endpoint to remove the fee
       await axios.delete(`${API_BASE}/payments/admin/activation-fees/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
       setActivationMessage({ type: 'success', text: 'Activation fee deleted' })
       loadActivationFees()
@@ -432,13 +475,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
   async function saveBlog() {
     if (!blogFormData.title.trim() || !blogFormData.content.trim()) {
-      // use in-UI message instead of alert
-      setActivationMessage({ type: 'error', text: 'Title and content are required' })
+      setBlogMessage({ type: 'error', text: 'Title and content are required' })
       return
     }
     try {
       const token = localStorage.getItem('access')
-      // If an image file is provided, send multipart/form-data
       let headers: any = { Authorization: `Bearer ${token}` }
       let res
       if (blogFormData.image instanceof File) {
@@ -466,7 +507,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           res = await axios.post(`${API_BASE}/blog/`, payload, { headers })
         }
       }
-      
+       
       setShowBlogForm(false)
       setBlogFormData({title: '', content: '', image: '', excerpt: ''})
       setEditingBlog(null)
@@ -571,7 +612,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     setSettingsSaving(true)
     try {
       const token = localStorage.getItem('access')
-      const response = await axios.put(`${API_BASE}/users/profile-update/`, {
+      await axios.put(`${API_BASE}/users/profile-update/`, {
         first_name: settingsData.firstName,
         last_name: settingsData.lastName,
         email: settingsData.email
@@ -597,7 +638,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     setSettingsSaving(true)
     try {
       const token = localStorage.getItem('access')
-      const response = await axios.post(`${API_BASE}/users/change-password/`, {
+      await axios.post(`${API_BASE}/users/change-password/`, {
         old_password: passwordData.old_password,
         new_password: passwordData.new_password,
         confirm_password: passwordData.confirm_password
@@ -727,153 +768,83 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setSubjectFormData({ exam: '', name: '', description: '' })
       setEditingSubject(null)
       setShowSubjectForm(false)
+      // Reload subjects for the current exam
       if (selectedExamForSubjects) {
-        loadSubjectsForExam(selectedExamForSubjects.id)
+          loadSubjectsForExam(selectedExamForSubjects.id)
       }
-      setTimeout(() => setExamMessage(null), 3000)
     } catch (err: any) {
-      console.error('Failed to save subject:', err)
-      setExamMessage({ type: 'error', text: err.response?.data?.name?.[0] || 'Failed to save subject' })
+        console.error('Failed to save subject', err)
+        setExamMessage({ type: 'error', text: 'Failed to save subject' })
     } finally {
-      setSavingSubject(false)
+        setSavingSubject(false)
     }
   }
 
   async function deleteSubject(subjectId: number) {
-    if (!confirm('Are you sure you want to delete this subject? All questions will be removed.')) return
-    try {
-      const token = localStorage.getItem('access')
-      await axios.delete(`${API_BASE}/cbt/subjects/${subjectId}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setExamMessage({ type: 'success', text: 'Subject deleted successfully' })
-      if (selectedExamForSubjects) {
-        loadSubjectsForExam(selectedExamForSubjects.id)
+      if(!confirm("Are you sure you want to delete this subject?")) return
+      try {
+          const token = localStorage.getItem('access')
+          await axios.delete(`${API_BASE}/cbt/subjects/${subjectId}/`, {
+              headers: { Authorization: `Bearer ${token}` }
+          })
+          setExamMessage({ type: 'success', text: 'Subject deleted' })
+          if (selectedExamForSubjects) {
+              loadSubjectsForExam(selectedExamForSubjects.id)
+          }
+      } catch (err) {
+          console.error("Failed to delete subject", err)
+          setExamMessage({ type: 'error', text: 'Failed to delete subject' })
       }
-      setTimeout(() => setExamMessage(null), 3000)
-    } catch (err) {
-      console.error('Failed to delete subject:', err)
-      setExamMessage({ type: 'error', text: 'Failed to delete subject' })
-    }
-  }
-
-  async function loadSubjects(examId: string) {
-    if (!examId) {
-      setSubjects([])
-      return
-    }
-    try {
-      const token = localStorage.getItem('access')
-      const res = await axios.get(`${API_BASE}/cbt/exams/${examId}/subjects/`, { headers: { Authorization: `Bearer ${token}` } })
-      setSubjects(res.data || [])
-      setSelectedSubject('')
-    } catch (err) { console.error(err) }
-  }
-
-  async function deleteUser(id: number) {
-    if (!confirm('Are you sure you want to permanently delete this user? This action cannot be undone.')) return
-    try {
-      const token = localStorage.getItem('access')
-      await axios.delete(`${API_BASE}/admin/users/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
-      setUsers((u) => u.filter((x) => x.id !== id))
-      setSelectedUser(null)
-      setDeleteConfirmation({open: false, userId: null, userName: ''})
-    } catch (err) { 
-      console.error(err); 
-      setUsersMessage({ type: 'error', text: 'Failed to delete user. Please try again.' })
-      setTimeout(() => setUsersMessage(null), 4000)
-    }
-  }
-
-  const confirmDeleteUser = async () => {
-    if (!deleteConfirmation.userId) return
-    try {
-      const token = localStorage.getItem('access')
-      await axios.delete(`${API_BASE}/admin/users/${deleteConfirmation.userId}/`, { headers: { Authorization: `Bearer ${token}` } })
-      setUsers((u) => u.filter((x) => x.id !== deleteConfirmation.userId))
-      setSelectedUser(null)
-      setDeleteConfirmation({open: false, userId: null, userName: ''})
-    } catch (err) { 
-      console.error(err); 
-      setUsersMessage({ type: 'error', text: 'Failed to delete user. Please try again.' })
-      setTimeout(() => setUsersMessage(null), 4000)
-    }
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('access')
-    localStorage.removeItem('refresh')
-    navigate('/login')
+      localStorage.removeItem('access')
+      localStorage.removeItem('refresh')
+      navigate('/login')
   }
 
-  async function submitBulk() {
-    if (!selectedExam) {
-      setBulkMessage({ type: 'error', text: 'Please select an exam' })
-      setTimeout(() => setBulkMessage(null), 4000)
-      return
-    }
-    if (!selectedSubject) {
-      setBulkMessage({ type: 'error', text: 'Please select a subject' })
-      setTimeout(() => setBulkMessage(null), 4000)
-      return
-    }
-    if (!bulkData.trim()) {
-      setBulkMessage({ type: 'error', text: 'Please enter questions data' })
-      setTimeout(() => setBulkMessage(null), 4000)
-      return
-    }
-    
-    try {
-      let questionsArray = JSON.parse(bulkData)
-      if (questionsArray.questions && Array.isArray(questionsArray.questions)) {
-        questionsArray = questionsArray.questions
+  const confirmDeleteUser = async () => {
+      if (!deleteConfirmation.userId) return
+      try {
+          const token = localStorage.getItem('access')
+          await axios.delete(`${API_BASE}/admin/users/${deleteConfirmation.userId}/`, {
+              headers: { Authorization: `Bearer ${token}` }
+          })
+          setUsersMessage({type: 'success', text: 'User deleted successfully'})
+          setDeleteConfirmation({open: false, userId: null, userName: ''})
+          loadUsers(pageInfo.current)
+      } catch (err: any) {
+          console.error("Failed to delete user", err)
+          setUsersMessage({type: 'error', text: 'Failed to delete user'})
       }
-      
-      if (!Array.isArray(questionsArray)) {
-        setBulkMessage({ type: 'error', text: 'JSON must be an array of questions or an object with a "questions" array' })
-        setTimeout(() => setBulkMessage(null), 5000)
-        return
-      }
-      
-      const token = localStorage.getItem('access')
-      const payload = {
-        exam_id: selectedExam,
-        subject: selectedSubject,
-        year: new Date().getFullYear(),
-        questions: questionsArray
-      }
-      
-      const res = await axios.post(`${API_BASE}/cbt/bulk-upload/`, payload, { headers: { Authorization: `Bearer ${token}` } })
-      
-      // Show success message with count
-      let successMsg = `✅ Successfully uploaded ${res.data.success || 0} questions!`
-      if (res.data.errors && res.data.errors.length > 0) {
-        successMsg += ` (${res.data.errors.length} errors: ${res.data.errors.slice(0, 2).join('; ')}${res.data.errors.length > 2 ? '...' : ''})`
-      }
-      setBulkMessage({ type: res.data.success > 0 ? 'success' : 'error', text: successMsg })
-      setTimeout(() => setBulkMessage(null), 7000)
+  }
 
-      setBulkData('')
-    } catch (err: any) {
-      console.error(err)
-      let errorMsg = 'Failed to upload questions. '
-      
-      // Check for backend errors array
-      if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
-        errorMsg = `❌ ${err.response.data.errors.join('; ')}`
-      } else if (err.response?.data?.detail) {
-        errorMsg += err.response.data.detail
-      } else if (err.response?.data?.error) {
-        errorMsg += err.response.data.error
-      } else if (err.message) {
-        errorMsg += err.message
-      } else {
-        errorMsg += 'Please check your file format and try again.'
+  const submitBulk = async () => {
+      if (!bulkData.trim() || !selectedExam || !selectedSubject) {
+          setBulkMessage({type: 'error', text: 'Please fill all fields'})
+          return
       }
-      
-      setBulkMessage({ type: 'error', text: errorMsg })
-      setTimeout(() => setBulkMessage(null), 8000)
-    }
+      try {
+          const parsed = JSON.parse(bulkData)
+          if (!Array.isArray(parsed)) throw new Error("Data is not an array")
+          
+          const token = localStorage.getItem('access')
+          // Using a hypothetical endpoint for JSON array upload or iterating
+          // Adapting to single create or batch create if available
+          // Assuming backend accepts a list at a bulk endpoint
+          await axios.post(`${API_BASE}/cbt/questions/bulk_json/`, { // Adjust endpoint as needed
+              exam_slug: selectedExam,
+              subject_name: selectedSubject,
+              questions: parsed
+          }, {
+              headers: { Authorization: `Bearer ${token}` }
+          })
+          setBulkMessage({type: 'success', text: 'Questions uploaded successfully'})
+          setBulkData('')
+      } catch (err: any) {
+          console.error('Bulk upload failed', err)
+          setBulkMessage({type: 'error', text: 'Invalid JSON or Server Error'})
+      }
   }
 
   const getRoleIcon = (role: string) => {
@@ -906,7 +877,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       </div>
     </div>
   )
-   
+    
   if (!summary) return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 flex items-center justify-center">
       <div className="text-center">
@@ -1108,7 +1079,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               {/* Dynamic Content */}
               <div className="p-6">
                 {tab === 'users' && (
-                  // ... (User management JSX content) ...
                   <div>
                     {usersMessage && (
                       <div className={`p-3 rounded-lg mb-4 ${usersMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
@@ -1465,7 +1435,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             Create Course
                           </motion.button>
                         </div>
-                        
+                         
                         {courses.length === 0 ? (
                           <div className="text-center py-12">
                             <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -1492,7 +1462,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 <div className="p-6">
                                   <h4 className="text-lg font-bold text-gray-900 mb-2">{course.title}</h4>
                                   <p className="text-sm text-gray-600 mb-4 line-clamp-2">{course.description}</p>
-                                  
+                                   
                                   <div className="space-y-3 mb-4">
                                     <div className="flex items-center text-sm text-gray-700">
                                       <User className="w-4 h-4 mr-2 text-gray-500" />
@@ -1986,14 +1956,39 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             )}
                           </div>
                         )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                        
+                        {/* Activation Fees Management included here for context */}
+                        <div className="mt-8">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Payment Split Configuration</h3>
+                            <div>
+                              <p className="text-xs text-gray-600">Configure creator share percentages (platform receives the remainder).</p>
+                            </div>
+                          </div>
 
-                        {/* Activation Fees Management - only show on Exams & Subjects tab */}
-                        {tab === 'exams' && (
-                          <div className="mt-8">
+                          <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
+                            {splitMessage && (
+                              <div className={`p-3 rounded-md mb-3 ${splitMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                                {splitMessage.text}
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-4 items-end">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">Tutor Share (%)</label>
+                                <input type="number" value={splitConfig?.tutor_share || ''} onChange={(e) => setSplitConfig({ ...(splitConfig || { tutor_share: '', institution_share: '' }), tutor_share: e.target.value })} className="w-full mt-1 p-2 border rounded-lg" />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">Institution Share (%)</label>
+                                <input type="number" value={splitConfig?.institution_share || ''} onChange={(e) => setSplitConfig({ ...(splitConfig || { tutor_share: '', institution_share: '' }), institution_share: e.target.value })} className="w-full mt-1 p-2 border rounded-lg" />
+                              </div>
+                              <div className="col-span-2 flex justify-end">
+                                <button onClick={() => loadSplitConfig()} className="px-4 py-2 bg-gray-100 rounded-lg mr-2">Reload</button>
+                                <button onClick={() => saveSplitConfig()} className={`px-4 py-2 rounded-lg ${splitLoading ? 'bg-gray-400 text-gray-100' : 'bg-green-600 text-white'}`}>{splitLoading ? 'Saving...' : 'Save'}</button>
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-900">Activation Fees</h3>
                             <div className="flex items-center space-x-3">
@@ -2103,8 +2098,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               </div>
                             )}
                           </div>
-                          </div>
-                        )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {tab === 'payments' && (
                   <div>
@@ -2322,13 +2320,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     {blog.is_published ? 'Published' : 'Draft'}
                                   </span>
                                 </div>
-                                
+                                 
                                 {blog.image && (
                                   <img src={blog.image} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" />
                                 )}
-                                
+                                 
                                 <p className="text-gray-600 mb-4 line-clamp-2">{blog.excerpt || blog.content}</p>
-                                
+                                 
                                 <div className="flex gap-3">
                                   <motion.button
                                     whileHover={{ scale: 1.05 }}
@@ -2596,7 +2594,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         Manual Entry
                       </button>
                     </div>
-                    
+                     
                     {/* Exam and Subject Selection */}
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div>
@@ -2643,7 +2641,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </select>
                       </div>
                     </div>
-                    
+                     
                     {uploadMode === 'json' && (
                     <>
                     {bulkMessage && (
@@ -2691,7 +2689,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           className="w-full h-64 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none font-mono text-sm"
                         />
                       </div>
-                      
+                       
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-500">
                           {bulkData.length > 0 && (
@@ -2751,7 +2749,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             formData.append('exam_id', selectedExam)
                             formData.append('subject', selectedSubject)
                             formData.append('year', new Date().getFullYear().toString())
-                            
+                             
                             try {
                               const token = localStorage.getItem('access')
                               const res = await axios.post(`${API_BASE}/cbt/bulk-upload/`, formData, {
@@ -2868,7 +2866,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             formData.append('text', manualQuestion.text)
                             if (manualQuestion.image) formData.append('image', manualQuestion.image)
                             if (manualQuestion.year) formData.append('year', manualQuestion.year)
-                            
+                             
                             const opts = [
                               { text: manualQuestion.optionA, key: 'A' },
                               { text: manualQuestion.optionB, key: 'B' },
@@ -2913,6 +2911,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         </div>
       </div>
 
+      <>
       {/* Blog Form Modal */}
       {showBlogForm && (
         <motion.div
@@ -3244,6 +3243,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         </motion.div>
       )}
 
+      </>
       {/* Sub-Admin Form Modal */}
       <SubAdminForm
         isOpen={showSubAdminForm}

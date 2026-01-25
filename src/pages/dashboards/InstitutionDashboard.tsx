@@ -270,7 +270,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
 
   if (loadingSummary) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 animate-spin text-green-600" />
+        <Loader2 className="w-10 h-10 animate-spin text-yellow-600" />
         <span className="ml-3 text-gray-600">Loading Dashboard...</span>
     </div>
   );
@@ -301,7 +301,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
             <h3 className="text-lg font-bold mb-2">Account Locked</h3>
             <p className="text-sm text-gray-600 mb-4">Your institution account is locked. Please activate your account to access the dashboard.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => navigate(`/activate?type=account&return_to=${encodeURIComponent('/institution/overview')}`)} className="px-4 py-2 bg-green-600 text-white rounded">Unlock Account</button>
+              <button onClick={() => navigate(`/activate?type=account&return_to=${encodeURIComponent('/institution/overview')}`)} className="px-4 py-2 bg-yellow-600 text-white rounded">Unlock Account</button>
             </div>
           </div>
         </div>
@@ -319,7 +319,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                 {sidebarOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
               </button>
               <Link to={base} className="flex items-center space-x-3 group">
-                <div className="bg-green-50 p-1.5 rounded-lg group-hover:bg-green-100 transition-colors">
+                <div className="bg-yellow-50 p-1.5 rounded-lg group-hover:bg-yellow-100 transition-colors">
                     <img src={labanonLogo} alt="Lebanon Academy" className="w-8 h-8 object-contain" />
                 </div>
                 <div>
@@ -330,7 +330,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
 
             <div className="flex items-center space-x-4">
               <div className="hidden md:flex items-center space-x-3 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
                   {summary?.username?.charAt(0).toUpperCase()}
                 </div>
                 <div className="pr-2">
@@ -372,23 +372,23 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                       to={item.path}
                       className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                         active
-                          ? 'bg-green-50 text-green-700 font-medium shadow-sm'
+                          ? 'bg-yellow-50 text-yellow-700 font-medium shadow-sm'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     >
-                      <div className={`${active ? 'text-green-600' : 'text-gray-400 group-hover:text-gray-600'} transition-colors`}>{item.icon}</div>
+                      <div className={`${active ? 'text-yellow-600' : 'text-gray-400 group-hover:text-gray-600'} transition-colors`}>{item.icon}</div>
                       <span>{item.label}</span>
-                      {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-green-500"></div>}
+                      {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-yellow-500"></div>}
                     </Link>
                   );
                 })}
               </nav>
 
               <div className="mt-8 pt-6 border-t border-gray-100 px-2">
-                <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-xl p-4 border border-green-100">
-                  <h4 className="font-semibold text-green-800 mb-1 text-sm">Need Help?</h4>
-                  <p className="text-xs text-green-600 mb-3 leading-relaxed">Contact our support team for assistance with your account.</p>
-                  <button onClick={() => setContactAdminOpen(true)} className="w-full text-xs bg-white text-green-700 px-3 py-2 rounded-lg border border-green-200 font-medium hover:shadow-sm transition-shadow">Contact Support</button>
+                <div className="bg-gradient-to-br from-yellow-50 to-blue-50 rounded-xl p-4 border border-yellow-100">
+                  <h4 className="font-semibold text-yellow-800 mb-1 text-sm">Need Help?</h4>
+                  <p className="text-xs text-yellow-600 mb-3 leading-relaxed">Contact our support team for assistance with your account.</p>
+                  <button onClick={() => setContactAdminOpen(true)} className="w-full text-xs bg-white text-yellow-700 px-3 py-2 rounded-lg border border-yellow-200 font-medium hover:shadow-sm transition-shadow">Contact Support</button>
                 </div>
               </div>
             </div>
@@ -425,10 +425,10 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   <Route path="overview" element={
                     <div className="space-y-6">
                       {/* Welcome Banner */}
-                      <div className="bg-gradient-to-r from-green-700 to-teal-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+                      <div className="bg-gradient-to-r from-yellow-700 to-blue-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
                         <div className="relative z-10">
                             <h1 className="text-3xl font-bold mb-2">Dashboard Overview</h1>
-                            <p className="text-green-100 text-lg">Welcome back, {institutionName || summary?.username}!</p>
+                            <p className="text-yellow-100 text-lg">Welcome back, {institutionName || summary?.username}!</p>
                             <div className="mt-6 flex items-center gap-3">
                                 <span className="bg-white/20 backdrop-blur-sm text-white text-sm font-medium px-4 py-1.5 rounded-full flex items-center border border-white/30">
                                     <CheckCircle className="w-4 h-4 mr-2" /> Verified Institution
@@ -456,7 +456,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             title: 'Online Courses', 
                             value: courseCount, 
                             icon: <BookOpen className="w-6 h-6 text-white" />, 
-                            bg: 'bg-green-500',
+                            bg: 'bg-yellow-500',
                             trend: 'Active Catalog' 
                           },
                           { 
@@ -470,7 +470,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             title: 'Total Revenue', 
                             value: `₦${calculatedRevenue.toLocaleString()}`, 
                             icon: <DollarSign className="w-6 h-6 text-white" />, 
-                            bg: 'bg-teal-600',
+                            bg: 'bg-blue-600',
                             trend: 'Net Earnings' 
                           }
                         ].map((stat, index) => (
@@ -482,14 +482,14 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <p className="text-gray-500 text-sm font-medium">{stat.title}</p>
-                                    <h3 className="text-3xl font-bold text-gray-900 mt-1 group-hover:text-green-700 transition-colors">{stat.value}</h3>
+                                    <h3 className="text-3xl font-bold text-gray-900 mt-1 group-hover:text-yellow-700 transition-colors">{stat.value}</h3>
                                 </div>
                                 <div className={`${stat.bg} p-3 rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                                     {stat.icon}
                                 </div>
                             </div>
                             <div className="flex items-center text-xs text-gray-400 font-medium">
-                                <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
+                                <TrendingUp className="w-3 h-3 mr-1 text-yellow-500" />
                                 {stat.trend}
                             </div>
                           </motion.div>
@@ -501,7 +501,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-bold text-gray-900">Revenue Analytics</h3>
-                                <select className="text-sm border-gray-200 border rounded-lg px-2 py-1 text-gray-600 outline-none focus:border-green-500">
+                                <select className="text-sm border-gray-200 border rounded-lg px-2 py-1 text-gray-600 outline-none focus:border-yellow-500">
                                     <option>Last 6 Months</option>
                                     <option>This Year</option>
                                 </select>
@@ -509,7 +509,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             <div className="h-80 w-full">
                             {loadingAnalytics ? (
                                 <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                                    <Loader2 className="w-8 h-8 animate-spin mb-2 text-green-600" />
+                                    <Loader2 className="w-8 h-8 animate-spin mb-2 text-yellow-600" />
                                     <span>Gathering financial data...</span>
                                 </div>
                             ) : revenueData.length > 0 ? (
@@ -549,14 +549,14 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                                 
                                 <div className="space-y-3">
                                    <Link to="/institution/courses" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
-                                    <button onClick={() => setCreatingCourse(true)} className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-green-200 hover:bg-green-50 transition-all group">
+                                    <button onClick={() => setCreatingCourse(true)} className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
                                         <div className="flex items-center">
-                                            <div className="bg-green-100 p-2 rounded-lg text-green-600 mr-3 group-hover:bg-green-200">
+                                            <div className="bg-yellow-100 p-2 rounded-lg text-yellow-600 mr-3 group-hover:bg-yellow-200">
                                                 <PlusCircle className="w-5 h-5" />
                                             </div>
-                                            <span className="font-medium text-gray-700 group-hover:text-green-800">Create New Course</span>
+                                            <span className="font-medium text-gray-700 group-hover:text-yellow-800">Create New Course</span>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-green-600" />
+                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-yellow-600" />
                                     </button>
                                     </Link>
                                     <Link to="/institution/diploma" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
@@ -595,7 +595,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                                                     <p className="text-xs text-gray-500">{new Date(activity.created_at).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
-                                            <span className="text-sm font-bold text-green-600">+₦{Number(activity.creator_amount).toLocaleString()}</span>
+                                            <span className="text-sm font-bold text-yellow-600">+₦{Number(activity.creator_amount).toLocaleString()}</span>
                                         </div>
                                     )) : (
                                         <p className="text-sm text-gray-500 text-center py-4">No recent activity.</p>
@@ -626,7 +626,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             <h2 className="text-xl font-bold">Online Courses</h2>
                             <button
                               onClick={() => setCreatingCourse(true)}
-                              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md transition-all"
+                              className="flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 shadow-md transition-all"
                             >
                               <PlusCircle className="w-4 h-4 mr-2" /> New Course
                             </button>
@@ -675,14 +675,14 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         
                         {/* Flutterwave Section */}
                         {fwAccount ? (
-                            <div className="mt-8 mb-6 bg-white rounded-lg shadow p-5 border border-green-200 animate-in fade-in slide-in-from-bottom-4">
+                            <div className="mt-8 mb-6 bg-white rounded-lg shadow p-5 border border-yellow-200 animate-in fade-in slide-in-from-bottom-4">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <div className="p-2 bg-green-100 rounded-full">
-                                        <CreditCard className="w-5 h-5 text-green-600" />
+                                    <div className="p-2 bg-yellow-100 rounded-full">
+                                        <CreditCard className="w-5 h-5 text-yellow-600" />
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-gray-800">Flutterwave Subaccount</h3>
-                                        <p className="text-xs text-green-600 flex items-center"><CheckCircle className="w-3 h-3 mr-1"/> Active & Connected</p>
+                                        <p className="text-xs text-yellow-600 flex items-center"><CheckCircle className="w-3 h-3 mr-1"/> Active & Connected</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm bg-gray-50 p-4 rounded-xl">
@@ -714,12 +714,12 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   {/* Default */}
                   <Route path="" element={
                     <div className="p-12 text-center bg-white rounded-3xl shadow-sm border border-gray-100">
-                        <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Building2 className="w-10 h-10 text-green-600" />
+                        <div className="w-20 h-20 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Building2 className="w-10 h-10 text-yellow-600" />
                         </div>
                         <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome to Your Portal</h2>
                         <p className="text-gray-600 mb-8 max-w-lg mx-auto text-lg">Manage your digital presence, onsite diplomas, and online courses all in one place. Get started by viewing your overview.</p>
-                        <button onClick={() => navigate('overview')} className="px-8 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-lg">Go to Dashboard Overview</button>
+                        <button onClick={() => navigate('overview')} className="px-8 py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-lg">Go to Dashboard Overview</button>
                     </div>
                   } />
 

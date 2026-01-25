@@ -155,11 +155,11 @@ export default function ExamInterface({
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-green-600 text-white p-4 flex-shrink-0 z-10">
+      <div className="bg-yellow-600 text-white p-4 flex-shrink-0 z-10">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold">{examTitle}</h1>
-            <p className="text-green-100">{subjectName}</p>
+            <p className="text-yellow-100">{subjectName}</p>
           </div>
           <div className="text-right">
             <div className={`text-3xl font-bold ${timeRemaining < 300 ? 'text-red-300' : ''}`}>
@@ -182,7 +182,7 @@ export default function ExamInterface({
                 onClick={() => setCurrentPage(Math.ceil(item.question_number / pageSize))}
                 className={`w-full py-2 px-2 text-xs rounded font-semibold transition ${
                   item.is_answered
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-yellow-100 text-yellow-800'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -240,7 +240,7 @@ export default function ExamInterface({
                           value={choice.id}
                           checked={selectedAnswers[question.id] === choice.id}
                           onChange={() => handleAnswerSelect(question.id, choice.id)}
-                          className="w-4 h-4 text-green-600"
+                          className="w-4 h-4 text-yellow-600"
                         />
                         <span className="ml-3 flex-1">
                           <MathDisplay content={choice.text} />
@@ -280,7 +280,7 @@ export default function ExamInterface({
             <button
               onClick={() => setShowSubmitConfirm(true)}
               disabled={submitting}
-              className="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              className="px-8 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50"
             >
               {submitting ? 'Submitting...' : 'Submit'}
             </button>

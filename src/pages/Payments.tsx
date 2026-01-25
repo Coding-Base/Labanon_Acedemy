@@ -49,7 +49,7 @@ export default function PaymentsPage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Payments</h2>
-        <Link to="/student/cart" className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+        <Link to="/student/cart" className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition">
           <ShoppingCart className="w-4 h-4" />
           Go to Cart
         </Link>

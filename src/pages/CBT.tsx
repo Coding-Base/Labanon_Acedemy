@@ -58,7 +58,7 @@ export default function CBTPage() {
 
   const getScoreColor = (score: number, total: number) => {
     const percentage = (score / total) * 100
-    if (percentage >= 70) return 'bg-green-100 text-green-800'
+    if (percentage >= 70) return 'bg-yellow-100 text-green-800'
     if (percentage >= 50) return 'bg-yellow-100 text-yellow-800'
     return 'bg-red-100 text-red-800'
   }

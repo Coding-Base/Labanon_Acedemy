@@ -8,7 +8,7 @@ export default function Marketplace() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-green-50">
+    <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-yellow-50">
       <div className="max-w-7xl mx-auto">
         <header className="flex items-center justify-between mb-6 gap-4">
           <button

@@ -171,7 +171,7 @@ export default function CertificatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-8 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-3xl font-bold mb-2">My Certificates</h2>
           <p className="opacity-90">View and download your earned credentials</p>
@@ -209,7 +209,7 @@ export default function CertificatesPage() {
                     <button
                       onClick={() => handleReprint(cert)}
                       disabled={reprintingId === cert.id}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium disabled:opacity-50"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-50 text-green-700 rounded-lg hover:bg-yellow-100 transition-colors text-sm font-medium disabled:opacity-50"
                     >
                       {reprintingId === cert.id ? <Loader2 className="w-4 h-4 animate-spin"/> : <Download className="w-4 h-4"/>}
                       {reprintingId === cert.id ? 'Generating...' : 'Download'}
@@ -235,7 +235,7 @@ export default function CertificatesPage() {
               <button
                 onClick={() => handleReprint(cert)}
                 disabled={reprintingId === cert.id}
-                className="w-full flex justify-center items-center gap-2 py-2 bg-green-50 text-green-700 rounded-lg font-medium text-sm"
+                className="w-full flex justify-center items-center gap-2 py-2 bg-yellow-50 text-green-700 rounded-lg font-medium text-sm"
               >
                 {reprintingId === cert.id ? <Loader2 className="w-4 h-4 animate-spin"/> : <Download className="w-4 h-4"/>}
                 Download PDF

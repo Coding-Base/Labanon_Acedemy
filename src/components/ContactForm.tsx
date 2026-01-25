@@ -59,7 +59,7 @@ export default function ContactForm() {
         <input className="p-2 border rounded w-full" placeholder="Subject" value={subject} onChange={e=>setSubject(e.target.value)} />
         <textarea className="p-2 border rounded w-full" rows={5} placeholder="Message" value={message} onChange={e=>setMessage(e.target.value)} />
         <div className="flex items-center justify-end">
-          <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded" disabled={loading}>{loading ? 'Sending...' : 'Send Message'}</button>
+          <button type="submit" className="px-4 py-2 bg-yellow-600 text-white rounded" disabled={loading}>{loading ? 'Sending...' : 'Send Message'}</button>
         </div>
       </form>
     </div>

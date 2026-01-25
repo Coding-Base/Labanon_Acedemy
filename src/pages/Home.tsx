@@ -301,7 +301,7 @@ export default function Home() {
   const prevSlide = () => setCurrentSlide(s => (s - 1 + slides.length) % slides.length);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-yellow-50 overflow-x-hidden">
       
       {/* --- HEADER WITH EXPLORE MENU --- */}
       <motion.header
@@ -328,7 +328,7 @@ export default function Home() {
               <div className="hidden md:block relative">
                 <button 
                   onClick={() => setExploreMenuOpen(!exploreMenuOpen)}
-                  className={`explore-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${exploreMenuOpen ? 'bg-green-600 text-white' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                  className={`explore-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${exploreMenuOpen ? 'bg-yellow-600 text-white' : 'bg-yellow-600 text-white hover:bg-yellow-700'}`}
                 >
                   <Menu className="w-5 h-5" />
                   <span>Explore</span>
@@ -352,7 +352,7 @@ export default function Home() {
                              <div 
                                key={cat.id}
                                onMouseEnter={() => setActiveExploreCategory(cat.id)}
-                               className={`px-4 py-3 cursor-pointer flex items-center justify-between transition-colors text-sm font-medium ${activeExploreCategory === cat.id ? 'bg-white text-green-700 border-l-4 border-green-600' : 'text-gray-700 hover:bg-gray-100'}`}
+                               className={`px-4 py-3 cursor-pointer flex items-center justify-between transition-colors text-sm font-medium ${activeExploreCategory === cat.id ? 'bg-white text-yellow-700 border-l-4 border-yellow-600' : 'text-gray-700 hover:bg-gray-100'}`}
                              >
                                {cat.label}
                                {activeExploreCategory === cat.id && <ChevronRight className="w-4 h-4" />}
@@ -369,7 +369,7 @@ export default function Home() {
                                     <div 
                                         key={sub}
                                         onClick={() => handleSubCategoryClick(sub)}
-                                        className="text-sm text-gray-600 hover:text-green-600 cursor-pointer p-2 hover:bg-green-50 rounded transition-colors"
+                                        className="text-sm text-gray-600 hover:text-yellow-600 cursor-pointer p-2 hover:bg-yellow-50 rounded transition-colors"
                                     >
                                         {sub}
                                     </div>
@@ -389,7 +389,7 @@ export default function Home() {
                   <input 
                     type="text" 
                     placeholder="What do you want to learn?" 
-                    className="w-full pl-10 pr-12 py-2.5 rounded-full border border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none text-sm"
+                    className="w-full pl-10 pr-12 py-2.5 rounded-full border border-gray-300 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none text-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
@@ -397,7 +397,7 @@ export default function Home() {
                   <Search className="absolute left-3.5 top-2.5 w-5 h-5 text-gray-400" />
                   <button 
                     onClick={handleSearchSubmit}
-                    className="absolute right-1 top-1 p-1.5 bg-green-600 rounded-full text-white hover:bg-green-700 transition-colors"
+                    className="absolute right-1 top-1 p-1.5 bg-yellow-600 rounded-full text-white hover:bg-yellow-700 transition-colors"
                   >
                     <Search className="w-4 h-4" />
                   </button>
@@ -409,7 +409,7 @@ export default function Home() {
               {/* Added Nav Items for Large Screens */}
               <div className="hidden xl:flex items-center gap-4 mr-2">
                   {navItems.slice(0, 3).map(item => (
-                       <Link key={item.label} to={item.path} className="text-sm font-medium text-gray-700 hover:text-green-600 transition-colors">
+                       <Link key={item.label} to={item.path} className="text-sm font-medium text-gray-700 hover:text-yellow-600 transition-colors">
                            {item.label}
                        </Link>
                   ))}
@@ -417,8 +417,8 @@ export default function Home() {
               
               <div className="h-6 w-px bg-gray-300 hidden xl:block mx-1"></div>
               
-              <Link to="/login" className="hidden md:inline px-4 py-2 text-gray-700 hover:text-green-600 font-medium text-sm">Log In</Link>
-              <Link to="/register" className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 transition-colors shadow-lg shadow-green-600/20">Join for Free</Link>
+              <Link to="/login" className="hidden md:inline px-4 py-2 text-gray-700 hover:text-yellow-600 font-medium text-sm">Log In</Link>
+              <Link to="/register" className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold text-sm hover:bg-yellow-700 transition-colors shadow-lg shadow-yellow-600/20">Join for Free</Link>
               
               {/* Mobile menu button */}
               <button 
@@ -464,18 +464,18 @@ export default function Home() {
                                  </div>
                              ))}
                         </div>
-                        <div onClick={() => { setMobileMenuOpen(false); navigate('/marketplace'); }} className="text-xs text-green-600 mt-1 cursor-pointer">View all...</div>
+                        <div onClick={() => { setMobileMenuOpen(false); navigate('/marketplace'); }} className="text-xs text-yellow-700 mt-1 cursor-pointer">View all...</div>
                     </div>
                   ))}
                 </div>
                 
                 <div className="border-t pt-4 space-y-3">
                    {navItems.map(item => (
-                        <Link key={item.label} to={item.path} className="block text-gray-700 font-medium hover:text-green-600" onClick={() => setMobileMenuOpen(false)}>
+                        <Link key={item.label} to={item.path} className="block text-gray-700 font-medium hover:text-yellow-600" onClick={() => setMobileMenuOpen(false)}>
                             {item.label}
                         </Link>
                    ))}
-                   <Link to="/login" className="block text-green-700 font-medium" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
+                   <Link to="/login" className="block text-yellow-700 font-medium" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
                 </div>
               </div>
             </motion.div>
@@ -485,20 +485,20 @@ export default function Home() {
 
       {/* Hero Section */}
       <section ref={heroSectionRef} className="relative pt-24 pb-16 md:pt-40 md:pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-teal-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-transparent to-blue-500/5" />
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Hero Content - Updated for Mobile Centering */}
             <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-8 text-center md:text-left order-2 lg:order-1">
               <motion.div variants={fadeInUp} className="flex justify-center md:justify-start">
-                <motion.div className="hidden md:inline-flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                <motion.div className="hidden md:inline-flex items-center space-x-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
                   <Sparkles className="w-4 h-4" /><span>Your #1 Digital Learning Platform</span>
                 </motion.div>
               </motion.div>
               <motion.div variants={fadeInLeft}>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
                   <span className="block text-gray-900">Master Skills,</span>
-                  <span className="block bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Ace Exams</span>
+                  <span className="block bg-gradient-to-r from-yellow-600 to-blue-600 bg-clip-text text-transparent">Ace Exams</span>
                 </h1>
               </motion.div>
               <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto md:mx-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
@@ -507,8 +507,8 @@ export default function Home() {
               
               {/* Desktop CTA Buttons (Search is now in header) - Updated for Mobile Centering */}
                 <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 pt-4 justify-center md:justify-start">
-                  <Link to="/register" className="px-8 py-4 bg-green-600 text-white rounded-xl font-bold text-lg hover:bg-green-700 hover:shadow-lg transition-all">Join for Free</Link>
-                  <Link to="/marketplace" className="px-8 py-4 bg-white text-gray-800 border-2 border-gray-200 rounded-xl font-bold text-lg hover:border-green-600 hover:text-green-600 transition-all">Explore Courses</Link>
+                  <Link to="/register" className="px-8 py-4 bg-yellow-600 text-white rounded-xl font-bold text-lg hover:bg-yellow-700 hover:shadow-lg transition-all">Join for Free</Link>
+                  <Link to="/marketplace" className="px-8 py-4 bg-white text-gray-800 border-2 border-gray-200 rounded-xl font-bold text-lg hover:border-yellow-600 hover:text-yellow-600 transition-all">Explore Courses</Link>
               </motion.div>
 
               {/* Quick Stats */}
@@ -525,7 +525,7 @@ export default function Home() {
             {/* Hero Image - Updated margin top for mobile spacing; placed before text on small screens */}
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: "easeOut" }} className="relative mt-8 md:mt-0 order-1 lg:order-2">
               <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-teal-600/20 backdrop-blur-sm " />
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-blue-600/20 backdrop-blur-sm " />
                 <div className="relative w-full h-full hero-image-container">
                   {/* Slider: animated, fullscreen-cover images with caption, dots, and controls */}
                   <div
@@ -553,7 +553,7 @@ export default function Home() {
 
                     {/* Mobile-only badge overlay */}
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="absolute top-4 left-4 z-30 md:hidden">
-                      <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/80 text-green-700 rounded-full text-sm font-medium backdrop-blur">
+                      <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/80 text-yellow-700 rounded-full text-sm font-medium backdrop-blur">
                         <Sparkles className="w-4 h-4" />
                         <span>Your #1 Digital Learning Platform</span>
                       </div>
@@ -584,7 +584,7 @@ export default function Home() {
                 
                 {/* Floating Badge 1 */}
                 <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }} className="absolute bottom-6 left-6 bg-white/95 backdrop-blur rounded-xl p-4 shadow-lg flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center"><Award className="w-6 h-6 text-green-600" /></div>
+                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center"><Award className="w-6 h-6 text-yellow-600" /></div>
                   <div><div className="font-bold text-gray-900">Certified</div><div className="text-xs text-gray-600">World-class education</div></div>
                 </motion.div>
                 
@@ -598,13 +598,13 @@ export default function Home() {
       <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <motion.div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why learn with <span className="text-green-600">LightHub Academy?</span></h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why learn with <span className="text-yellow-700">LightHub Academy?</span></h2>
             <p className="text-xl text-gray-600">A complete ecosystem for your academic and professional growth</p>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div key={index} whileHover={{ y: -5 }} className="p-6 border border-gray-100 rounded-2xl bg-gray-50 hover:bg-white hover:shadow-xl transition-all duration-300">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 mb-4">{feature.icon}</div>
+                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center text-yellow-600 mb-4">{feature.icon}</div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{feature.title}</h3>
                 <p className="text-gray-600">{feature.desc}</p>
               </motion.div>
@@ -701,7 +701,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Featured Courses</h2>
               <p className="text-gray-600 mt-2">Explore our most popular learning paths</p>
             </div>
-            <Link to="/marketplace" className="hidden md:flex items-center text-green-600 font-semibold hover:gap-2 transition-all">View All <ArrowRight className="w-4 h-4 ml-1" /></Link>
+            <Link to="/marketplace" className="hidden md:flex items-center text-yellow-700 font-semibold hover:gap-2 transition-all">View All <ArrowRight className="w-4 h-4 ml-1" /></Link>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -719,8 +719,8 @@ export default function Home() {
                    </div>
                    <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                      <span className="font-bold text-xl text-green-700">₦{course.price.toLocaleString()}</span>
-                      <button className="text-sm font-semibold text-gray-600 hover:text-green-600">Details</button>
+                      <span className="font-bold text-xl text-yellow-700">₦{course.price.toLocaleString()}</span>
+                      <button className="text-sm font-semibold text-gray-600 hover:text-yellow-600">Details</button>
                    </div>
                 </div>
               </motion.div>
@@ -733,28 +733,28 @@ export default function Home() {
       </motion.section>
 
       {/* --- NEW SECTION: FIND A TUTOR --- */}
-      <section className="py-20 bg-green-50 relative overflow-hidden">
+      <section className="py-20 bg-yellow-50 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-green-700 font-semibold text-sm mb-6 shadow-sm">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-yellow-700 font-semibold text-sm mb-6 shadow-sm">
                 <Globe className="w-4 h-4" /><span>Global Learning Access</span>
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">Need a Personal <br/><span className="text-green-600">Home or Online Tutor?</span></h2>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">Need a Personal <br/><span className="text-yellow-700">Home or Online Tutor?</span></h2>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">Whether you are in Nigeria or in the diaspora, finding the perfect tutor for your child shouldn't be a hassle. We connect you with vetted, expert tutors for personalized one-on-one learning in any subject.</p>
               <ul className="space-y-4 mb-10">
                 {['Expert tutors for primary, secondary & exam prep', 'Flexible schedules (Online or Physical)', 'Tailored curriculum for specific learning goals', 'Trusted by parents worldwide'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3"><div className="w-6 h-6 rounded-full bg-green-200 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-green-700" /></div><span className="text-gray-700 font-medium">{item}</span></li>
+                  <li key={i} className="flex items-center gap-3"><div className="w-6 h-6 rounded-full bg-yellow-200 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-yellow-700" /></div><span className="text-gray-700 font-medium">{item}</span></li>
                 ))}
               </ul>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Link to="/tutor-application" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-green-500/30 transition-all">Request a Tutor Now <ArrowRight className="ml-2 w-5 h-5" /></Link>
+                <Link to="/tutor-application" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-yellow-600/30 transition-all">Request a Tutor Now <ArrowRight className="ml-2 w-5 h-5" /></Link>
               </motion.div>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-tr from-green-500/20 to-teal-500/20 rounded-full blur-3xl" />
+              <div className="absolute -inset-4 bg-gradient-to-tr from-yellow-500/20 to-blue-500/20 rounded-full blur-3xl" />
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
                 <img src={IMAGES.tutor} alt="Professional Tutor teaching online" className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700" />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
@@ -774,7 +774,7 @@ export default function Home() {
       <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted by <span className="text-green-400">Thousands</span></h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted by <span className="text-yellow-600">Thousands</span></h2>
             <p className="text-gray-400 text-lg">Join our community of successful learners and educators</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">

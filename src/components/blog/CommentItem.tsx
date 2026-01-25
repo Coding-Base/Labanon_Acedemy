@@ -102,7 +102,7 @@ export default function CommentItem({
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
               {comment.author_username?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div>
@@ -154,7 +154,7 @@ export default function CommentItem({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowReplyForm(!showReplyForm)}
-            className="flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-yellow-600 transition-colors"
           >
             <MessageCircle className="w-4 h-4" />
             Reply

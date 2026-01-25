@@ -200,14 +200,14 @@ export default function InstitutionPayments() {
         </div>
 
         {/* Card 2: Successful Payments (Total Gross) */}
-        <div className="bg-white rounded-xl shadow p-6 border-l-4 border-green-500">
+        <div className="bg-white rounded-xl shadow p-6 border-l-4 border-yellow-500">
           <div className="flex items-start justify-between">
             <div>
               <div className="text-sm text-gray-600 font-medium">Successful Payments</div>
               <div className="text-3xl font-bold text-gray-900 mt-2">₦{stats.total_gross.toLocaleString()}</div>
               <div className="text-xs text-gray-500 mt-2">{stats.success_count} successful transactions</div>
             </div>
-            <div className="p-3 bg-green-50 rounded-lg">
+            <div className="p-3 bg-yellow-50 rounded-lg">
               <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
           </div>
@@ -323,7 +323,7 @@ export default function InstitutionPayments() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                          ${payment.status === 'success' ? 'bg-green-100 text-green-800' : 
+                          ${payment.status === 'success' ? 'bg-yellow-100 text-green-800' : 
                             payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
                             'bg-red-100 text-red-800'}`}>
                           {payment.status === 'success' && <CheckCircle className="w-3 h-3 mr-1" />}

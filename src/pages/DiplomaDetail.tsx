@@ -138,7 +138,7 @@ export default function DiplomaDetail() {
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => navigate('/marketplace')}
-            className="flex items-center gap-2 text-green-600 hover:text-green-700 font-medium mb-6"
+            className="flex items-center gap-2 text-green-600 hover:text-yellow-700 font-medium mb-6"
           >
             <ArrowLeft className="w-5 h-5" /> Back to Marketplace
           </button>
@@ -171,7 +171,7 @@ export default function DiplomaDetail() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <button
           onClick={() => navigate('/marketplace')}
-          className="flex items-center gap-2 text-green-600 hover:text-green-700 font-medium mb-6"
+          className="flex items-center gap-2 text-green-600 hover:text-yellow-700 font-medium mb-6"
         >
           <ArrowLeft className="w-5 h-5" /> Back to Marketplace
         </button>
@@ -299,7 +299,7 @@ export default function DiplomaDetail() {
             </div>
 
             {/* Enrollment / Checkout */}
-            <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <p className="text-sm text-gray-600">Ready to start this diploma program?</p>
                 <p className="font-bold text-gray-900">₦{diploma.price.toLocaleString()}</p>
@@ -323,7 +323,7 @@ export default function DiplomaDetail() {
                   whileTap={{ scale: 0.95 }}
                   onClick={handleEnroll}
                   disabled={enrolling}
-                  className="px-8 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-60 whitespace-nowrap"
+                  className="px-8 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-60 whitespace-nowrap"
                 >
                   {enrolling ? (
                     <>

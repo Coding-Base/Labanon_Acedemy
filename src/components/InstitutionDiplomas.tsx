@@ -315,7 +315,7 @@ export default function InstitutionDiplomas() {
               setSelectedFile(null)
             }
           }}
-          className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold flex items-center gap-2"
+          className="px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold flex items-center gap-2"
         >
           <Plus className="w-4 h-4" /> New Diploma
         </motion.button>
@@ -329,7 +329,7 @@ export default function InstitutionDiplomas() {
       )}
 
       {success && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
           <p className="text-green-600 text-sm">{success}</p>
         </div>
@@ -354,7 +354,7 @@ export default function InstitutionDiplomas() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="e.g., Advanced Welding Certificate"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   disabled={submitting}
                   required
                 />
@@ -367,7 +367,7 @@ export default function InstitutionDiplomas() {
                   value={formData.price}
                   onChange={handleChange}
                   placeholder="50000"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   disabled={submitting}
                 />
               </div>
@@ -381,7 +381,7 @@ export default function InstitutionDiplomas() {
                 onChange={handleChange}
                 placeholder="Describe the diploma program..."
                 rows={3}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
                 disabled={submitting}
               />
             </div>
@@ -395,7 +395,7 @@ export default function InstitutionDiplomas() {
                   value={formData.duration}
                   onChange={handleChange}
                   placeholder="e.g., 6 months"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   disabled={submitting}
                 />
               </div>
@@ -407,7 +407,7 @@ export default function InstitutionDiplomas() {
                   value={formData.meeting_place}
                   onChange={handleChange}
                   placeholder="Physical venue location"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   disabled={submitting}
                   required
                 />
@@ -422,7 +422,7 @@ export default function InstitutionDiplomas() {
                   name="start_date"
                   value={formData.start_date}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   disabled={submitting}
                 />
               </div>
@@ -433,7 +433,7 @@ export default function InstitutionDiplomas() {
                   name="end_date"
                   value={formData.end_date}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   disabled={submitting}
                 />
               </div>
@@ -448,7 +448,7 @@ export default function InstitutionDiplomas() {
                   onClick={() => setImageTab('upload')}
                   className={`px-4 py-2 font-medium transition ${
                     imageTab === 'upload'
-                      ? 'text-green-600 border-b-2 border-green-600'
+                      ? 'text-green-600 border-b-2 border-yellow-600'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -459,7 +459,7 @@ export default function InstitutionDiplomas() {
                   onClick={() => setImageTab('url')}
                   className={`px-4 py-2 font-medium transition ${
                     imageTab === 'url'
-                      ? 'text-green-600 border-b-2 border-green-600'
+                      ? 'text-green-600 border-b-2 border-yellow-600'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -485,7 +485,7 @@ export default function InstitutionDiplomas() {
                             className="h-32 object-cover rounded-md mb-2 shadow-sm"
                         />
                     ) : (
-                        <div className="mb-2 p-3 bg-green-100 rounded-full">
+                        <div className="mb-2 p-3 bg-yellow-100 rounded-full">
                             <Upload className="w-6 h-6 text-green-600" />
                         </div>
                     )}
@@ -504,7 +504,7 @@ export default function InstitutionDiplomas() {
                   value={formData.image}
                   onChange={handleChange}
                   placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   disabled={submitting}
                 />
               )}
@@ -529,7 +529,7 @@ export default function InstitutionDiplomas() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+                className="flex-1 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {submitting ? 'Saving...' : editingId ? 'Update Diploma' : 'Create Diploma'}
@@ -577,7 +577,7 @@ export default function InstitutionDiplomas() {
                     className={`p-2 rounded-lg transition-colors ${
                       diploma.published
                         ? 'hover:bg-orange-50 text-orange-600'
-                        : 'hover:bg-green-50 text-green-600'
+                        : 'hover:bg-yellow-50 text-green-600'
                     }`}
                     title={diploma.published ? 'Unpublish' : 'Publish'}
                   >
@@ -640,7 +640,7 @@ export default function InstitutionDiplomas() {
                  <span className="text-xs text-gray-400">ID: {diploma.id}</span>
                 <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                   diploma.published
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-yellow-100 text-green-800'
                     : 'bg-gray-100 text-gray-800'
                 }`}>
                   {diploma.published ? 'Published' : 'Draft'}

@@ -17,10 +17,10 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
       label: 'Payment Verified',
       duration: 'Immediate',
       icon: <CheckCircle className="w-5 h-5" />,
-      color: 'from-green-500 to-emerald-500',
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-700',
-      borderColor: 'border-green-200'
+      color: 'from-yellow-500 to-blue-500',
+      bgColor: 'bg-yellow-50',
+      textColor: 'text-yellow-700',
+      borderColor: 'border-yellow-200'
     },
     {
       label: 'Marked for Settlement',
@@ -66,7 +66,7 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
           </p>
           <ul className="mt-3 space-y-2 text-sm">
             <li className="flex items-start gap-2">
-              <span className="text-green-600 font-bold min-w-fit mt-0.5">1. Immediate:</span>
+              <span className="text-yellow-600 font-bold min-w-fit mt-0.5">1. Immediate:</span>
               <span className="text-gray-600">Payment verified and confirmed</span>
             </li>
             <li className="flex items-start gap-2">
@@ -121,9 +121,9 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
   );
 
   const compactContent = (
-    <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-4 border border-green-200">
+    <div className="bg-gradient-to-r from-yellow-50 to-blue-50 rounded-lg p-4 border border-yellow-200">
       <div className="flex items-start gap-3">
-        <Clock className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+        <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-900 text-sm">24-72 Hour Settlement</p>
           <p className="text-xs text-gray-600 mt-1">

@@ -226,7 +226,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
         className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-green-50 to-teal-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="sticky top-0 bg-gradient-to-r from-green-50 to-blue-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">Sub-Admin Management</h2>
           <button
             onClick={onClose}
@@ -247,7 +247,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
               }}
               className={`px-4 py-2 font-medium border-b-2 transition-colors ${
                 showForm
-                  ? 'border-green-500 text-green-600'
+                  ? 'border-yellow-500 text-green-600'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -257,7 +257,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
               onClick={() => setShowForm(false)}
               className={`px-4 py-2 font-medium border-b-2 transition-colors ${
                 !showForm
-                  ? 'border-green-500 text-green-600'
+                  ? 'border-yellow-500 text-green-600'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -274,7 +274,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
           )}
 
           {success && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+            <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <p className="text-green-700 text-sm">{success}</p>
             </div>
@@ -301,7 +301,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                     placeholder="Enter username"
                     required
                     disabled={!!editingId}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -315,7 +315,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                     placeholder="Enter email"
                     required
                     disabled={!!editingId}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -330,7 +330,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                         onChange={handleChange}
                         placeholder="Enter password"
                         required={!editingId}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
                       />
                     </div>
 
@@ -343,7 +343,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                         onChange={handleChange}
                         placeholder="Confirm password"
                         required={!editingId}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
                       />
                     </div>
                   </>
@@ -370,7 +370,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                         name={perm.key}
                         checked={(formData as any)[perm.key]}
                         onChange={handleChange}
-                        className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-yellow-500"
                       />
                       <span className="text-sm text-gray-700">{perm.label}</span>
                     </label>
@@ -390,7 +390,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white font-semibold rounded-lg hover:from-green-700 hover:to-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-lg hover:from-green-700 hover:to-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingId ? 'Update Permissions' : 'Create Sub-Admin'}
@@ -425,7 +425,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${
                             subadmin.is_active
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-yellow-100 text-green-800'
                               : 'bg-red-100 text-red-800'
                           }`}
                         >
@@ -451,7 +451,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                             .map((perm) => (
                               <span
                                 key={perm.key}
-                                className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs"
+                                className="px-2 py-1 bg-yellow-100 text-green-700 rounded-full text-xs"
                               >
                                 {perm.label}
                               </span>

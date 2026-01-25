@@ -497,7 +497,7 @@ export default function CoursePlayer(): JSX.Element {
           <div className="text-white text-lg mb-2">Unable to play this video</div>
           <div className="flex gap-3">
             <a href={resolved} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-gray-800 text-white rounded">Open in new tab</a>
-            <button onClick={() => setVideoLoadError(false)} className="px-4 py-2 bg-green-600 text-white rounded">Retry</button>
+            <button onClick={() => setVideoLoadError(false)} className="px-4 py-2 bg-yellow-600 text-white rounded">Retry</button>
           </div>
         </div>
       );
@@ -573,7 +573,7 @@ export default function CoursePlayer(): JSX.Element {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-yellow-200 border-t-green-600 rounded-full animate-spin mx-auto" />
           <p className="mt-4 text-gray-600">Loading course content...</p>
         </div>
       </div>
@@ -588,7 +588,7 @@ export default function CoursePlayer(): JSX.Element {
           <h2 className="text-xl font-semibold text-gray-700 mb-2">Course not found</h2>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
           >
             Browse Courses
           </button>
@@ -638,7 +638,7 @@ export default function CoursePlayer(): JSX.Element {
               <div className="p-5 border-b">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900">Course Content</h3>
-                  <div className="flex items-center text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                  <div className="flex items-center text-green-600 bg-yellow-50 px-3 py-1 rounded-full">
                     <Play className="w-4 h-4 mr-1" />
                     <span className="text-sm font-medium">Playing</span>
                   </div>
@@ -654,7 +654,7 @@ export default function CoursePlayer(): JSX.Element {
                     </div>
                     <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-green-600 rounded-full transition-all duration-300"
+                        className="h-full bg-yellow-600 rounded-full transition-all duration-300"
                         style={{ width: `${(lessonIndex + 1) / Math.max(1, lessons.length) * 100}%` }}
                       />
                     </div>
@@ -694,12 +694,12 @@ export default function CoursePlayer(): JSX.Element {
                               onClick={() => !isLocked && setLessonIndex(globalIndex)}
                               disabled={isLocked}
                               className={`w-full text-left p-4 flex items-start gap-3 transition-all ${
-                                isActive ? 'bg-green-50 border-l-4 border-l-green-600' : 'hover:bg-gray-50'
+                                isActive ? 'bg-yellow-50 border-l-4 border-l-green-600' : 'hover:bg-gray-50'
                               } ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
                               <div className="flex-shrink-0">
                                 {isActive ? (
-                                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                  <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
                                     <Play className="w-4 h-4 text-green-600" />
                                   </div>
                                 ) : isLocked ? (
@@ -761,7 +761,7 @@ export default function CoursePlayer(): JSX.Element {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       onClick={() => navigate(`/student/courses/${course.id}/details`)}
-                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                      className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-medium"
                     >
                       Enroll Now - ₦{course.price}
                     </button>
@@ -781,7 +781,7 @@ export default function CoursePlayer(): JSX.Element {
               <div className="p-6 border-b">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-3">
+                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-green-800 text-sm font-medium mb-3">
                       {((currentLesson as any)?.moduleTitle) || 'Introduction'}
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900">{currentLesson?.title || 'Course Introduction'}</h2>
@@ -849,7 +849,7 @@ export default function CoursePlayer(): JSX.Element {
                           goNext();
                         }
                       }}
-                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium inline-flex items-center gap-2"
+                      className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-medium inline-flex items-center gap-2"
                     >
                       {lessonIndex >= lessons.length - 1 ? 'Complete Course' : 'Next Lesson'}
                       <ChevronRight className="w-4 h-4" />
@@ -870,9 +870,9 @@ export default function CoursePlayer(): JSX.Element {
                       href={resource.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-4 border rounded-lg hover:border-green-300 hover:bg-green-50 transition"
+                      className="flex items-center gap-3 p-4 border rounded-lg hover:border-yellow-300 hover:bg-yellow-50 transition"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
                         <BookOpen className="w-5 h-5 text-green-600" />
                       </div>
                       <div>

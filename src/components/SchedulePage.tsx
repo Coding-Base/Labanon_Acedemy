@@ -149,7 +149,7 @@ export default function SchedulePage({ userRole }: SchedulePageProps) {
       ) : (
         <div className="grid gap-4">
           {items.map(item => (
-            <div key={item.id} className={`bg-white p-6 rounded-xl shadow-sm border transition-all ${item.isLive ? 'border-green-500 ring-1 ring-green-500 shadow-md' : 'border-gray-200'}`}>
+            <div key={item.id} className={`bg-white p-6 rounded-xl shadow-sm border transition-all ${item.isLive ? 'border-yellow-500 ring-1 ring-green-500 shadow-md' : 'border-gray-200'}`}>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 
                 {/* Info Section */}
@@ -192,7 +192,7 @@ export default function SchedulePage({ userRole }: SchedulePageProps) {
                       className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all ${
                         item.canJoin 
                           ? item.isLive
-                            ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-green-200' 
+                            ? 'bg-yellow-600 text-white hover:bg-yellow-700 shadow-lg hover:shadow-green-200' 
                             : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-blue-200'
                           : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       }`}

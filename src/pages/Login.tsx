@@ -113,22 +113,22 @@ export default function Login() {
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="w-4 h-4 text-green-600 rounded focus:ring-green-500" />
+              <input type="checkbox" className="w-4 h-4 text-yellow-600 rounded focus:ring-yellow-500" />
               <span className="text-gray-600">Remember me</span>
             </label>
-            <Link to="/forgot-password" className="text-green-600 hover:underline flex items-center gap-1">
+            <Link to="/forgot-password" className="text-yellow-600 hover:underline flex items-center gap-1">
                <KeyRound className="w-3 h-3" /> Forgot?
             </Link>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-green-600 to-teal-600 shadow-md hover:opacity-95 disabled:opacity-60">
+          <button type="submit" disabled={loading} className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-yellow-600 to-blue-600 shadow-md hover:opacity-95 disabled:opacity-60">
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link to={`/register${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-green-600 font-medium hover:underline">Create account</Link>
+          <Link to={`/register${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-yellow-600 font-medium hover:underline">Create account</Link>
         </div>
       </div>
     </div>

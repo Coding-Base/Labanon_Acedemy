@@ -93,12 +93,12 @@ export default function UserMessages({ isOpen, onClose }: { isOpen: boolean; onC
                   <div className="flex-shrink-0 text-right">
                     <div className="text-xs text-gray-400 whitespace-nowrap">{new Date(m.created_at).toLocaleString()}</div>
                     <div className="mt-2">
-                      {!m.is_read && <button onClick={() => markAsRead(m.id)} className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded hover:bg-green-100 transition">Mark read</button>}
+                      {!m.is_read && <button onClick={() => markAsRead(m.id)} className="text-xs px-2 py-1 bg-yellow-50 text-green-700 rounded hover:bg-yellow-100 transition">Mark read</button>}
                     </div>
                   </div>
                 </div>
                 {m.is_replied && m.reply_message && (
-                  <div className="mt-3 p-3 border-l-4 border-green-200 bg-green-50 rounded">
+                  <div className="mt-3 p-3 border-l-4 border-yellow-200 bg-yellow-50 rounded">
                     <div className="text-xs font-semibold text-gray-700">✓ Admin reply</div>
                     <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap break-words">{m.reply_message}</div>
                     {m.replied_at && <div className="text-xs text-gray-500 mt-1">{new Date(m.replied_at).toLocaleString()}</div>}

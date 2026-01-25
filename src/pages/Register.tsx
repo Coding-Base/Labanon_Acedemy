@@ -68,7 +68,7 @@ export default function Register() {
       label: 'Student', 
       icon: <GraduationCap className="w-6 h-6" />,
       description: 'Access courses, take exams, track progress',
-      color: 'from-green-500 to-teal-400',
+      color: 'from-yellow-500 to-blue-400',
       features: ['Access to all courses', 'Progress tracking', 'Certificate earning',' Practice real CBT  past questions Jamb, Waec, Neco']
     },
     { 
@@ -84,7 +84,7 @@ export default function Register() {
       label: 'Institution/School', 
       icon: <Building className="w-6 h-6" />,
       description: 'Manage students, create courses, track performance',
-      color: 'from-green-500 to-emerald-400',
+      color: 'from-yellow-500 to-blue-400',
       features: ['Portfolio management' ,'Custom courses Sales', 'Performance analytics', 'Institution portal']
     },
     { 
@@ -200,7 +200,7 @@ export default function Register() {
               </Link>
               
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Join <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">LightHub Academy</span>
+                Join <span className="bg-gradient-to-r from-yellow-600 to-blue-600 bg-clip-text text-transparent">LightHub Academy</span>
               </h2>
               <p className="text-gray-600">Start your learning journey today</p>
             </div>
@@ -212,14 +212,14 @@ export default function Register() {
                   <React.Fragment key={stepNumber}>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
                       step >= stepNumber 
-                        ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white' 
+                        ? 'bg-gradient-to-r from-yellow-600 to-blue-600 text-white' 
                         : 'bg-gray-200 text-gray-500'
                     }`}>
                       {stepNumber}
                     </div>
                     {stepNumber < 2 && (
                       <div className={`w-16 h-1 ${
-                        step > stepNumber ? 'bg-gradient-to-r from-green-600 to-teal-600' : 'bg-gray-200'
+                        step > stepNumber ? 'bg-gradient-to-r from-yellow-600 to-blue-600' : 'bg-gray-200'
                       }`} />
                     )}
                   </React.Fragment>
@@ -247,7 +247,7 @@ export default function Register() {
                       onClick={() => setRole(roleOption.id)}
                       className={`cursor-pointer rounded-2xl border-2 p-4 transition-all duration-300 ${
                         role === roleOption.id
-                          ? 'border-green-500 bg-gradient-to-br from-green-50 to-teal-50'
+                          ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -263,14 +263,14 @@ export default function Register() {
                           <ul className="space-y-1">
                             {roleOption.features.map((feature, idx) => (
                               <li key={idx} className="flex items-center text-xs text-gray-500">
-                                <CheckCircle className="w-3 h-3 text-green-500 mr-2" />
+                                <CheckCircle className="w-3 h-3 text-yellow-600 mr-2" />
                                 {feature}
                               </li>
                             ))}
                           </ul>
                         </div>
                         {role === roleOption.id && (
-                          <div className="w-6 h-6 bg-gradient-to-r from-green-600 to-teal-600 rounded-full flex items-center justify-center">
+                          <div className="w-6 h-6 bg-gradient-to-r from-yellow-600 to-blue-600 rounded-full flex items-center justify-center">
                             <CheckCircle className="w-4 h-4 text-white" />
                           </div>
                         )}
@@ -283,7 +283,7 @@ export default function Register() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setStep(2)}
-                  className="w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                  className="w-full py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg"
                 >
                   Continue
                   <ChevronRight className="w-5 h-5 inline ml-2" />
@@ -304,7 +304,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex items-center text-green-600 hover:text-green-700 font-medium mb-4"
+                  className="flex items-center text-yellow-700 hover:text-yellow-800 font-medium mb-4"
                 >
                   <ChevronRight className="w-5 h-5 rotate-180 mr-1" />
                   Back to account type
@@ -430,11 +430,11 @@ export default function Register() {
                       {passwordRequirements.map((req, index) => (
                         <div key={index} className="flex items-center">
                           {req.met ? (
-                            <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                            <CheckCircle className="w-4 h-4 text-yellow-600 mr-2" />
                           ) : (
                             <div className="w-4 h-4 border-2 border-gray-300 rounded-full mr-2" />
                           )}
-                          <span className={`text-sm ${req.met ? 'text-green-600' : 'text-gray-500'}`}>
+                          <span className={`text-sm ${req.met ? 'text-yellow-700' : 'text-gray-500'}`}>
                             {req.label}
                           </span>
                         </div>
@@ -475,7 +475,7 @@ export default function Register() {
                   <input
                     type="checkbox"
                     id="terms"
-                    className="mt-1 w-4 h-4 text-green-600 rounded"
+                    className="mt-1 w-4 h-4 text-yellow-600 rounded"
                     required
                   />
                   <label htmlFor="terms" className="text-sm text-gray-600">
@@ -499,7 +499,7 @@ export default function Register() {
                   className={`w-full py-3 rounded-xl font-semibold transition-all ${
                     isLoading || !isFormValid()
                       ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-green-600 to-teal-600 text-white hover:shadow-lg'
+                      : 'bg-gradient-to-r from-yellow-600 to-blue-600 text-white hover:shadow-lg'
                   }`}
                 >
                   {isLoading ? (
@@ -519,7 +519,7 @@ export default function Register() {
                 <div className="text-center mt-6">
                   <p className="text-gray-600">
                     Already have an account?{' '}
-                    <Link to={`/login${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-green-600 hover:text-green-700 font-semibold">
+                    <Link to={`/login${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-yellow-700 hover:text-yellow-800 font-semibold">
                       Sign In
                     </Link>
                   </p>
@@ -541,7 +541,7 @@ export default function Register() {
                 whileHover={{ x: 10 }}
                 className="flex items-start space-x-4"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Award className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -575,7 +575,7 @@ export default function Register() {
                 transition={{ delay: 0.2 }}
                 className="flex items-start space-x-4"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Globe className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -608,7 +608,7 @@ export default function Register() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="mt-12 bg-gradient-to-br from-green-600 to-teal-600 rounded-2xl p-8 text-white"
+                className="mt-12 bg-gradient-to-br from-yellow-600 to-blue-600 rounded-2xl p-8 text-white"
               >
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">

@@ -249,9 +249,9 @@ export default function BulkUploadPage() {
                 <p className="text-xs text-blue-700 mt-2 font-semibold">✓ IMPORTANT: Include "year" field in each question (e.g., "year": "2014")</p>
               </div>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="font-semibold text-green-900 mb-2">CSV Format Example:</p>
-                <pre className="text-xs text-green-800 overflow-x-auto whitespace-pre-wrap break-words">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="font-semibold text-yellow-900 mb-2">CSV Format Example:</p>
+                <pre className="text-xs text-yellow-800 overflow-x-auto whitespace-pre-wrap break-words">
 {`id,question_text,optionA,optionB,optionC,optionD,correct_answer,explanation,subject,year
 2014_1,"What is the chemical formula for salt?","H2O","NaCl","H2SO4","KCl","B","NaCl is the chemical formula for common salt","Chemistry","2014"
 2014_2,"What is the atomic number of Carbon?","6","12","8","4","A","Carbon has an atomic number of 6","Chemistry","2014"`}
@@ -324,7 +324,7 @@ export default function BulkUploadPage() {
             {response && (
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  <CheckCircle className="w-6 h-6 text-yellow-600" />
                   <h2 className="text-xl font-bold text-gray-900">Upload Successful</h2>
                 </div>
 
@@ -340,7 +340,7 @@ export default function BulkUploadPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Success Rate</p>
-                      <p className="font-semibold text-green-600">
+                      <p className="font-semibold text-yellow-600">
                         {response.success}/{response.total}
                       </p>
                     </div>
@@ -352,8 +352,8 @@ export default function BulkUploadPage() {
                       <p className="text-sm font-semibold text-gray-700 mb-2">Created Questions ({response.created.length})</p>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {response.created.map((q) => (
-                          <div key={q.id} className="p-2 bg-green-50 rounded text-sm text-gray-700">
-                            <span className="font-medium text-green-700">Q{q.id}:</span> {q.text}
+                          <div key={q.id} className="p-2 bg-yellow-50 rounded text-sm text-gray-700">
+                            <span className="font-medium text-yellow-700">Q{q.id}:</span> {q.text}
                           </div>
                         ))}
                       </div>

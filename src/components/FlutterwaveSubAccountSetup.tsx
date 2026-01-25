@@ -157,7 +157,7 @@ export default function FlutterwaveSubAccountSetup() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3"
+          className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-3"
         >
           <CheckCircle className="w-5 h-5 text-green-600" />
           <span className="text-sm text-green-800">{success}</span>
@@ -213,7 +213,7 @@ export default function FlutterwaveSubAccountSetup() {
               value={formData.bank_code}
               onChange={(e) => setFormData({ ...formData, bank_code: e.target.value })}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             >
               <option value="">Choose a bank...</option>
               {banks.map((bank) => (
@@ -236,7 +236,7 @@ export default function FlutterwaveSubAccountSetup() {
               placeholder="Enter your account number"
               maxLength={20}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
             <p className="text-xs text-gray-500 mt-1">Typically 10 digits, but may vary by bank</p>
             <div className="mt-2">
@@ -262,7 +262,7 @@ export default function FlutterwaveSubAccountSetup() {
               onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
               placeholder="Account holder name"
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
           </div>
 
@@ -277,7 +277,7 @@ export default function FlutterwaveSubAccountSetup() {
               onChange={(e) => setFormData({ ...formData, business_email: e.target.value })}
               placeholder="business@example.com"
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
           </div>
 
@@ -285,7 +285,7 @@ export default function FlutterwaveSubAccountSetup() {
           <button
             type="submit"
             disabled={submitting || !formData.bank_code || !formData.account_number || !formData.account_name || !formData.business_email}
-            className="w-full py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-2 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {submitting ? (
               <>

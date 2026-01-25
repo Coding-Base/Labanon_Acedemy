@@ -80,7 +80,7 @@ export default function CommentForm({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder={isReply ? 'Write a reply...' : 'Share your thoughts...'}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none resize-none"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none resize-none"
           rows={isReply ? 2 : 4}
           disabled={loading}
         />
@@ -102,7 +102,7 @@ export default function CommentForm({
           whileTap={{ scale: 0.95 }}
           type="submit"
           disabled={loading || !content.trim()}
-          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>

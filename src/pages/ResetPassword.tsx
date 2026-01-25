@@ -50,7 +50,7 @@ export default function ResetPassword() {
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-6">Set New Password</h2>
 
         {status === 'success' ? (
-          <div className="text-center bg-green-50 p-6 rounded-xl">
+          <div className="text-center bg-yellow-50 p-6 rounded-xl">
             <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-green-900 mb-2">Password Reset Successful!</h3>
             <p className="text-green-700">Redirecting you to login...</p>
@@ -72,7 +72,7 @@ export default function ResetPassword() {
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
                   placeholder="••••••••"
                   minLength={8}
                 />
@@ -88,7 +88,7 @@ export default function ResetPassword() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
                   placeholder="••••••••"
                 />
               </div>
@@ -97,7 +97,7 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={status === 'loading'}
-              className="w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-70 flex items-center justify-center"
+              className="w-full py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-70 flex items-center justify-center"
             >
               {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Reset Password'}
             </button>

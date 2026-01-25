@@ -70,7 +70,7 @@ export default function ProgressPage() {
 
   const getScoreColor = (score: number, total: number) => {
     const percentage = (score / total) * 100
-    if (percentage >= 70) return 'text-green-600 bg-green-50'
+    if (percentage >= 70) return 'text-green-600 bg-yellow-50'
     if (percentage >= 50) return 'text-yellow-600 bg-yellow-50'
     return 'text-red-600 bg-red-50'
   }
@@ -81,7 +81,7 @@ export default function ProgressPage() {
         <div className="text-red-600 mb-4">{error}</div>
         <button
           onClick={() => navigate('/student')}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg"
+          className="px-4 py-2 bg-yellow-600 text-white rounded-lg"
         >
           Back to Dashboard
         </button>
@@ -126,7 +126,7 @@ export default function ProgressPage() {
                     ).toFixed(1)}%
                   </p>
                 </div>
-                <div className="bg-green-200 p-3 rounded-lg">
+                <div className="bg-yellow-200 p-3 rounded-lg">
                   <Target className="w-6 h-6 text-green-700" />
                 </div>
               </div>
@@ -187,7 +187,7 @@ export default function ProgressPage() {
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
             <p className="text-gray-600 mt-4">Loading exam history...</p>
           </div>
         ) : attempts.length === 0 ? (
@@ -267,7 +267,7 @@ export default function ProgressPage() {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition"
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition"
                 >
                   ← Previous
                 </button>
@@ -279,7 +279,7 @@ export default function ProgressPage() {
                       onClick={() => setCurrentPage(page)}
                       className={`px-3 py-2 rounded-lg font-semibold transition ${
                         currentPage === page
-                          ? 'bg-green-600 text-white'
+                          ? 'bg-yellow-600 text-white'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
@@ -291,7 +291,7 @@ export default function ProgressPage() {
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition"
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition"
                 >
                   Next →
                 </button>

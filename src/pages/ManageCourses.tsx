@@ -62,7 +62,7 @@ export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMe
         {!isInstitution && (
             <Link 
                 to="/tutor/manage/create" 
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 transition shadow-sm"
             >
                 <PlusCircle className="w-5 h-5" />
                 Create Course
@@ -91,7 +91,7 @@ export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMe
                 <div className="font-bold text-gray-900 line-clamp-1">{c.title}</div>
                 <div className="text-sm text-gray-500 line-clamp-1">{c.description || 'No description provided'}</div>
                 <div className="flex items-center gap-3 mt-1">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${c.published ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${c.published ? 'bg-yellow-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                         {c.published ? 'Published' : 'Draft'}
                     </span>
                     {c.meeting_link && (

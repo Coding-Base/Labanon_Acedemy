@@ -140,7 +140,7 @@ export default function CourseDetail() {
           <p className="text-gray-600 mb-6">The course you're looking for doesn't exist or has been removed.</p>
           <button
             onClick={() => navigate(-1)}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+            className="px-6 py-3 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors"
           >
             Go Back
           </button>
@@ -158,7 +158,7 @@ export default function CourseDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-green-700 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-yellow-700 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">Back to Courses</span>
@@ -174,7 +174,7 @@ export default function CourseDetail() {
             <div className="lg:col-span-2 order-2 lg:order-1">
               {/* Course Category */}
               <div className="flex items-center gap-4 mb-4">
-                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${isScheduled ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${isScheduled ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-green-700'}`}>
                   {isScheduled ? 'Live Scheduled Course' : (course.category || 'Professional Development')}
                 </span>
                 <span className="text-sm text-gray-600 flex items-center gap-1">
@@ -226,7 +226,7 @@ export default function CourseDetail() {
 
               {/* Instructor Info */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm">
                   {course.creator?.charAt(0)?.toUpperCase() || 'I'}
                 </div>
                 <div>
@@ -336,7 +336,7 @@ export default function CourseDetail() {
                 ) : (
                     <div className="space-y-4">
                     {course.modules?.map((module: any, moduleIndex: number) => (
-                        <div key={module.id} className="border border-gray-200 rounded-xl overflow-hidden hover:border-green-300 transition-colors">
+                        <div key={module.id} className="border border-gray-200 rounded-xl overflow-hidden hover:border-yellow-300 transition-colors">
                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                             <div className="flex items-center justify-between cursor-pointer">
                             <div>
@@ -353,7 +353,7 @@ export default function CourseDetail() {
                         
                         <div className="divide-y divide-gray-100">
                             {module.lessons?.map((lesson: any, lessonIndex: number) => (
-                            <div key={lesson.id} className="px-6 py-4 hover:bg-green-50/50 transition-colors flex items-start gap-4">
+                            <div key={lesson.id} className="px-6 py-4 hover:bg-yellow-50/50 transition-colors flex items-start gap-4">
                                 <div className="mt-1">
                                 <PlayCircle className="w-4 h-4 text-green-600" />
                                 </div>
@@ -389,7 +389,7 @@ export default function CourseDetail() {
                       'Dedication and commitment to complete the course'
                     ].map((req, i) => (
                       <li key={i} className="flex items-center gap-3">
-                        <div className="w-1.5 h-1.5 bg-green-600 rounded-full flex-shrink-0" />
+                        <div className="w-1.5 h-1.5 bg-yellow-600 rounded-full flex-shrink-0" />
                         <span>{req}</span>
                       </li>
                     ))}
@@ -407,7 +407,7 @@ export default function CourseDetail() {
                   <div className="text-center mb-6">
                     <div className="text-4xl font-extrabold text-gray-900">₦{course.price}</div>
                     <div className="text-gray-500 mt-1 text-sm">One-time payment</div>
-                    <div className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-bold mt-3 uppercase tracking-wide">
+                    <div className="inline-flex items-center gap-1.5 bg-yellow-50 text-green-700 px-3 py-1 rounded-full text-xs font-bold mt-3 uppercase tracking-wide">
                       <Award className="w-3 h-3" />
                       Certificate Included
                     </div>
@@ -431,7 +431,7 @@ export default function CourseDetail() {
                     ) : (
                       <button
                         onClick={handleEnroll}
-                        className="w-full py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white font-bold rounded-xl hover:shadow-lg hover:from-green-700 hover:to-teal-700 transition-all duration-300 flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold rounded-xl hover:shadow-lg hover:from-green-700 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2"
                       >
                         <PlayCircle className="w-5 h-5" />
                         {course.price === 0 ? 'Enroll Free' : 'Enroll Now'}
@@ -466,7 +466,7 @@ export default function CourseDetail() {
                         const targetRoute = dashboardMap[role || 'student'] || `/student/courses/${course.id}`;
                         navigate(targetRoute);
                       }}
-                      className="w-full py-3.5 bg-white border-2 border-green-600 text-green-700 font-bold rounded-xl hover:bg-green-50 transition-colors duration-300 flex items-center justify-center gap-2"
+                      className="w-full py-3.5 bg-white border-2 border-yellow-600 text-green-700 font-bold rounded-xl hover:bg-yellow-50 transition-colors duration-300 flex items-center justify-center gap-2"
                     >
                       {isScheduled ? <Calendar className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
                       {isScheduled ? 'Open Schedule' : 'Open Course Player'}
@@ -505,12 +505,12 @@ export default function CourseDetail() {
               </div>
 
               {/* Need Help */}
-              <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl border border-green-100 p-6">
+              <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl border border-yellow-100 p-6">
                 <h3 className="font-bold text-gray-900 mb-2">Need help deciding?</h3>
                 <p className="text-sm text-gray-600 mb-4">
                   Contact our learning advisors for personalized guidance.
                 </p>
-                <button className="w-full py-2.5 bg-white text-green-700 font-semibold rounded-lg border border-green-200 hover:bg-green-50 transition-colors text-sm">
+                <button className="w-full py-2.5 bg-white text-green-700 font-semibold rounded-lg border border-yellow-200 hover:bg-yellow-50 transition-colors text-sm">
                   Talk to an Advisor
                 </button>
               </div>

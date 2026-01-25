@@ -506,7 +506,7 @@ export default function CreateCourse() {
         <div className="flex items-center gap-3">
           {courseType === 'normal' && <button onClick={() => setPreviewOpen(true)} className="px-4 py-2 bg-gray-100 rounded">Preview</button>}
           <button onClick={saveDraft} disabled={saving} className="px-4 py-2 bg-yellow-500 text-white rounded">{saving ? 'Saving...' : 'Save Draft'}</button>
-          <button onClick={publishCourse} disabled={publishing} className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold">{publishing ? 'Publishing...' : 'Publish Course'}</button>
+          <button onClick={publishCourse} disabled={publishing} className="px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold">{publishing ? 'Publishing...' : 'Publish Course'}</button>
         </div>
       </div>
 
@@ -700,12 +700,12 @@ export default function CreateCourse() {
                 <label className="block text-sm font-medium text-gray-700">Modules</label>
                 <div className="mt-2 flex items-center gap-2">
                   <input placeholder="Module title" value={moduleTitleInput} onChange={(e) => setModuleTitleInput(e.target.value)} className="w-full border rounded p-2" />
-                  <button onClick={addModule} className="px-4 py-2 bg-green-600 text-white rounded">Add Module</button>
+                  <button onClick={addModule} className="px-4 py-2 bg-yellow-600 text-white rounded">Add Module</button>
                 </div>
 
                 <div className="mt-3 space-y-2">
                   {modules.map((m, idx) => (
-                    <div key={idx} className={`p-2 border rounded flex items-center justify-between ${currentModuleIndex === idx ? 'bg-green-50' : ''}`}>
+                    <div key={idx} className={`p-2 border rounded flex items-center justify-between ${currentModuleIndex === idx ? 'bg-yellow-50' : ''}`}>
                       <div className="cursor-pointer" onClick={() => setCurrentModuleIndex(idx)}>
                         <div className="font-medium">{m.title}</div>
                         <div className="text-xs text-gray-500">{(m.lessons || []).length} lessons</div>
@@ -778,7 +778,7 @@ export default function CreateCourse() {
                   )}
 
                   <div className="mt-4 flex gap-2">
-                    <button onClick={addOrUpdateLesson} className="px-4 py-2 bg-green-600 text-white rounded">{editingLessonIndex !== null ? 'Save Lesson' : 'Add Lesson'}</button>
+                    <button onClick={addOrUpdateLesson} className="px-4 py-2 bg-yellow-600 text-white rounded">{editingLessonIndex !== null ? 'Save Lesson' : 'Add Lesson'}</button>
                     <button onClick={() => { cancelEditLesson(); setLessonTitle(''); setLessonContent('') }} className="px-4 py-2 bg-gray-100 rounded">Reset</button>
                   </div>
                 </div>
@@ -951,7 +951,7 @@ function CodeSnippetInserter({ onInsert }: { onInsert: (code: string, lang: stri
 
           <div className="mt-2 flex justify-end gap-2">
             <button onClick={() => { setCode(''); setOpen(false) }} className="px-3 py-1 bg-gray-100 rounded">Cancel</button>
-            <button onClick={handleInsert} className="px-3 py-1 bg-green-600 text-white rounded">Insert</button>
+            <button onClick={handleInsert} className="px-3 py-1 bg-yellow-600 text-white rounded">Insert</button>
           </div>
         </div>
       )}

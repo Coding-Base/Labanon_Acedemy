@@ -58,11 +58,11 @@ export default function Loader() {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-green-50 via-white to-teal-50 flex flex-col items-center justify-center z-[9999] overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-green-50 via-white to-blue-50 flex flex-col items-center justify-center z-[9999] overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute top-10 left-10 w-32 h-32 bg-green-300 rounded-full filter blur-3xl opacity-20"
+          className="absolute top-10 left-10 w-32 h-32 bg-yellow-300 rounded-full filter blur-3xl opacity-20"
           animate={{
             x: [0, 50, 0],
             y: [0, 30, 0],
@@ -97,7 +97,7 @@ export default function Loader() {
 
         {/* Middle pulsing circle */}
         <motion.div
-          className="absolute w-40 h-40 border-2 border-green-400 rounded-full"
+          className="absolute w-40 h-40 border-2 border-yellow-400 rounded-full"
           animate={pulseAnimation}
         />
 
@@ -133,7 +133,7 @@ export default function Loader() {
           {[0, 1, 2, 3, 4].map((i) => (
             <motion.div
               key={i}
-              className="absolute w-2 h-2 bg-green-600 rounded-full"
+              className="absolute w-2 h-2 bg-yellow-600 rounded-full"
               style={{
                 top: 50,
                 left: 50,
@@ -154,7 +154,7 @@ export default function Loader() {
           transition={{ duration: 0.8, delay: 0.3 }}
           className="mt-16 text-center relative z-20"
         >
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-3">
             Lebanon Academy
           </h1>
           <p className="text-green-700 font-semibold text-lg">Future Ready Learning</p>
@@ -169,7 +169,7 @@ export default function Loader() {
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
-                className="w-2 h-2 bg-green-600 rounded-full"
+                className="w-2 h-2 bg-yellow-600 rounded-full"
                 animate={{
                   y: [0, -8, 0],
                 }}
@@ -192,7 +192,7 @@ export default function Loader() {
           className="mt-8 w-64 h-1 bg-gray-200 rounded-full overflow-hidden relative z-20"
         >
           <motion.div
-            className="h-full bg-gradient-to-r from-green-600 to-teal-500"
+            className="h-full bg-gradient-to-r from-green-600 to-blue-500"
             animate={{
               x: ["-100%", "100%"],
             }}
@@ -235,7 +235,7 @@ export default function Loader() {
 
       {/* Corner decorations */}
       <motion.div
-        className="absolute top-8 right-8 w-12 h-12 border-2 border-green-400 rounded-lg"
+        className="absolute top-8 right-8 w-12 h-12 border-2 border-yellow-400 rounded-lg"
         animate={{
           rotate: 360,
           borderColor: ["rgb(134, 239, 172)", "rgb(34, 197, 94)", "rgb(134, 239, 172)"]

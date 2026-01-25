@@ -88,7 +88,7 @@ export default function BlogPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-gradient-to-r from-green-600 to-teal-600 py-12 px-4"
+        className="bg-gradient-to-r from-green-600 to-blue-600 py-12 px-4"
       >
         <div className="max-w-6xl mx-auto">
           <motion.h1
@@ -126,7 +126,7 @@ export default function BlogPage() {
               placeholder="Search articles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-6 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+              className="w-full pl-12 pr-6 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all"
             />
           </div>
         </motion.div>
@@ -161,7 +161,7 @@ export default function BlogPage() {
               >
                 {/* Featured Image */}
                 {blog.image && (
-                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-400 to-teal-500">
+                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-400 to-blue-500">
                     <img
                       src={blog.image}
                       alt={blog.title}
@@ -185,7 +185,7 @@ export default function BlogPage() {
                   </div>
 
                   {/* Title */}
-                  <h2 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors line-clamp-2">
+                  <h2 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-yellow-600 transition-colors line-clamp-2">
                     {blog.title}
                   </h2>
 

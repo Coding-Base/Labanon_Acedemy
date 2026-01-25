@@ -280,7 +280,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   ];
 
   const stats = [
-    { title: 'Enrollments', value: summary?.enrollments_count || 0, icon: <BookOpen className="w-6 h-6" />, color: 'from-green-600 to-teal-500', change: 'Active courses', trend: 'up' },
+    { title: 'Enrollments', value: summary?.enrollments_count || 0, icon: <BookOpen className="w-6 h-6" />, color: 'from-green-600 to-blue-500', change: 'Active courses', trend: 'up' },
     { title: 'Exam Attempts', value: summary?.attempts_count || 0, icon: <FileCheck className="w-6 h-6" />, color: 'from-teal-500 to-green-400', change: 'Lifetime attempts', trend: 'up' },
     { title: 'Average Score', value: summary?.avg_score ? `${Math.round(summary.avg_score)}%` : '—', icon: <Target className="w-6 h-6" />, color: 'from-green-500 to-emerald-400', change: 'Performance', trend: 'up' },
     { title: 'Completed Courses', value: summary?.completed_courses || 0, icon: <CheckCircle className="w-6 h-6" />, color: 'from-orange-500 to-amber-400', change: 'Certificates', trend: 'neutral' },
@@ -289,9 +289,9 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   ];
 
   const quickActions = [
-    { title: 'Take Practice Test', icon: <FileText className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'cbt' },
+    { title: 'Take Practice Test', icon: <FileText className="w-5 h-5" />, color: 'bg-yellow-100 text-green-600', path: 'cbt' },
     { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-teal-100 text-teal-600', path: 'schedule' }, 
-    { title: 'Download Materials', icon: <Download className="w-5 h-5" />, color: 'bg-green-100 text-green-600', path: 'courses' },
+    { title: 'Download Materials', icon: <Download className="w-5 h-5" />, color: 'bg-yellow-100 text-green-600', path: 'courses' },
     { title: 'View Leaderboard', icon: <BarChart3 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-600', path: 'leaderboard' }
   ];
 
@@ -304,7 +304,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   // --- Sub-Component: Leaderboard Table ---
   const LeaderboardPage = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-8 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-3xl font-bold mb-2">Global Leaderboard</h2>
           <p className="opacity-90">Top performers across all JAMB CBT Exams</p>
@@ -326,7 +326,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
             {leaderboard.map((user, index) => (
               <tr 
                 key={user.id} 
-                className={`transition-colors ${user.is_current_user ? 'bg-green-50 border-l-4 border-green-500' : 'hover:bg-gray-50'}`}
+                className={`transition-colors ${user.is_current_user ? 'bg-yellow-50 border-l-4 border-yellow-500' : 'hover:bg-gray-50'}`}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -345,7 +345,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     </div>
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {user.name} {user.is_current_user && <span className="ml-2 px-2 py-0.5 rounded text-xs bg-green-200 text-green-800">You</span>}
+                        {user.name} {user.is_current_user && <span className="ml-2 px-2 py-0.5 rounded text-xs bg-yellow-200 text-green-800">You</span>}
                       </div>
                     </div>
                   </div>
@@ -392,10 +392,10 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 <Mail className="w-5 h-5 text-gray-600" />
               </motion.button>
               <div className="hidden md:flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">{summary?.username?.charAt(0).toUpperCase()}</div>
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">{summary?.username?.charAt(0).toUpperCase()}</div>
                 <div><p className="text-sm font-semibold text-gray-900">{summary?.username}</p><p className="text-xs text-gray-500">Student Account</p></div>
               </div>
-              <motion.button onClick={() => doLogout('user clicked logout')} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all">
+              <motion.button onClick={() => doLogout('user clicked logout')} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all">
                 <LogOut className="w-4 h-4" /><span>Logout</span>
               </motion.button>
             </div>
@@ -413,10 +413,10 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-md">
+                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-md">
                       {summary?.username.charAt(0).toUpperCase()}
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full border-2 border-white shadow-sm"></div>
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900">{summary?.username}</h3>
@@ -448,8 +448,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     const active = isActivePath(item.path);
                     return (
                       <motion.div key={item.path} whileHover={{ x: 5 }} transition={{ type: "spring", stiffness: 300 }}>
-                        <Link to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-gradient-to-r from-green-50 to-teal-50 text-green-700 border-l-4 border-green-500 shadow-sm' : 'text-gray-700 hover:bg-gray-50 hover:text-green-600'}`}>
-                          <div className={`${active ? 'text-green-600' : 'text-gray-500 group-hover:text-green-500'}`}>{item.icon}</div>
+                        <Link to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-gradient-to-r from-green-50 to-blue-50 text-green-700 border-l-4 border-yellow-500 shadow-sm' : 'text-gray-700 hover:bg-gray-50 hover:text-yellow-600'}`}>
+                          <div className={`${active ? 'text-green-600' : 'text-gray-500 group-hover:text-yellow-500'}`}>{item.icon}</div>
                           <span className="font-medium">{item.label}</span>
                           {active && <ChevronRight className="w-4 h-4 ml-auto text-green-500" />}
                         </Link>
@@ -459,7 +459,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 </div>
               </nav>
 
-              <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all shadow-md">
+              <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all shadow-md">
                 Upgrade to Pro
               </motion.button>
             </div>
@@ -473,7 +473,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   <div className="flex items-center justify-between mb-8"><h2 className="text-lg font-bold text-gray-900">Menu</h2><button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100"><X className="w-6 h-6" /></button></div>
                   <nav className="space-y-2">
                     {navItems.map((item) => (
-                      <Link key={item.path} to={item.path} className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 hover:text-green-600" onClick={() => setSidebarOpen(false)}>
+                      <Link key={item.path} to={item.path} className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 hover:text-yellow-600" onClick={() => setSidebarOpen(false)}>
                         <div className="text-gray-500">{item.icon}</div><span>{item.label}</span>
                       </Link>
                     ))}
@@ -496,10 +496,10 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                         <div className="mb-6">
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome back, <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">{summary?.username}</span>! 👋</h1>
+                              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome back, <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">{summary?.username}</span>! 👋</h1>
                               <p className="text-gray-600 mt-2">Track your progress, access courses, and ace your exams</p>
                             </div>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg">
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg">
                               <PlayCircle className="w-5 h-5 inline mr-2" />Continue Learning
                             </motion.button>
                           </div>

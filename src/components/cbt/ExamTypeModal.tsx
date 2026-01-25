@@ -60,7 +60,7 @@ export default function ExamTypeModal({ isOpen, onClose, onSelectExam }: ExamTyp
               <button
                 key={exam.id}
                 onClick={() => onSelectExam(exam)}
-                className="p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 text-left transition"
+                className="p-4 border-2 border-gray-200 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 text-left transition"
               >
                 <h3 className="font-bold text-lg">{exam.title}</h3>
                 <p className="text-gray-600 text-sm">{exam.description}</p>

@@ -155,7 +155,7 @@ export default function AdminMessages() {
       case 'contact': return 'bg-blue-100 text-blue-800';
       case 'support': return 'bg-red-100 text-red-800';
       case 'report': return 'bg-purple-100 text-purple-800';
-      case 'feedback': return 'bg-green-100 text-green-800';
+      case 'feedback': return 'bg-yellow-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -204,7 +204,7 @@ export default function AdminMessages() {
                 onClick={() => setFilter('all')}
                 className={`text-xs px-3 py-1 rounded-full transition ${
                   filter === 'all' 
-                    ? 'bg-green-600 text-white' 
+                    ? 'bg-yellow-600 text-white' 
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
@@ -224,7 +224,7 @@ export default function AdminMessages() {
                 onClick={() => setFilter('replied')}
                 className={`text-xs px-3 py-1 rounded-full transition ${
                   filter === 'replied' 
-                    ? 'bg-green-600 text-white' 
+                    ? 'bg-yellow-600 text-white' 
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
@@ -252,7 +252,7 @@ export default function AdminMessages() {
                     }}
                     className={`p-4 cursor-pointer hover:bg-gray-50 transition border-l-4 ${
                       selectedMessage?.id === msg.id 
-                        ? 'bg-green-50 border-green-600' 
+                        ? 'bg-yellow-50 border-yellow-600' 
                         : msg.is_read 
                         ? 'border-gray-200' 
                         : 'border-red-400 bg-red-50'
@@ -313,7 +313,7 @@ export default function AdminMessages() {
                     {new Date(selectedMessage.created_at).toLocaleString()}
                   </span>
                   {selectedMessage.is_read && (
-                    <span className="text-xs flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded">
+                    <span className="text-xs flex items-center gap-1 text-green-700 bg-yellow-50 px-2 py-1 rounded">
                       <CheckCircle className="w-3 h-3" /> Read
                     </span>
                   )}
@@ -337,7 +337,7 @@ export default function AdminMessages() {
                     <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" /> Your Reply
                     </h4>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <p className="text-gray-900 whitespace-pre-wrap">{selectedMessage.reply_message}</p>
                     </div>
                   </div>
@@ -352,14 +352,14 @@ export default function AdminMessages() {
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder="Type your reply message here..."
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 mb-3 resize-none"
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 mb-3 resize-none"
                     rows={3}
                     disabled={replying}
                   />
                   <button
                     onClick={handleReply}
                     disabled={replying || !replyText.trim()}
-                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                   >
                     <Reply className="w-4 h-4" /> {replying ? 'Sending...' : 'Send Reply'}
                   </button>

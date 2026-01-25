@@ -97,7 +97,7 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-600" />
+        return <CheckCircle className="w-5 h-5 text-yellow-600" />
       case 'pending':
         return <Clock className="w-5 h-5 text-yellow-600" />
       default:
@@ -107,7 +107,7 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { bg: string; text: string }> = {
-      success: { bg: 'bg-green-100', text: 'text-green-800' },
+      success: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
       pending: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
       failed: { bg: 'bg-red-100', text: 'text-red-800' },
     }
@@ -129,7 +129,7 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
   if (loading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-yellow-600" />
       </div>
     )
   }
@@ -153,12 +153,12 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
         )}
 
         {['tutor', 'institution', 'master_admin'].includes(userRole) && (
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl p-6 border border-yellow-200">
             <div className="flex items-center gap-3 mb-2">
-              <DollarSign className="w-6 h-6 text-green-600" />
-              <p className="text-sm text-green-700 font-medium">Total Earnings (95%)</p>
+              <DollarSign className="w-6 h-6 text-yellow-600" />
+              <p className="text-sm text-yellow-700 font-medium">Total Earnings (95%)</p>
             </div>
-            <p className="text-3xl font-bold text-green-900">₦{totalEarned.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-yellow-900">₦{totalEarned.toLocaleString()}</p>
           </div>
         )}
       </div>
@@ -241,7 +241,7 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
                       {['tutor', 'institution', 'master_admin'].includes(userRole) && (
                         <>
                           <td className="px-4 sm:px-6 py-4">
-                            <p className="font-semibold text-green-600 text-sm">
+                            <p className="font-semibold text-yellow-600 text-sm">
                               ₦{parseFloat(transaction.creator_amount?.toString() || '0').toLocaleString()}
                             </p>
                           </td>
@@ -333,7 +333,7 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider">Your Share (95%)</p>
-                            <p className="font-semibold text-green-600 text-sm">
+                            <p className="font-semibold text-yellow-600 text-sm">
                               ₦{parseFloat(transaction.creator_amount?.toString() || '0').toLocaleString()}
                             </p>
                           </div>
@@ -381,7 +381,7 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
               whileTap={{ scale: 0.95 }}
               onClick={() => loadTransactions(currentPage + 1)}
               disabled={!pageInfo.next || loading}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-green-600 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-yellow-600 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow-700 transition-colors"
             >
               Next →
             </motion.button>

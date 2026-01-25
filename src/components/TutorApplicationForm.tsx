@@ -68,8 +68,8 @@ export default function TutorApplicationForm() {
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center"
         >
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-green-600" />
+          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-10 h-10 text-yellow-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Application Received!</h2>
           <p className="text-gray-600 mb-8">
@@ -77,7 +77,7 @@ export default function TutorApplicationForm() {
           </p>
           <Link 
             to="/" 
-            className="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors w-full"
+            className="inline-flex items-center justify-center px-6 py-3 bg-yellow-600 text-white rounded-xl font-semibold hover:bg-yellow-700 transition-colors w-full"
           >
             Return Home
           </Link>
@@ -87,11 +87,11 @@ export default function TutorApplicationForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <Link to="/" className="inline-flex items-center text-green-700 hover:text-green-800 font-medium mb-6 transition-colors">
+          <Link to="/" className="inline-flex items-center text-yellow-700 hover:text-yellow-800 font-medium mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
           </Link>
           <motion.div
@@ -100,7 +100,7 @@ export default function TutorApplicationForm() {
             className="text-center"
           >
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Find Your Perfect <span className="text-green-600">Private Tutor</span>
+              Find Your Perfect <span className="text-yellow-700">Private Tutor</span>
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Looking for personalized learning for yourself or your child? Fill out the form below. 
@@ -117,7 +117,7 @@ export default function TutorApplicationForm() {
           className="bg-white rounded-2xl shadow-xl overflow-hidden"
         >
           {/* Progress Bar / Decorative Header */}
-          <div className="h-2 bg-gradient-to-r from-green-500 via-teal-500 to-green-600" />
+          <div className="h-2 bg-gradient-to-r from-yellow-500 via-blue-500 to-yellow-600" />
           
           <form onSubmit={handleSubmit} className="p-8 md:p-12">
             {error && (
@@ -130,7 +130,7 @@ export default function TutorApplicationForm() {
               {/* Personal Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center border-b pb-2">
-                  <User className="w-5 h-5 mr-2 text-green-600" /> Personal Details
+                  <User className="w-5 h-5 mr-2 text-yellow-700" /> Personal Details
                 </h3>
                 
                 <div>
@@ -141,7 +141,7 @@ export default function TutorApplicationForm() {
                     required
                     value={formData.fullName}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-all"
                     placeholder="e.g. John Doe"
                   />
                 </div>
@@ -156,7 +156,7 @@ export default function TutorApplicationForm() {
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-all"
                       placeholder="john@example.com"
                     />
                   </div>
@@ -172,7 +172,7 @@ export default function TutorApplicationForm() {
                       required
                       value={formData.whatsappNumber}
                       onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-all"
                       placeholder="+234 800 000 0000"
                     />
                   </div>
@@ -182,7 +182,7 @@ export default function TutorApplicationForm() {
               {/* Request Details */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center border-b pb-2">
-                  <BookOpen className="w-5 h-5 mr-2 text-green-600" /> Request Details
+                  <BookOpen className="w-5 h-5 mr-2 text-yellow-700" /> Request Details
                 </h3>
 
                 <div>
@@ -193,7 +193,7 @@ export default function TutorApplicationForm() {
                     required
                     value={formData.subject}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-all"
                     placeholder="e.g. Mathematics, French, React JS"
                   />
                 </div>
@@ -209,7 +209,7 @@ export default function TutorApplicationForm() {
                       required
                       value={formData.academicLevel}
                       onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-all"
                       placeholder="e.g. JSS 2, Grade 5, 100 Level, Adult Learner"
                     />
                   </div>
@@ -226,7 +226,7 @@ export default function TutorApplicationForm() {
                         required
                         value={formData.country}
                         onChange={handleChange}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-all"
                         placeholder="Country"
                       />
                     </div>
@@ -236,7 +236,7 @@ export default function TutorApplicationForm() {
                     <input
                       type="text"
                       name="city" 
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-all"
                       placeholder="City"
                     />
                   </div>
@@ -252,7 +252,7 @@ export default function TutorApplicationForm() {
                       rows={2}
                       value={formData.address}
                       onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all resize-none"
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-all resize-none"
                       placeholder="Street address, apartment, etc."
                     />
                   </div>
@@ -268,7 +268,7 @@ export default function TutorApplicationForm() {
                 rows={4}
                 value={formData.additionalInfo}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-all"
                 placeholder="Specific goals, preferred schedule (e.g. Weekends only), gender preference for tutor, or any special requirements..."
               />
             </div>
@@ -278,7 +278,7 @@ export default function TutorApplicationForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full md:w-auto md:min-w-[200px] float-right px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-green-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full md:w-auto md:min-w-[200px] float-right px-8 py-4 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-yellow-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {loading ? (
                   <>

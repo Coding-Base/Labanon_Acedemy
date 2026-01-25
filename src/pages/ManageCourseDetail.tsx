@@ -143,7 +143,7 @@ export default function ManageCourseDetail({ uploadCourseImageHandler, uploadLes
         <h3 className="font-semibold">Modules</h3>
         <div className="flex gap-2 my-2">
           <input className="border p-2 flex-1" placeholder="New module title" value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} />
-          <button className="px-3 py-1 bg-green-600 text-white rounded" onClick={handleCreateModule}>Add Module</button>
+          <button className="px-3 py-1 bg-yellow-600 text-white rounded" onClick={handleCreateModule}>Add Module</button>
         </div>
 
         <div className="space-y-3">

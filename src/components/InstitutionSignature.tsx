@@ -95,7 +95,7 @@ export default function InstitutionSignature() {
       )}
       
       {success && (
-        <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-lg flex items-center gap-2">
+        <div className="mb-4 p-4 bg-yellow-50 text-green-700 rounded-lg flex items-center gap-2">
           <CheckCircle className="w-5 h-5" /> {success}
         </div>
       )}
@@ -109,7 +109,7 @@ export default function InstitutionSignature() {
                     value={formData.signer_name}
                     onChange={e => setFormData({...formData, signer_name: e.target.value})}
                     placeholder="e.g. Dr. John Doe"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
                 />
             </div>
             
@@ -121,7 +121,7 @@ export default function InstitutionSignature() {
                     value={formData.signer_position}
                     onChange={e => setFormData({...formData, signer_position: e.target.value})}
                     placeholder="e.g. Dean of Studies"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
                 />
             </div>
         </div>
@@ -153,7 +153,7 @@ export default function InstitutionSignature() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full py-3 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {saving ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
           Save Signature

@@ -26,7 +26,7 @@ export default function PaymentMethodSelector({
         {/* Paystack Option */}
         <label className={`flex items-center p-3 border rounded-lg cursor-pointer transition ${
           selectedMethod === 'paystack'
-            ? 'border-green-500 bg-green-50'
+            ? 'border-yellow-500 bg-yellow-50'
             : 'border-gray-200 bg-white hover:bg-gray-50'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
           <input

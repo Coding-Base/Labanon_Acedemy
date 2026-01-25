@@ -256,7 +256,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
             className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 ${
               portfolio.published
                 ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                : 'bg-yellow-100 text-green-700 hover:bg-yellow-200'
             } disabled:opacity-60`}
           >
             {portfolio.published ? 'Unpublish' : 'Publish'} Portfolio
@@ -272,7 +272,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
       )}
 
       {success && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
           <p className="text-green-600">{success}</p>
         </div>
@@ -325,7 +325,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
                 value={formData.title || ''}
                 onChange={handleChange}
                 placeholder="e.g., Lebanon Tech Institute Portfolio"
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 disabled={saving}
               />
             </div>
@@ -338,7 +338,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
                 value={formData.website || ''}
                 onChange={handleChange}
                 placeholder="https://..."
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 disabled={saving}
               />
             </div>
@@ -377,7 +377,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
               onChange={handleChange}
               placeholder="Short overview of your institution..."
               rows={3}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
               disabled={saving}
             />
           </div>
@@ -390,7 +390,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
               onChange={handleChange}
               placeholder="Tell your story... history, values, achievements..."
               rows={4}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
               disabled={saving}
             />
           </div>
@@ -404,7 +404,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
                 value={formData.location || ''}
                 onChange={handleChange}
                 placeholder="City, State"
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 disabled={saving}
               />
             </div>
@@ -417,7 +417,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
                 value={formData.phone || ''}
                 onChange={handleChange}
                 placeholder="+234..."
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 disabled={saving}
               />
             </div>
@@ -430,7 +430,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
                 value={formData.email || ''}
                 onChange={handleChange}
                 placeholder="info@..."
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 disabled={saving}
               />
             </div>
@@ -441,7 +441,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {saving ? 'Saving...' : 'Save Portfolio'}
@@ -484,7 +484,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
             <input name="imageUrl" value={galleryForm.imageUrl} onChange={handleGalleryChange} className="w-full px-2 py-1 border rounded mb-2" />
             <label className="block text-sm font-medium text-gray-700 mb-1">Or upload file</label>
             <input type="file" name="file" accept="image/*" onChange={handleGalleryChange} className="w-full mb-3" />
-            <button onClick={addGalleryItem} className="w-full bg-green-600 text-white py-2 rounded">Add to gallery</button>
+            <button onClick={addGalleryItem} className="w-full bg-yellow-600 text-white py-2 rounded">Add to gallery</button>
           </div>
         </div>
       </div>

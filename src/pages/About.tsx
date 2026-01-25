@@ -48,7 +48,7 @@ const features: FeatureItem[] = [
 
 const StatCard: React.FC<{ stat: StatItem }> = ({ stat }) => (
   <motion.div variants={itemVariants} className="bg-white rounded-xl p-8 shadow-lg text-center hover:shadow-xl transition-shadow">
-    <div className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-teal-500 mb-2">
+    <div className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-yellow-600 to-blue-500 mb-2">
       {stat.number}
     </div>
     <p className="text-slate-600 font-semibold">{stat.label}</p>
@@ -59,7 +59,7 @@ const ValueCard: React.FC<{ item: ValueItem }> = ({ item }) => {
   const Icon = item.icon
   return (
     <motion.div variants={itemVariants} className="bg-white p-6 rounded-xl shadow hover:shadow-xl transition-all hover:-translate-y-2">
-      <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 bg-gradient-to-br from-green-500 to-teal-500 text-white">
+      <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 bg-gradient-to-br from-yellow-500 to-blue-500 text-white">
         <Icon className="w-6 h-6" />
       </div>
       <h3 className="text-lg font-bold mb-1 text-slate-900">{item.title}</h3>
@@ -73,7 +73,7 @@ const FeatureCard: React.FC<{ feature: FeatureItem }> = ({ feature }) => {
   return (
     <motion.div variants={itemVariants} className="bg-white bg-opacity-8 backdrop-blur-sm p-6 rounded-lg border border-white/10 hover:bg-opacity-12 transition-all">
       <div className="flex items-center gap-4 mb-3">
-        <div className="w-10 h-10 rounded-md flex items-center justify-center bg-gradient-to-r from-green-500 to-teal-500 text-white">
+        <div className="w-10 h-10 rounded-md flex items-center justify-center bg-gradient-to-r from-yellow-500 to-blue-500 text-white">
           <Icon className="w-5 h-5" />
         </div>
         <h4 className="font-semibold text-slate-900">{feature.title}</h4>
@@ -95,19 +95,19 @@ const About: React.FC = () => {
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} aria-label="Go back" className="px-3 py-2 rounded-md hover:bg-slate-100">← Back</button>
             <nav className="hidden sm:flex items-center gap-3">
-              <Link to="/" className="text-slate-700 hover:text-green-600">Home</Link>
-              <Link to="/docs" className="text-slate-700 hover:text-green-600">Docs</Link>
-              <Link to="/privacy" className="text-slate-700 hover:text-green-600">Privacy</Link>
+              <Link to="/" className="text-slate-700 hover:text-yellow-600">Home</Link>
+              <Link to="/documentation" className="text-slate-700 hover:text-yellow-600">Docs</Link>
+              <Link to="/privacy-policy" className="text-slate-700 hover:text-yellow-600">Privacy</Link>
             </nav>
           </div>
           <div>
-            <Link to="/register" className="bg-green-600 text-white px-3 py-2 rounded-md shadow-sm hover:opacity-90">Sign up</Link>
+            <Link to="/register" className="bg-yellow-600 text-white px-3 py-2 rounded-md shadow-sm hover:opacity-90">Sign up</Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-green-600 via-teal-600 to-cyan-600 text-white py-20 px-4 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-yellow-600 via-blue-600 to-blue-600 text-white py-20 px-4 relative overflow-hidden">
         <div aria-hidden className="absolute inset-0 opacity-10">
           <div className="absolute top-[-8%] left-[-8%] w-96 h-96 rounded-full bg-white/80 filter blur-2xl" />
           <div className="absolute bottom-[-8%] right-[-8%] w-96 h-96 rounded-full bg-white/80 filter blur-2xl" />
@@ -116,12 +116,12 @@ const About: React.FC = () => {
         <div className="max-w-6xl mx-auto relative z-10">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <h1 className="text-4xl md:text-6xl font-extrabold mb-4">About LightHub Academy</h1>
-            <p className="text-lg md:text-xl max-w-2xl leading-relaxed text-teal-100">
+            <p className="text-lg md:text-xl max-w-2xl leading-relaxed text-blue-100">
               Reimagining education by connecting learners, tutors, and institutions on a single, modern learning platform built to scale.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <Link to="/register" aria-label="Get started" className="inline-flex items-center gap-2 bg-white text-green-600 font-semibold px-5 py-3 rounded-lg shadow hover:shadow-lg transition">
+              <Link to="/register" aria-label="Get started" className="inline-flex items-center gap-2 bg-white text-yellow-700 font-semibold px-5 py-3 rounded-lg shadow hover:shadow-lg transition">
                 Get Started <ArrowRight className="w-4 h-4" />
               </Link>
 
@@ -157,27 +157,27 @@ const About: React.FC = () => {
             </motion.p>
           </div>
 
-          <motion.aside initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl p-8 text-white shadow-lg">
+          <motion.aside initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="bg-gradient-to-br from-yellow-500 to-blue-600 rounded-xl p-8 text-white shadow-lg">
             <ul className="space-y-6">
               <li className="flex items-start gap-4">
                 <CheckCircle className="w-6 h-6 flex-shrink-0" />
                 <div>
                   <h4 className="font-bold">Founded on Trust</h4>
-                  <p className="text-teal-100 text-sm">Built by educators, for learners.</p>
+                  <p className="text-blue-100 text-sm">Built by educators, for learners.</p>
                 </div>
               </li>
               <li className="flex items-start gap-4">
                 <CheckCircle className="w-6 h-6 flex-shrink-0" />
                 <div>
                   <h4 className="font-bold">Rapid Growth</h4>
-                  <p className="text-teal-100 text-sm">50K+ learners and counting.</p>
+                  <p className="text-blue-100 text-sm">50K+ learners and counting.</p>
                 </div>
               </li>
               <li className="flex items-start gap-4">
                 <CheckCircle className="w-6 h-6 flex-shrink-0" />
                 <div>
                   <h4 className="font-bold">Global Impact</h4>
-                  <p className="text-teal-100 text-sm">Learners from 100+ countries.</p>
+                  <p className="text-blue-100 text-sm">Learners from 100+ countries.</p>
                 </div>
               </li>
             </ul>
@@ -199,7 +199,7 @@ const About: React.FC = () => {
 
         {/* Features */}
         <section className="mb-16">
-          <motion.div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-10 text-white" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }}>
+          <motion.div className="bg-gradient-to-r from-yellow-600 to-blue-600 rounded-2xl p-10 text-white" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }}>
             <h3 className="text-2xl font-bold mb-8 text-center">Why Choose LightHub Academy</h3>
 
             <motion.div variants={containerVariants} initial="hidden" whileInView="visible" className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -228,7 +228,7 @@ const About: React.FC = () => {
                   'Protection of your privacy and data'
                 ].map((c, i) => (
                   <motion.div key={c} initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }} className="flex items-center gap-3">
-                    <Star className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <Star className="w-5 h-5 text-yellow-700 flex-shrink-0" />
                     <span className="text-slate-700">{c}</span>
                   </motion.div>
                 ))}
@@ -237,7 +237,7 @@ const About: React.FC = () => {
 
             <motion.div initial={{ opacity: 0, scale: 0.96 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="bg-white rounded-xl p-8 border border-slate-100">
               <div className="text-center">
-                <div className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-teal-500 mb-3">
+                <div className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-yellow-600 to-blue-500 mb-3">
                   100%
                 </div>
                 <p className="text-lg font-semibold text-slate-900 mb-2">Committed to Excellence</p>
@@ -252,15 +252,15 @@ const About: React.FC = () => {
           <motion.h3 initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} className="text-3xl font-bold mb-4 text-slate-900">
             Join the Learning Revolution
           </motion.h3>
-          <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="text-lg text-teal-100 mb-6 max-w-2xl mx-auto">
+          <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="text-lg text-blue-100 mb-6 max-w-2xl mx-auto">
             Be part of a global community transforming education — start learning, teaching, or building with us today.
           </motion.p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register" className="inline-flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition">
+            <Link to="/register" className="inline-flex items-center gap-2 bg-yellow-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition">
               Get Started <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link to="/register" className="inline-flex items-center gap-2 border border-green-600 text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 transition">
+            <Link to="/register" className="inline-flex items-center gap-2 border border-yellow-600 text-yellow-700 px-6 py-3 rounded-lg hover:bg-yellow-50 transition">
               Become an Instructor
             </Link>
           </div>

@@ -157,7 +157,7 @@ export default function BlogDetailPage() {
         <div className="max-w-4xl mx-auto px-4 py-12">
           <button
             onClick={() => navigate('/blog')}
-            className="flex items-center gap-2 text-green-600 hover:text-green-700 mb-8 font-semibold"
+            className="flex items-center gap-2 text-green-600 hover:text-yellow-700 mb-8 font-semibold"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to Blog
@@ -177,7 +177,7 @@ export default function BlogDetailPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-gradient-to-r from-green-600 to-teal-600 py-8 px-4"
+        className="bg-gradient-to-r from-green-600 to-blue-600 py-8 px-4"
       >
         <div className="max-w-4xl mx-auto">
           <button
@@ -199,7 +199,7 @@ export default function BlogDetailPage() {
         >
           {/* Featured Image */}
           {blog.image && (
-            <div className="w-full h-96 overflow-hidden bg-gradient-to-br from-green-400 to-teal-500">
+            <div className="w-full h-96 overflow-hidden bg-gradient-to-br from-green-400 to-blue-500">
               <img
                 src={blog.image}
                 alt={blog.title}
@@ -229,7 +229,7 @@ export default function BlogDetailPage() {
 
             {/* Excerpt */}
             {blog.excerpt && (
-              <p className="text-xl text-gray-600 mb-8 italic border-l-4 border-green-500 pl-6">
+              <p className="text-xl text-gray-600 mb-8 italic border-l-4 border-yellow-500 pl-6">
                 {blog.excerpt}
               </p>
             )}
@@ -307,7 +307,7 @@ export default function BlogDetailPage() {
         >
           <button
             onClick={() => navigate('/blog')}
-            className="px-8 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
+            className="px-8 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
           >
             Back to All Articles
           </button>

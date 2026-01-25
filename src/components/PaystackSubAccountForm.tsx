@@ -153,14 +153,14 @@ export default function PaystackSubAccountForm() {
       )}
 
       {success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
           <p className="text-green-700">{success}</p>
         </div>
       )}
 
       {hasSubAccount && subAccountData ? (
-        <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-6 mb-6">
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 mb-6">
           <h4 className="font-semibold text-gray-900 mb-4">Active Sub-Account</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -177,7 +177,7 @@ export default function PaystackSubAccountForm() {
             </div>
             <div>
               <p className="text-sm text-gray-600 mb-1">Status</p>
-              <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              <span className="inline-block px-3 py-1 bg-yellow-100 text-green-800 rounded-full text-sm font-medium">
                 {subAccountData.is_active ? 'Active' : 'Inactive'}
               </span>
             </div>
@@ -199,7 +199,7 @@ export default function PaystackSubAccountForm() {
             value={formData.bank_code}
             onChange={handleChange}
             disabled={submitting}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
             required
           >
             <option value="">Select your bank...</option>
@@ -221,7 +221,7 @@ export default function PaystackSubAccountForm() {
             disabled={submitting}
             placeholder="e.g., 0123456789"
             maxLength={20}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
             required
           />
           <p className="text-xs text-gray-500 mt-1">10-digit account number</p>
@@ -236,7 +236,7 @@ export default function PaystackSubAccountForm() {
             onChange={handleChange}
             disabled={submitting}
             placeholder="As shown on your bank account"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
             required
           />
           <p className="text-xs text-gray-500 mt-1">Your name as registered with the bank</p>
@@ -251,7 +251,7 @@ export default function PaystackSubAccountForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60"
+          className="w-full py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60"
         >
           {submitting ? (
             <>

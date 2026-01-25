@@ -74,7 +74,7 @@ export default function PerformancePage() {
         <div className="text-red-600 mb-4">{error}</div>
         <button
           onClick={() => navigate('/student')}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg"
+          className="px-4 py-2 bg-yellow-600 text-white rounded-lg"
         >
           Back to Dashboard
         </button>
@@ -124,7 +124,7 @@ export default function PerformancePage() {
       unit: '%',
       icon: Target,
       color: 'text-green-600',
-      bgColor: 'bg-green-100'
+      bgColor: 'bg-yellow-100'
     },
     {
       label: 'Correct Answers',
@@ -132,7 +132,7 @@ export default function PerformancePage() {
       unit: `/ ${performance.num_questions}`,
       icon: Award,
       color: 'text-green-600',
-      bgColor: 'bg-green-100'
+      bgColor: 'bg-yellow-100'
     },
     {
       label: 'Time Efficiency',
@@ -242,7 +242,7 @@ export default function PerformancePage() {
               </ResponsiveContainer>
             </div>
             <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="bg-green-50 p-4 rounded-lg">
+              <div className="bg-yellow-50 p-4 rounded-lg">
                 <p className="text-gray-600 text-sm">Time Used</p>
                 <p className="text-2xl font-bold text-green-600">{formatTime(performance.time_taken_seconds)}</p>
               </div>
@@ -258,11 +258,11 @@ export default function PerformancePage() {
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-6">📋 Exam Details</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="border-l-4 border-green-500 pl-4">
+            <div className="border-l-4 border-yellow-500 pl-4">
               <p className="text-gray-600 text-sm font-medium">Total Questions</p>
               <p className="text-3xl font-bold text-green-600 mt-1">{performance.num_questions}</p>
             </div>
-            <div className="border-l-4 border-green-500 pl-4">
+            <div className="border-l-4 border-yellow-500 pl-4">
               <p className="text-gray-600 text-sm font-medium">Correct Answers</p>
               <p className="text-3xl font-bold text-green-600 mt-1">{performance.correct_count}</p>
             </div>
@@ -282,14 +282,14 @@ export default function PerformancePage() {
           <h2 className="text-xl font-bold text-gray-900 mb-6">⏱️ Timeline</h2>
           <div className="space-y-4">
             <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+              <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
               <div>
                 <p className="text-sm text-gray-600">Started</p>
                 <p className="font-semibold text-gray-900">{new Date(performance.started_at).toLocaleString()}</p>
               </div>
             </div>
             <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+              <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
               <div>
                 <p className="text-sm text-gray-600">Submitted</p>
                 <p className="font-semibold text-gray-900">{new Date(performance.submitted_at).toLocaleString()}</p>
@@ -332,7 +332,7 @@ export default function PerformancePage() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+                          <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
                           <p className="text-sm text-green-600">
                             Correct: <strong>{answer.correct_answer}</strong>
                           </p>
@@ -361,7 +361,7 @@ export default function PerformancePage() {
         )}
 
         {/* Performance Feedback */}
-        <div className="bg-gradient-to-r from-green-500 to-teal-600 rounded-xl shadow-lg p-8 mb-8 text-white">
+        <div className="bg-gradient-to-r from-green-500 to-blue-600 rounded-xl shadow-lg p-8 mb-8 text-white">
           <h2 className="text-xl font-bold mb-4">📊 Performance Insights</h2>
           <div className="space-y-3">
             {performance.percentage_score >= 70 && (
@@ -389,7 +389,7 @@ export default function PerformancePage() {
                 key={idx}
                 className={`border-l-4 rounded-lg p-4 transition transform hover:scale-102 ${
                   answer.is_correct
-                    ? 'border-green-500 bg-green-50'
+                    ? 'border-yellow-500 bg-yellow-50'
                     : 'border-red-500 bg-red-50'
                 }`}
               >
@@ -398,7 +398,7 @@ export default function PerformancePage() {
                     <div className="flex items-center gap-3">
                       <span
                         className={`flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm ${
-                          answer.is_correct ? 'bg-green-600' : 'bg-red-600'
+                          answer.is_correct ? 'bg-yellow-600' : 'bg-red-600'
                         }`}
                       >
                         {answer.is_correct ? '✓' : '✗'}
@@ -425,7 +425,7 @@ export default function PerformancePage() {
           </button>
           <button
             onClick={() => navigate('/student/progress')}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-teal-600 to-blue-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
           >
             📊 View All Results
           </button>

@@ -96,7 +96,7 @@ export default function MessageModal({ isOpen, onClose, recipientId, onSuccess }
 
               {success ? (
                 <div className="py-12 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 bg-yellow-100 text-green-600 rounded-full flex items-center justify-center mb-4">
                     <CheckCircle className="w-8 h-8" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900">Message Sent!</h3>
@@ -112,7 +112,7 @@ export default function MessageModal({ isOpen, onClose, recipientId, onSuccess }
                       value={formData.subject}
                       onChange={handleChange}
                       placeholder="Brief topic..."
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all"
                     />
                   </div>
 
@@ -123,7 +123,7 @@ export default function MessageModal({ isOpen, onClose, recipientId, onSuccess }
                         name="message_type"
                         value={formData.message_type}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 appearance-none bg-white transition-all"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 appearance-none bg-white transition-all"
                       >
                         <option value="contact">General Inquiry</option>
                         <option value="support">Technical Support</option>
@@ -145,7 +145,7 @@ export default function MessageModal({ isOpen, onClose, recipientId, onSuccess }
                       placeholder="How can we help you?"
                       rows={5}
                       required
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 resize-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 resize-none transition-all"
                     />
                   </div>
                 </form>
@@ -165,7 +165,7 @@ export default function MessageModal({ isOpen, onClose, recipientId, onSuccess }
                   form="msg-form"
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>

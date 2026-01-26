@@ -13,7 +13,9 @@ import {
   CheckCircle,
   ArrowRight,
   Star,
-  Sparkles
+  Sparkles,
+  Youtube,
+  Facebook
 } from 'lucide-react'
 
 type ValueItem = { icon: React.ComponentType<any>; title: string; description: string }
@@ -264,6 +266,31 @@ const About: React.FC = () => {
               Become an Instructor
             </Link>
           </div>
+
+          {/* Social Media Links */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-12 pt-12 border-t border-slate-200">
+            <p className="text-slate-600 font-semibold mb-4">Follow Us On Social Media</p>
+            <div className="flex items-center justify-center gap-6">
+              <a 
+                href="https://youtube.com/@lebanonacademy?si=S1NjHg2K7TMPpj5Z" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center justify-center w-12 h-12 bg-red-100 text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300 shadow-md hover:shadow-lg"
+                aria-label="Follow us on YouTube"
+              >
+                <Youtube className="w-6 h-6" />
+              </a>
+              <a 
+                href="https://www.facebook.com/profile.php?id=61587344120717" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-md hover:shadow-lg"
+                aria-label="Follow us on Facebook"
+              >
+                <Facebook className="w-6 h-6" />
+              </a>
+            </div>
+          </motion.div>
         </section>
       </main>
     </div>

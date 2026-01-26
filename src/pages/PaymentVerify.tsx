@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import { generateReceipt, downloadReceipt } from '../utils/receiptGenerator'
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -11,6 +12,8 @@ export default function PaymentVerify() {
   const location = useLocation()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('Verifying your payment...')
+  const [paymentData, setPaymentData] = useState<any | null>(null)
+  const [showReceipt, setShowReceipt] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -78,11 +81,22 @@ export default function PaymentVerify() {
             // Paystack returns {status: 'success', ...} inside data
             // Flutterwave endpoint returns {status: 'success', ...} inside data
             if (res.data.status === 'success') {
-                setStatus('success')
-                setMessage('Payment verified! You now have access to your content.')
-                
+              setStatus('success')
+              setMessage('Payment verified! You now have access to your content.')
+
+              // Decide whether to show receipt modal: only for diploma purchases
+              const isDiploma = res.data.kind === 'diploma' || !!res.data.diploma
+              setPaymentData(res.data)
+
+              // If diploma: show receipt modal and DO NOT auto-redirect. User must click Continue.
+              if (isDiploma) {
+                setShowReceipt(true)
+                // Do NOT clear sessionStorage here — keep redirect info until user continues.
+              } else {
+                // Non-diploma: follow original quick redirect flow
+                setShowReceipt(false)
+
                 // --- 3. Determine Redirect Target ---
-                // Retrieve the flag we saved in PaymentCheckout.tsx
                 const isScheduled = sessionStorage.getItem('isScheduled') === 'true'
                 const itemType = sessionStorage.getItem('paymentItemType')
                 const itemId = sessionStorage.getItem('paymentItemId')
@@ -95,23 +109,20 @@ export default function PaymentVerify() {
                 sessionStorage.removeItem('paymentMethod')
                 sessionStorage.removeItem('isScheduled')
                 sessionStorage.removeItem('paymentReturnTo')
-                
+
                 setTimeout(() => {
-                    if (isScheduled) {
-                        // Redirect Scheduled Live Courses to Schedule Page
-                        navigate('/student/schedule')
+                  if (isScheduled) {
+                      navigate('/student/schedule')
                   } else if (itemType === 'activation') {
-                    // Activation payments should return to CBT/exam flow
                     if (returnTo) navigate(returnTo)
                     else navigate('/student/cbt')
                   } else if (itemType && itemId) {
-                    // Redirect Standard Courses to My Courses (or detail page if preferred)
                     navigate('/student/courses')
-                    } else {
-                        // Fallback
-                        navigate('/student')
-                    }
+                  } else {
+                    navigate('/student')
+                  }
                 }, 2000)
+              }
             } else {
                 setStatus('error')
                 setMessage('Payment verification failed. Please contact support.')
@@ -159,6 +170,85 @@ export default function PaymentVerify() {
             <p className="text-gray-700">{message}</p>
             <p className="text-sm text-gray-500 mt-4">Redirecting to dashboard...</p>
           </>
+        )}
+        {showReceipt && paymentData && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+              <h3 className="text-lg font-semibold mb-2">Download Your Receipt</h3>
+              <p className="text-sm text-gray-600 mb-4">A receipt for your transaction is available. Download it for your records.</p>
+
+              <div className="space-y-2 text-sm text-gray-800 mb-4">
+                <div><strong>Reference:</strong> {paymentData.reference || paymentData.reference}</div>
+                <div><strong>Amount:</strong> ₦{Number(paymentData.amount || 0).toLocaleString()}</div>
+                <div><strong>Item:</strong> {paymentData.course_title || paymentData.diploma_title || 'Payment'}</div>
+                <div><strong>Date:</strong> {paymentData.created_at ? new Date(paymentData.created_at).toLocaleString() : '—'}</div>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <button onClick={() => setShowReceipt(false)} className="px-3 py-2 rounded border border-gray-200">Close</button>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      const blob = await generateReceipt({
+                        id: paymentData.id,
+                        amount: paymentData.amount,
+                        reference: paymentData.reference,
+                        gateway: paymentData.gateway,
+                        course_title: paymentData.course_title,
+                        diploma_title: paymentData.diploma_title,
+                        created_at: paymentData.created_at,
+                        institution_signature_url: paymentData.institution_signature_url || null,
+                        institution_name: paymentData.institution_name || null,
+                        platform_logo_url: '/labanonlogo.png',
+                      })
+                      downloadReceipt(blob, paymentData.id)
+                    } catch (e) {
+                      console.error('Receipt generation failed', e)
+                      alert('Failed to generate receipt')
+                    }
+                  }}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded"
+                >
+                  Download Receipt
+                </button>
+
+                <button
+                  onClick={() => {
+                    // When user clicks Continue, perform the same redirect logic used previously
+                    const isScheduled = sessionStorage.getItem('isScheduled') === 'true'
+                    const itemType = sessionStorage.getItem('paymentItemType')
+                    const itemId = sessionStorage.getItem('paymentItemId')
+                    const returnTo = sessionStorage.getItem('paymentReturnTo')
+
+                    // Clean up session now that user chose to continue
+                    sessionStorage.removeItem('paymentReference')
+                    sessionStorage.removeItem('paymentItemType')
+                    sessionStorage.removeItem('paymentItemId')
+                    sessionStorage.removeItem('paymentMethod')
+                    sessionStorage.removeItem('isScheduled')
+                    sessionStorage.removeItem('paymentReturnTo')
+
+                    setShowReceipt(false)
+
+                    if (isScheduled) {
+                      navigate('/student/schedule')
+                    } else if (itemType === 'activation') {
+                      if (returnTo) navigate(returnTo)
+                      else navigate('/student/cbt')
+                    } else if (itemType && itemId) {
+                      navigate('/student/courses')
+                    } else {
+                      navigate('/student')
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

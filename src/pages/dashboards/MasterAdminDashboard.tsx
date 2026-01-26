@@ -1956,7 +1956,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     <p className="text-sm text-gray-600 line-clamp-2">{subject.description || 'No description'}</p>
                                     <div className="mt-4 pt-4 border-t border-gray-200">
                                       <p className="text-xs text-gray-500">
-                                        Questions: <span className="font-semibold text-gray-900">{subject.questions?.length || 0}</span>
+                                        Questions: <span className="font-semibold text-gray-900">{subject.question_count ?? 0}</span>
                                       </p>
                                     </div>
                                   </motion.div>

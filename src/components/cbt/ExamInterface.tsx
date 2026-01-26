@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import MathDisplay from './MathDisplay'
+import { Menu, X } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -41,6 +42,7 @@ export default function ExamInterface({
   const [submitting, setSubmitting] = useState(false)
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [progress, setProgress] = useState<any>(null)
+  const [showQuestionMenu, setShowQuestionMenu] = useState(false)
   const timerInterval = useRef<any>(null)
 
   const pageSize = 10
@@ -157,28 +159,38 @@ export default function ExamInterface({
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="bg-yellow-600 text-white p-3 sm:p-4 flex-shrink-0 z-10">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold">{examTitle}</h1>
-            <p className="text-xs sm:text-sm text-yellow-100">{subjectName}</p>
-          </div>
-          <div className="text-right">
-            <div className={`text-2xl sm:text-3xl font-bold ${timeRemaining < 300 ? 'text-red-300' : ''}`}>
-              {formatTime(timeRemaining)}
+      {/* Header with Timer */}
+      <div className="bg-yellow-600 text-white px-3 sm:px-6 py-3 flex-shrink-0 z-10 border-b-2 border-yellow-700">
+        <div className="max-w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base sm:text-2xl font-bold truncate">{examTitle}</h1>
+              <p className="text-xs sm:text-sm text-yellow-100 truncate">{subjectName}</p>
             </div>
-            <p className="text-blue-100 text-xs sm:text-sm">Time Remaining</p>
+            <div className="flex items-center justify-between gap-4">
+              <button
+                onClick={() => setShowQuestionMenu(!showQuestionMenu)}
+                className="sm:hidden flex items-center justify-center w-10 h-10 bg-yellow-700 hover:bg-yellow-800 rounded-lg transition"
+              >
+                {showQuestionMenu ? <X size={20} /> : <Menu size={20} />}
+              </button>
+              <div className="text-center flex-shrink-0">
+                <div className={`text-2xl sm:text-4xl font-bold font-mono ${timeRemaining < 300 ? 'text-red-300 animate-pulse' : ''}`}>
+                  {formatTime(timeRemaining)}
+                </div>
+                <p className="text-xs text-yellow-100 mt-0.5">Time</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden flex-col sm:flex-row">
-        {/* Side Navigation Bar - Hidden on mobile */}
-        <div className="hidden sm:block sm:w-32 lg:w-40 bg-white border-r border-gray-200 p-3 sm:p-4 overflow-y-auto flex-shrink-0">
-          <h3 className="font-bold text-xs sm:text-sm mb-4">Questions</h3>
-          <div className="space-y-1">
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden relative w-full">
+        {/* Desktop Side Navigation Bar */}
+        <div className="hidden sm:flex sm:flex-col sm:w-32 lg:w-40 bg-white border-r border-gray-200 p-3 sm:p-4 flex-shrink-0 overflow-y-auto">
+          <h3 className="font-bold text-xs sm:text-sm mb-4 text-gray-800">Questions</h3>
+          <div className="space-y-1 flex-1 overflow-y-auto">
             {progress?.progress.map((item: any) => (
               <button
                 key={item.question_number}
@@ -193,130 +205,177 @@ export default function ExamInterface({
               </button>
             ))}
           </div>
-          <div className="mt-4 pt-3 border-t text-xs">
+          <div className="mt-4 pt-3 border-t text-xs sticky bottom-0 bg-white">
             <p className="text-gray-600">
               Answered: <strong>{answeredCount}</strong> / {numQuestions}
             </p>
           </div>
         </div>
 
-        {/* Mobile progress bar - shown only on mobile */}
-        <div className="sm:hidden bg-gray-100 px-4 py-2 text-xs text-gray-600 border-b border-gray-200">
-          Answered: <strong>{answeredCount}</strong> / {numQuestions}
-        </div>
+        {/* Mobile Question Menu - Modal/Drawer */}
+        {showQuestionMenu && (
+          <div className="fixed inset-0 z-40 sm:hidden">
+            <div className="absolute inset-0 bg-black bg-opacity-40" onClick={() => setShowQuestionMenu(false)} />
+            <div className="absolute top-0 left-0 w-3/4 h-full bg-white shadow-lg flex flex-col overflow-hidden">
+              <div className="bg-yellow-600 text-white p-4 flex items-center justify-between">
+                <h3 className="font-bold text-sm">Questions</h3>
+                <button onClick={() => setShowQuestionMenu(false)} className="p-1">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                {progress?.progress.map((item: any) => (
+                  <button
+                    key={item.question_number}
+                    onClick={() => {
+                      setCurrentPage(Math.ceil(item.question_number / pageSize))
+                      setShowQuestionMenu(false)
+                    }}
+                    className={`w-full py-2 px-3 text-xs rounded font-semibold transition text-left ${
+                      item.is_answered
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Q {item.question_number}
+                  </button>
+                ))}
+              </div>
+              <div className="bg-gray-50 border-t p-4 text-xs">
+                <p className="text-gray-600">
+                  Answered: <strong>{answeredCount}</strong> / {numQuestions}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* Questions */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex justify-center">
-          {loading ? (
-            <div className="text-center py-8">Loading questions...</div>
-          ) : questions.length === 0 ? (
-            <div className="text-center py-8">No questions available</div>
-          ) : (
-            <div className="space-y-8 w-full max-w-lg sm:max-w-4xl">
-                  {questions.map((question) => (
-                    <div key={question.id} className="bg-white p-6 rounded-lg shadow w-full">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="text-lg font-bold mb-2">
-                        <MathDisplay content={question.text} />
-                      </div>
+        {/* Questions Content Area - Scrollable, centered, proper constraints */}
+        <div className="flex-1 overflow-y-auto w-full">
+          <div className="flex justify-center px-3 sm:px-6 py-6 sm:py-8 w-full">
+            <div className="w-full max-w-2xl">
+              {loading ? (
+                <div className="text-center py-12 text-gray-600">
+                  <p className="text-lg">Loading questions...</p>
+                </div>
+              ) : questions.length === 0 ? (
+                <div className="text-center py-12 text-gray-600">
+                  <p className="text-lg">No questions available</p>
+                </div>
+              ) : (
+                <>
+                  {/* Questions Container */}
+                  <div className="space-y-4 sm:space-y-6">
+                    {questions.map((question) => (
+                      <div key={question.id} className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-100">
+                        <div className="mb-4">
+                          <div className="text-sm sm:text-lg font-bold mb-2 text-gray-900 break-words">
+                            <MathDisplay content={question.text} />
+                          </div>
                           {(question.year !== null && question.year !== undefined && question.year !== '') && (
                             <p className="text-xs text-gray-500 italic">Year: {question.year}</p>
                           )}
-                    </div>
-                  </div>
-                  
-                  {question.image && (
-                    <div className="mb-6">
-                      <img 
-                        src={question.image.startsWith('http') ? question.image : `${API_BASE.replace('/api', '')}${question.image}`} 
-                        alt="Question" 
-                        className="max-w-full h-auto rounded-lg border border-gray-200" 
-                      />
-                    </div>
-                  )}
+                        </div>
+                        
+                        {question.image && (
+                          <div className="mb-6">
+                            <img 
+                              src={question.image.startsWith('http') ? question.image : `${API_BASE.replace('/api', '')}${question.image}`} 
+                              alt="Question" 
+                              className="w-full h-auto rounded-lg border border-gray-200" 
+                            />
+                          </div>
+                        )}
 
-                  <div className="space-y-3">
-                    {question.choices.map((choice) => (
-                      <label
-                        key={choice.id}
-                        className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 transition"
-                      >
-                        <input
-                          type="radio"
-                          name={`question-${question.id}`}
-                          value={choice.id}
-                          checked={selectedAnswers[question.id] === choice.id}
-                          onChange={() => handleAnswerSelect(question.id, choice.id)}
-                          className="w-4 h-4 text-yellow-600"
-                        />
-                        <span className="ml-3 flex-1">
-                          <MathDisplay content={choice.text} />
-                        </span>
-                      </label>
+                        <div className="space-y-3">
+                          {question.choices.map((choice) => (
+                            <label
+                              key={choice.id}
+                              className="flex items-start p-3 sm:p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition"
+                            >
+                              <input
+                                type="radio"
+                                name={`question-${question.id}`}
+                                value={choice.id}
+                                checked={selectedAnswers[question.id] === choice.id}
+                                onChange={() => handleAnswerSelect(question.id, choice.id)}
+                                className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5"
+                              />
+                              <span className="ml-3 flex-1 text-xs sm:text-sm break-words">
+                                <MathDisplay content={choice.text} />
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
 
-          {/* Navigation */}
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-2 sm:gap-4 items-center sm:justify-between">
-            <div className="flex gap-2 sm:gap-4 order-1 sm:order-1">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1 || loading}
-                className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400 disabled:opacity-50"
-              >
-                Previous
-              </button>
+                  {/* Navigation Controls - Fixed at bottom */}
+                  <div className="mt-8 sm:mt-10 pt-6 border-t border-gray-200">
+                    <div className="flex flex-col gap-3 sm:gap-4 w-full">
+                      {/* Previous/Next Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+                        <button
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1 || loading}
+                          className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                          Previous
+                        </button>
 
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages || loading}
-                className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400 disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
+                        <div className="flex-1 flex items-center justify-center py-2 text-xs sm:text-sm text-gray-600">
+                          Page <span className="font-semibold mx-2">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
+                        </div>
 
-            <div className="text-xs sm:text-sm text-gray-600 text-center order-2 sm:order-2">
-              Page {currentPage} of {totalPages}
+                        <button
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          disabled={currentPage === totalPages || loading}
+                          className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                          Next
+                        </button>
+                      </div>
+
+                      {/* Submit Button - Full width on mobile */}
+                      <button
+                        onClick={() => setShowSubmitConfirm(true)}
+                        disabled={submitting}
+                        className="w-full px-6 py-3 bg-yellow-600 text-white rounded-lg text-sm font-semibold hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md"
+                      >
+                        {submitting ? 'Submitting...' : 'Submit Exam'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-            <button
-              onClick={() => setShowSubmitConfirm(true)}
-              disabled={submitting}
-              className="w-full sm:w-auto px-6 sm:px-8 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 disabled:opacity-50 order-3 sm:order-3"
-            >
-              {submitting ? 'Submitting...' : 'Submit'}
-            </button>
           </div>
         </div>
       </div>
 
       {/* Submit Confirmation Modal */}
       {showSubmitConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-sm">
-            <h2 className="text-xl font-bold mb-4">Submit Exam?</h2>
-            <p className="text-gray-600 mb-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 sm:p-8 max-w-sm w-full">
+            <h2 className="text-lg sm:text-xl font-bold mb-4">Submit Exam?</h2>
+            <p className="text-sm sm:text-base text-gray-600 mb-6">
               Are you sure you want to submit your exam? You have answered{' '}
               <strong>{answeredCount}</strong> out of <strong>{numQuestions}</strong> questions.
             </p>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowSubmitConfirm(false)}
                 disabled={submitting}
-                className="flex-1 px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="flex-1 px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 border border-gray-300 rounded-lg transition"
               >
                 Return to Exam
               </button>
               <button
                 onClick={handleManualSubmit}
                 disabled={submitting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
               >
                 {submitting ? 'Submitting...' : 'Submit Exam'}
               </button>

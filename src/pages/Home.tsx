@@ -21,7 +21,9 @@ import {
   Globe,
   Brain,
   ArrowRight,
-  ChevronDown
+  ChevronDown,
+  Youtube,
+  Facebook
 } from 'lucide-react';
 
 import ContactForm from '../components/ContactForm';
@@ -812,6 +814,14 @@ export default function Home() {
                 <span className="text-xl font-bold">LightHub Academy</span>
               </Link>
               <p className="text-gray-400 max-w-sm">Africa's premier digital learning ecosystem, transforming education through technology.</p>
+              <div className="flex items-center gap-4 mt-6">
+                <a href="https://youtube.com/@lebanonacademy?si=S1NjHg2K7TMPpj5Z" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-500 transition-colors" aria-label="Follow us on YouTube">
+                  <Youtube className="w-6 h-6" />
+                </a>
+                <a href="https://www.facebook.com/profile.php?id=61587344120717" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-500 transition-colors" aria-label="Follow us on Facebook">
+                  <Facebook className="w-6 h-6" />
+                </a>
+              </div>
             </div>
             <div>
               <h4 className="font-bold mb-4">Platform</h4>

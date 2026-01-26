@@ -33,18 +33,30 @@ export default function MathDisplay({ content, inline = true, className = '' }: 
         if (part.startsWith('$$') && part.endsWith('$$')) {
           const formula = part.slice(2, -2).trim()
           try {
-            return <BlockMath key={index} math={formula} />
+            return (
+              <div key={index} className="my-2 overflow-x-auto w-full flex justify-start sm:justify-start">
+                <div className="inline-block min-w-fit">
+                  <BlockMath math={formula} />
+                </div>
+              </div>
+            )
           } catch {
-            return <span key={index}>{part}</span>
+            return <span key={index} className="break-words">{part}</span>
           }
         }
         
         if (part.startsWith('\\[') && part.endsWith('\\]')) {
           const formula = part.slice(2, -2).trim()
           try {
-            return <BlockMath key={index} math={formula} />
+            return (
+              <div key={index} className="my-2 overflow-x-auto w-full flex justify-start sm:justify-start">
+                <div className="inline-block min-w-fit">
+                  <BlockMath math={formula} />
+                </div>
+              </div>
+            )
           } catch {
-            return <span key={index}>{part}</span>
+            return <span key={index} className="break-words">{part}</span>
           }
         }
 
@@ -54,9 +66,13 @@ export default function MathDisplay({ content, inline = true, className = '' }: 
           if (part.startsWith('$') && part.endsWith('$') && !part.startsWith('$$')) {
             const formula = part.slice(1, -1).trim()
             try {
-              return <InlineMath key={index} math={formula} />
+              return (
+                <span key={index} className="inline-block max-w-full overflow-x-auto">
+                  <InlineMath math={formula} />
+                </span>
+              )
             } catch {
-              return <span key={index}>{part}</span>
+              return <span key={index} className="break-words">{part}</span>
             }
           }
         }
@@ -64,25 +80,31 @@ export default function MathDisplay({ content, inline = true, className = '' }: 
         if (part.startsWith('\\(') && part.endsWith('\\)')) {
           const formula = part.slice(2, -2).trim()
           try {
-            return <InlineMath key={index} math={formula} />
+            return (
+              <span key={index} className="inline-block max-w-full overflow-x-auto">
+                <InlineMath math={formula} />
+              </span>
+            )
           } catch {
-            return <span key={index}>{part}</span>
+            return <span key={index} className="break-words">{part}</span>
           }
         }
 
-        // Regular text
-        return <span key={index}>{part}</span>
+        // Regular text - break words properly on mobile
+        return <span key={index} className="break-words">{part}</span>
       })
     }
 
     return (
-      <div className={`math-display ${className}`}>
-        {renderContent()}
+      <div className={`math-display w-full overflow-x-auto ${className}`}>
+        <div className="inline-block min-w-full">
+          {renderContent()}
+        </div>
       </div>
     )
   } catch (error) {
     console.error('Error rendering math:', error, 'Content:', content)
     // Fallback: just show the content as-is
-    return <div className={className}>{content}</div>
+    return <div className={`${className} break-words`}>{content}</div>
   }
 }

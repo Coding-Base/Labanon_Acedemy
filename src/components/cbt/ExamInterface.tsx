@@ -267,9 +267,9 @@ export default function ExamInterface({
                   {/* Questions Container */}
                   <div className="space-y-4 sm:space-y-6">
                     {questions.map((question) => (
-                      <div key={question.id} className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-100">
-                        <div className="mb-4">
-                          <div className="text-sm sm:text-lg font-bold mb-2 text-gray-900 break-words">
+                      <div key={question.id} className="bg-white p-3 sm:p-6 rounded-lg shadow-sm border border-gray-100">
+                        <div className="mb-4 overflow-x-auto">
+                          <div className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold mb-2 text-gray-900 break-words whitespace-normal">
                             <MathDisplay content={question.text} />
                           </div>
                           {(question.year !== null && question.year !== undefined && question.year !== '') && (
@@ -291,7 +291,7 @@ export default function ExamInterface({
                           {question.choices.map((choice) => (
                             <label
                               key={choice.id}
-                              className="flex items-start p-3 sm:p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition"
+                              className="flex items-start p-2 sm:p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition"
                             >
                               <input
                                 type="radio"
@@ -299,9 +299,9 @@ export default function ExamInterface({
                                 value={choice.id}
                                 checked={selectedAnswers[question.id] === choice.id}
                                 onChange={() => handleAnswerSelect(question.id, choice.id)}
-                                className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5"
+                                className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 flex-shrink-0 mt-1 sm:mt-0.5"
                               />
-                              <span className="ml-3 flex-1 text-xs sm:text-sm break-words">
+                              <span className="ml-2 sm:ml-3 flex-1 text-xs sm:text-sm break-words overflow-x-auto">
                                 <MathDisplay content={choice.text} />
                               </span>
                             </label>

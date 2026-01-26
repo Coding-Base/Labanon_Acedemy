@@ -69,7 +69,10 @@ export default function ExamInterface({
         `${API_BASE}/cbt/attempts/${examAttemptId}/questions/?page=${currentPage}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      setQuestions(response.data.questions)
+      // normalize year value so frontend can reliably detect presence
+      setQuestions(
+        (response.data.questions || []).map((q: any) => ({ ...q, year: q.year ?? null }))
+      )
     } catch (err) {
       console.error('Failed to load questions:', err)
     } finally {
@@ -203,23 +206,23 @@ export default function ExamInterface({
         </div>
 
         {/* Questions */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex justify-center">
           {loading ? (
             <div className="text-center py-8">Loading questions...</div>
           ) : questions.length === 0 ? (
             <div className="text-center py-8">No questions available</div>
           ) : (
-            <div className="space-y-8 max-w-4xl">
-              {questions.map((question) => (
-                <div key={question.id} className="bg-white p-6 rounded-lg shadow">
+            <div className="space-y-8 w-full max-w-lg sm:max-w-4xl">
+                  {questions.map((question) => (
+                    <div key={question.id} className="bg-white p-6 rounded-lg shadow w-full">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="text-lg font-bold mb-2">
                         <MathDisplay content={question.text} />
                       </div>
-                      {question.year && (
-                        <p className="text-xs text-gray-500 italic">Year: {question.year}</p>
-                      )}
+                          {(question.year !== null && question.year !== undefined && question.year !== '') && (
+                            <p className="text-xs text-gray-500 italic">Year: {question.year}</p>
+                          )}
                     </div>
                   </div>
                   
@@ -259,8 +262,8 @@ export default function ExamInterface({
           )}
 
           {/* Navigation */}
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-2 sm:gap-4 justify-between">
-            <div className="flex gap-2 sm:gap-4 order-2 sm:order-1">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-2 sm:gap-4 items-center sm:justify-between">
+            <div className="flex gap-2 sm:gap-4 order-1 sm:order-1">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1 || loading}
@@ -278,14 +281,13 @@ export default function ExamInterface({
               </button>
             </div>
 
-            <div className="text-xs sm:text-sm text-gray-600 text-center order-3 sm:order-2">
+            <div className="text-xs sm:text-sm text-gray-600 text-center order-2 sm:order-2">
               Page {currentPage} of {totalPages}
             </div>
-
             <button
               onClick={() => setShowSubmitConfirm(true)}
               disabled={submitting}
-              className="px-6 sm:px-8 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 disabled:opacity-50 order-1 sm:order-3"
+              className="w-full sm:w-auto px-6 sm:px-8 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 disabled:opacity-50 order-3 sm:order-3"
             >
               {submitting ? 'Submitting...' : 'Submit'}
             </button>

@@ -217,9 +217,9 @@ export default function BulkUploadPage() {
 
             {/* Example Format */}
             <div className="mt-6 space-y-4">
-              <div className="bg-purple-50 border-l-4 border-purple-600 rounded p-4">
-                <p className="font-bold text-purple-900 text-sm">📌 Year Field Requirement</p>
-                <p className="text-xs text-purple-800 mt-1">Include a <strong>"year"</strong> field in EACH question object to display the question year when students take exams. Example: <code className="bg-purple-100 px-1 rounded">"year": "2014"</code></p>
+              <div className="bg-yellow-50 border-l-4 border-yellow-600 rounded p-4">
+                <p className="font-bold text-yellow-900 text-sm">📌 Year Field Requirement</p>
+                <p className="text-xs text-yellow-800 mt-1">Include a <strong>"year"</strong> field in EACH question object to display the question year when students take exams. Example: <code className="bg-yellow-100 px-1 rounded">"year": "2014"</code></p>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

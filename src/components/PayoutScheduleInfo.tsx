@@ -35,10 +35,10 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
       label: 'Processing',
       duration: '24-48 hours',
       icon: <TrendingUp className="w-5 h-5" />,
-      color: 'from-purple-500 to-pink-500',
-      bgColor: 'bg-purple-50',
-      textColor: 'text-purple-700',
-      borderColor: 'border-purple-200'
+      color: 'from-yellow--500 to-pink-500',
+      bgColor: 'bg-yellow-50',
+      textColor: 'text-yellow-700',
+      borderColor: 'border-yellow-200'
     },
     {
       label: 'Funds Received',
@@ -74,7 +74,7 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
               <span className="text-gray-600">Payment marked for settlement</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-purple-600 font-bold min-w-fit mt-0.5">3. 24-48h:</span>
+              <span className="text-yellow-600 font-bold min-w-fit mt-0.5">3. 24-48h:</span>
               <span className="text-gray-600">Paystack processes the payout</span>
             </li>
             <li className="flex items-start gap-2">

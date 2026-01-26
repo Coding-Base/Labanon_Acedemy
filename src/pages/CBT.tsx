@@ -80,7 +80,7 @@ export default function CBTPage() {
         </div>
         <button
           onClick={() => setShowCBTFlow(true)}
-          className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold transition"
+          className="px-6 py-2 bg-gradient-to-r from-blue-600 to-yellow--600 text-white rounded-lg hover:shadow-lg font-semibold transition"
         >
           Take CBT Test
         </button>
@@ -93,7 +93,7 @@ export default function CBTPage() {
           <p className="mt-4 text-gray-600">Loading your exams...</p>
         </div>
       ) : attempts.length === 0 ? (
-        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-12 text-center">
+        <div className="bg-gradient-to-br from-blue-50 to-yellow--50 rounded-lg p-12 text-center">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No Exams Taken Yet</h3>
           <p className="text-gray-600 mb-6">Start your first CBT exam to see your results here</p>

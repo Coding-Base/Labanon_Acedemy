@@ -70,7 +70,7 @@ export default function ProgressPage() {
 
   const getScoreColor = (score: number, total: number) => {
     const percentage = (score / total) * 100
-    if (percentage >= 70) return 'text-green-600 bg-yellow-50'
+    if (percentage >= 70) return 'text-yellow-700 bg-yellow-50'
     if (percentage >= 50) return 'text-yellow-600 bg-yellow-50'
     return 'text-red-600 bg-red-50'
   }
@@ -95,7 +95,7 @@ export default function ProgressPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
-            <BookOpen className="w-8 h-8 text-green-600" />
+            <BookOpen className="w-8 h-8 text-yellow-700" />
             Exam History & Analytics
           </h1>
           <p className="text-gray-600">Track your performance and progress over time</p>
@@ -104,10 +104,10 @@ export default function ProgressPage() {
         {/* Overall Statistics */}
         {attempts.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow p-6">
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-700 text-sm font-medium">Total Attempts</p>
+                  <p className="text-yellow-700 text-sm font-medium">Total Attempts</p>
                   <p className="text-3xl font-bold text-blue-700 mt-2">{attempts.length}</p>
                 </div>
                 <div className="bg-blue-200 p-3 rounded-lg">
@@ -116,32 +116,32 @@ export default function ProgressPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow p-6">
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-700 text-sm font-medium">Average Score</p>
-                  <p className="text-3xl font-bold text-green-700 mt-2">
+                  <p className="text-yellow-700 text-sm font-medium">Average Score</p>
+                  <p className="text-3xl font-bold text-yellow-700 mt-2">
                     {(
                       attempts.reduce((sum, a) => sum + (a.score / a.num_questions) * 100, 0) / attempts.length
                     ).toFixed(1)}%
                   </p>
                 </div>
                 <div className="bg-yellow-200 p-3 rounded-lg">
-                  <Target className="w-6 h-6 text-green-700" />
+                  <Target className="w-6 h-6 text-yellow-700" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow p-6">
+            <div className="bg-gradient-to-br from-yellow--50 to-yellow--100 rounded-xl shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-700 text-sm font-medium">Best Score</p>
-                  <p className="text-3xl font-bold text-purple-700 mt-2">
+                  <p className="text-yellow-700 text-sm font-medium">Best Score</p>
+                  <p className="text-3xl font-bold text-yellow-700 mt-2">
                     {Math.max(...attempts.map(a => (a.score / a.num_questions) * 100)).toFixed(1)}%
                   </p>
                 </div>
-                <div className="bg-purple-200 p-3 rounded-lg">
-                  <Award className="w-6 h-6 text-purple-700" />
+                <div className="bg-yellow-200 p-3 rounded-lg">
+                  <Award className="w-6 h-6 text-yellow-700" />
                 </div>
               </div>
             </div>
@@ -196,7 +196,7 @@ export default function ProgressPage() {
             <p className="text-gray-600 mb-6 text-lg">You haven't taken any exams yet</p>
             <button
               onClick={() => navigate('/student/cbt')}
-              className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg font-semibold"
+              className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-lg hover:shadow-lg font-semibold"
             >
               🚀 Take Your First Exam
             </button>
@@ -207,7 +207,7 @@ export default function ProgressPage() {
             <div className="space-y-4">
               {attempts.map((attempt, idx) => {
                 const percentage = (attempt.score / attempt.num_questions) * 100
-                const scoreColor = percentage >= 70 ? 'from-green-500 to-green-600' : percentage >= 50 ? 'from-yellow-500 to-yellow-600' : 'from-red-500 to-red-600'
+                const scoreColor = percentage >= 70 ? 'from-yellow-500 to-yellow-600' : percentage >= 50 ? 'from-yellow-500 to-yellow-600' : 'from-red-500 to-red-600'
                 
                 return (
                   <button
@@ -215,7 +215,7 @@ export default function ProgressPage() {
                     onClick={() => navigate(`/performance/${attempt.id}`)}
                     className="w-full bg-gray-50 rounded-lg shadow hover:shadow-md transition p-6 text-left border border-gray-200 hover:border-blue-300"
                   >
-                    <div className="flex items-center gap-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                       {/* Score Badge */}
                       <div className={`bg-gradient-to-br ${scoreColor} rounded-lg p-6 text-white text-center min-w-24`}>
                         <p className="text-3xl font-bold">{percentage.toFixed(0)}</p>
@@ -227,14 +227,14 @@ export default function ProgressPage() {
                         <h3 className="font-bold text-lg text-gray-900">{attempt.exam_title}</h3>
                         <p className="text-gray-600 text-sm">{attempt.subject_name}</p>
 
-                        <div className="grid grid-cols-5 gap-4 mt-4 text-sm">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 mt-4 text-sm">
                           <div>
                             <p className="text-gray-500 text-xs font-medium">QUESTIONS</p>
                             <p className="font-bold text-gray-900 text-lg">{attempt.num_questions}</p>
                           </div>
                           <div>
                             <p className="text-gray-500 text-xs font-medium">CORRECT</p>
-                            <p className="font-bold text-green-600 text-lg">{attempt.correct_answers}</p>
+                            <p className="font-bold text-yellow-700 text-lg">{attempt.correct_answers}</p>
                           </div>
                           <div>
                             <p className="text-gray-500 text-xs font-medium">WRONG</p>
@@ -242,7 +242,7 @@ export default function ProgressPage() {
                           </div>
                           <div>
                             <p className="text-gray-500 text-xs font-medium">TIME</p>
-                            <p className="font-bold text-teal-600 text-lg">{formatTime(attempt.time_taken_seconds)}</p>
+                            <p className="font-bold text-blue-700 text-lg">{formatTime(attempt.time_taken_seconds)}</p>
                           </div>
                           <div>
                             <p className="text-gray-500 text-xs font-medium">DATE</p>
@@ -253,7 +253,7 @@ export default function ProgressPage() {
 
                       {/* Click Indicator */}
                       <div className="text-right">
-                        <p className="text-green-600 font-semibold">View Details →</p>
+                        <p className="text-yellow-700 font-semibold">View Details →</p>
                       </div>
                     </div>
                   </button>

@@ -155,27 +155,27 @@ export default function ExamInterface({
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-yellow-600 text-white p-4 flex-shrink-0 z-10">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <div className="bg-yellow-600 text-white p-3 sm:p-4 flex-shrink-0 z-10">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
           <div>
-            <h1 className="text-xl font-bold">{examTitle}</h1>
-            <p className="text-yellow-100">{subjectName}</p>
+            <h1 className="text-lg sm:text-xl font-bold">{examTitle}</h1>
+            <p className="text-xs sm:text-sm text-yellow-100">{subjectName}</p>
           </div>
           <div className="text-right">
-            <div className={`text-3xl font-bold ${timeRemaining < 300 ? 'text-red-300' : ''}`}>
+            <div className={`text-2xl sm:text-3xl font-bold ${timeRemaining < 300 ? 'text-red-300' : ''}`}>
               {formatTime(timeRemaining)}
             </div>
-            <p className="text-blue-100 text-sm">Time Remaining</p>
+            <p className="text-blue-100 text-xs sm:text-sm">Time Remaining</p>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Side Navigation Bar */}
-        <div className="w-32 bg-white border-r border-gray-200 p-4 overflow-y-auto flex-shrink-0">
-          <h3 className="font-bold text-sm mb-4">Questions</h3>
-          <div className="space-y-2">
+      <div className="flex-1 flex overflow-hidden flex-col sm:flex-row">
+        {/* Side Navigation Bar - Hidden on mobile */}
+        <div className="hidden sm:block sm:w-32 lg:w-40 bg-white border-r border-gray-200 p-3 sm:p-4 overflow-y-auto flex-shrink-0">
+          <h3 className="font-bold text-xs sm:text-sm mb-4">Questions</h3>
+          <div className="space-y-1">
             {progress?.progress.map((item: any) => (
               <button
                 key={item.question_number}
@@ -190,15 +190,20 @@ export default function ExamInterface({
               </button>
             ))}
           </div>
-          <div className="mt-6 pt-4 border-t text-xs">
+          <div className="mt-4 pt-3 border-t text-xs">
             <p className="text-gray-600">
               Answered: <strong>{answeredCount}</strong> / {numQuestions}
             </p>
           </div>
         </div>
 
+        {/* Mobile progress bar - shown only on mobile */}
+        <div className="sm:hidden bg-gray-100 px-4 py-2 text-xs text-gray-600 border-b border-gray-200">
+          Answered: <strong>{answeredCount}</strong> / {numQuestions}
+        </div>
+
         {/* Questions */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           {loading ? (
             <div className="text-center py-8">Loading questions...</div>
           ) : questions.length === 0 ? (
@@ -254,12 +259,12 @@ export default function ExamInterface({
           )}
 
           {/* Navigation */}
-          <div className="mt-8 flex gap-4 justify-between">
-            <div className="flex gap-4">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-2 sm:gap-4 justify-between">
+            <div className="flex gap-2 sm:gap-4 order-2 sm:order-1">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1 || loading}
-                className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50"
+                className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400 disabled:opacity-50"
               >
                 Previous
               </button>
@@ -267,20 +272,20 @@ export default function ExamInterface({
               <button
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages || loading}
-                className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50"
+                className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400 disabled:opacity-50"
               >
                 Next
               </button>
             </div>
 
-            <div className="text-sm text-gray-600">
+            <div className="text-xs sm:text-sm text-gray-600 text-center order-3 sm:order-2">
               Page {currentPage} of {totalPages}
             </div>
 
             <button
               onClick={() => setShowSubmitConfirm(true)}
               disabled={submitting}
-              className="px-8 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50"
+              className="px-6 sm:px-8 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 disabled:opacity-50 order-1 sm:order-3"
             >
               {submitting ? 'Submitting...' : 'Submit'}
             </button>

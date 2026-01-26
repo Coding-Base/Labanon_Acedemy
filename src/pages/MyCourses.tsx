@@ -205,7 +205,7 @@ export default function MyCourses() {
                   <div className="p-5">
                     {/* Category Badge - Dynamic based on type */}
                     <div className="mb-2">
-                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${isScheduled ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${isScheduled ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>
                         {isScheduled ? 'Scheduled Session' : (course?.category || 'Professional')}
                       </span>
                     </div>

@@ -47,7 +47,7 @@ export default function PaymentMethodSelector({
         {/* Flutterwave Option */}
         <label className={`flex items-center p-3 border rounded-lg cursor-pointer transition ${
           selectedMethod === 'flutterwave'
-            ? 'border-purple-500 bg-purple-50'
+            ? 'border-yellow-500 bg-yellow-50'
             : 'border-gray-200 bg-white hover:bg-gray-50'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
           <input
@@ -57,7 +57,7 @@ export default function PaymentMethodSelector({
             checked={selectedMethod === 'flutterwave'}
             onChange={() => !disabled && onMethodChange('flutterwave')}
             disabled={disabled}
-            className="w-4 h-4 text-purple-600 cursor-pointer"
+            className="w-4 h-4 text-yellow-600 cursor-pointer"
           />
           <div className="ml-3 flex-1">
             <p className="text-sm font-medium text-gray-900">Flutterwave</p>

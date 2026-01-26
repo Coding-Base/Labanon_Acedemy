@@ -27,7 +27,7 @@ type Section = {
   id: string
   title: string
   icon: React.ComponentType<any>
-  colorKey: 'green' | 'purple' | 'emerald'
+  colorKey: 'green' | 'yellow' | 'emerald'
   content: Step[]
 }
 
@@ -35,9 +35,9 @@ const colorMap: Record<
   Section['colorKey'],
   { gradient: string; borderColor: string }
 > = {
-  // kept purple mapping in case you want it later, but we will use green for tutor now
+  // kept yellow mapping in case you want it later, but we will use green for tutor now
   green: { gradient: 'from-yellow-500 to-blue-500', borderColor: 'border-yellow-500' },
-  purple: { gradient: 'from-purple-500 to-pink-500', borderColor: 'border-pink-500' },
+  yellow: { gradient: 'from-yellow--500 to-pink-500', borderColor: 'border-pink-500' },
   emerald: { gradient: 'from-yellow-500 to-blue-600', borderColor: 'border-yellow-500' }
 }
 
@@ -64,7 +64,7 @@ const Documentation: React.FC = () => {
       id: 'tutor',
       title: 'For Tutors',
       icon: Users,
-      // switched tutor from purple -> green so the UI is consistent
+      // switched tutor from yellow -> green so the UI is consistent
       colorKey: 'green',
       content: [
         { step: 1, title: 'Register & Unlock Tutor Account', description: 'Sign up and submit the required verification to unlock tutor features (qualification, ID, portfolio). Admin approves and you gain access to tutor tools.' },

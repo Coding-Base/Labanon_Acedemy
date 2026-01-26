@@ -94,14 +94,14 @@ export default function PerformancePage() {
 
   const scoreColor =
     performance.percentage_score >= 70
-      ? 'text-green-600'
+      ? 'text-yellow-700'
       : performance.percentage_score >= 50
         ? 'text-yellow-600'
         : 'text-red-600'
 
   const scoreBgColor =
     performance.percentage_score >= 70
-      ? 'from-green-50 to-green-100'
+      ? 'from-yellow-50 to-yellow-100'
       : performance.percentage_score >= 50
         ? 'from-yellow-50 to-yellow-100'
         : 'from-red-50 to-red-100'
@@ -123,7 +123,7 @@ export default function PerformancePage() {
       value: performance.percentage_score.toFixed(1),
       unit: '%',
       icon: Target,
-      color: 'text-green-600',
+      color: 'text-yellow-700',
       bgColor: 'bg-yellow-100'
     },
     {
@@ -131,7 +131,7 @@ export default function PerformancePage() {
       value: performance.correct_count,
       unit: `/ ${performance.num_questions}`,
       icon: Award,
-      color: 'text-green-600',
+      color: 'text-yellow-700',
       bgColor: 'bg-yellow-100'
     },
     {
@@ -139,8 +139,8 @@ export default function PerformancePage() {
       value: ((performance.time_taken_seconds / (performance.time_limit_minutes * 60)) * 100).toFixed(1),
       unit: '%',
       icon: Clock,
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-100'
+      color: 'text-blue-700',
+      bgColor: 'bg-blue-100'
     },
     {
       label: 'Speed',
@@ -153,7 +153,7 @@ export default function PerformancePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-yellow-900 to-slate-900 py-8">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className={`bg-gradient-to-br ${scoreBgColor} rounded-2xl shadow-2xl p-8 mb-8 border border-opacity-20`}>
@@ -244,11 +244,11 @@ export default function PerformancePage() {
             <div className="grid grid-cols-2 gap-4 mt-6">
               <div className="bg-yellow-50 p-4 rounded-lg">
                 <p className="text-gray-600 text-sm">Time Used</p>
-                <p className="text-2xl font-bold text-green-600">{formatTime(performance.time_taken_seconds)}</p>
+                <p className="text-2xl font-bold text-yellow-700">{formatTime(performance.time_taken_seconds)}</p>
               </div>
-              <div className="bg-amber-50 p-4 rounded-lg">
+              <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-gray-600 text-sm">Time Limit</p>
-                <p className="text-2xl font-bold text-amber-600">{performance.time_limit_minutes} min</p>
+                <p className="text-2xl font-bold text-blue-600">{performance.time_limit_minutes} min</p>
               </div>
             </div>
           </div>
@@ -260,19 +260,19 @@ export default function PerformancePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="border-l-4 border-yellow-500 pl-4">
               <p className="text-gray-600 text-sm font-medium">Total Questions</p>
-              <p className="text-3xl font-bold text-green-600 mt-1">{performance.num_questions}</p>
+              <p className="text-3xl font-bold text-yellow-700 mt-1">{performance.num_questions}</p>
             </div>
             <div className="border-l-4 border-yellow-500 pl-4">
               <p className="text-gray-600 text-sm font-medium">Correct Answers</p>
-              <p className="text-3xl font-bold text-green-600 mt-1">{performance.correct_count}</p>
+              <p className="text-3xl font-bold text-yellow-700 mt-1">{performance.correct_count}</p>
             </div>
             <div className="border-l-4 border-red-500 pl-4">
               <p className="text-gray-600 text-sm font-medium">Wrong Answers</p>
               <p className="text-3xl font-bold text-red-600 mt-1">{performance.wrong_count}</p>
             </div>
-            <div className="border-l-4 border-purple-500 pl-4">
+            <div className="border-l-4 border-blue-500 pl-4">
               <p className="text-gray-600 text-sm font-medium">Time Limit</p>
-              <p className="text-3xl font-bold text-purple-600 mt-1">{performance.time_limit_minutes}m</p>
+              <p className="text-3xl font-bold text-blue-600 mt-1">{performance.time_limit_minutes}m</p>
             </div>
           </div>
         </div>
@@ -296,7 +296,7 @@ export default function PerformancePage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="w-3 h-3 bg-teal-600 rounded-full"></div>
+              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
               <div>
                 <p className="text-sm text-gray-600">Total Duration</p>
                 <p className="font-semibold text-gray-900">{formatTime(performance.time_taken_seconds)}</p>
@@ -333,7 +333,7 @@ export default function PerformancePage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
-                          <p className="text-sm text-green-600">
+                          <p className="text-sm text-yellow-700">
                             Correct: <strong>{answer.correct_answer}</strong>
                           </p>
                         </div>
@@ -361,7 +361,7 @@ export default function PerformancePage() {
         )}
 
         {/* Performance Feedback */}
-        <div className="bg-gradient-to-r from-green-500 to-blue-600 rounded-xl shadow-lg p-8 mb-8 text-white">
+        <div className="bg-gradient-to-r from-yellow-500 to-blue-600 rounded-xl shadow-lg p-8 mb-8 text-white">
           <h2 className="text-xl font-bold mb-4">📊 Performance Insights</h2>
           <div className="space-y-3">
             {performance.percentage_score >= 70 && (
@@ -405,7 +405,7 @@ export default function PerformancePage() {
                       </span>
                       <p className="font-semibold text-gray-900">{answer.question_text}</p>
                     </div>
-                    <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-green-700' : 'text-red-700'}`}>
+                    <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-yellow-700' : 'text-red-700'}`}>
                       Your answer: <strong>{answer.selected_choice}</strong>
                     </p>
                   </div>
@@ -419,13 +419,13 @@ export default function PerformancePage() {
         <div className="flex gap-4 mb-8">
           <button
             onClick={() => navigate('/student/overview')}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
           >
             ← Back to Dashboard
           </button>
           <button
             onClick={() => navigate('/student/progress')}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-teal-600 to-blue-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
           >
             📊 View All Results
           </button>

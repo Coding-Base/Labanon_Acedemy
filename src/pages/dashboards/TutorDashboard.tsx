@@ -456,7 +456,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       title: 'Total Students',
       value: calculatedStudents,
       icon: <Users className="w-6 h-6" />,
-      color: 'from-purple-500 to-pink-400',
+      color: 'from-yellow--500 to-pink-400',
       change: 'Unique enrolled',
       trend: 'up'
     },
@@ -481,7 +481,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   // Updated paths to absolute URLs to fix routing issues
   const quickActions = [
     { title: 'Create New Course', icon: <PlusCircle className="w-5 h-5" />, color: 'bg-yellow-100 text-yellow-600', path: '/tutor/manage/create' },
-    { title: 'Schedule Live Class', icon: <Calendar className="w-5 h-5" />, color: 'bg-purple-100 text-purple-600', path: '/tutor/schedule' },
+    { title: 'Schedule Live Class', icon: <Calendar className="w-5 h-5" />, color: 'bg-yellow-100 text-yellow-600', path: '/tutor/schedule' },
     { title: 'Go Live', icon: <Sparkles className="w-5 h-5" />, color: 'bg-yellow-100 text-yellow-600', path: '/tutor/schedule' }
   ];
 

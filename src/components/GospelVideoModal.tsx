@@ -115,7 +115,7 @@ export default function GospelVideoModal() {
           >
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 flex items-center justify-between">
+              <div className="bg-gradient-to-r from-blue-600 to-yellow--600 px-6 py-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-white">{gospel.title}</h2>
                   {gospel.description && (
@@ -155,7 +155,7 @@ export default function GospelVideoModal() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleClose}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-yellow--600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
                 >
                   Close
                 </motion.button>

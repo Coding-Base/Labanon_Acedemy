@@ -463,7 +463,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             title: 'Diplomas Sold', 
                             value: diplomaCount, 
                             icon: <GraduationCap className="w-6 h-6 text-white" />, 
-                            bg: 'bg-purple-500',
+                            bg: 'bg-yellow-500',
                             trend: 'Lifetime Sales' 
                           }, 
                           { 
@@ -568,14 +568,14 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                                         </div>
                                         <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
                                     </Link>
-                                    <Link to="/institution/portfolio" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all group">
+                                    <Link to="/institution/portfolio" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
                                         <div className="flex items-center">
-                                            <div className="bg-purple-100 p-2 rounded-lg text-purple-600 mr-3 group-hover:bg-purple-200">
+                                            <div className="bg-yellow-100 p-2 rounded-lg text-yellow-600 mr-3 group-hover:bg-yellow-200">
                                                 <Briefcase className="w-5 h-5" />
                                             </div>
-                                            <span className="font-medium text-gray-700 group-hover:text-purple-800">Update Portfolio</span>
+                                            <span className="font-medium text-gray-700 group-hover:text-yellow-800">Update Portfolio</span>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600" />
+                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-yellow-600" />
                                     </Link>
                                 </div>
                             </div>

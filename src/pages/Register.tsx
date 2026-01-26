@@ -76,7 +76,7 @@ export default function Register() {
       label: 'Tutor/Instructor', 
       icon: <Users className="w-6 h-6" />,
       description: 'Create courses, teach students, earn money',
-      color: 'from-purple-500 to-pink-400',
+      color: 'from-yellow--500 to-pink-400',
       features: ['Create and sell courses', 'Live teaching sessions', 'Revenue sharing', ]
     },
     { 
@@ -558,7 +558,7 @@ export default function Register() {
                 transition={{ delay: 0.1 }}
                 className="flex items-start space-x-4"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow--500 to-pink-400 rounded-xl flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-6 h-6 text-white" />
                 </div>
                 <div>

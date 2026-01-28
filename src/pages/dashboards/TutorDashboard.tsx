@@ -448,7 +448,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       title: 'Total Courses',
       value: calculatedCourses,
       icon: <BookOpen className="w-6 h-6" />,
-      color: 'from-yellow-600 to-blue-500',
+      color: 'from-yellow-600 to-yellow-500',
       change: 'Active courses',
       trend: 'up'
     },
@@ -464,7 +464,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       title: 'Total Earnings',
       value: `₦${calculatedEarnings.toLocaleString()}`,
       icon: <DollarSign className="w-6 h-6" />,
-      color: 'from-yellow-500 to-blue-400',
+      color: 'from-yellow-500 to-yellow-400',
       change: 'Net income',
       trend: 'up'
     },
@@ -487,7 +487,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
 
   const LeaderboardPage = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-yellow-600 to-blue-600 rounded-2xl p-8 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-3xl font-bold mb-2">Tutor Leaderboard</h2>
           <p className="opacity-90">Top performing instructors by sales volume</p>
@@ -522,7 +522,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold mr-3 bg-gradient-to-br from-yellow-500 to-blue-500`}>
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold mr-3 bg-gradient-to-br from-yellow-500 to-yellow-500`}>
                       {tutor.avatar_initial}
                     </div>
                     <div className="text-sm font-medium text-gray-900">
@@ -584,7 +584,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowMessageModal(true)} className="relative p-2 rounded-lg hover:bg-gray-100"><Bell className="w-5 h-5 text-gray-600" /><span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span></motion.button>
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowInbox(true)} className="relative p-2 rounded-lg hover:bg-gray-100"><Mail className="w-5 h-5 text-gray-600" /></motion.button>
               <div className="hidden md:flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">{summary?.username?.charAt(0).toUpperCase() || 'T'}</div>
+                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold">{summary?.username?.charAt(0).toUpperCase() || 'T'}</div>
                 <div><p className="text-sm font-semibold text-gray-900">{summary?.username || 'Tutor'}</p><p className="text-xs text-gray-500">Certified Tutor</p></div>
               </div>
             </div>
@@ -599,7 +599,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">{summary?.username?.charAt(0).toUpperCase() || 'T'}</div>
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">{summary?.username?.charAt(0).toUpperCase() || 'T'}</div>
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full border-2 border-white"></div>
                   </div>
                   <div>
@@ -609,8 +609,8 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   </div>
                 </div>
               </div>
-              <nav className="space-y-2">{navItems.map(item => (<Link key={item.path} to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${isActivePath(item.path) ? 'bg-gradient-to-r from-yellow-50 to-blue-50 text-yellow-600 border-l-4 border-yellow-500' : 'text-gray-700 hover:bg-gray-50'}`}>{item.icon}<span className="font-medium">{item.label}</span></Link>))}</nav>
-              <Link to="/tutor/manage/create" className="mt-6 w-full py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow inline-flex items-center justify-center"><PlusCircle className="w-5 h-5 inline mr-2" />Create New Course</Link>
+              <nav className="space-y-2">{navItems.map(item => (<Link key={item.path} to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${isActivePath(item.path) ? 'bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-600 border-l-4 border-yellow-500' : 'text-gray-700 hover:bg-gray-50'}`}>{item.icon}<span className="font-medium">{item.label}</span></Link>))}</nav>
+              <Link to="/tutor/manage/create" className="mt-6 w-full py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow inline-flex items-center justify-center"><PlusCircle className="w-5 h-5 inline mr-2" />Create New Course</Link>
               <button onClick={handleLogout} className="mt-3 w-full py-3 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition-colors inline-flex items-center justify-center gap-2 border border-red-200"><LogOut className="w-5 h-5" />Logout</button>
             </div>
           </motion.aside>
@@ -631,19 +631,19 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                 <Routes>
                   <Route path="overview" element={
                     <div>
-                      <div className="mb-6"><div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div><h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome, {summary?.username}! 🎓</h1></div><motion.button whileHover={{ scale: 1.05 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold"><Sparkles className="w-5 h-5 inline mr-2" />Go Live</motion.button></div></div>
+                      <div className="mb-6"><div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div><h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome, {summary?.username}! 🎓</h1></div><motion.button whileHover={{ scale: 1.05 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold"><Sparkles className="w-5 h-5 inline mr-2" />Go Live</motion.button></div></div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">{quickActions.map((a, i) => (<motion.div key={i} whileHover={{ y: -5 }} className="bg-white rounded-xl shadow-lg p-4"><Link to={a.path}><div className={`w-12 h-12 ${a.color} rounded-xl flex items-center justify-center mb-3`}>{a.icon}</div><h3 className="font-semibold text-gray-900">{a.title}</h3></Link></motion.div>))}</div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">{stats.map((s, i) => (<motion.div key={i} whileHover={{ y: -5 }} className="bg-white rounded-2xl shadow-lg p-6"><div className="flex justify-between items-center"><div className={`w-12 h-12 bg-gradient-to-br ${s.color} rounded-xl flex items-center justify-center text-white`}>{s.icon}</div><div className="text-right"><div className="text-2xl font-bold text-gray-900">{s.value}</div><div className="text-sm text-gray-500">{s.change}</div></div></div><h3 className="font-semibold text-gray-900 mt-4">{s.title}</h3></motion.div>))}</div>
                       <div className="grid grid-cols-1 gap-8">
                         {/* Leaderboard Widget */}
                         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
-                          <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-900 flex items-center"><Trophy className="w-5 h-5 text-yellow-500 mr-2" /> Top Instructors</h3><Link to="/tutor/leaderboard" className="text-sm text-blue-600 hover:underline">View Full Leaderboard</Link></div>
+                          <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-900 flex items-center"><Trophy className="w-5 h-5 text-yellow-500 mr-2" /> Top Instructors</h3><Link to="/tutor/leaderboard" className="text-sm text-yellow-600 hover:underline">View Full Leaderboard</Link></div>
                           <div className="space-y-4">
                             {leaderboard.slice(0, 3).map((t, idx) => (
                               <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                 <div className="flex items-center">
                                   <span className={`font-bold mr-3 ${idx===0?'text-yellow-600':idx===1?'text-gray-500':'text-amber-700'}`}>#{idx+1}</span>
-                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-700 mr-2">{t.avatar_initial}</div>
+                                  <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center text-xs font-bold text-yellow-700 mr-2">{t.avatar_initial}</div>
                                   <div className="text-sm font-semibold">{t.name}</div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -679,14 +679,14 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                           </div>
                         </div>
 
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow border border-blue-200">
+                        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 shadow border border-yellow-200">
                           <div className="flex items-start justify-between">
                             <div>
-                              <div className="text-sm text-blue-700 font-medium">Total Revenue</div>
-                              <div className="text-3xl font-bold mt-2 text-blue-900">₦{(calculatedEarnings || 0).toLocaleString()}</div>
-                              <div className="text-xs text-blue-600 mt-1">Gross amount from all course sales</div>
+                              <div className="text-sm text-yellow-700 font-medium">Total Revenue</div>
+                              <div className="text-3xl font-bold mt-2 text-yellow-900">₦{(calculatedEarnings || 0).toLocaleString()}</div>
+                              <div className="text-xs text-yellow-600 mt-1">Gross amount from all course sales</div>
                             </div>
-                            <div className="text-4xl text-blue-600 font-bold">₦</div>
+                            <div className="text-4xl text-yellow-600 font-bold">₦</div>
                           </div>
                         </div>
                       </div>
@@ -769,7 +769,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
           </div>
         </div>
       </div>
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 flex justify-around items-center h-16">{navItems.slice(0,4).map(item => (<Link key={item.path} to={item.path} className={`flex flex-col items-center ${isActivePath(item.path)?'text-blue-600':'text-gray-600'}`}>{item.icon}<span className="text-xs">{item.label}</span></Link>))}</div>
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 flex justify-around items-center h-16">{navItems.slice(0,4).map(item => (<Link key={item.path} to={item.path} className={`flex flex-col items-center ${isActivePath(item.path)?'text-yellow-600':'text-gray-600'}`}>{item.icon}<span className="text-xs">{item.label}</span></Link>))}</div>
       <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} />
       <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
     </div>

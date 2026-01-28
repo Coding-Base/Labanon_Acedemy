@@ -50,39 +50,54 @@ export default function SubjectModal({ isOpen, onClose, exam, onSelectSubject }:
   if (!isOpen || !exam) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4">
-        <h2 className="text-2xl font-bold mb-2">{exam.title}</h2>
-        <p className="text-gray-600 mb-6">Select a subject to begin the test</p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      {/* UPDATED CONTAINER: 
+         - max-h-[90vh]: Prevents modal from being taller than screen
+         - flex flex-col: Allows us to split header, body, and footer
+      */}
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col shadow-xl">
+        
+        {/* HEADER (Fixed) */}
+        <div className="p-6 border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-2xl font-bold mb-2">{exam.title}</h2>
+          <p className="text-gray-600">Select a subject to begin the test</p>
+        </div>
 
-        {error && <div className="text-red-600 mb-4">{error}</div>}
+        {/* BODY (Scrollable) */}
+        <div className="p-6 overflow-y-auto flex-1">
+          {error && <div className="text-red-600 mb-4">{error}</div>}
 
-        {loading ? (
-          <div className="text-center py-8">Loading subjects...</div>
-        ) : subjects.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No subjects available for this exam</div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {subjects.map((subject) => (
-              <button
-                key={subject.id}
-                onClick={() => onSelectSubject(subject)}
-                className="p-4 border-2 border-gray-200 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 text-left transition"
-              >
-                <h3 className="font-bold text-lg">{subject.name}</h3>
-                <p className="text-gray-600 text-sm">{subject.description}</p>
-                <p className="text-gray-500 text-xs mt-2">{subject.question_count} questions available</p>
-              </button>
-            ))}
-          </div>
-        )}
+          {loading ? (
+            <div className="text-center py-8">Loading subjects...</div>
+          ) : subjects.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No subjects available for this exam</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {subjects.map((subject) => (
+                <button
+                  key={subject.id}
+                  onClick={() => onSelectSubject(subject)}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 text-left transition w-full"
+                >
+                  <h3 className="font-bold text-lg">{subject.name}</h3>
+                  <p className="text-gray-600 text-sm">{subject.description}</p>
+                  <p className="text-gray-500 text-xs mt-2">{subject.question_count} questions available</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
-        <button
-          onClick={onClose}
-          className="mt-6 px-4 py-2 text-gray-600 hover:text-gray-800"
-        >
-          Back
-        </button>
+        {/* FOOTER (Fixed) */}
+        <div className="p-6 border-t border-gray-100 flex-shrink-0 bg-gray-50 rounded-b-lg">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition"
+          >
+            Back
+          </button>
+        </div>
+
       </div>
     </div>
   )

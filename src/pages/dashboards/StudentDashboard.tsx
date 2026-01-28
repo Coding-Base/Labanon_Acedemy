@@ -280,17 +280,17 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   ];
 
   const stats = [
-    { title: 'Enrollments', value: summary?.enrollments_count || 0, icon: <BookOpen className="w-6 h-6" />, color: 'from-yellow-600 to-blue-500', change: 'Active courses', trend: 'up' },
-    { title: 'Exam Attempts', value: summary?.attempts_count || 0, icon: <FileCheck className="w-6 h-6" />, color: 'from-yellow-500 to-blue-400', change: 'Lifetime attempts', trend: 'up' },
-    { title: 'Average Score', value: summary?.avg_score ? `${Math.round(summary.avg_score)}%` : '—', icon: <Target className="w-6 h-6" />, color: 'from-yellow-500 to-blue-400', change: 'Performance', trend: 'up' },
+    { title: 'Enrollments', value: summary?.enrollments_count || 0, icon: <BookOpen className="w-6 h-6" />, color: 'from-yellow-600 to-yellow-500', change: 'Active courses', trend: 'up' },
+    { title: 'Exam Attempts', value: summary?.attempts_count || 0, icon: <FileCheck className="w-6 h-6" />, color: 'from-yellow-500 to-yellow-400', change: 'Lifetime attempts', trend: 'up' },
+    { title: 'Average Score', value: summary?.avg_score ? `${Math.round(summary.avg_score)}%` : '—', icon: <Target className="w-6 h-6" />, color: 'from-yellow-500 to-yellow-400', change: 'Performance', trend: 'up' },
     { title: 'Completed Courses', value: summary?.completed_courses || 0, icon: <CheckCircle className="w-6 h-6" />, color: 'from-orange-500 to-amber-400', change: 'Certificates', trend: 'neutral' },
-    { title: 'Study Time', value: `${realStudyHours}h`, icon: <Clock className="w-6 h-6" />, color: 'from-blue-500 to-indigo-400', change: 'Calculated time', trend: 'up' },
+    { title: 'Study Time', value: `${realStudyHours}h`, icon: <Clock className="w-6 h-6" />, color: 'from-yellow-500 to-indigo-400', change: 'Calculated time', trend: 'up' },
     { title: 'Global Rank', value: `#${userRank}`, icon: <Trophy className="w-6 h-6" />, color: 'from-rose-500 to-pink-400', change: 'Among all students', trend: 'up' }
   ];
 
   const quickActions = [
     { title: 'Take Practice Test', icon: <FileText className="w-5 h-5" />, color: 'bg-yellow-100 text-yellow-700', path: 'cbt' },
-    { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-blue-100 text-blue-600', path: 'schedule' }, 
+    { title: 'Join Live Class', icon: <Users className="w-5 h-5" />, color: 'bg-yellow-100 text-yellow-600', path: 'schedule' }, 
     { title: 'Download Materials', icon: <Download className="w-5 h-5" />, color: 'bg-yellow-100 text-yellow-700', path: 'courses' },
     { title: 'View Leaderboard', icon: <BarChart3 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-600', path: 'leaderboard' }
   ];
@@ -304,7 +304,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   // --- Sub-Component: Leaderboard Table ---
   const LeaderboardPage = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-yellow-600 to-blue-600 rounded-2xl p-8 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-3xl font-bold mb-2">Global Leaderboard</h2>
           <p className="opacity-90">Top performers across all JAMB CBT Exams</p>
@@ -392,10 +392,10 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 <Mail className="w-5 h-5 text-gray-600" />
               </motion.button>
               <div className="hidden md:flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">{summary?.username?.charAt(0).toUpperCase()}</div>
+                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">{summary?.username?.charAt(0).toUpperCase()}</div>
                 <div><p className="text-sm font-semibold text-gray-900">{summary?.username}</p><p className="text-xs text-gray-500">Student Account</p></div>
               </div>
-              <motion.button onClick={() => doLogout('user clicked logout')} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all">
+              <motion.button onClick={() => doLogout('user clicked logout')} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all">
                 <LogOut className="w-4 h-4" /><span>Logout</span>
               </motion.button>
             </div>
@@ -413,7 +413,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-md">
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-md">
                       {summary?.username.charAt(0).toUpperCase()}
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full border-2 border-white shadow-sm"></div>
@@ -448,7 +448,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     const active = isActivePath(item.path);
                     return (
                       <motion.div key={item.path} whileHover={{ x: 5 }} transition={{ type: "spring", stiffness: 300 }}>
-                        <Link to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-gradient-to-r from-yellow-50 to-blue-50 text-yellow-700 border-l-4 border-yellow-500 shadow-sm' : 'text-gray-700 hover:bg-gray-50 hover:text-yellow-600'}`}>
+                        <Link to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-700 border-l-4 border-yellow-500 shadow-sm' : 'text-gray-700 hover:bg-gray-50 hover:text-yellow-600'}`}>
                           <div className={`${active ? 'text-yellow-700' : 'text-gray-500 group-hover:text-yellow-500'}`}>{item.icon}</div>
                           <span className="font-medium">{item.label}</span>
                           {active && <ChevronRight className="w-4 h-4 ml-auto text-yellow-600" />}
@@ -459,7 +459,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 </div>
               </nav>
 
-              <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all shadow-md">
+              <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all shadow-md">
                 Upgrade to Pro
               </motion.button>
             </div>
@@ -496,10 +496,10 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                         <div className="mb-6">
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome back, <span className="bg-gradient-to-r from-yellow-600 to-blue-600 bg-clip-text text-transparent">{summary?.username}</span>! 👋</h1>
+                              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome back, <span className="bg-gradient-to-r from-yellow-600 to-yellow-600 bg-clip-text text-transparent">{summary?.username}</span>! 👋</h1>
                               <p className="text-gray-600 mt-2">Track your progress, access courses, and ace your exams</p>
                             </div>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg">
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg">
                               <PlayCircle className="w-5 h-5 inline mr-2" />Continue Learning
                             </motion.button>
                           </div>
@@ -541,7 +541,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                             <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
                               <div className="flex justify-between items-center mb-4">
                                 <h3 className="font-bold text-gray-900 flex items-center"><Trophy className="w-5 h-5 text-yellow-500 mr-2" /> Top Scorers</h3>
-                                <Link to="/student/leaderboard" className="text-sm text-blue-600 hover:underline">See More</Link>
+                                <Link to="/student/leaderboard" className="text-sm text-yellow-600 hover:underline">See More</Link>
                               </div>
                               <div className="space-y-4">
                                 {leaderboard.slice(0, 3).map((user, idx) => (
@@ -583,7 +583,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                       <div className="h-full flex items-center justify-center text-center">
                         <div>
                           <h3 className="text-xl font-semibold text-gray-900 mb-2">Page Not Found</h3>
-                          <button onClick={() => navigate('/student')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">Go to Dashboard</button>
+                          <button onClick={() => navigate('/student')} className="px-6 py-2 bg-yellow-600 text-white rounded-lg">Go to Dashboard</button>
                         </div>
                       </div>
                     } />
@@ -599,10 +599,10 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         {navItems.slice(0, 5).map((item) => {
           const active = isActivePath(item.path);
           return (
-            <Link key={item.path} to={item.path} className={`flex flex-col items-center p-2 flex-1 ${active ? 'text-blue-600' : 'text-gray-600'}`}>
-              <div className={`${active ? 'text-blue-600' : 'text-gray-500'} mb-1`}>{React.cloneElement(item.icon, { size: 20 })}</div>
+            <Link key={item.path} to={item.path} className={`flex flex-col items-center p-2 flex-1 ${active ? 'text-yellow-600' : 'text-gray-600'}`}>
+              <div className={`${active ? 'text-yellow-600' : 'text-gray-500'} mb-1`}>{React.cloneElement(item.icon, { size: 20 })}</div>
               <span className="text-xs font-medium">{item.label}</span>
-              {active && <div className="absolute -top-1 w-12 h-1 bg-blue-600 rounded-t-lg"></div>}
+              {active && <div className="absolute -top-1 w-12 h-1 bg-yellow-600 rounded-t-lg"></div>}
             </Link>
           );
         })}

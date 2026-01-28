@@ -177,7 +177,7 @@ export default function BlogDetailPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-gradient-to-r from-green-600 to-blue-600 py-8 px-4"
+        className="bg-gradient-to-r from-green-600 to-yellow-600 py-8 px-4"
       >
         <div className="max-w-4xl mx-auto">
           <button
@@ -199,7 +199,7 @@ export default function BlogDetailPage() {
         >
           {/* Featured Image */}
           {blog.image && (
-            <div className="w-full h-96 overflow-hidden bg-gradient-to-br from-green-400 to-blue-500">
+            <div className="w-full h-96 overflow-hidden bg-gradient-to-br from-green-400 to-yellow-500">
               <img
                 src={blog.image}
                 alt={blog.title}
@@ -283,7 +283,7 @@ export default function BlogDetailPage() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleShare}
-                    className="flex flex-col items-center gap-2 w-full p-4 bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-xl transition-all"
+                    className="flex flex-col items-center gap-2 w-full p-4 bg-gray-50 hover:bg-yellow-50 text-gray-600 hover:text-yellow-600 rounded-xl transition-all"
                   >
                     <Share2 className="w-6 h-6" />
                     <span className="font-semibold">{sharesCount}</span>
@@ -307,7 +307,7 @@ export default function BlogDetailPage() {
         >
           <button
             onClick={() => navigate('/blog')}
-            className="px-8 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
+            className="px-8 py-3 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
           >
             Back to All Articles
           </button>

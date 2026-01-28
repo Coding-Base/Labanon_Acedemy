@@ -108,10 +108,10 @@ export default function ProgressPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-yellow-700 text-sm font-medium">Total Attempts</p>
-                  <p className="text-3xl font-bold text-blue-700 mt-2">{attempts.length}</p>
+                  <p className="text-3xl font-bold text-yellow-700 mt-2">{attempts.length}</p>
                 </div>
-                <div className="bg-blue-200 p-3 rounded-lg">
-                  <BookOpen className="w-6 h-6 text-blue-700" />
+                <div className="bg-yellow-200 p-3 rounded-lg">
+                  <BookOpen className="w-6 h-6 text-yellow-700" />
                 </div>
               </div>
             </div>
@@ -213,7 +213,7 @@ export default function ProgressPage() {
                   <button
                     key={attempt.id}
                     onClick={() => navigate(`/performance/${attempt.id}`)}
-                    className="w-full bg-gray-50 rounded-lg shadow hover:shadow-md transition p-6 text-left border border-gray-200 hover:border-blue-300"
+                    className="w-full bg-gray-50 rounded-lg shadow hover:shadow-md transition p-6 text-left border border-gray-200 hover:border-yellow-300"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                       {/* Score Badge */}
@@ -242,7 +242,7 @@ export default function ProgressPage() {
                           </div>
                           <div>
                             <p className="text-gray-500 text-xs font-medium">TIME</p>
-                            <p className="font-bold text-blue-700 text-lg">{formatTime(attempt.time_taken_seconds)}</p>
+                            <p className="font-bold text-yellow-700 text-lg">{formatTime(attempt.time_taken_seconds)}</p>
                           </div>
                           <div>
                             <p className="text-gray-500 text-xs font-medium">DATE</p>

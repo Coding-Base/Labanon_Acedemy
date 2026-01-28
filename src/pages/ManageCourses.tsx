@@ -95,7 +95,7 @@ export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMe
                         {c.published ? 'Published' : 'Draft'}
                     </span>
                     {c.meeting_link && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Scheduled</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Scheduled</span>
                     )}
                 </div>
               </div>

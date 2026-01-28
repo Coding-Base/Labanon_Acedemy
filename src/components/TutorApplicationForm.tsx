@@ -87,7 +87,7 @@ export default function TutorApplicationForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-yellow-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -117,7 +117,7 @@ export default function TutorApplicationForm() {
           className="bg-white rounded-2xl shadow-xl overflow-hidden"
         >
           {/* Progress Bar / Decorative Header */}
-          <div className="h-2 bg-gradient-to-r from-yellow-500 via-blue-500 to-yellow-600" />
+          <div className="h-2 bg-gradient-to-r from-yellow-500 via-yellow-500 to-yellow-600" />
           
           <form onSubmit={handleSubmit} className="p-8 md:p-12">
             {error && (
@@ -278,7 +278,7 @@ export default function TutorApplicationForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full md:w-auto md:min-w-[200px] float-right px-8 py-4 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-yellow-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full md:w-auto md:min-w-[200px] float-right px-8 py-4 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-yellow-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {loading ? (
                   <>

@@ -145,11 +145,11 @@ export default function PaymentVerify() {
   }, [searchParams, navigate, location])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
         {status === 'loading' && (
           <>
-            <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <Loader2 className="w-12 h-12 animate-spin text-yellow-600 mx-auto mb-4" />
             <p className="text-lg text-gray-800">{message}</p>
           </>
         )}

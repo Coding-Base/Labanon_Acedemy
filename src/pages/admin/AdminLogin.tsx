@@ -23,7 +23,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-yellow-50 p-6">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-8">
           <img src={labanonLogo} alt="Lebanon Academy" className="w-12 h-12 object-contain" />
@@ -43,7 +43,7 @@ export default function AdminLogin() {
               required
               value={username} 
               onChange={e => setUsername(e.target.value)} 
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200" 
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-200" 
               placeholder="Enter admin username"
             />
           </label>
@@ -55,13 +55,13 @@ export default function AdminLogin() {
               required
               value={password} 
               onChange={e => setPassword(e.target.value)} 
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200" 
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-200" 
               placeholder="Enter password"
             />
           </label>
           <button 
             type="submit"
-            className="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:shadow-lg font-semibold transition"
+            className="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-lg hover:shadow-lg font-semibold transition"
           >
             Sign In
           </button>

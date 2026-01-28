@@ -40,12 +40,12 @@ export const generateReceipt = async (data: ReceiptData): Promise<Blob> => {
   const width = doc.internal.pageSize.getWidth()
   const height = doc.internal.pageSize.getHeight()
 
-  // Colors: gold and prussian blue
+  // Colors: gold and prussian yellow
   const gold = [232, 193, 42] // #E8C12A
-  const blue = [9, 54, 98] // #093662
+  const yellow = [9, 54, 98] // #093662
 
   // Header background
-  doc.setFillColor(...blue)
+  doc.setFillColor(...yellow)
   doc.rect(0, 0, width, 36, 'F')
 
   // Platform logo (left) and title (center)
@@ -106,11 +106,11 @@ export const generateReceipt = async (data: ReceiptData): Promise<Blob> => {
   // Draw a subtle box with details on the right
   const boxX = width - 100
   const boxW = 80
-  doc.setDrawColor(...blue)
+  doc.setDrawColor(...yellow)
   doc.setFillColor(245, 247, 250)
   doc.roundedRect(boxX, 48, boxW, 34, 3, 3, 'F')
   doc.setFontSize(10)
-  doc.setTextColor(...blue)
+  doc.setTextColor(...yellow)
   doc.text('Paid To', boxX + 6, 54)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(0, 0, 0)

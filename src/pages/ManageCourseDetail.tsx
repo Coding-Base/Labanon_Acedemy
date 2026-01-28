@@ -135,7 +135,7 @@ export default function ManageCourseDetail({ uploadCourseImageHandler, uploadLes
         <label className="block mt-2">Price</label>
         <input className="border p-2" value={price} onChange={(e) => setPrice(e.target.value)} />
         <div className="mt-3">
-          <button className="px-3 py-1 bg-blue-600 text-white rounded" onClick={handleSaveCourse}>Save</button>
+          <button className="px-3 py-1 bg-yellow-600 text-white rounded" onClick={handleSaveCourse}>Save</button>
         </div>
       </div>
 
@@ -156,12 +156,12 @@ export default function ManageCourseDetail({ uploadCourseImageHandler, uploadLes
                 <textarea className="border p-2 w-full mb-2" placeholder="Lesson content" value={newLessonContent} onChange={(e) => setNewLessonContent(e.target.value)} />
                 <input type="file" onChange={(e) => setNewLessonFile(e.target.files ? e.target.files[0] : null)} />
                         <div className="mt-2">
-                          <button className="px-3 py-1 bg-blue-600 text-white rounded" onClick={() => handleCreateLesson(m.id)}>Add Lesson</button>
+                          <button className="px-3 py-1 bg-yellow-600 text-white rounded" onClick={() => handleCreateLesson(m.id)}>Add Lesson</button>
                         </div>
                         {uploadProgress !== null && (
                           <div className="mt-2">
                             <div className="text-sm text-gray-600">Uploading: {uploadProgress}%</div>
-                            <div className="w-full bg-gray-200 h-2 rounded mt-1"><div className="bg-blue-600 h-2 rounded" style={{ width: `${uploadProgress}%` }} /></div>
+                            <div className="w-full bg-gray-200 h-2 rounded mt-1"><div className="bg-yellow-600 h-2 rounded" style={{ width: `${uploadProgress}%` }} /></div>
                           </div>
                         )}
                         {previewUrl && (

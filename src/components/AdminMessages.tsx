@@ -152,7 +152,7 @@ export default function AdminMessages() {
 
   const messageTypeColor = (type: string) => {
     switch (type) {
-      case 'contact': return 'bg-blue-100 text-blue-800';
+      case 'contact': return 'bg-yellow-100 text-yellow-800';
       case 'support': return 'bg-red-100 text-red-800';
       case 'report': return 'bg-yellow-100 text-yellow-800';
       case 'feedback': return 'bg-yellow-100 text-green-800';
@@ -318,7 +318,7 @@ export default function AdminMessages() {
                     </span>
                   )}
                   {selectedMessage.is_replied && (
-                    <span className="text-xs flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                    <span className="text-xs flex items-center gap-1 text-yellow-700 bg-yellow-50 px-2 py-1 rounded">
                       <Reply className="w-3 h-3" /> Replied
                     </span>
                   )}

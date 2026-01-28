@@ -291,7 +291,7 @@ export default function ExamInterface({
                           {question.choices.map((choice) => (
                             <label
                               key={choice.id}
-                              className="flex items-start p-2 sm:p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition"
+                              className="flex items-start p-2 sm:p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 transition"
                             >
                               <input
                                 type="radio"

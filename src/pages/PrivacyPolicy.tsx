@@ -108,7 +108,7 @@ const PolicySection: React.FC<{ section: Section; index: number; isOpen: boolean
   const Icon = section.icon
   return (
     <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-lg overflow-hidden">
-      <button onClick={() => toggle(index)} aria-expanded={isOpen} className="w-full p-6 bg-gradient-to-r from-yellow-600 to-blue-600 text-white flex items-center justify-between">
+      <button onClick={() => toggle(index)} aria-expanded={isOpen} className="w-full p-6 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Icon className="w-8 h-8" />
           <h2 className="text-xl font-semibold">{section.title}</h2>
@@ -164,14 +164,14 @@ const PrivacyPolicy: React.FC = () => {
       </header>
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-600 via-blue-600 to-blue-600 text-white py-16 px-4">
+      <div className="bg-gradient-to-r from-yellow-600 via-yellow-600 to-yellow-600 text-white py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="flex items-center gap-3 mb-4">
               <Shield className="w-10 h-10" />
               <h1 className="text-4xl md:text-5xl font-bold">Privacy Policy</h1>
             </div>
-            <p className="text-lg text-blue-100 max-w-2xl">LightHub Academy is committed to protecting your privacy and ensuring transparency about how we handle your data.</p>
+            <p className="text-lg text-yellow-100 max-w-2xl">LightHub Academy is committed to protecting your privacy and ensuring transparency about how we handle your data.</p>
           </motion.div>
         </div>
       </div>
@@ -186,7 +186,7 @@ const PrivacyPolicy: React.FC = () => {
 
         {/* Critical Warning */}
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-12">
-          <div className="bg-gradient-to-r from-yellow-600 to-blue-600 rounded-xl p-1">
+          <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 rounded-xl p-1">
             <div className="bg-white rounded-lg p-8">
               <div className="flex items-start gap-4 mb-6">
                 <AlertTriangle className="w-8 h-8 text-yellow-700 flex-shrink-0 mt-1" />
@@ -215,13 +215,13 @@ const PrivacyPolicy: React.FC = () => {
         </motion.section>
 
         {/* Policy Acknowledgment */}
-        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="bg-gradient-to-r from-yellow-600 to-blue-600 rounded-xl p-8 text-white mb-8">
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="bg-gradient-to-r from-yellow-600 to-yellow-600 rounded-xl p-8 text-white mb-8">
           <div className="flex items-start gap-4">
             <Lock className="w-8 h-8 flex-shrink-0 mt-1" />
             <div>
               <h3 className="text-2xl font-bold mb-4">Policy Acknowledgment</h3>
               <p className="mb-4 leading-relaxed">By using LightHub Academy, you acknowledge that you have read and understood this Privacy Policy. You agree to comply with all terms and conditions, including the strict prohibition of off-platform transactions. By continuing to use our platform, you consent to our data collection and usage practices.</p>
-              <p className="text-blue-100">Last Updated: {formattedDate}</p>
+              <p className="text-yellow-100">Last Updated: {formattedDate}</p>
             </div>
           </div>
         </motion.section>
@@ -233,7 +233,7 @@ const PrivacyPolicy: React.FC = () => {
             <h3 className="text-2xl font-bold text-slate-900">Privacy Concerns?</h3>
           </div>
           <p className="text-slate-600 mb-6">If you have questions or concerns about our privacy practices, contact our privacy team.</p>
-          <Link to="/contact" aria-label="Report privacy issue" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+          <Link to="/contact" aria-label="Report privacy issue" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
             Report Privacy Issue
           </Link>
         </motion.section>

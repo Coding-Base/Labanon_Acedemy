@@ -68,7 +68,7 @@ export default function Register() {
       label: 'Student', 
       icon: <GraduationCap className="w-6 h-6" />,
       description: 'Access courses, take exams, track progress',
-      color: 'from-yellow-500 to-blue-400',
+      color: 'from-yellow-500 to-yellow-400',
       features: ['Access to all courses', 'Progress tracking', 'Certificate earning',' Practice real CBT  past questions Jamb, Waec, Neco']
     },
     { 
@@ -84,7 +84,7 @@ export default function Register() {
       label: 'Institution/School', 
       icon: <Building className="w-6 h-6" />,
       description: 'Manage students, create courses, track performance',
-      color: 'from-yellow-500 to-blue-400',
+      color: 'from-yellow-500 to-yellow-400',
       features: ['Portfolio management' ,'Custom courses Sales', 'Performance analytics', 'Institution portal']
     },
     { 
@@ -173,7 +173,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-yellow-50 flex items-center justify-center p-4">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -200,7 +200,7 @@ export default function Register() {
               </Link>
               
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Join <span className="bg-gradient-to-r from-yellow-600 to-blue-600 bg-clip-text text-transparent">LightHub Academy</span>
+                Join <span className="bg-gradient-to-r from-yellow-600 to-yellow-600 bg-clip-text text-transparent">LightHub Academy</span>
               </h2>
               <p className="text-gray-600">Start your learning journey today</p>
             </div>
@@ -212,14 +212,14 @@ export default function Register() {
                   <React.Fragment key={stepNumber}>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
                       step >= stepNumber 
-                        ? 'bg-gradient-to-r from-yellow-600 to-blue-600 text-white' 
+                        ? 'bg-gradient-to-r from-yellow-600 to-yellow-600 text-white' 
                         : 'bg-gray-200 text-gray-500'
                     }`}>
                       {stepNumber}
                     </div>
                     {stepNumber < 2 && (
                       <div className={`w-16 h-1 ${
-                        step > stepNumber ? 'bg-gradient-to-r from-yellow-600 to-blue-600' : 'bg-gray-200'
+                        step > stepNumber ? 'bg-gradient-to-r from-yellow-600 to-yellow-600' : 'bg-gray-200'
                       }`} />
                     )}
                   </React.Fragment>
@@ -247,7 +247,7 @@ export default function Register() {
                       onClick={() => setRole(roleOption.id)}
                       className={`cursor-pointer rounded-2xl border-2 p-4 transition-all duration-300 ${
                         role === roleOption.id
-                          ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-blue-50'
+                          ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-yellow-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -270,7 +270,7 @@ export default function Register() {
                           </ul>
                         </div>
                         {role === roleOption.id && (
-                          <div className="w-6 h-6 bg-gradient-to-r from-yellow-600 to-blue-600 rounded-full flex items-center justify-center">
+                          <div className="w-6 h-6 bg-gradient-to-r from-yellow-600 to-yellow-600 rounded-full flex items-center justify-center">
                             <CheckCircle className="w-4 h-4 text-white" />
                           </div>
                         )}
@@ -283,7 +283,7 @@ export default function Register() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setStep(2)}
-                  className="w-full py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                  className="w-full py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
                 >
                   Continue
                   <ChevronRight className="w-5 h-5 inline ml-2" />
@@ -312,7 +312,7 @@ export default function Register() {
 
                 {/* Selected Role Display */}
                 <div className="flex items-center justify-center mb-6">
-                  <div className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full">
+                  <div className="inline-flex items-center space-x-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-full">
                     {roles.find(r => r.id === role)?.icon}
                     <span className="font-medium">{roles.find(r => r.id === role)?.label}</span>
                   </div>
@@ -341,7 +341,7 @@ export default function Register() {
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         placeholder="First name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
                         required
                       />
                       {fieldErrors.first_name && (
@@ -357,7 +357,7 @@ export default function Register() {
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="Last name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
                         required
                       />
                       {fieldErrors.last_name && (
@@ -376,7 +376,7 @@ export default function Register() {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="Choose a username"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
                       required
                     />
                     {fieldErrors.username && (
@@ -394,7 +394,7 @@ export default function Register() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
                       required
                     />
                     {fieldErrors.email && (
@@ -413,7 +413,7 @@ export default function Register() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Create a strong password"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
                         required
                       />
                       <button
@@ -453,7 +453,7 @@ export default function Register() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirm your password"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
                         required
                       />
                       <button
@@ -480,11 +480,11 @@ export default function Register() {
                   />
                   <label htmlFor="terms" className="text-sm text-gray-600">
                     I agree to the{' '}
-                    <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
+                    <a href="#" className="text-yellow-600 hover:text-yellow-700 font-medium">
                       Terms of Service
                     </a>{' '}
                     and{' '}
-                    <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
+                    <a href="#" className="text-yellow-600 hover:text-yellow-700 font-medium">
                       Privacy Policy
                     </a>
                   </label>
@@ -499,7 +499,7 @@ export default function Register() {
                   className={`w-full py-3 rounded-xl font-semibold transition-all ${
                     isLoading || !isFormValid()
                       ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-yellow-600 to-blue-600 text-white hover:shadow-lg'
+                      : 'bg-gradient-to-r from-yellow-600 to-yellow-600 text-white hover:shadow-lg'
                   }`}
                 >
                   {isLoading ? (
@@ -541,7 +541,7 @@ export default function Register() {
                 whileHover={{ x: 10 }}
                 className="flex items-start space-x-4"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-400 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Award className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -575,7 +575,7 @@ export default function Register() {
                 transition={{ delay: 0.2 }}
                 className="flex items-start space-x-4"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-400 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Globe className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -608,7 +608,7 @@ export default function Register() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="mt-12 bg-gradient-to-br from-yellow-600 to-blue-600 rounded-2xl p-8 text-white"
+                className="mt-12 bg-gradient-to-br from-yellow-600 to-yellow-600 rounded-2xl p-8 text-white"
               >
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
@@ -616,7 +616,7 @@ export default function Register() {
                   </div>
                   <div>
                     <h4 className="text-xl font-bold">Dr. Sarah Johnson</h4>
-                    <p className="text-blue-200">Education Director</p>
+                    <p className="text-yellow-200">Education Director</p>
                   </div>
                 </div>
                 <p className="italic text-lg">

@@ -226,7 +226,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
         className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-green-50 to-blue-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="sticky top-0 bg-gradient-to-r from-green-50 to-yellow-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">Sub-Admin Management</h2>
           <button
             onClick={onClose}
@@ -284,9 +284,9 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
             /* Create Form */
             <form onSubmit={handleSubmit} className="space-y-6">
               {editingId && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-blue-700 text-sm">You are updating permissions for an existing sub-admin. Username and email cannot be changed.</p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-yellow-700 text-sm">You are updating permissions for an existing sub-admin. Username and email cannot be changed.</p>
                 </div>
               )}
 
@@ -390,7 +390,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-lg hover:from-green-700 hover:to-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-yellow-600 text-white font-semibold rounded-lg hover:from-green-700 hover:to-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingId ? 'Update Permissions' : 'Create Sub-Admin'}
@@ -468,7 +468,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => handleEdit(subadmin)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
                             title="Edit sub-admin"
                           >
                             <UserCog className="w-4 h-4" />

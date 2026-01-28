@@ -103,7 +103,7 @@ export default function Profile() {
           )}
         </label>
         <div className="pt-2">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={save}>Save</button>
+          <button className="px-4 py-2 bg-yellow-600 text-white rounded" onClick={save}>Save</button>
         </div>
       </div>
     </div>

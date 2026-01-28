@@ -102,7 +102,7 @@ export default function CommentForm({
           whileTap={{ scale: 0.95 }}
           type="submit"
           disabled={loading || !content.trim()}
-          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>

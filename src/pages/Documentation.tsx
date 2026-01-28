@@ -36,9 +36,9 @@ const colorMap: Record<
   { gradient: string; borderColor: string }
 > = {
   // kept yellow mapping in case you want it later, but we will use green for tutor now
-  green: { gradient: 'from-yellow-500 to-blue-500', borderColor: 'border-yellow-500' },
+  green: { gradient: 'from-yellow-500 to-yellow-500', borderColor: 'border-yellow-500' },
   yellow: { gradient: 'from-yellow--500 to-pink-500', borderColor: 'border-pink-500' },
-  emerald: { gradient: 'from-yellow-500 to-blue-600', borderColor: 'border-yellow-500' }
+  emerald: { gradient: 'from-yellow-500 to-yellow-600', borderColor: 'border-yellow-500' }
 }
 
 const Documentation: React.FC = () => {
@@ -116,14 +116,14 @@ const Documentation: React.FC = () => {
       </header>
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-600 to-blue-600 text-white py-16 px-4">
+      <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 text-white py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="flex items-center gap-3 mb-4">
               <BookOpen className="w-10 h-10" />
               <h1 className="text-4xl md:text-5xl font-bold">Documentation</h1>
             </div>
-            <p className="text-lg text-blue-100 max-w-2xl">Complete setup guides and instructions for students, tutors, and institutions to get started on LightHub Academy.</p>
+            <p className="text-lg text-yellow-100 max-w-2xl">Complete setup guides and instructions for students, tutors, and institutions to get started on LightHub Academy.</p>
           </motion.div>
         </div>
       </div>
@@ -179,7 +179,7 @@ const Documentation: React.FC = () => {
         </motion.div>
 
         {/* Key Features */}
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mt-16 bg-gradient-to-r from-yellow-600 to-blue-600 rounded-xl p-8 text-white">
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mt-16 bg-gradient-to-r from-yellow-600 to-yellow-600 rounded-xl p-8 text-white">
           <h3 className="text-2xl font-bold mb-6">Platform Features</h3>
           <div className="grid md:grid-cols-2 gap-4">
             {[
@@ -205,7 +205,7 @@ const Documentation: React.FC = () => {
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }} className="mt-12 bg-white rounded-xl p-8 border-2 border-slate-200 text-center">
           <h3 className="text-2xl font-bold mb-4 text-slate-900">Need Help?</h3>
           <p className="text-slate-600 mb-6">Can't find what you're looking for? Our support team is here to help.</p>
-          <Link to="/contact" aria-label="Contact support" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+          <Link to="/contact" aria-label="Contact support" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
             Contact Support <ArrowRight className="w-4 h-4" />
           </Link>
         </motion.section>

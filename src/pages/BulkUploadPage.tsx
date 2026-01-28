@@ -135,7 +135,7 @@ export default function BulkUploadPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Upload className="w-8 h-8 text-blue-600" />
+            <Upload className="w-8 h-8 text-yellow-600" />
             Bulk Upload Questions
           </h1>
           <p className="text-gray-600 mt-2">Upload questions in JSON format for exams and subjects</p>
@@ -181,7 +181,7 @@ export default function BulkUploadPage() {
                     setParseError(null)
                   }}
                   placeholder='{"exam_id": "JAMB_CHEM_2014", "year": 2014, "questions": [{"question_text": "...", "year": "2014", ...}]}'
-                  className="w-full h-64 px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-64 px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 />
               </div>
 
@@ -208,7 +208,7 @@ export default function BulkUploadPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={!jsonInput || loading || !!parseError}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                  className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                 >
                   {loading ? 'Uploading...' : 'Upload'}
                 </button>
@@ -222,9 +222,9 @@ export default function BulkUploadPage() {
                 <p className="text-xs text-yellow-800 mt-1">Include a <strong>"year"</strong> field in EACH question object to display the question year when students take exams. Example: <code className="bg-yellow-100 px-1 rounded">"year": "2014"</code></p>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="font-semibold text-blue-900 mb-2">JSON Format Example:</p>
-                <pre className="text-xs text-blue-800 overflow-x-auto">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="font-semibold text-yellow-900 mb-2">JSON Format Example:</p>
+                <pre className="text-xs text-yellow-800 overflow-x-auto">
 {`{
   "exam_id": "JAMB_CHEM_2014",
   "year": 2014,
@@ -246,7 +246,7 @@ export default function BulkUploadPage() {
   ]
 }`}
                 </pre>
-                <p className="text-xs text-blue-700 mt-2 font-semibold">✓ IMPORTANT: Include "year" field in each question (e.g., "year": "2014")</p>
+                <p className="text-xs text-yellow-700 mt-2 font-semibold">✓ IMPORTANT: Include "year" field in each question (e.g., "year": "2014")</p>
               </div>
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

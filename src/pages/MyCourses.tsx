@@ -106,7 +106,7 @@ export default function MyCourses() {
           <p className="text-gray-600 text-sm">Continue your learning journey with your enrolled courses</p>
         </div>
         <button 
-          className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 text-sm"
+          className="px-5 py-2.5 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors duration-200 flex items-center gap-2 text-sm"
           onClick={() => navigate('/marketplace')}
         >
           <BookOpen size={18} />
@@ -129,15 +129,15 @@ export default function MyCourses() {
         {/* Empty State */}
         {enrollments.length === 0 && (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <div className="w-20 h-20 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-              <BookOpen size={32} className="text-blue-600" />
+            <div className="w-20 h-20 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
+              <BookOpen size={32} className="text-yellow-600" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses yet</h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
               You haven't enrolled in any courses yet. Start your learning journey by exploring our marketplace.
             </p>
             <button 
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200"
+              className="px-6 py-2.5 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors duration-200"
               onClick={() => navigate('/marketplace')}
             >
               Browse Courses
@@ -205,7 +205,7 @@ export default function MyCourses() {
                   <div className="p-5">
                     {/* Category Badge - Dynamic based on type */}
                     <div className="mb-2">
-                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${isScheduled ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>
+                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${isScheduled ? 'bg-yellow-100 text-yellow-700' : 'bg-yellow-100 text-yellow-700'}`}>
                         {isScheduled ? 'Scheduled Session' : (course?.category || 'Professional')}
                       </span>
                     </div>
@@ -247,10 +247,10 @@ export default function MyCourses() {
                         <span className="text-gray-500 text-sm ml-2 line-through">₦{((course?.price || 0) * 1.5).toFixed(0)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-blue-600">
+                        <span className="text-sm font-medium text-yellow-600">
                             {isScheduled ? 'View Schedule' : 'Continue'}
                         </span>
-                        {isScheduled ? <Video size={18} className="text-blue-600"/> : <PlayCircle size={18} className="text-blue-600" />}
+                        {isScheduled ? <Video size={18} className="text-yellow-600"/> : <PlayCircle size={18} className="text-yellow-600" />}
                       </div>
                     </div>
                   </div>
@@ -294,7 +294,7 @@ export default function MyCourses() {
                 return (
                   <button
                     key={pageNum}
-                    className={`w-9 h-9 rounded-lg font-medium text-sm transition-colors ${page === pageNum ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
+                    className={`w-9 h-9 rounded-lg font-medium text-sm transition-colors ${page === pageNum ? 'bg-yellow-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
                     onClick={() => setPage(pageNum)}
                   >
                     {pageNum}

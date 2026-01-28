@@ -73,14 +73,14 @@ export default function CBTPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <FileText className="w-6 h-6 text-blue-600" />
+            <FileText className="w-6 h-6 text-yellow-600" />
             CBT & Exams
           </h2>
           <p className="text-gray-600 mt-1">Take practice exams and track your progress</p>
         </div>
         <button
           onClick={() => setShowCBTFlow(true)}
-          className="px-6 py-2 bg-gradient-to-r from-blue-600 to-yellow--600 text-white rounded-lg hover:shadow-lg font-semibold transition"
+          className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow--600 text-white rounded-lg hover:shadow-lg font-semibold transition"
         >
           Take CBT Test
         </button>
@@ -89,17 +89,17 @@ export default function CBTPage() {
       {/* Exams List */}
       {loading ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
           <p className="mt-4 text-gray-600">Loading your exams...</p>
         </div>
       ) : attempts.length === 0 ? (
-        <div className="bg-gradient-to-br from-blue-50 to-yellow--50 rounded-lg p-12 text-center">
+        <div className="bg-gradient-to-br from-yellow-50 to-yellow--50 rounded-lg p-12 text-center">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No Exams Taken Yet</h3>
           <p className="text-gray-600 mb-6">Start your first CBT exam to see your results here</p>
           <button
             onClick={() => setShowCBTFlow(true)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+            className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-semibold"
           >
             Take Your First Exam
           </button>

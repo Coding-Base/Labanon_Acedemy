@@ -230,7 +230,7 @@ export default function Cart() {
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded">
                           {item.course ? 'Course' : item.diploma ? 'Diploma' : 'Item'}
                         </span>
                       </div>

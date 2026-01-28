@@ -741,10 +741,10 @@ export default function CoursePlayer(): JSX.Element {
           <main className="lg:col-span-3">
             {/* Enrollment Banner */}
             {checkingEnroll ? (
-              <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="mb-6 p-4 bg-yellow-50 rounded-xl border border-yellow-100">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-                  <span className="ml-3 text-blue-700">Checking access permissions...</span>
+                  <div className="w-8 h-8 border-4 border-yellow-200 border-t-yellow-600 rounded-full animate-spin" />
+                  <span className="ml-3 text-yellow-700">Checking access permissions...</span>
                 </div>
               </div>
             ) : !enrolled ? (

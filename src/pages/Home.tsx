@@ -487,7 +487,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <section ref={heroSectionRef} className="relative pt-24 pb-16 md:pt-40 md:pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-transparent to-blue-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-transparent to-yellow-500/5" />
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Hero Content - Updated for Mobile Centering */}
@@ -500,7 +500,7 @@ export default function Home() {
               <motion.div variants={fadeInLeft}>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
                   <span className="block text-gray-900">Master Skills,</span>
-                  <span className="block bg-gradient-to-r from-yellow-600 to-blue-600 bg-clip-text text-transparent">Ace Exams</span>
+                  <span className="block bg-gradient-to-r from-yellow-600 to-yellow-600 bg-clip-text text-transparent">Ace Exams</span>
                 </h1>
               </motion.div>
               <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto md:mx-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
@@ -527,7 +527,7 @@ export default function Home() {
             {/* Hero Image - Updated margin top for mobile spacing; placed before text on small screens */}
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: "easeOut" }} className="relative mt-8 md:mt-0 order-1 lg:order-2">
               <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-blue-600/20 backdrop-blur-sm " />
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-yellow-600/20 backdrop-blur-sm " />
                 <div className="relative w-full h-full hero-image-container">
                   {/* Slider: animated, fullscreen-cover images with caption, dots, and controls */}
                   <div
@@ -627,12 +627,12 @@ export default function Home() {
               transition={{ duration: 0.8 }}
               className="flex-1 space-y-6"
             >
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-bold uppercase tracking-wider">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-yellow-50 text-yellow-600 rounded-full text-sm font-bold uppercase tracking-wider">
                 <Sparkles className="w-4 h-4" />
                 <span>Exam Success Guaranteed</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-                Prepare for <span className="text-red-600">JAMB & WAEC</span> <br/>
+                Prepare for <span className="text-yellow-600">JAMB & WAEC</span> <br/>
                 the Smart Way
               </h2>
               <p className="text-lg text-gray-600">
@@ -649,8 +649,8 @@ export default function Home() {
                   'Improve Speed & Accuracy'
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
-                      <CheckCircle className="w-4 h-4 text-red-600" />
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-yellow-600" />
                     </div>
                     <span className="text-gray-700 font-medium">{item}</span>
                   </div>
@@ -660,7 +660,7 @@ export default function Home() {
               <div className="pt-4">
                 <Link 
                   to="/register" 
-                  className="inline-flex items-center px-8 py-4 bg-red-600 text-white rounded-xl font-bold text-lg hover:bg-red-700 hover:shadow-lg hover:shadow-red-500/30 transition-all transform hover:-translate-y-1"
+                  className="inline-flex items-center px-8 py-4 bg-yellow-600 text-white rounded-xl font-bold text-lg hover:bg-yellow-700 hover:shadow-lg hover:shadow-yellow-500/30 transition-all transform hover:-translate-y-1"
                 >
                   Start Practicing Now
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -688,8 +688,8 @@ export default function Home() {
               </div>
               
               {/* Decor elements */}
-              <div className="absolute -z-10 -bottom-10 -right-10 w-64 h-64 bg-red-100 rounded-full blur-3xl opacity-50" />
-              <div className="absolute -z-10 -top-10 -left-10 w-64 h-64 bg-blue-100 rounded-full blur-3xl opacity-50" />
+              <div className="absolute -z-10 -bottom-10 -right-10 w-64 h-64 bg-yellow-100 rounded-full blur-3xl opacity-50" />
+              <div className="absolute -z-10 -top-10 -left-10 w-64 h-64 bg-yellow-100 rounded-full blur-3xl opacity-50" />
             </motion.div>
           </div>
         </div>
@@ -751,12 +751,12 @@ export default function Home() {
                 ))}
               </ul>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Link to="/tutor-application" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-yellow-600/30 transition-all">Request a Tutor Now <ArrowRight className="ml-2 w-5 h-5" /></Link>
+                <Link to="/tutor-application" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-yellow-600/30 transition-all">Request a Tutor Now <ArrowRight className="ml-2 w-5 h-5" /></Link>
               </motion.div>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-tr from-yellow-500/20 to-blue-500/20 rounded-full blur-3xl" />
+              <div className="absolute -inset-4 bg-gradient-to-tr from-yellow-500/20 to-yellow-500/20 rounded-full blur-3xl" />
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
                 <img src={IMAGES.tutor} alt="Professional Tutor teaching online" className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700" />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
@@ -818,7 +818,7 @@ export default function Home() {
                 <a href="https://youtube.com/@lebanonacademy?si=S1NjHg2K7TMPpj5Z" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-500 transition-colors" aria-label="Follow us on YouTube">
                   <Youtube className="w-6 h-6" />
                 </a>
-                <a href="https://www.facebook.com/profile.php?id=61587344120717" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-500 transition-colors" aria-label="Follow us on Facebook">
+                <a href="https://www.facebook.com/profile.php?id=61587344120717" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-yellow-500 transition-colors" aria-label="Follow us on Facebook">
                   <Facebook className="w-6 h-6" />
                 </a>
               </div>

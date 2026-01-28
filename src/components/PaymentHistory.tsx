@@ -143,12 +143,12 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {userRole === 'student' && (
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl p-6 border border-yellow-200">
             <div className="flex items-center gap-3 mb-2">
-              <DollarSign className="w-6 h-6 text-blue-600" />
-              <p className="text-sm text-blue-700 font-medium">Total Spent</p>
+              <DollarSign className="w-6 h-6 text-yellow-600" />
+              <p className="text-sm text-yellow-700 font-medium">Total Spent</p>
             </div>
-            <p className="text-3xl font-bold text-blue-900">₦{totalSpent.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-yellow-900">₦{totalSpent.toLocaleString()}</p>
           </div>
         )}
 

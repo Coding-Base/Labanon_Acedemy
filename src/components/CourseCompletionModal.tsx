@@ -155,7 +155,7 @@ export default function CourseCompletionModal({
         </button>
 
         <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+          <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
             <CheckCircle className="w-12 h-12 text-white" />
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function CourseCompletionModal({
           <button
             onClick={handleDownloadCertificate}
             disabled={isGenerating}
-            className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
             {isGenerating ? 'Generating...' : 'Download Certificate'}

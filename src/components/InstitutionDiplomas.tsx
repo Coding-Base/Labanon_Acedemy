@@ -315,7 +315,7 @@ export default function InstitutionDiplomas() {
               setSelectedFile(null)
             }
           }}
-          className="px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold flex items-center gap-2"
+          className="px-4 py-2 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-lg font-semibold flex items-center gap-2"
         >
           <Plus className="w-4 h-4" /> New Diploma
         </motion.button>
@@ -529,7 +529,7 @@ export default function InstitutionDiplomas() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+                className="flex-1 py-2 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {submitting ? 'Saving...' : editingId ? 'Update Diploma' : 'Create Diploma'}
@@ -585,7 +585,7 @@ export default function InstitutionDiplomas() {
                   </button>
                   <button
                     onClick={() => handleEdit(diploma)}
-                    className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
+                    className="p-2 hover:bg-yellow-50 rounded-lg text-yellow-600 transition-colors"
                     title="Edit"
                   >
                     <Edit2 className="w-4 h-4" />

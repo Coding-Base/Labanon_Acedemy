@@ -206,7 +206,7 @@ export default function PaymentCheckout({
         </div>
       )}
 
-      <div className="bg-gradient-to-r from-yellow-50 to-blue-50 rounded-lg p-6">
+      <div className="bg-gradient-to-r from-yellow-50 to-yellow-50 rounded-lg p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
             <p className="text-gray-600 text-sm">{itemType === 'activation' ? 'Activate access for:' : 'You\'re about to purchase:'}</p>
@@ -265,7 +265,7 @@ export default function PaymentCheckout({
       <button
         onClick={initiatePayment}
         disabled={loading || processing}
-        className="w-full py-3 bg-gradient-to-r from-yellow-500 to-blue-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 transition-all"
+        className="w-full py-3 bg-gradient-to-r from-yellow-500 to-yellow-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 transition-all"
       >
         {loading || processing ? (
           <>

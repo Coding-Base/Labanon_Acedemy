@@ -214,15 +214,15 @@ export default function InstitutionPayments() {
         </div>
 
         {/* Card 3: Total Revenue (Same as Earnings per your request) */}
-        <div className="bg-white rounded-xl shadow p-6 border-l-4 border-blue-500">
+        <div className="bg-white rounded-xl shadow p-6 border-l-4 border-yellow-500">
           <div className="flex items-start justify-between">
             <div>
               <div className="text-sm text-gray-600 font-medium">Total Revenue</div>
-              <div className="text-3xl font-bold text-blue-600 mt-2">₦{stats.total_earnings.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-yellow-600 mt-2">₦{stats.total_earnings.toLocaleString()}</div>
               <div className="text-xs text-gray-500 mt-2">Available for withdrawal</div>
             </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-yellow-50 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-yellow-600" />
             </div>
           </div>
         </div>

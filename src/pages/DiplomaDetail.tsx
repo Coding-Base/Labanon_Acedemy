@@ -299,7 +299,7 @@ export default function DiplomaDetail() {
             </div>
 
             {/* Enrollment / Checkout */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="bg-gradient-to-r from-green-50 to-yellow-50 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <p className="text-sm text-gray-600">Ready to start this diploma program?</p>
                 <p className="font-bold text-gray-900">₦{diploma.price.toLocaleString()}</p>
@@ -323,7 +323,7 @@ export default function DiplomaDetail() {
                   whileTap={{ scale: 0.95 }}
                   onClick={handleEnroll}
                   disabled={enrolling}
-                  className="px-8 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-60 whitespace-nowrap"
+                  className="px-8 py-3 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-lg font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-60 whitespace-nowrap"
                 >
                   {enrolling ? (
                     <>

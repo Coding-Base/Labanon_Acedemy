@@ -156,7 +156,7 @@ export default function ContactAdminForm({ isOpen, onClose }: ContactAdminFormPr
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full py-2 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             {loading ? 'Sending...' : 'Send Message'}

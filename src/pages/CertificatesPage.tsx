@@ -171,7 +171,7 @@ export default function CertificatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl p-8 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-green-600 to-yellow-600 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-3xl font-bold mb-2">My Certificates</h2>
           <p className="opacity-90">View and download your earned credentials</p>

@@ -58,7 +58,7 @@ export default function Loader() {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-green-50 via-white to-blue-50 flex flex-col items-center justify-center z-[9999] overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-green-50 via-white to-yellow-50 flex flex-col items-center justify-center z-[9999] overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -154,7 +154,7 @@ export default function Loader() {
           transition={{ duration: 0.8, delay: 0.3 }}
           className="mt-16 text-center relative z-20"
         >
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-yellow-600 bg-clip-text text-transparent mb-3">
             Lebanon Academy
           </h1>
           <p className="text-green-700 font-semibold text-lg">Future Ready Learning</p>
@@ -192,7 +192,7 @@ export default function Loader() {
           className="mt-8 w-64 h-1 bg-gray-200 rounded-full overflow-hidden relative z-20"
         >
           <motion.div
-            className="h-full bg-gradient-to-r from-green-600 to-blue-500"
+            className="h-full bg-gradient-to-r from-green-600 to-yellow-500"
             animate={{
               x: ["-100%", "100%"],
             }}

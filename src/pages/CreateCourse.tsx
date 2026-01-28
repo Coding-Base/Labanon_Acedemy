@@ -73,6 +73,7 @@ export default function CreateCourse() {
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<any | null>(null)
   const [errors, setErrors] = useState<Record<string, any>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
@@ -178,6 +179,16 @@ export default function CreateCourse() {
     const t = setTimeout(search, 300)
     return () => { mounted = false; clearTimeout(t) }
   }, [searchQuery])
+
+  // Lock body scroll while guide modal is open
+  useEffect(() => {
+    if (guideOpen) {
+      const prev = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = prev }
+    }
+    return
+  }, [guideOpen])
 
   // Load course for editing
   useEffect(() => {
@@ -502,7 +513,10 @@ export default function CreateCourse() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Create Course</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold">Create Course</h2>
+          <button onClick={() => setGuideOpen(true)} className="px-3 py-1 bg-yellow-600 text-white rounded text-sm">How to use this panel — Watch Guide</button>
+        </div>
         <div className="flex items-center gap-3">
           {courseType === 'normal' && <button onClick={() => setPreviewOpen(true)} className="px-4 py-2 bg-gray-100 rounded">Preview</button>}
           <button onClick={saveDraft} disabled={saving} className="px-4 py-2 bg-yellow-500 text-white rounded">{saving ? 'Saving...' : 'Save Draft'}</button>
@@ -585,11 +599,11 @@ export default function CreateCourse() {
             {courseType === 'scheduled' && (
               <div className="mt-4 space-y-6">
                 {/* Info Box */}
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h3 className="font-semibold text-blue-800 flex items-center gap-2">
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <h3 className="font-semibold text-yellow-800 flex items-center gap-2">
                         <Calendar className="w-5 h-5"/> Scheduled Live Course
                     </h3>
-                    <p className="text-sm text-blue-700 mt-1">
+                    <p className="text-sm text-yellow-700 mt-1">
                         Students who enroll will be directed to a schedule page with a countdown. 
                         The "Join Class" button will only activate at the meeting time.
                     </p>
@@ -711,7 +725,7 @@ export default function CreateCourse() {
                         <div className="text-xs text-gray-500">{(m.lessons || []).length} lessons</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setCurrentModuleIndex(idx)} className="text-sm text-blue-600">Edit</button>
+                        <button onClick={() => setCurrentModuleIndex(idx)} className="text-sm text-yellow-600">Edit</button>
                         <button onClick={() => setPendingDelete({ type: 'module', moduleIdx: idx })} className="text-sm text-red-600">Delete</button>
                       </div>
                     </div>
@@ -793,13 +807,13 @@ export default function CreateCourse() {
                           <div className="font-semibold">{l.title}</div>
                           <div className="text-sm text-gray-600" dangerouslySetInnerHTML={{ __html: String(l.content || '').slice(0, 200) }} />
                           {(l.video || l.video_s3 || l.youtube_url) && (
-                            <div className="mt-2 text-xs text-blue-600 font-medium">
+                            <div className="mt-2 text-xs text-yellow-600 font-medium">
                                 {l.youtube_url ? 'YouTube Video Attached' : l.video_s3 ? 'S3 Video Attached' : 'Video Attached'}
                             </div>
                           )}
                         </div>
                         <div className="flex flex-col gap-2">
-                          <button onClick={() => startEditLesson(currentModuleIndex, li)} className="text-sm text-blue-600">Edit</button>
+                          <button onClick={() => startEditLesson(currentModuleIndex, li)} className="text-sm text-yellow-600">Edit</button>
                           <button onClick={() => setPendingDelete({ type: 'lesson', moduleIdx: currentModuleIndex, lessonIdx: li })} className="text-sm text-red-600">Remove</button>
                         </div>
                       </div>
@@ -844,6 +858,33 @@ export default function CreateCourse() {
         </div>
       )}
 
+      {/* Guide Modal - embedded YouTube video */}
+      {guideOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setGuideOpen(false)} />
+
+          <div className="relative z-10 bg-white rounded-lg w-[95%] md:w-3/4 lg:w-2/3 max-h-[90%] overflow-hidden shadow-xl">
+            <div className="flex items-center justify-between p-3 border-b">
+              <h3 className="text-lg font-semibold">How to use this panel — Guide</h3>
+              <button onClick={() => setGuideOpen(false)} className="px-3 py-1 bg-gray-100 rounded">Close</button>
+            </div>
+            <div className="p-4">
+              <div className="w-full" style={{ position: 'relative', paddingTop: '56.25%' }}>
+                <iframe
+                  src="https://www.youtube.com/embed/9RAz35sJM7Q"
+                  title="Create Course Panel Guide"
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+              <p className="text-sm text-gray-600 mt-3">This short walkthrough shows how tutors and institutions can use the Create Course panel.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {pendingDelete && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
@@ -870,7 +911,7 @@ export default function CreateCourse() {
             <div className="flex items-center justify-center">
               <div className="relative w-16 h-16">
                 <div className="absolute inset-0 border-4 border-gray-200 rounded-full" />
-                <div className="absolute inset-0 border-4 border-blue-600 rounded-full animate-spin border-r-transparent border-t-transparent" />
+                <div className="absolute inset-0 border-4 border-yellow-600 rounded-full animate-spin border-r-transparent border-t-transparent" />
               </div>
             </div>
 
@@ -891,7 +932,7 @@ export default function CreateCourse() {
                     delete videoPollingRefs.current[encodingVideoId]
                   }
                 }}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition"
               >
                 Quiet
               </button>

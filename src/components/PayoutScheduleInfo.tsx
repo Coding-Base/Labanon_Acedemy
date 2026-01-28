@@ -17,7 +17,7 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
       label: 'Payment Verified',
       duration: 'Immediate',
       icon: <CheckCircle className="w-5 h-5" />,
-      color: 'from-yellow-500 to-blue-500',
+      color: 'from-yellow-500 to-yellow-500',
       bgColor: 'bg-yellow-50',
       textColor: 'text-yellow-700',
       borderColor: 'border-yellow-200'
@@ -26,10 +26,10 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
       label: 'Marked for Settlement',
       duration: '0-24 hours',
       icon: <Clock className="w-5 h-5" />,
-      color: 'from-blue-500 to-cyan-500',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-700',
-      borderColor: 'border-blue-200'
+      color: 'from-yellow-500 to-cyan-500',
+      bgColor: 'bg-yellow-50',
+      textColor: 'text-yellow-700',
+      borderColor: 'border-yellow-200'
     },
     {
       label: 'Processing',
@@ -52,10 +52,10 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
   ];
 
   const bannerContent = (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5">
+    <div className="bg-gradient-to-r from-yellow-50 to-indigo-50 rounded-xl border border-yellow-200 p-5">
       <div className="flex items-start gap-4">
-        <div className="p-3 bg-blue-100 rounded-lg flex-shrink-0">
-          <Clock className="w-6 h-6 text-blue-600" />
+        <div className="p-3 bg-yellow-100 rounded-lg flex-shrink-0">
+          <Clock className="w-6 h-6 text-yellow-600" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-gray-900 text-sm">Payout Settlement Timeline</h3>
@@ -70,7 +70,7 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
               <span className="text-gray-600">Payment verified and confirmed</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-blue-600 font-bold min-w-fit mt-0.5">2. 0-24h:</span>
+              <span className="text-yellow-600 font-bold min-w-fit mt-0.5">2. 0-24h:</span>
               <span className="text-gray-600">Payment marked for settlement</span>
             </li>
             <li className="flex items-start gap-2">
@@ -90,7 +90,7 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
   const cardContent = (
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
       <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
-        <Clock className="w-5 h-5 text-blue-600" />
+        <Clock className="w-5 h-5 text-yellow-600" />
         {title}
       </h3>
       <p className="text-gray-600 text-sm mb-6">
@@ -111,8 +111,8 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
           </div>
         ))}
       </div>
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-xs text-blue-700">
+      <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <p className="text-xs text-yellow-700">
           <strong>Note:</strong> Settlement times may vary based on your bank and payment gateway processing. 
           Weekend and holiday deposits may take longer.
         </p>
@@ -121,7 +121,7 @@ const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
   );
 
   const compactContent = (
-    <div className="bg-gradient-to-r from-yellow-50 to-blue-50 rounded-lg p-4 border border-yellow-200">
+    <div className="bg-gradient-to-r from-yellow-50 to-yellow-50 rounded-lg p-4 border border-yellow-200">
       <div className="flex items-start gap-3">
         <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">

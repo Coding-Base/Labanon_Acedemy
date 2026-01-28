@@ -160,7 +160,7 @@ export default function PaystackSubAccountForm() {
       )}
 
       {hasSubAccount && subAccountData ? (
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 mb-6">
+        <div className="bg-gradient-to-r from-green-50 to-yellow-50 rounded-xl p-6 mb-6">
           <h4 className="font-semibold text-gray-900 mb-4">Active Sub-Account</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -242,8 +242,8 @@ export default function PaystackSubAccountForm() {
           <p className="text-xs text-gray-500 mt-1">Your name as registered with the bank</p>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800">
             <strong>Note:</strong> Your bank details will be used to create a Paystack sub-account. You'll automatically receive 95% of all course and diploma sales, with 5% going to the platform.
           </p>
         </div>
@@ -251,7 +251,7 @@ export default function PaystackSubAccountForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60"
+          className="w-full py-2 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60"
         >
           {submitting ? (
             <>

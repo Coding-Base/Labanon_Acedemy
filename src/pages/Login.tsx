@@ -85,7 +85,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-yellow-50 p-6">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
           <img src={labanonLogo} alt="Lebanon Academy" className="w-12 h-12 object-contain" />
@@ -100,12 +100,12 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
             <div className="text-sm text-gray-600 mb-1">Username</div>
-            <input autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="Enter your username or email" />
+            <input autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-200" placeholder="Enter your username or email" />
           </label>
 
           <label className="block relative">
             <div className="text-sm text-gray-600 mb-1">Password</div>
-            <input autoComplete="current-password" required type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 pr-10" placeholder="Enter your password" />
+            <input autoComplete="current-password" required type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-200 pr-10" placeholder="Enter your password" />
             <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute right-2 top-9 p-1 rounded-md text-gray-500 hover:text-gray-700" aria-label={showPassword ? 'Hide password' : 'Show password'}>
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -121,7 +121,7 @@ export default function Login() {
             </Link>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-yellow-600 to-blue-600 shadow-md hover:opacity-95 disabled:opacity-60">
+          <button type="submit" disabled={loading} className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-yellow-600 to-yellow-600 shadow-md hover:opacity-95 disabled:opacity-60">
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>

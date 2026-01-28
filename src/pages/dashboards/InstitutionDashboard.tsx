@@ -330,7 +330,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
 
             <div className="flex items-center space-x-4">
               <div className="hidden md:flex items-center space-x-3 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
-                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
                   {summary?.username?.charAt(0).toUpperCase()}
                 </div>
                 <div className="pr-2">
@@ -338,11 +338,11 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mt-0.5">Admin</p>
                 </div>
               </div>
-              <button onClick={() => setContactAdminOpen(true)} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all relative" title="Contact Admin">
+              <button onClick={() => setContactAdminOpen(true)} className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-full transition-all relative" title="Contact Admin">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
               </button>
-              <button onClick={() => setShowInbox(true)} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all" title="Inbox">
+              <button onClick={() => setShowInbox(true)} className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-full transition-all" title="Inbox">
                 <Mail className="w-5 h-5" />
               </button>
               <div className="h-6 w-px bg-gray-300 mx-1"></div>
@@ -385,7 +385,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
               </nav>
 
               <div className="mt-8 pt-6 border-t border-gray-100 px-2">
-                <div className="bg-gradient-to-br from-yellow-50 to-blue-50 rounded-xl p-4 border border-yellow-100">
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-xl p-4 border border-yellow-100">
                   <h4 className="font-semibold text-yellow-800 mb-1 text-sm">Need Help?</h4>
                   <p className="text-xs text-yellow-600 mb-3 leading-relaxed">Contact our support team for assistance with your account.</p>
                   <button onClick={() => setContactAdminOpen(true)} className="w-full text-xs bg-white text-yellow-700 px-3 py-2 rounded-lg border border-yellow-200 font-medium hover:shadow-sm transition-shadow">Contact Support</button>
@@ -425,7 +425,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   <Route path="overview" element={
                     <div className="space-y-6">
                       {/* Welcome Banner */}
-                      <div className="bg-gradient-to-r from-yellow-700 to-blue-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+                      <div className="bg-gradient-to-r from-yellow-700 to-yellow-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
                         <div className="relative z-10">
                             <h1 className="text-3xl font-bold mb-2">Dashboard Overview</h1>
                             <p className="text-yellow-100 text-lg">Welcome back, {institutionName || summary?.username}!</p>
@@ -449,7 +449,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             title: 'Total Students', 
                             value: calculatedStudents, 
                             icon: <Users className="w-6 h-6 text-white" />, 
-                            bg: 'bg-blue-500',
+                            bg: 'bg-yellow-500',
                             trend: '+12% this month' 
                           },
                           { 
@@ -470,7 +470,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             title: 'Total Revenue', 
                             value: `₦${calculatedRevenue.toLocaleString()}`, 
                             icon: <DollarSign className="w-6 h-6 text-white" />, 
-                            bg: 'bg-blue-600',
+                            bg: 'bg-yellow-600',
                             trend: 'Net Earnings' 
                           }
                         ].map((stat, index) => (
@@ -548,7 +548,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                                 <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
                                 
                                 <div className="space-y-3">
-                                   <Link to="/institution/courses" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
+                                   <Link to="/institution/courses" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
                                     <button onClick={() => setCreatingCourse(true)} className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
                                         <div className="flex items-center">
                                             <div className="bg-yellow-100 p-2 rounded-lg text-yellow-600 mr-3 group-hover:bg-yellow-200">
@@ -559,14 +559,14 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                                         <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-yellow-600" />
                                     </button>
                                     </Link>
-                                    <Link to="/institution/diploma" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
+                                    <Link to="/institution/diploma" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
                                         <div className="flex items-center">
-                                            <div className="bg-blue-100 p-2 rounded-lg text-blue-600 mr-3 group-hover:bg-blue-200">
+                                            <div className="bg-yellow-100 p-2 rounded-lg text-yellow-600 mr-3 group-hover:bg-yellow-200">
                                                 <GraduationCap className="w-5 h-5" />
                                             </div>
-                                            <span className="font-medium text-gray-700 group-hover:text-blue-800">Manage Diplomas</span>
+                                            <span className="font-medium text-gray-700 group-hover:text-yellow-800">Manage Diplomas</span>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-yellow-600" />
                                     </Link>
                                     <Link to="/institution/portfolio" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
                                         <div className="flex items-center">
@@ -719,7 +719,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         </div>
                         <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome to Your Portal</h2>
                         <p className="text-gray-600 mb-8 max-w-lg mx-auto text-lg">Manage your digital presence, onsite diplomas, and online courses all in one place. Get started by viewing your overview.</p>
-                        <button onClick={() => navigate('overview')} className="px-8 py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-lg">Go to Dashboard Overview</button>
+                        <button onClick={() => navigate('overview')} className="px-8 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-lg">Go to Dashboard Overview</button>
                     </div>
                   } />
 

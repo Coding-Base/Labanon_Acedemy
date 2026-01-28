@@ -193,7 +193,7 @@ export default function SchedulePage({ userRole }: SchedulePageProps) {
                         item.canJoin 
                           ? item.isLive
                             ? 'bg-yellow-600 text-white hover:bg-yellow-700 shadow-lg hover:shadow-green-200' 
-                            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-blue-200'
+                            : 'bg-yellow-600 text-white hover:bg-yellow-700 shadow-lg hover:shadow-yellow-200'
                           : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       }`}
                       onClick={(e) => !item.canJoin && e.preventDefault()}

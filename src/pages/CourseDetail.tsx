@@ -174,7 +174,7 @@ export default function CourseDetail() {
             <div className="lg:col-span-2 order-2 lg:order-1">
               {/* Course Category */}
               <div className="flex items-center gap-4 mb-4">
-                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${isScheduled ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-green-700'}`}>
+                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${isScheduled ? 'bg-yellow-100 text-yellow-700' : 'bg-yellow-100 text-green-700'}`}>
                   {isScheduled ? 'Live Scheduled Course' : (course.category || 'Professional Development')}
                 </span>
                 <span className="text-sm text-gray-600 flex items-center gap-1">
@@ -218,7 +218,7 @@ export default function CourseDetail() {
                 )}
                 {isScheduled && (
                     <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-600" />
+                    <Calendar className="w-5 h-5 text-yellow-600" />
                     <span className="text-gray-700">Starts: {new Date(course.start_date).toLocaleDateString()}</span>
                     </div>
                 )}
@@ -226,7 +226,7 @@ export default function CourseDetail() {
 
               {/* Instructor Info */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm">
                   {course.creator?.charAt(0)?.toUpperCase() || 'I'}
                 </div>
                 <div>
@@ -266,29 +266,29 @@ export default function CourseDetail() {
             
             {/* Scheduled Course Details (If applicable) */}
             {isScheduled && (
-                <div className="bg-blue-50 rounded-2xl shadow-sm p-6 border border-blue-100">
-                    <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+                <div className="bg-yellow-50 rounded-2xl shadow-sm p-6 border border-yellow-100">
+                    <h2 className="text-xl font-bold text-yellow-900 mb-4 flex items-center gap-2">
                         <Video className="w-5 h-5"/> Live Class Schedule
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-blue-800">
-                        <div className="bg-white p-3 rounded-lg border border-blue-100">
-                            <div className="text-xs text-blue-500 uppercase font-bold">Time</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-yellow-800">
+                        <div className="bg-white p-3 rounded-lg border border-yellow-100">
+                            <div className="text-xs text-yellow-500 uppercase font-bold">Time</div>
                             <div className="font-medium">{course.meeting_time?.slice(0,5)} (Recurring)</div>
                         </div>
-                        <div className="bg-white p-3 rounded-lg border border-blue-100">
-                            <div className="text-xs text-blue-500 uppercase font-bold">Platform</div>
+                        <div className="bg-white p-3 rounded-lg border border-yellow-100">
+                            <div className="text-xs text-yellow-500 uppercase font-bold">Platform</div>
                             <div className="font-medium capitalize">{course.meeting_place || 'Online'}</div>
                         </div>
-                        <div className="bg-white p-3 rounded-lg border border-blue-100">
-                            <div className="text-xs text-blue-500 uppercase font-bold">Start Date</div>
+                        <div className="bg-white p-3 rounded-lg border border-yellow-100">
+                            <div className="text-xs text-yellow-500 uppercase font-bold">Start Date</div>
                             <div className="font-medium">{course.start_date}</div>
                         </div>
-                        <div className="bg-white p-3 rounded-lg border border-blue-100">
-                            <div className="text-xs text-blue-500 uppercase font-bold">End Date</div>
+                        <div className="bg-white p-3 rounded-lg border border-yellow-100">
+                            <div className="text-xs text-yellow-500 uppercase font-bold">End Date</div>
                             <div className="font-medium">{course.end_date}</div>
                         </div>
                     </div>
-                    <p className="text-sm text-blue-600 mt-4">
+                    <p className="text-sm text-yellow-600 mt-4">
                         * Enroll to get access to the live meeting link via your schedule dashboard.
                     </p>
                 </div>
@@ -431,7 +431,7 @@ export default function CourseDetail() {
                     ) : (
                       <button
                         onClick={handleEnroll}
-                        className="w-full py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold rounded-xl hover:shadow-lg hover:from-green-700 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-gradient-to-r from-green-600 to-yellow-600 text-white font-bold rounded-xl hover:shadow-lg hover:from-green-700 hover:to-yellow-700 transition-all duration-300 flex items-center justify-center gap-2"
                       >
                         <PlayCircle className="w-5 h-5" />
                         {course.price === 0 ? 'Enroll Free' : 'Enroll Now'}
@@ -505,7 +505,7 @@ export default function CourseDetail() {
               </div>
 
               {/* Need Help */}
-              <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl border border-yellow-100 p-6">
+              <div className="bg-gradient-to-br from-green-50 to-yellow-50 rounded-2xl border border-yellow-100 p-6">
                 <h3 className="font-bold text-gray-900 mb-2">Need help deciding?</h3>
                 <p className="text-sm text-gray-600 mb-4">
                   Contact our learning advisors for personalized guidance.

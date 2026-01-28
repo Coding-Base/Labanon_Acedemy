@@ -870,7 +870,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const getRoleColor = (role: string) => {
     switch(role) {
       case 'student': return 'bg-yellow-100 text-yellow-800'
-      case 'tutor': return 'bg-blue-100 text-blue-800'
+      case 'tutor': return 'bg-yellow-100 text-yellow-800'
       case 'institution': return 'bg-yellow-100 text-yellow-800'
       case 'researcher': return 'bg-amber-100 text-amber-800'
       case 'admin': return 'bg-red-100 text-red-800'
@@ -918,7 +918,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
             <div className="flex items-center space-x-4">
               <div className="hidden md:flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold">
                   {summary.username?.charAt(0).toUpperCase() || 'A'}
                 </div>
                 <div>
@@ -972,7 +972,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
                       {summary.username?.charAt(0).toUpperCase() || 'A'}
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full border-2 border-white"></div>
@@ -1004,7 +1004,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     }}
                       className={`flex items-center space-x-3 w-full h-12 px-4 py-3 rounded-xl transition-all duration-300 ${
                       tab === item.id
-                        ? 'bg-gradient-to-r from-yellow-50 to-blue-50 text-yellow-600 border-l-4 border-yellow-500'
+                        ? 'bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-600 border-l-4 border-yellow-500'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -1035,7 +1035,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowSettings(true)}
-                className="mt-6 w-full py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
+                className="mt-6 w-full py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
               >
                 <Settings className="w-5 h-5 inline mr-2" />
                 System Settings
@@ -1052,7 +1052,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               className="mb-6"
             >
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Welcome back, <span className="bg-gradient-to-r from-yellow-600 to-blue-600 bg-clip-text text-transparent">{summary.username}</span>
+                Welcome back, <span className="bg-gradient-to-r from-yellow-600 to-yellow-600 bg-clip-text text-transparent">{summary.username}</span>
               </h1>
               <p className="text-gray-600 mt-2">
                 {subadminPermissions 
@@ -1123,7 +1123,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => loadUsers(1)}
-                          className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                          className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
                         >
                           <Filter className="w-5 h-5 inline mr-2" />
                           Apply Filters
@@ -1154,13 +1154,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   onClick={() => setSelectedUser(user)}
                                   className={`p-4 rounded-xl border cursor-pointer transition-all ${
                                     selectedUser?.id === user.id
-                                      ? 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-blue-50'
+                                      ? 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-yellow-50'
                                       : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                                   }`}
                                 >
                                     <div className="grid grid-cols-2 items-center gap-4">
                                     <div className="flex items-center space-x-4 min-w-0">
-                                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                                         {user.username?.charAt(0).toUpperCase()}
                                       </div>
                                       <div className="min-w-0">
@@ -1252,9 +1252,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             <div>
                               <div className="mb-6">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">User Details</h3>
-                                <div className="bg-gradient-to-br from-yellow-50 to-blue-50 rounded-2xl p-6">
+                                <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-2xl p-6">
                                   <div className="flex items-center space-x-4 mb-6">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
                                       {selectedUser.username?.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
@@ -1331,13 +1331,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   onClick={() => setSelectedInstitution(institution)}
                                   className={`p-4 rounded-xl border cursor-pointer transition-all ${
                                     selectedInstitution?.id === institution.id
-                                      ? 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-blue-50'
+                                      ? 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-yellow-50'
                                       : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                                   }`}
                                 >
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-4">
-                                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold">
                                         {institution.name?.charAt(0).toUpperCase()}
                                       </div>
                                       <div>
@@ -1362,9 +1362,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           {selectedInstitution ? (
                             <div>
                               <h3 className="text-lg font-semibold text-gray-900 mb-4">Institution Details</h3>
-                              <div className="bg-gradient-to-br from-yellow-50 to-blue-50 rounded-2xl p-6">
+                              <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-2xl p-6">
                                 <div className="flex items-center space-x-4 mb-6">
-                                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-blue-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+                                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
                                     {selectedInstitution.name?.charAt(0).toUpperCase()}
                                   </div>
                                   <div>
@@ -1438,7 +1438,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setCreatingCourse(true)}
-                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
                           >
                             <BookOpen className="w-5 h-5 inline mr-2" />
                             Create Course
@@ -1458,7 +1458,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 whileHover={{ y: -5 }}
                                 className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all"
                               >
-                                <div className="aspect-video bg-gradient-to-br from-yellow-500 to-blue-500 relative">
+                                <div className="aspect-video bg-gradient-to-br from-yellow-500 to-yellow-500 relative">
                                   {course.image && (
                                     <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
                                   )}
@@ -1554,15 +1554,15 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                           <motion.div
                             whileHover={{ y: -5 }}
-                            className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200"
+                            className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"
                           >
                             <div className="flex items-center justify-between mb-4">
-                              <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                              <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
                                 <GraduationCap className="w-6 h-6 text-white" />
                               </div>
                             </div>
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Avg Score</h3>
-                            <p className="text-3xl font-bold text-blue-900">{cbtAnalytics?.average_score?.toFixed(1) || '0'}%</p>
+                            <p className="text-3xl font-bold text-yellow-900">{cbtAnalytics?.average_score?.toFixed(1) || '0'}%</p>
                           </motion.div>
 
                           <motion.div
@@ -1597,7 +1597,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 >
                                   <div className="flex items-start justify-between mb-3">
                                     <div className="flex items-center space-x-3">
-                                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-blue-400 rounded-lg flex items-center justify-center">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-400 rounded-lg flex items-center justify-center">
                                         <FileText className="w-5 h-5 text-white" />
                                       </div>
                                       <div>
@@ -1660,7 +1660,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 setEditingExam(null)
                                 setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '' })
                               }}
-                              className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                              className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
                             >
                               + Add New Exam
                             </motion.button>
@@ -1723,7 +1723,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   whileTap={{ scale: 0.95 }}
                                   onClick={createOrUpdateExam}
                                   disabled={savingExam}
-                                  className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50"
+                                  className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50"
                                 >
                                   {savingExam ? 'Saving...' : editingExam ? 'Update Exam' : 'Create Exam'}
                                 </motion.button>
@@ -1773,7 +1773,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                           })
                                           setShowExamForm(true)
                                         }}
-                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-all"
                                         title="Edit"
                                       >
                                         <FileText className="w-4 h-4" />
@@ -1808,7 +1808,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                       setShowSubjectForm(false)
                                       loadSubjectsForExam(exam.id)
                                     }}
-                                    className="w-full px-4 py-2 bg-gradient-to-r from-yellow-50 to-blue-50 text-yellow-700 rounded-lg font-medium hover:from-yellow-100 hover:to-blue-100 transition-all border border-yellow-200"
+                                    className="w-full px-4 py-2 bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-700 rounded-lg font-medium hover:from-yellow-100 hover:to-yellow-100 transition-all border border-yellow-200"
                                   >
                                     Manage Subjects
                                   </motion.button>
@@ -1845,7 +1845,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   setEditingSubject(null)
                                   setSubjectFormData({ exam: selectedExamForSubjects.id.toString(), name: '', description: '' })
                                 }}
-                                className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                                className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
                               >
                                 + Add Subject
                               </motion.button>
@@ -1888,7 +1888,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     whileTap={{ scale: 0.95 }}
                                     onClick={createOrUpdateSubject}
                                     disabled={savingSubject}
-                                    className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50"
+                                    className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50"
                                   >
                                     {savingSubject ? 'Saving...' : editingSubject ? 'Update Subject' : 'Create Subject'}
                                   </motion.button>
@@ -1937,7 +1937,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                             })
                                             setShowSubjectForm(true)
                                           }}
-                                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                          className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-all"
                                           title="Edit"
                                         >
                                           <FileText className="w-4 h-4" />
@@ -2152,15 +2152,15 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                           <motion.div
                             whileHover={{ y: -5 }}
-                            className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200"
+                            className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"
                           >
                             <div className="flex items-center justify-between mb-4">
-                              <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                              <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
                                 <Shield className="w-6 h-6 text-white" />
                               </div>
                             </div>
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Platform Commission</h3>
-                            <p className="text-2xl font-bold text-blue-900 break-words">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats?.platform_commission || 0)}</p>
+                            <p className="text-2xl font-bold text-yellow-900 break-words">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats?.platform_commission || 0)}</p>
                           </motion.div>
 
                           <motion.div
@@ -2299,7 +2299,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               setEditingBlog(null)
                               setBlogFormData({title: '', content: '', image: '', excerpt: ''})
                             }}
-                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
                           >
                             + New Blog Post
                           </motion.button>
@@ -2411,7 +2411,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               setEditingGospel(null)
                               setGospelFormData({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
                             }}
-                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
                           >
                             + Add Gospel Video
                           </motion.button>
@@ -2486,7 +2486,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
                                   onClick={saveGospel}
-                                  className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                                  className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
                                 >
                                   {editingGospel ? 'Update Video' : 'Add Video'}
                                 </motion.button>
@@ -2559,7 +2559,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                         })
                                         setShowGospelForm(true)
                                       }}
-                                      className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-all text-sm"
+                                      className="flex-1 px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200 transition-all text-sm"
                                     >
                                       Edit
                                     </motion.button>
@@ -2658,7 +2658,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         {bulkMessage.text}
                       </div>
                     )}
-                    <div className="bg-gradient-to-br from-yellow-50 to-blue-50 rounded-2xl p-6 mb-6">
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-2xl p-6 mb-6">
                       <div className="flex items-start space-x-3 mb-4">
                         <Database className="w-6 h-6 text-yellow-600 mt-1" />
                         <div>
@@ -2715,7 +2715,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           disabled={!bulkData.trim()}
                           className={`px-6 py-3 rounded-xl font-semibold flex items-center ${
                             bulkData.trim()
-                              ? 'bg-gradient-to-r from-yellow-600 to-blue-600 text-white hover:shadow-lg'
+                              ? 'bg-gradient-to-r from-yellow-600 to-yellow-600 text-white hover:shadow-lg'
                               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                           }`}
                         >
@@ -2937,7 +2937,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4"
           >
-            <div className="bg-gradient-to-r from-yellow-600 to-blue-600 p-6 rounded-t-2xl flex items-center justify-between">
+            <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 p-6 rounded-t-2xl flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">{editingBlog ? 'Edit Blog Post' : 'Create Blog Post'}</h2>
               <motion.button
                 whileHover={{ scale: 1.1 }}
@@ -3013,7 +3013,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={saveBlog}
-                className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
+                className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
               >
                 {editingBlog ? 'Update' : 'Create'} Post
               </motion.button>
@@ -3083,7 +3083,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4"
           >
-            <div className="bg-gradient-to-r from-yellow-600 to-blue-600 p-6 rounded-t-2xl flex items-center justify-between">
+            <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 p-6 rounded-t-2xl flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">System Settings</h2>
               <motion.button
                 whileHover={{ scale: 1.1 }}
@@ -3160,7 +3160,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     whileTap={{ scale: 0.98 }}
                     onClick={updateProfile}
                     disabled={settingsSaving}
-                    className="mt-4 px-6 py-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50"
+                    className="mt-4 px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50"
                   >
                     {settingsSaving ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
                     Update Profile
@@ -3206,7 +3206,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     whileTap={{ scale: 0.98 }}
                     onClick={changePassword}
                     disabled={settingsSaving}
-                    className="mt-4 px-6 py-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50"
+                    className="mt-4 px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50"
                   >
                     {settingsSaving ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
                     Change Password
@@ -3223,7 +3223,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShowSubAdminForm(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-blue-600 text-white rounded-lg font-semibold"
+                    className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold"
                   >
                     + Create Sub-Admin
                   </motion.button>

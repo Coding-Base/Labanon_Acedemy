@@ -181,19 +181,19 @@ export default function FlutterwaveSubAccountSetup() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+          className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
         >
           <div className="flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-blue-900 mb-1">Active Subaccount</h3>
-              <p className="text-sm text-blue-800">
+              <h3 className="font-semibold text-yellow-900 mb-1">Active Subaccount</h3>
+              <p className="text-sm text-yellow-800">
                 Bank: <span className="font-medium">{subAccount.account_name}</span>
               </p>
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-yellow-800">
                 Account: <span className="font-medium">****{subAccount.account_number.slice(-4)}</span>
               </p>
-              <p className="text-xs text-blue-600 mt-2">
+              <p className="text-xs text-yellow-600 mt-2">
                 Created on {new Date(subAccount.created_at).toLocaleDateString()}
               </p>
             </div>
@@ -244,7 +244,7 @@ export default function FlutterwaveSubAccountSetup() {
                 type="button"
                 onClick={verifyAccount}
                 disabled={verifying || !formData.bank_code || !formData.account_number}
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {verifying ? (<><Loader2 className="w-4 h-4 animate-spin inline-block mr-2" /> Verifying...</>) : 'Verify Account'}
               </button>

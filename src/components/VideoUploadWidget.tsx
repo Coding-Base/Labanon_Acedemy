@@ -234,7 +234,7 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
           onClick={() => setMode('upload')}
           className={`flex-1 py-2 px-3 rounded transition ${
             mode === 'upload'
-              ? 'bg-blue-600 text-white'
+              ? 'bg-yellow-600 text-white'
               : 'bg-gray-200 text-gray-800'
           }`}
         >
@@ -244,7 +244,7 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
           onClick={() => setMode('youtube')}
           className={`flex-1 py-2 px-3 rounded transition ${
             mode === 'youtube'
-              ? 'bg-blue-600 text-white'
+              ? 'bg-yellow-600 text-white'
               : 'bg-gray-200 text-gray-800'
           }`}
         >
@@ -273,9 +273,9 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
           </div>
 
           {file && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
-              <p className="text-sm font-medium text-blue-900">{file.name}</p>
-              <p className="text-xs text-blue-700">
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <p className="text-sm font-medium text-yellow-900">{file.name}</p>
+              <p className="text-xs text-yellow-700">
                 {(file.size / 1024 / 1024).toFixed(2)} MB
               </p>
             </div>
@@ -291,12 +291,12 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
           {isUploading && (
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-2">
-                <Loader className="w-4 h-4 animate-spin text-blue-600" />
+                <Loader className="w-4 h-4 animate-spin text-yellow-600" />
                 <span className="text-sm text-gray-600">{uploadStatus}</span>
               </div>
               <div className="w-full bg-gray-200 h-2 rounded overflow-hidden">
                 <div
-                  className="bg-blue-600 h-full transition-all"
+                  className="bg-yellow-600 h-full transition-all"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -314,7 +314,7 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
           <button
             onClick={uploadToS3}
             disabled={!file || isUploading}
-            className="w-full mt-4 py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+            className="w-full mt-4 py-2 px-4 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
           >
             {isUploading ? 'Uploading...' : 'Upload Video'}
           </button>

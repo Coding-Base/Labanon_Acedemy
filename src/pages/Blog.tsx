@@ -88,7 +88,7 @@ export default function BlogPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-gradient-to-r from-green-600 to-blue-600 py-12 px-4"
+        className="bg-gradient-to-r from-green-600 to-yellow-600 py-12 px-4"
       >
         <div className="max-w-6xl mx-auto">
           <motion.h1
@@ -161,7 +161,7 @@ export default function BlogPage() {
               >
                 {/* Featured Image */}
                 {blog.image && (
-                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-400 to-blue-500">
+                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-400 to-yellow-500">
                     <img
                       src={blog.image}
                       alt={blog.title}

@@ -565,6 +565,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setGospelMessage({ type: 'error', text: 'YouTube URL is required' })
       return
     }
+
+    setGospelLoading(true)
     try {
       const token = localStorage.getItem('access')
       const payload = {
@@ -575,22 +577,31 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         is_active: gospelFormData.is_active
       }
 
+      let res
       if (editingGospel) {
-        await axios.patch(`${API_BASE}/gospel-videos/${editingGospel.id}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+        res = await axios.patch(`${API_BASE}/gospel-videos/${editingGospel.id}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
         setGospelMessage({ type: 'success', text: 'Gospel video updated successfully' })
+        // Update local list immediately if present
+        setGospelVideos(prev => prev.map(g => g.id === res.data.id ? res.data : g))
       } else {
-        await axios.post(`${API_BASE}/gospel-videos/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+        res = await axios.post(`${API_BASE}/gospel-videos/`, payload, { headers: { Authorization: `Bearer ${token}` } })
         setGospelMessage({ type: 'success', text: 'Gospel video created successfully' })
+        // Prepend new gospel to local list
+        setGospelVideos(prev => [res.data, ...prev])
       }
 
       setShowGospelForm(false)
       setGospelFormData({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
       setEditingGospel(null)
-      loadGospels()
+      // Ensure server list sync as well
+      try { await loadGospels() } catch (e) { /* ignore */ }
       setTimeout(() => setGospelMessage(null), 3000)
     } catch (err: any) {
       console.error('Failed to save gospel video:', err)
-      setGospelMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to save gospel video' })
+      const detail = err.response?.data || err.message || 'Failed to save gospel video'
+      setGospelMessage({ type: 'error', text: typeof detail === 'string' ? detail : JSON.stringify(detail) })
+    } finally {
+      setGospelLoading(false)
     }
   }
 
@@ -2483,10 +2494,12 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                               <div className="flex gap-3">
                                 <motion.button
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
+                                  whileHover={gospelLoading ? undefined : { scale: 1.05 }}
+                                  whileTap={gospelLoading ? undefined : { scale: 0.95 }}
                                   onClick={saveGospel}
-                                  className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                                  disabled={gospelLoading}
+                                  aria-disabled={gospelLoading}
+                                  className={`px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium transition-all ${gospelLoading ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-lg'}`}
                                 >
                                   {editingGospel ? 'Update Video' : 'Add Video'}
                                 </motion.button>

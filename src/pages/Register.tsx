@@ -69,7 +69,12 @@ export default function Register() {
       icon: <GraduationCap className="w-6 h-6" />,
       description: 'Access courses, take exams, track progress',
       color: 'from-brand-500 to-brand-400',
-      features: ['Access to all courses', 'Progress tracking', 'Certificate earning',' Practice real CBT  past questions Jamb, Waec, Neco']
+      features: [
+        'Access to all courses',
+        'Progress tracking',
+        'Certificate earning',
+        'Practice real CBT past questions (JAMB, WAEC, NECO)'
+      ]
     },
     { 
       id: 'tutor', 
@@ -238,42 +243,46 @@ export default function Register() {
                   Choose Your Account Type
                 </h3>
                 
-                <div className="grid md:grid-cols-2 gap-4 mb-8">
+                <div className="grid md:grid-cols-2 gap-6 mb-8">
                   {roles.map((roleOption) => (
                     <motion.div
                       key={roleOption.id}
                       whileHover={{ y: -5, scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setRole(roleOption.id)}
-                      className={`cursor-pointer rounded-2xl border-2 p-4 transition-all duration-300 ${
+                      className={`relative cursor-pointer rounded-2xl border-2 p-6 transition-all duration-300 min-h-[220px] ${
                         role === roleOption.id
                           ? 'border-brand-500 bg-gradient-to-br from-brand-50 to-brand-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <div className="flex items-start space-x-4">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${roleOption.color} rounded-xl flex items-center justify-center`}>
+                      {role === roleOption.id && (
+                        <div className="absolute top-4 right-4">
+                          <div className="w-8 h-8 bg-gradient-to-r from-brand-600 to-brand-600 rounded-full flex items-center justify-center shadow">
+                            <CheckCircle className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col items-center h-full">
+                        <div className={`w-14 h-14 bg-gradient-to-br ${roleOption.color} rounded-2xl flex items-center justify-center mb-3 flex-shrink-0`}>
                           <div className="text-white">
                             {roleOption.icon}
                           </div>
                         </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">{roleOption.label}</h4>
-                          <p className="text-sm text-gray-600 mb-3">{roleOption.description}</p>
-                          <ul className="space-y-1">
+
+                        <div className="w-full">
+                          <h4 className="font-semibold text-gray-900 mb-2 text-center text-base">{roleOption.label}</h4>
+                          <p className="text-xs text-gray-600 mb-3 text-center leading-tight">{roleOption.description}</p>
+                          <ul className="space-y-1.5 text-left">
                             {roleOption.features.map((feature, idx) => (
-                              <li key={idx} className="flex items-center text-xs text-gray-500">
-                                <CheckCircle className="w-3 h-3 text-brand-600 mr-2" />
-                                {feature}
+                              <li key={idx} className="flex items-start text-xs text-gray-600 gap-2">
+                                <CheckCircle className="w-3 h-3 text-brand-600 mt-0.5 flex-shrink-0" />
+                                <span className="leading-snug">{feature}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
-                        {role === roleOption.id && (
-                          <div className="w-6 h-6 bg-gradient-to-r from-brand-600 to-brand-600 rounded-full flex items-center justify-center">
-                            <CheckCircle className="w-4 h-4 text-white" />
-                          </div>
-                        )}
                       </div>
                     </motion.div>
                   ))}

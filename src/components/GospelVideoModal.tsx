@@ -38,8 +38,8 @@ export default function GospelVideoModal() {
           lastSeen = null
         }
 
+        // If already seen this video today, don't show it again
         if (lastSeen && lastSeen.id === video.id && lastSeen.date === today) {
-          // already seen this video today
           return
         }
 
@@ -50,25 +50,40 @@ export default function GospelVideoModal() {
 
         const now = new Date()
 
-        // Build scheduled times both as local and as UTC to be tolerant of server timezone
+        // Build scheduled time for today in local timezone
         const scheduledLocal = new Date(now)
         scheduledLocal.setHours(schedHour, schedMinute, 0, 0)
 
-        const scheduledUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), schedHour, schedMinute, 0))
+        // Check if current time has reached the scheduled time
+        const timeReached = now.getTime() >= scheduledLocal.getTime()
 
-        // Show if current time >= scheduledLocal OR current time >= scheduledUTC
-        if (now.getTime() >= scheduledLocal.getTime() || now.getTime() >= scheduledUTC.getTime()) {
+        if (timeReached) {
+          // Time has arrived, show the video and mark as seen
           setShowModal(true)
+          // Mark as seen immediately to prevent re-showing on page refresh
+          try {
+            const payload = { id: video.id, date: today }
+            localStorage.setItem('gospel_last_seen', JSON.stringify(payload))
+          } catch (e) {
+            // fallback
+            localStorage.setItem('gospel_last_seen_date', today)
+          }
         } else {
-          // Schedule a precise timeout to open the modal when the scheduledLocal time arrives
+          // Time hasn't arrived yet, schedule a timeout for when it will
           const delta = scheduledLocal.getTime() - now.getTime()
           // Only schedule if delta is reasonable (within 7 days)
           if (delta > 0 && delta < 7 * 24 * 60 * 60 * 1000) {
             // clear any existing timeout
             if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
             timeoutRef.current = window.setTimeout(() => {
-              // Re-run a quick check (in case server time or video changed)
+              // When timeout fires, mark as seen and show
               setShowModal(true)
+              try {
+                const payload = { id: video.id, date: today }
+                localStorage.setItem('gospel_last_seen', JSON.stringify(payload))
+              } catch (e) {
+                localStorage.setItem('gospel_last_seen_date', today)
+              }
             }, delta)
           }
         }

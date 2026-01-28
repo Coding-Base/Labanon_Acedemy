@@ -303,7 +303,7 @@ export default function Home() {
   const prevSlide = () => setCurrentSlide(s => (s - 1 + slides.length) % slides.length);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-yellow-50 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-brand-50 overflow-x-hidden">
       
       {/* --- HEADER WITH EXPLORE MENU --- */}
       <motion.header
@@ -330,7 +330,7 @@ export default function Home() {
               <div className="hidden md:block relative">
                 <button 
                   onClick={() => setExploreMenuOpen(!exploreMenuOpen)}
-                  className={`explore-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${exploreMenuOpen ? 'bg-yellow-600 text-white' : 'bg-yellow-600 text-white hover:bg-yellow-700'}`}
+                  className={`explore-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${exploreMenuOpen ? 'bg-brand-600 text-white' : 'bg-brand-600 text-white hover:bg-brand-700'}`}
                 >
                   <Menu className="w-5 h-5" />
                   <span>Explore</span>
@@ -354,7 +354,7 @@ export default function Home() {
                              <div 
                                key={cat.id}
                                onMouseEnter={() => setActiveExploreCategory(cat.id)}
-                               className={`px-4 py-3 cursor-pointer flex items-center justify-between transition-colors text-sm font-medium ${activeExploreCategory === cat.id ? 'bg-white text-yellow-700 border-l-4 border-yellow-600' : 'text-gray-700 hover:bg-gray-100'}`}
+                               className={`px-4 py-3 cursor-pointer flex items-center justify-between transition-colors text-sm font-medium ${activeExploreCategory === cat.id ? 'bg-white text-brand-700 border-l-4 border-brand-600' : 'text-gray-700 hover:bg-gray-100'}`}
                              >
                                {cat.label}
                                {activeExploreCategory === cat.id && <ChevronRight className="w-4 h-4" />}
@@ -371,7 +371,7 @@ export default function Home() {
                                     <div 
                                         key={sub}
                                         onClick={() => handleSubCategoryClick(sub)}
-                                        className="text-sm text-gray-600 hover:text-yellow-600 cursor-pointer p-2 hover:bg-yellow-50 rounded transition-colors"
+                                        className="text-sm text-gray-600 hover:text-brand-600 cursor-pointer p-2 hover:bg-brand-50 rounded transition-colors"
                                     >
                                         {sub}
                                     </div>
@@ -391,7 +391,7 @@ export default function Home() {
                   <input 
                     type="text" 
                     placeholder="What do you want to learn?" 
-                    className="w-full pl-10 pr-12 py-2.5 rounded-full border border-gray-300 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none text-sm"
+                    className="w-full pl-10 pr-12 py-2.5 rounded-full border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
@@ -399,7 +399,7 @@ export default function Home() {
                   <Search className="absolute left-3.5 top-2.5 w-5 h-5 text-gray-400" />
                   <button 
                     onClick={handleSearchSubmit}
-                    className="absolute right-1 top-1 p-1.5 bg-yellow-600 rounded-full text-white hover:bg-yellow-700 transition-colors"
+                    className="absolute right-1 top-1 p-1.5 bg-brand-600 rounded-full text-white hover:bg-brand-700 transition-colors"
                   >
                     <Search className="w-4 h-4" />
                   </button>
@@ -411,7 +411,7 @@ export default function Home() {
               {/* Added Nav Items for Large Screens */}
               <div className="hidden xl:flex items-center gap-4 mr-2">
                   {navItems.slice(0, 3).map(item => (
-                       <Link key={item.label} to={item.path} className="text-sm font-medium text-gray-700 hover:text-yellow-600 transition-colors">
+                         <Link key={item.label} to={item.path} className="text-sm font-medium text-gray-700 hover:text-brand-600 transition-colors">
                            {item.label}
                        </Link>
                   ))}
@@ -419,8 +419,8 @@ export default function Home() {
               
               <div className="h-6 w-px bg-gray-300 hidden xl:block mx-1"></div>
               
-              <Link to="/login" className="hidden md:inline px-4 py-2 text-gray-700 hover:text-yellow-600 font-medium text-sm">Log In</Link>
-              <Link to="/register" className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold text-sm hover:bg-yellow-700 transition-colors shadow-lg shadow-yellow-600/20">Join for Free</Link>
+              <Link to="/login" className="hidden md:inline px-4 py-2 text-gray-700 hover:text-brand-600 font-medium text-sm">Log In</Link>
+              <Link to="/register" className="px-4 py-2 bg-brand-600 text-white rounded-lg font-semibold text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-600/20">Join for Free</Link>
               
               {/* Mobile menu button */}
               <button 
@@ -466,18 +466,18 @@ export default function Home() {
                                  </div>
                              ))}
                         </div>
-                        <div onClick={() => { setMobileMenuOpen(false); navigate('/marketplace'); }} className="text-xs text-yellow-700 mt-1 cursor-pointer">View all...</div>
+                        <div onClick={() => { setMobileMenuOpen(false); navigate('/marketplace'); }} className="text-xs text-brand-700 mt-1 cursor-pointer">View all...</div>
                     </div>
                   ))}
                 </div>
                 
                 <div className="border-t pt-4 space-y-3">
                    {navItems.map(item => (
-                        <Link key={item.label} to={item.path} className="block text-gray-700 font-medium hover:text-yellow-600" onClick={() => setMobileMenuOpen(false)}>
+                        <Link key={item.label} to={item.path} className="block text-gray-700 font-medium hover:text-brand-600" onClick={() => setMobileMenuOpen(false)}>
                             {item.label}
                         </Link>
                    ))}
-                   <Link to="/login" className="block text-yellow-700 font-medium" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
+                   <Link to="/login" className="block text-brand-700 font-medium" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
                 </div>
               </div>
             </motion.div>
@@ -487,20 +487,20 @@ export default function Home() {
 
       {/* Hero Section */}
       <section ref={heroSectionRef} className="relative pt-24 pb-16 md:pt-40 md:pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-transparent to-yellow-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-brand-500/5" />
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Hero Content - Updated for Mobile Centering */}
             <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-8 text-center md:text-left order-2 lg:order-1">
               <motion.div variants={fadeInUp} className="flex justify-center md:justify-start">
-                <motion.div className="hidden md:inline-flex items-center space-x-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                  <motion.div className="hidden md:inline-flex items-center space-x-2 px-4 py-2 bg-brand-100 text-brand-700 rounded-full text-sm font-medium" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
                   <Sparkles className="w-4 h-4" /><span>Your #1 Digital Learning Platform</span>
                 </motion.div>
               </motion.div>
               <motion.div variants={fadeInLeft}>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
                   <span className="block text-gray-900">Master Skills,</span>
-                  <span className="block bg-gradient-to-r from-yellow-600 to-yellow-600 bg-clip-text text-transparent">Ace Exams</span>
+                  <span className="block bg-gradient-to-r from-brand-600 to-brand-600 bg-clip-text text-transparent">Ace Exams</span>
                 </h1>
               </motion.div>
               <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto md:mx-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
@@ -509,8 +509,8 @@ export default function Home() {
               
               {/* Desktop CTA Buttons (Search is now in header) - Updated for Mobile Centering */}
                 <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 pt-4 justify-center md:justify-start">
-                  <Link to="/register" className="px-8 py-4 bg-yellow-600 text-white rounded-xl font-bold text-lg hover:bg-yellow-700 hover:shadow-lg transition-all">Join for Free</Link>
-                  <Link to="/marketplace" className="px-8 py-4 bg-white text-gray-800 border-2 border-gray-200 rounded-xl font-bold text-lg hover:border-yellow-600 hover:text-yellow-600 transition-all">Explore Courses</Link>
+                     <Link to="/register" className="px-8 py-4 bg-brand-600 text-white rounded-xl font-bold text-lg hover:bg-brand-700 hover:shadow-lg transition-all">Join for Free</Link>
+                     <Link to="/marketplace" className="px-8 py-4 bg-white text-gray-800 border-2 border-gray-200 rounded-xl font-bold text-lg hover:border-brand-600 hover:text-brand-600 transition-all">Explore Courses</Link>
               </motion.div>
 
               {/* Quick Stats */}
@@ -526,8 +526,8 @@ export default function Home() {
 
             {/* Hero Image - Updated margin top for mobile spacing; placed before text on small screens */}
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: "easeOut" }} className="relative mt-8 md:mt-0 order-1 lg:order-2">
-              <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-yellow-600/20 backdrop-blur-sm " />
+                <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-600/20 to-brand-600/20 backdrop-blur-sm " />
                 <div className="relative w-full h-full hero-image-container">
                   {/* Slider: animated, fullscreen-cover images with caption, dots, and controls */}
                   <div
@@ -555,7 +555,7 @@ export default function Home() {
 
                     {/* Mobile-only badge overlay */}
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="absolute top-4 left-4 z-30 md:hidden">
-                      <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/80 text-yellow-700 rounded-full text-sm font-medium backdrop-blur">
+                      <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/80 text-brand-700 rounded-full text-sm font-medium backdrop-blur">
                         <Sparkles className="w-4 h-4" />
                         <span>Your #1 Digital Learning Platform</span>
                       </div>
@@ -586,7 +586,7 @@ export default function Home() {
                 
                 {/* Floating Badge 1 */}
                 <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }} className="absolute bottom-6 left-6 bg-white/95 backdrop-blur rounded-xl p-4 shadow-lg flex items-center gap-3">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center"><Award className="w-6 h-6 text-yellow-600" /></div>
+                  <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center"><Award className="w-6 h-6 text-brand-600" /></div>
                   <div><div className="font-bold text-gray-900">Certified</div><div className="text-xs text-gray-600">World-class education</div></div>
                 </motion.div>
                 
@@ -627,12 +627,12 @@ export default function Home() {
               transition={{ duration: 0.8 }}
               className="flex-1 space-y-6"
             >
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-yellow-50 text-yellow-600 rounded-full text-sm font-bold uppercase tracking-wider">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-brand-50 text-brand-600 rounded-full text-sm font-bold uppercase tracking-wider">
                 <Sparkles className="w-4 h-4" />
                 <span>Exam Success Guaranteed</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-                Prepare for <span className="text-yellow-600">JAMB & WAEC</span> <br/>
+                Prepare for <span className="text-brand-600">JAMB & WAEC</span> <br/>
                 the Smart Way
               </h2>
               <p className="text-lg text-gray-600">
@@ -649,8 +649,8 @@ export default function Home() {
                   'Improve Speed & Accuracy'
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
-                      <CheckCircle className="w-4 h-4 text-yellow-600" />
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-brand-600" />
                     </div>
                     <span className="text-gray-700 font-medium">{item}</span>
                   </div>
@@ -660,7 +660,7 @@ export default function Home() {
               <div className="pt-4">
                 <Link 
                   to="/register" 
-                  className="inline-flex items-center px-8 py-4 bg-yellow-600 text-white rounded-xl font-bold text-lg hover:bg-yellow-700 hover:shadow-lg hover:shadow-yellow-500/30 transition-all transform hover:-translate-y-1"
+                  className="inline-flex items-center px-8 py-4 bg-brand-600 text-white rounded-xl font-bold text-lg hover:bg-brand-700 hover:shadow-lg hover:shadow-brand-500/30 transition-all transform hover:-translate-y-1"
                 >
                   Start Practicing Now
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -688,8 +688,8 @@ export default function Home() {
               </div>
               
               {/* Decor elements */}
-              <div className="absolute -z-10 -bottom-10 -right-10 w-64 h-64 bg-yellow-100 rounded-full blur-3xl opacity-50" />
-              <div className="absolute -z-10 -top-10 -left-10 w-64 h-64 bg-yellow-100 rounded-full blur-3xl opacity-50" />
+              <div className="absolute -z-10 -bottom-10 -right-10 w-64 h-64 bg-brand-100 rounded-full blur-3xl opacity-50" />
+              <div className="absolute -z-10 -top-10 -left-10 w-64 h-64 bg-brand-100 rounded-full blur-3xl opacity-50" />
             </motion.div>
           </div>
         </div>

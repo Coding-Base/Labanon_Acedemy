@@ -173,7 +173,7 @@ export default function CoursesList() {
             <Search className="h-5 w-5 text-gray-400" />
           </div>
           <input 
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm transition duration-150 ease-in-out" 
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition duration-150 ease-in-out" 
             placeholder="Search courses (e.g. Python, Business)..." 
             value={search} 
             onChange={handleSearchChange} 
@@ -226,7 +226,7 @@ export default function CoursesList() {
 
                   {/* Content Section */}
                   <div className="flex-1 p-5 flex flex-col">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-yellow-700 transition-colors">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-brand-700 transition-colors">
                       {c.title}
                     </h3>
                     <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-1">
@@ -245,8 +245,8 @@ export default function CoursesList() {
                         className={`
                           flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
                           ${addingIds.includes(c.id) 
-                            ? 'bg-yellow-100 text-green-700 cursor-not-allowed' 
-                            : 'bg-yellow-600 text-white hover:bg-yellow-700 shadow-sm hover:shadow'
+                            ? 'bg-brand-100 text-green-700 cursor-not-allowed' 
+                            : 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm hover:shadow'
                           }
                         `}
                       >

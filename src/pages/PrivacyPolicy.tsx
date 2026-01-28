@@ -152,26 +152,26 @@ const PrivacyPolicy: React.FC = () => {
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} aria-label="Go back" className="px-3 py-2 rounded-md hover:bg-slate-100">← Back</button>
             <nav className="hidden sm:flex items-center gap-3">
-              <Link to="/" className="text-slate-700 hover:text-yellow-600">Home</Link>
-              <Link to="/about" className="text-slate-700 hover:text-yellow-600">About</Link>
-              <Link to="/docs" className="text-slate-700 hover:text-yellow-600">Docs</Link>
+              <Link to="/" className="text-slate-700 hover:text-brand-600">Home</Link>
+              <Link to="/about" className="text-slate-700 hover:text-brand-600">About</Link>
+              <Link to="/docs" className="text-slate-700 hover:text-brand-600">Docs</Link>
             </nav>
           </div>
           <div>
-            <Link to="/register" className="bg-yellow-600 text-white px-3 py-2 rounded-md shadow-sm hover:opacity-90">Sign up</Link>
+            <Link to="/register" className="bg-brand-600 text-white px-3 py-2 rounded-md shadow-sm hover:opacity-90">Sign up</Link>
           </div>
         </div>
       </header>
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-600 via-yellow-600 to-yellow-600 text-white py-16 px-4">
+      <div className="bg-gradient-to-r from-brand-600 via-brand-600 to-brand-600 text-white py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="flex items-center gap-3 mb-4">
               <Shield className="w-10 h-10" />
               <h1 className="text-4xl md:text-5xl font-bold">Privacy Policy</h1>
             </div>
-            <p className="text-lg text-yellow-100 max-w-2xl">LightHub Academy is committed to protecting your privacy and ensuring transparency about how we handle your data.</p>
+            <p className="text-lg text-brand-100 max-w-2xl">LightHub Academy is committed to protecting your privacy and ensuring transparency about how we handle your data.</p>
           </motion.div>
         </div>
       </div>
@@ -186,13 +186,13 @@ const PrivacyPolicy: React.FC = () => {
 
         {/* Critical Warning */}
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-12">
-          <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 rounded-xl p-1">
+          <div className="bg-gradient-to-r from-brand-600 to-brand-600 rounded-xl p-1">
             <div className="bg-white rounded-lg p-8">
               <div className="flex items-start gap-4 mb-6">
-                <AlertTriangle className="w-8 h-8 text-yellow-700 flex-shrink-0 mt-1" />
+                <AlertTriangle className="w-8 h-8 text-brand-700 flex-shrink-0 mt-1" />
                 <div>
                   <h2 className="text-3xl font-bold text-slate-900 mb-2">⚠️ Critical Warning — Off-Platform Transactions</h2>
-                  <p className="text-yellow-700 font-semibold text-lg">LightHub Academy is not responsible for transactions conducted outside the platform.</p>
+                  <p className="text-brand-700 font-semibold text-lg">LightHub Academy is not responsible for transactions conducted outside the platform.</p>
                 </div>
               </div>
 
@@ -200,14 +200,14 @@ const PrivacyPolicy: React.FC = () => {
                 {offPlatformWarnings.map((w) => <WarningCard key={w.role} warning={w} />)}
               </div>
 
-              <div className="mt-8 bg-yellow-50 border-2 border-yellow-600 rounded-lg p-6">
-                <h3 className="font-bold text-yellow-900 mb-4">Consequences of Violation:</h3>
+              <div className="mt-8 bg-brand-50 border-2 border-brand-600 rounded-lg p-6">
+                <h3 className="font-bold text-brand-900 mb-4">Consequences of Violation:</h3>
                 <ul className="space-y-3 text-slate-700 list-none">
-                  <li className="flex items-start gap-3"><span className="text-yellow-700 font-bold">•</span><span><strong>Immediate Account Suspension:</strong> Accounts involved in off-platform transactions will be suspended immediately pending investigation.</span></li>
-                  <li className="flex items-start gap-3"><span className="text-yellow-700 font-bold">•</span><span><strong>Permanent Removal:</strong> Users caught conducting off-platform transactions will be permanently banned from the platform.</span></li>
-                  <li className="flex items-start gap-3"><span className="text-yellow-700 font-bold">•</span><span><strong>Refund Denial:</strong> No refunds will be issued for off-platform transaction disputes.</span></li>
-                  <li className="flex items-start gap-3"><span className="text-yellow-700 font-bold">•</span><span><strong>Legal Action:</strong> LightHub Academy may pursue legal action against violators for fraud and unauthorized transactions.</span></li>
-                  <li className="flex items-start gap-3"><span className="text-yellow-700 font-bold">•</span><span><strong>Blacklisting:</strong> Violators will be blacklisted from all LightHub Academy services permanently.</span></li>
+                  <li className="flex items-start gap-3"><span className="text-brand-700 font-bold">•</span><span><strong>Immediate Account Suspension:</strong> Accounts involved in off-platform transactions will be suspended immediately pending investigation.</span></li>
+                  <li className="flex items-start gap-3"><span className="text-brand-700 font-bold">•</span><span><strong>Permanent Removal:</strong> Users caught conducting off-platform transactions will be permanently banned from the platform.</span></li>
+                  <li className="flex items-start gap-3"><span className="text-brand-700 font-bold">•</span><span><strong>Refund Denial:</strong> No refunds will be issued for off-platform transaction disputes.</span></li>
+                  <li className="flex items-start gap-3"><span className="text-brand-700 font-bold">•</span><span><strong>Legal Action:</strong> LightHub Academy may pursue legal action against violators for fraud and unauthorized transactions.</span></li>
+                  <li className="flex items-start gap-3"><span className="text-brand-700 font-bold">•</span><span><strong>Blacklisting:</strong> Violators will be blacklisted from all LightHub Academy services permanently.</span></li>
                 </ul>
               </div>
             </div>
@@ -215,13 +215,13 @@ const PrivacyPolicy: React.FC = () => {
         </motion.section>
 
         {/* Policy Acknowledgment */}
-        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="bg-gradient-to-r from-yellow-600 to-yellow-600 rounded-xl p-8 text-white mb-8">
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="bg-gradient-to-r from-brand-600 to-brand-600 rounded-xl p-8 text-white mb-8">
           <div className="flex items-start gap-4">
             <Lock className="w-8 h-8 flex-shrink-0 mt-1" />
             <div>
               <h3 className="text-2xl font-bold mb-4">Policy Acknowledgment</h3>
               <p className="mb-4 leading-relaxed">By using LightHub Academy, you acknowledge that you have read and understood this Privacy Policy. You agree to comply with all terms and conditions, including the strict prohibition of off-platform transactions. By continuing to use our platform, you consent to our data collection and usage practices.</p>
-              <p className="text-yellow-100">Last Updated: {formattedDate}</p>
+              <p className="text-brand-100">Last Updated: {formattedDate}</p>
             </div>
           </div>
         </motion.section>
@@ -233,7 +233,7 @@ const PrivacyPolicy: React.FC = () => {
             <h3 className="text-2xl font-bold text-slate-900">Privacy Concerns?</h3>
           </div>
           <p className="text-slate-600 mb-6">If you have questions or concerns about our privacy practices, contact our privacy team.</p>
-          <Link to="/contact" aria-label="Report privacy issue" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+          <Link to="/contact" aria-label="Report privacy issue" className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
             Report Privacy Issue
           </Link>
         </motion.section>

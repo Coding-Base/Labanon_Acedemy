@@ -77,7 +77,7 @@ export default function SubjectModal({ isOpen, onClose, exam, onSelectSubject }:
                 <button
                   key={subject.id}
                   onClick={() => onSelectSubject(subject)}
-                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 text-left transition w-full"
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-brand-500 hover:bg-brand-50 text-left transition w-full"
                 >
                   <h3 className="font-bold text-lg">{subject.name}</h3>
                   <p className="text-gray-600 text-sm">{subject.description}</p>

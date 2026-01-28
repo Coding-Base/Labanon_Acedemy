@@ -149,7 +149,7 @@ export default function GospelVideoModal() {
               {/* Footer */}
               <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
                 <p className="text-sm text-gray-600">
-                  Brought to you with love by Lebanon Academy
+                  Brought to you with love by LightHub Academy
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}

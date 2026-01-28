@@ -515,12 +515,12 @@ export default function CreateCourse() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <h2 className="text-2xl font-bold">Create Course</h2>
-          <button onClick={() => setGuideOpen(true)} className="px-3 py-1 bg-yellow-600 text-white rounded text-sm">How to use this panel — Watch Guide</button>
+          <button onClick={() => setGuideOpen(true)} className="px-3 py-1 bg-brand-600 text-white rounded text-sm">How to use this panel — Watch Guide</button>
         </div>
         <div className="flex items-center gap-3">
           {courseType === 'normal' && <button onClick={() => setPreviewOpen(true)} className="px-4 py-2 bg-gray-100 rounded">Preview</button>}
-          <button onClick={saveDraft} disabled={saving} className="px-4 py-2 bg-yellow-500 text-white rounded">{saving ? 'Saving...' : 'Save Draft'}</button>
-          <button onClick={publishCourse} disabled={publishing} className="px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold">{publishing ? 'Publishing...' : 'Publish Course'}</button>
+          <button onClick={saveDraft} disabled={saving} className="px-4 py-2 bg-brand-500 text-white rounded">{saving ? 'Saving...' : 'Save Draft'}</button>
+          <button onClick={publishCourse} disabled={publishing} className="px-6 py-3 bg-brand-600 text-white rounded-lg font-semibold">{publishing ? 'Publishing...' : 'Publish Course'}</button>
         </div>
       </div>
 
@@ -599,11 +599,11 @@ export default function CreateCourse() {
             {courseType === 'scheduled' && (
               <div className="mt-4 space-y-6">
                 {/* Info Box */}
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                    <h3 className="font-semibold text-yellow-800 flex items-center gap-2">
+                <div className="bg-brand-50 p-4 rounded-lg border border-brand-200">
+                  <h3 className="font-semibold text-brand-800 flex items-center gap-2">
                         <Calendar className="w-5 h-5"/> Scheduled Live Course
                     </h3>
-                    <p className="text-sm text-yellow-700 mt-1">
+                    <p className="text-sm text-brand-700 mt-1">
                         Students who enroll will be directed to a schedule page with a countdown. 
                         The "Join Class" button will only activate at the meeting time.
                     </p>
@@ -714,18 +714,18 @@ export default function CreateCourse() {
                 <label className="block text-sm font-medium text-gray-700">Modules</label>
                 <div className="mt-2 flex items-center gap-2">
                   <input placeholder="Module title" value={moduleTitleInput} onChange={(e) => setModuleTitleInput(e.target.value)} className="w-full border rounded p-2" />
-                  <button onClick={addModule} className="px-4 py-2 bg-yellow-600 text-white rounded">Add Module</button>
+                  <button onClick={addModule} className="px-4 py-2 bg-brand-600 text-white rounded">Add Module</button>
                 </div>
 
                 <div className="mt-3 space-y-2">
                   {modules.map((m, idx) => (
-                    <div key={idx} className={`p-2 border rounded flex items-center justify-between ${currentModuleIndex === idx ? 'bg-yellow-50' : ''}`}>
+                    <div key={idx} className={`p-2 border rounded flex items-center justify-between ${currentModuleIndex === idx ? 'bg-brand-50' : ''}`}>
                       <div className="cursor-pointer" onClick={() => setCurrentModuleIndex(idx)}>
                         <div className="font-medium">{m.title}</div>
                         <div className="text-xs text-gray-500">{(m.lessons || []).length} lessons</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setCurrentModuleIndex(idx)} className="text-sm text-yellow-600">Edit</button>
+                        <button onClick={() => setCurrentModuleIndex(idx)} className="text-sm text-brand-600">Edit</button>
                         <button onClick={() => setPendingDelete({ type: 'module', moduleIdx: idx })} className="text-sm text-red-600">Delete</button>
                       </div>
                     </div>
@@ -780,19 +780,19 @@ export default function CreateCourse() {
                   )}
                   
                   {currentModuleIndex === null && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                    <div className="mt-4 p-3 bg-brand-50 border border-brand-200 rounded text-sm text-brand-800">
                       Select a module first to upload a video
                     </div>
                   )}
                   
                   {editingLessonIndex === null && currentModuleIndex !== null && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                    <div className="mt-4 p-3 bg-brand-50 border border-brand-200 rounded text-sm text-brand-800">
                       Select or create a lesson to upload a video
                     </div>
                   )}
 
-                  <div className="mt-4 flex gap-2">
-                    <button onClick={addOrUpdateLesson} className="px-4 py-2 bg-yellow-600 text-white rounded">{editingLessonIndex !== null ? 'Save Lesson' : 'Add Lesson'}</button>
+                      <div className="mt-4 flex gap-2">
+                    <button onClick={addOrUpdateLesson} className="px-4 py-2 bg-brand-600 text-white rounded">{editingLessonIndex !== null ? 'Save Lesson' : 'Add Lesson'}</button>
                     <button onClick={() => { cancelEditLesson(); setLessonTitle(''); setLessonContent('') }} className="px-4 py-2 bg-gray-100 rounded">Reset</button>
                   </div>
                 </div>
@@ -807,13 +807,13 @@ export default function CreateCourse() {
                           <div className="font-semibold">{l.title}</div>
                           <div className="text-sm text-gray-600" dangerouslySetInnerHTML={{ __html: String(l.content || '').slice(0, 200) }} />
                           {(l.video || l.video_s3 || l.youtube_url) && (
-                            <div className="mt-2 text-xs text-yellow-600 font-medium">
+                            <div className="mt-2 text-xs text-brand-600 font-medium">
                                 {l.youtube_url ? 'YouTube Video Attached' : l.video_s3 ? 'S3 Video Attached' : 'Video Attached'}
                             </div>
                           )}
                         </div>
                         <div className="flex flex-col gap-2">
-                          <button onClick={() => startEditLesson(currentModuleIndex, li)} className="text-sm text-yellow-600">Edit</button>
+                          <button onClick={() => startEditLesson(currentModuleIndex, li)} className="text-sm text-brand-600">Edit</button>
                           <button onClick={() => setPendingDelete({ type: 'lesson', moduleIdx: currentModuleIndex, lessonIdx: li })} className="text-sm text-red-600">Remove</button>
                         </div>
                       </div>
@@ -911,7 +911,7 @@ export default function CreateCourse() {
             <div className="flex items-center justify-center">
               <div className="relative w-16 h-16">
                 <div className="absolute inset-0 border-4 border-gray-200 rounded-full" />
-                <div className="absolute inset-0 border-4 border-yellow-600 rounded-full animate-spin border-r-transparent border-t-transparent" />
+                <div className="absolute inset-0 border-4 border-brand-600 rounded-full animate-spin border-r-transparent border-t-transparent" />
               </div>
             </div>
 
@@ -932,7 +932,7 @@ export default function CreateCourse() {
                     delete videoPollingRefs.current[encodingVideoId]
                   }
                 }}
-                className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition"
+                className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition"
               >
                 Quiet
               </button>
@@ -992,7 +992,7 @@ function CodeSnippetInserter({ onInsert }: { onInsert: (code: string, lang: stri
 
           <div className="mt-2 flex justify-end gap-2">
             <button onClick={() => { setCode(''); setOpen(false) }} className="px-3 py-1 bg-gray-100 rounded">Cancel</button>
-            <button onClick={handleInsert} className="px-3 py-1 bg-yellow-600 text-white rounded">Insert</button>
+            <button onClick={handleInsert} className="px-3 py-1 bg-brand-600 text-white rounded">Insert</button>
           </div>
         </div>
       )}

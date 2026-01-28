@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import api from '../utils/axiosInterceptor'
@@ -15,6 +15,7 @@ interface Gospel {
 export default function GospelVideoModal() {
   const [gospel, setGospel] = useState<Gospel | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const timeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     const checkAndShowGospel = async () => {
@@ -58,6 +59,18 @@ export default function GospelVideoModal() {
         // Show if current time >= scheduledLocal OR current time >= scheduledUTC
         if (now.getTime() >= scheduledLocal.getTime() || now.getTime() >= scheduledUTC.getTime()) {
           setShowModal(true)
+        } else {
+          // Schedule a precise timeout to open the modal when the scheduledLocal time arrives
+          const delta = scheduledLocal.getTime() - now.getTime()
+          // Only schedule if delta is reasonable (within 7 days)
+          if (delta > 0 && delta < 7 * 24 * 60 * 60 * 1000) {
+            // clear any existing timeout
+            if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+            timeoutRef.current = window.setTimeout(() => {
+              // Re-run a quick check (in case server time or video changed)
+              setShowModal(true)
+            }, delta)
+          }
         }
       } catch (err) {
         console.error('Failed to fetch gospel video:', err)
@@ -68,11 +81,21 @@ export default function GospelVideoModal() {
     checkAndShowGospel()
     const interval = setInterval(checkAndShowGospel, 30000)
 
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    }
   }, [])
 
   const handleClose = () => {
     setShowModal(false)
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     // Mark this video as seen today (store id + date)
     try {
       const payload = { id: gospel?.id ?? null, date: new Date().toDateString() }

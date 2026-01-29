@@ -321,8 +321,8 @@ export default function Home() {
             <div className="flex items-center gap-2 md:gap-6">
               <Link to="/" className="flex items-center space-x-2 flex-shrink-0">
                 <img src={labanonLogo} alt="LightHub Academy" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
-                <div className="ml-2">
-                  <h1 className="text-base md:text-xl font-serif font-semibold text-brand-700 leading-none">LightHub Academy</h1>
+                <div className="ml-2 mr-2 sm:mr-0">
+                  <h1 className="text-sm sm:text-base md:text-xl font-serif font-semibold text-brand-700 leading-none">LightHub Academy</h1>
                 </div>
               </Link>
 
@@ -847,8 +847,8 @@ export default function Home() {
             <div>
               <h4 className="font-bold mb-4">Contact</h4>
               <ul className="space-y-2 text-gray-400">
-                <li>info@lighthubacademy.org.ng</li>
-                <li>+234 800 123 4567</li>
+                <li>support@lighthubacademy.org</li>
+                <li>07063899747</li>
                 <li>Lagos, Nigeria</li>
               </ul>
             </div>

@@ -405,8 +405,8 @@ export default function PerformancePage() {
                       </span>
                       <p className="font-semibold text-gray-900">{answer.question_text}</p>
                     </div>
-                    <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-yellow-700' : 'text-red-700'}`}>
-                      Your answer: <strong>{answer.selected_choice}</strong>
+                      <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-yellow-700' : 'text-red-700'}`}>
+                      Your answer: <strong>{answer.selected_choice_text ?? (typeof answer.selected_choice === 'number' ? 'Choice #' + answer.selected_choice : answer.selected_choice)}</strong>
                     </p>
                   </div>
                 </div>

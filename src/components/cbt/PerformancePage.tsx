@@ -389,7 +389,7 @@ export default function PerformancePage() {
                 key={idx}
                 className={`border-l-4 rounded-lg p-4 transition transform hover:scale-102 ${
                   answer.is_correct
-                    ? 'border-yellow-500 bg-yellow-50'
+                    ? 'border-green-500 bg-green-50'
                     : 'border-red-500 bg-red-50'
                 }`}
               >
@@ -398,14 +398,14 @@ export default function PerformancePage() {
                     <div className="flex items-center gap-3">
                       <span
                         className={`flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm ${
-                          answer.is_correct ? 'bg-yellow-600' : 'bg-red-600'
+                          answer.is_correct ? 'bg-green-600' : 'bg-red-600'
                         }`}
                       >
                         {answer.is_correct ? '✓' : '✗'}
                       </span>
                       <p className="font-semibold text-gray-900">{answer.question_text}</p>
                     </div>
-                      <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-yellow-700' : 'text-red-700'}`}>
+                      <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-green-700' : 'text-red-700'}`}>
                       Your answer: <strong>{answer.selected_choice_text ?? (typeof answer.selected_choice === 'number' ? 'Choice #' + answer.selected_choice : answer.selected_choice)}</strong>
                     </p>
                   </div>

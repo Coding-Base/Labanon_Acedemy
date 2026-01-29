@@ -321,8 +321,8 @@ export default function Home() {
             <div className="flex items-center gap-2 md:gap-6">
               <Link to="/" className="flex items-center space-x-2 flex-shrink-0">
                 <img src={labanonLogo} alt="LightHub Academy" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
-                <div className="hidden sm:block">
-                  <h1 className="text-lg md:text-xl font-bold text-gray-900 leading-none">LightHub<br/>Academy</h1>
+                <div className="ml-2">
+                  <h1 className="text-base md:text-xl font-serif font-semibold text-brand-700 leading-none">LightHub Academy</h1>
                 </div>
               </Link>
 
@@ -815,7 +815,7 @@ export default function Home() {
               </Link>
               <p className="text-gray-400 max-w-sm">Africa's premier digital learning ecosystem, transforming education through technology.</p>
               <div className="flex items-center gap-4 mt-6">
-                <a href="https://youtube.com/@lebanonacademy?si=S1NjHg2K7TMPpj5Z" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-500 transition-colors" aria-label="Follow us on YouTube">
+                <a href="https://www.youtube.com/channel/UCtBGZVHuNLRl-nPLVvzxFnQ" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-500 transition-colors" aria-label="Follow us on YouTube">
                   <Youtube className="w-6 h-6" />
                 </a>
                 <a href="https://www.facebook.com/profile.php?id=61587344120717" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-yellow-500 transition-colors" aria-label="Follow us on Facebook">

@@ -124,7 +124,7 @@ export default function Loader() {
           >
             <img
               src={labanonLogo}
-              alt="Lebanon Academy"
+              alt="Lighthub Academy"
               className="w-32 h-32 object-contain drop-shadow-2xl"
             />
           </motion.div>
@@ -155,7 +155,7 @@ export default function Loader() {
           className="mt-16 text-center relative z-20"
         >
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-yellow-600 bg-clip-text text-transparent mb-3">
-            Lebanon Academy
+            Lighthub Academy
           </h1>
           <p className="text-green-700 font-semibold text-lg">Future Ready Learning</p>
         </motion.div>

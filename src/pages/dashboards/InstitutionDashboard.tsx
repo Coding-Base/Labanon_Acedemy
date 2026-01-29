@@ -320,7 +320,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
               </button>
               <Link to={base} className="flex items-center space-x-3 group">
                 <div className="bg-yellow-50 p-1.5 rounded-lg group-hover:bg-yellow-100 transition-colors">
-                    <img src={labanonLogo} alt="Lebanon Academy" className="w-8 h-8 object-contain" />
+                    <img src={labanonLogo} alt="Lighthub Academy" className="w-8 h-8 object-contain" />
                 </div>
                 <div>
                   <h1 className="text-lg font-bold text-gray-900 tracking-tight">Institution Portal</h1>

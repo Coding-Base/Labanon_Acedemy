@@ -88,7 +88,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-yellow-50 p-6">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <img src={labanonLogo} alt="Lebanon Academy" className="w-12 h-12 object-contain" />
+          <img src={labanonLogo} alt="Lighthub Academy" className="w-12 h-12 object-contain" />
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Welcome back</h1>
             <p className="text-sm text-gray-500">Sign in to continue to your dashboard</p>

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
 import axios from 'axios'
 import useTokenRefresher from '../../utils/useTokenRefresher'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -108,7 +110,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [blogsLoading, setBlogsLoading] = useState(false)
   const [showBlogForm, setShowBlogForm] = useState(false)
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
-  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; excerpt: string}>({title: '', content: '', image: null, excerpt: ''})
+  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; excerpt: string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const [settingsData, setSettingsData] = useState({firstName: '', lastName: '', email: ''})
@@ -487,6 +489,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         fd.append('title', blogFormData.title)
         fd.append('content', blogFormData.content)
         fd.append('excerpt', blogFormData.excerpt)
+      fd.append('meta_title', blogFormData.meta_title || '')
+      fd.append('meta_description', blogFormData.meta_description || '')
+      fd.append('meta_keywords', blogFormData.meta_keywords || '')
         fd.append('image', blogFormData.image)
         headers['Content-Type'] = 'multipart/form-data'
         if (editingBlog) {
@@ -500,6 +505,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           content: blogFormData.content,
           image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
           excerpt: blogFormData.excerpt
+        ,
+          meta_title: blogFormData.meta_title || '',
+          meta_description: blogFormData.meta_description || '',
+          meta_keywords: blogFormData.meta_keywords || ''
         }
         if (editingBlog) {
           res = await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, payload, { headers })
@@ -509,7 +518,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       }
        
       setShowBlogForm(false)
-      setBlogFormData({title: '', content: '', image: '', excerpt: ''})
+      setBlogFormData({title: '', content: '', image: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
       setEditingBlog(null)
       loadBlogs()
     } catch (err) {
@@ -2308,7 +2317,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             onClick={() => {
                               setShowBlogForm(true)
                               setEditingBlog(null)
-                              setBlogFormData({title: '', content: '', image: '', excerpt: ''})
+                              setBlogFormData({title: '', content: '', image: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
                             }}
                             className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
                           >
@@ -2357,7 +2366,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                         title: blog.title,
                                         content: blog.content,
                                         image: blog.image,
-                                        excerpt: blog.excerpt
+                                        excerpt: blog.excerpt,
+                                        meta_title: blog.meta_title || '',
+                                        meta_description: blog.meta_description || '',
+                                        meta_keywords: blog.meta_keywords || ''
                                       })
                                       setShowBlogForm(true)
                                     }}
@@ -2987,12 +2999,62 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                  <textarea
-                    value={blogFormData.content}
-                    onChange={(e) => setBlogFormData({...blogFormData, content: e.target.value})}
-                    placeholder="Write your blog content here..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none h-48 resize-none font-mono text-sm"
-                  />
+                  <div className="w-full">
+                    <ReactQuill
+                      theme="snow"
+                      value={blogFormData.content}
+                      onChange={(val) => setBlogFormData({...blogFormData, content: val})}
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          ['blockquote', 'code-block'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          ['link', 'image'],
+                          ['clean']
+                        ]
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* SEO Fields */}
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3">SEO / Metadata (optional)</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
+                      <input
+                        type="text"
+                        value={blogFormData.meta_title}
+                        onChange={(e) => setBlogFormData({...blogFormData, meta_title: e.target.value})}
+                        placeholder="Optional: title for search engines"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
+                      <input
+                        type="text"
+                        value={blogFormData.meta_description}
+                        onChange={(e) => setBlogFormData({...blogFormData, meta_description: e.target.value})}
+                        placeholder="Optional: short description for search engines (150-320 chars)"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Keywords</label>
+                      <input
+                        type="text"
+                        value={blogFormData.meta_keywords}
+                        onChange={(e) => setBlogFormData({...blogFormData, meta_keywords: e.target.value})}
+                        placeholder="Optional: comma-separated keywords"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div>

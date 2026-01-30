@@ -21,6 +21,9 @@ interface BlogPost {
   comments_count: number
   shares_count: number
   user_liked: boolean
+  meta_title?: string
+  meta_description?: string
+  meta_keywords?: string
 }
 
 export default function BlogDetailPage() {
@@ -41,6 +44,27 @@ export default function BlogDetailPage() {
       loadBlog()
     }
   }, [slug, blog])
+
+  // Update page title and meta tags for SEO (helps crawlers that render JS)
+  useEffect(() => {
+    if (!blog) return
+    // Title
+    document.title = blog.meta_title && blog.meta_title.trim() ? blog.meta_title : blog.title
+
+    // Meta description
+    const setMeta = (name: string, content: string) => {
+      let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null
+      if (!el) {
+        el = document.createElement('meta')
+        el.setAttribute('name', name)
+        document.head.appendChild(el)
+      }
+      el.setAttribute('content', content || '')
+    }
+
+    setMeta('description', blog.meta_description || (blog.excerpt || '').slice(0, 160))
+    setMeta('keywords', blog.meta_keywords || '')
+  }, [blog])
 
   useEffect(() => {
     // Get current user ID from token

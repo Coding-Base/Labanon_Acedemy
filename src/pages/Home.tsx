@@ -420,7 +420,7 @@ export default function Home() {
               <div className="h-6 w-px bg-gray-300 hidden xl:block mx-1"></div>
               
               <Link to="/login" className="hidden md:inline px-4 py-2 text-gray-700 hover:text-brand-600 font-medium text-sm">Log In</Link>
-              <Link to="/register" className="px-4 py-2 bg-brand-600 text-white rounded-lg font-semibold text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-600/20">Join for Free</Link>
+              <Link to="/register" className="px-3 py-1.5 bg-brand-600 text-white rounded-lg font-semibold text-sm hover:bg-brand-700 transition-colors shadow-md">Join for Free</Link>
               
               {/* Mobile menu button */}
               <button 
@@ -509,7 +509,7 @@ export default function Home() {
               
               {/* Desktop CTA Buttons (Search is now in header) - Updated for Mobile Centering */}
                 <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 pt-4 justify-center md:justify-start">
-                     <Link to="/register" className="px-8 py-4 bg-brand-600 text-white rounded-xl font-bold text-lg hover:bg-brand-700 hover:shadow-lg transition-all">Join for Free</Link>
+                     <Link to="/register" className="px-4 py-2 bg-brand-600 text-white rounded-lg font-semibold text-sm hover:bg-brand-700 hover:shadow-md transition-all">Join for Free</Link>
                      <Link to="/marketplace" className="px-8 py-4 bg-white text-gray-800 border-2 border-gray-200 rounded-xl font-bold text-lg hover:border-brand-600 hover:text-brand-600 transition-all">Explore Courses</Link>
               </motion.div>
 

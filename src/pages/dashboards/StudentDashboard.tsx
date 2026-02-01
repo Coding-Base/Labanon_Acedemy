@@ -375,11 +375,11 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden p-2 rounded-lg hover:bg-gray-100 mr-3 transition-colors">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden p-2 rounded-lg hover:bg-gray-100 mr-3 transition-colors" aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'} aria-expanded={sidebarOpen}>
                 <Menu className="w-6 h-6 text-gray-700" />
               </button>
               <Link to={base} className="flex items-center space-x-3 group">
-                <img src={labanonLogo} alt="LightHub Academy" className="w-8 h-8 object-contain transition-transform group-hover:scale-105" />
+                <img src={labanonLogo} alt="LightHub Academy logo" width={32} height={32} className="w-8 h-8 object-contain transition-transform group-hover:scale-105" />
                 <div><h1 className="text-lg font-bold text-gray-900">Student Dashboard</h1></div>
               </Link>
             </div>

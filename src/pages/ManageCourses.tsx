@@ -83,7 +83,7 @@ export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMe
           <div key={c.id} className="p-4 border border-gray-200 rounded-xl flex flex-col sm:flex-row justify-between items-center bg-white hover:shadow-md transition-shadow gap-4">
             <div className="flex items-center gap-4 w-full sm:w-auto">
               {c.image ? (
-                  <img src={c.image} alt={c.title} className="w-24 h-16 object-cover rounded-lg bg-gray-100" />
+                  <img src={c.image} alt={c.title} className="w-24 h-16 object-cover rounded-lg bg-gray-100" width={192} height={128} loading="lazy" decoding="async" />
               ) : (
                   <div className="w-24 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs font-medium">No Image</div>
               )}

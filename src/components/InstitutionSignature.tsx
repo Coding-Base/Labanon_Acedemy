@@ -137,7 +137,7 @@ export default function InstitutionSignature() {
             />
             {formData.signature_image ? (
               <div className="flex flex-col items-center">
-                <img src={formData.signature_image} alt="Signature" className="h-24 object-contain mb-2" />
+                <img src={formData.signature_image} alt="Institution signature image" className="h-24 object-contain mb-2" width={240} height={96} loading="lazy" decoding="async" />
                 <p className="text-sm text-green-600 font-medium group-hover:underline">Click to replace</p>
               </div>
             ) : (

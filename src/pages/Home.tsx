@@ -320,7 +320,7 @@ export default function Home() {
             {/* Left: Logo & Explore Button */}
             <div className="flex items-center gap-2 md:gap-6">
               <Link to="/" className="flex items-center space-x-2 flex-shrink-0">
-                <img src={labanonLogo} alt="LightHub Academy" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                <img src={labanonLogo} alt="LightHub Academy logo" width={40} height={40} className="w-8 h-8 md:w-10 md:h-10 object-contain" />
                 <div className="ml-2 mr-2 sm:mr-0">
                   <h1 className="text-sm sm:text-base md:text-xl font-serif font-semibold text-brand-700 leading-none">LightHub Academy</h1>
                 </div>
@@ -420,12 +420,14 @@ export default function Home() {
               <div className="h-6 w-px bg-gray-300 hidden xl:block mx-1"></div>
               
               <Link to="/login" className="hidden md:inline px-4 py-2 text-gray-700 hover:text-brand-600 font-medium text-sm">Log In</Link>
-              <Link to="/register" className="px-3 py-1.5 bg-brand-600 text-white rounded-lg font-semibold text-sm hover:bg-brand-700 transition-colors shadow-md">Join for Free</Link>
+              <Link to="/register" className="px-3 py-1.5 bg-brand-700 text-white rounded-lg font-semibold text-sm hover:bg-brand-800 transition-colors shadow-md">Join for Free</Link>
               
               {/* Mobile menu button */}
               <button 
                 className="md:hidden p-2 text-gray-600"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label={mobileMenuOpen ? 'Close main menu' : 'Open main menu'}
+                aria-expanded={mobileMenuOpen}
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -509,7 +511,7 @@ export default function Home() {
               
               {/* Desktop CTA Buttons (Search is now in header) - Updated for Mobile Centering */}
                 <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 pt-4 justify-center md:justify-start">
-                     <Link to="/register" className="px-4 py-2 bg-brand-600 text-white rounded-lg font-semibold text-sm hover:bg-brand-700 hover:shadow-md transition-all">Join for Free</Link>
+                     <Link to="/register" className="px-4 py-2 bg-brand-700 text-white rounded-lg font-semibold text-sm hover:bg-brand-800 hover:shadow-md transition-all">Join for Free</Link>
                      <Link to="/marketplace" className="px-8 py-4 bg-white text-gray-800 border-2 border-gray-200 rounded-xl font-bold text-lg hover:border-brand-600 hover:text-brand-600 transition-all">Explore Courses</Link>
               </motion.div>
 
@@ -682,6 +684,10 @@ export default function Home() {
                    src={flyerImage} 
                    alt="LightHub Academy JAMB & WAEC Flyer" 
                    className="w-full h-auto object-cover"
+                   width={1200}
+                   height={750}
+                   loading="lazy"
+                   decoding="async"
                  />
                  {/* Overlay gradient for depth */}
                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
@@ -710,7 +716,7 @@ export default function Home() {
             {displayCourses.map((course, index) => (
               <motion.div key={course.id} whileHover={{ y: -10 }} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all">
                 <div className="h-48 relative">
-                   <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
+                   <img src={course.image} alt={course.title} className="w-full h-full object-cover" width={384} height={192} loading="lazy" decoding="async" />
                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-800">{course.category}</div>
                 </div>
                 <div className="p-6">
@@ -758,7 +764,7 @@ export default function Home() {
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="relative">
               <div className="absolute -inset-4 bg-gradient-to-tr from-yellow-500/20 to-yellow-500/20 rounded-full blur-3xl" />
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
-                <img src={IMAGES.tutor} alt="Professional Tutor teaching online" className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700" />
+                <img src={IMAGES.tutor} alt="Professional Tutor teaching online" className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700" width={1200} height={800} loading="lazy" decoding="async" />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
                   <div className="text-white"><p className="font-bold text-xl">100% Verified Tutors</p><p className="text-gray-200 text-sm">Quality education, guaranteed.</p></div>
                 </div>
@@ -785,7 +791,7 @@ export default function Home() {
                  <div className="flex gap-1 mb-4">{[1,2,3,4,5].map(i=><Star key={i} className="w-4 h-4 text-yellow-400 fill-current"/>)}</div>
                  <p className="text-gray-200 italic mb-6">"{testimonial.text}"</p>
                  <div className="flex items-center gap-4">
-                    <img src={testimonial.avatar} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover" />
+                    <img src={testimonial.avatar} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover" width={48} height={48} loading="lazy" decoding="async" />
                     <div>
                        <div className="font-bold">{testimonial.name}</div>
                        <div className="text-sm text-gray-400">{testimonial.role}</div>
@@ -809,8 +815,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
             <div className="col-span-2">
-              <Link to="/" className="flex items-center space-x-2 mb-4">
-                <img src={labanonLogo} className="w-8 h-8" alt="Logo"/>
+                <Link to="/" className="flex items-center space-x-2 mb-4">
+                <img src={labanonLogo} width={32} height={32} className="w-8 h-8" alt="LightHub Academy logo"/>
                 <span className="text-xl font-bold">LightHub Academy</span>
               </Link>
               <p className="text-gray-400 max-w-sm">Africa's premier digital learning ecosystem, transforming education through technology.</p>
@@ -853,7 +859,7 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-gray-500 text-sm">
+          <div className="border-t border-gray-800 pt-8 text-center text-gray-300 text-sm">
             © {new Date().getFullYear()} LightHub Academy Limited. All rights reserved.
           </div>
         </div>

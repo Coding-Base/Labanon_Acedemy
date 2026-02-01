@@ -195,7 +195,7 @@ export default function Register() {
             {/* Header */}
             <div className="text-center mb-8">
               <Link to="/" className="inline-flex items-center space-x-2 mb-4">
-                <img src={labanonLogo} alt="LightHub Academy" className="w-10 h-10 object-contain" />
+                <img src={labanonLogo} alt="LightHub Academy logo" width={40} height={40} className="w-10 h-10 object-contain" />
                 <div className="text-left">
                   <h1 className="text-xl font-bold text-gray-900">
                     LightHub Academy

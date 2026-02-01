@@ -44,7 +44,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-brand-50 p-6">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
         <div className="flex justify-center mb-6">
-            <img src={labanonLogo} alt="Logo" className="h-12" />
+            <img src={labanonLogo} alt="LightHub Academy logo" width={48} height={48} className="h-12" />
         </div>
         
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-6">Set New Password</h2>

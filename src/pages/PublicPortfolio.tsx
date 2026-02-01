@@ -33,8 +33,8 @@ export default function PublicPortfolio() {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <header className="relative">
         <div className="h-64 md:h-80 w-full overflow-hidden bg-gray-200">
-          {portfolio.image ? (
-            <img src={portfolio.image} alt={portfolio.title} className="w-full h-full object-cover object-center transform hover:scale-105 transition" />
+            {portfolio.image ? (
+            <img src={portfolio.image} alt={portfolio.title} className="w-full h-full object-cover object-center transform hover:scale-105 transition" width={1600} height={600} loading="lazy" decoding="async" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-2xl text-gray-400">{portfolio.institution_name}</div>
           )}
@@ -44,7 +44,7 @@ export default function PublicPortfolio() {
           <div className="bg-white/90 backdrop-blur rounded-lg shadow-lg p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6">
             <div className="flex-shrink-0">
               {portfolio.image ? (
-                <img src={portfolio.image} alt={portfolio.title} className="w-28 h-28 md:w-36 md:h-36 rounded-lg object-cover shadow" />
+                <img src={portfolio.image} alt={portfolio.title} className="w-28 h-28 md:w-36 md:h-36 rounded-lg object-cover shadow" width={144} height={144} loading="lazy" decoding="async" />
               ) : (
                 <div className="w-28 h-28 md:w-36 md:h-36 rounded-lg bg-gray-200 flex items-center justify-center text-xl">{portfolio.institution_name?.[0]}</div>
               )}
@@ -98,7 +98,7 @@ export default function PublicPortfolio() {
                   className="group block rounded-lg overflow-hidden shadow hover:shadow-lg focus:shadow-lg"
                 >
                   <div className="relative h-48 bg-gray-100">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover transition group-hover:scale-105" />
+                    <img src={item.image} alt={item.title} className="w-full h-full object-cover transition group-hover:scale-105" width={600} height={400} loading="lazy" decoding="async" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition" />
                   </div>
                   <div className="p-3 bg-white">
@@ -115,9 +115,9 @@ export default function PublicPortfolio() {
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setSelected(null)}>
           <div className="max-w-4xl w-full bg-white rounded shadow-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="relative">
-              <img src={selected.image} alt={selected.title} className="w-full max-h-[70vh] object-contain bg-black" />
-              <button onClick={() => setSelected(null)} className="absolute top-3 right-3 bg-black/50 text-white rounded-full p-2">✕</button>
+              <div className="relative">
+              <img src={selected.image} alt={selected.title} className="w-full max-h-[70vh] object-contain bg-black" width={1200} height={800} loading="lazy" decoding="async" />
+              <button onClick={() => setSelected(null)} className="absolute top-3 right-3 bg-black/50 text-white rounded-full p-2" aria-label="Close image preview">✕</button>
             </div>
             <div className="p-4">
               <h3 className="text-lg font-semibold">{selected.title}</h3>

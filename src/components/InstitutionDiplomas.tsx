@@ -480,9 +480,13 @@ export default function InstitutionDiplomas() {
                   <div className="flex flex-col items-center justify-center">
                     {formData.image && formData.image.startsWith('blob:') ? (
                         <img 
-                            src={formData.image} 
-                            alt="Selected" 
-                            className="h-32 object-cover rounded-md mb-2 shadow-sm"
+                        src={formData.image} 
+                        alt="Selected diploma image" 
+                        className="h-32 object-cover rounded-md mb-2 shadow-sm"
+                        width={192}
+                        height={128}
+                        loading="lazy"
+                        decoding="async"
                         />
                     ) : (
                         <div className="mb-2 p-3 bg-yellow-100 rounded-full">
@@ -517,6 +521,10 @@ export default function InstitutionDiplomas() {
                     src={formData.image}
                     alt="Diploma preview"
                     className="w-full max-w-xs h-40 object-cover rounded-lg border"
+                    width={320}
+                    height={200}
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                         (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=Invalid+Image';
                     }}
@@ -580,6 +588,7 @@ export default function InstitutionDiplomas() {
                         : 'hover:bg-yellow-50 text-green-600'
                     }`}
                     title={diploma.published ? 'Unpublish' : 'Publish'}
+                    aria-label={diploma.published ? 'Unpublish diploma' : 'Publish diploma'}
                   >
                     {diploma.published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                   </button>
@@ -587,6 +596,7 @@ export default function InstitutionDiplomas() {
                     onClick={() => handleEdit(diploma)}
                     className="p-2 hover:bg-yellow-50 rounded-lg text-yellow-600 transition-colors"
                     title="Edit"
+                    aria-label="Edit diploma"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
@@ -594,6 +604,7 @@ export default function InstitutionDiplomas() {
                     onClick={() => handleDelete(diploma.id)}
                     className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
                     title="Delete"
+                    aria-label="Delete diploma"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

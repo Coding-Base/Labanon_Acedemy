@@ -928,7 +928,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
-              <img src={labanonLogo} alt="LightHub Academy" className="w-8 h-8 object-contain" />
+              <img src={labanonLogo} alt="LightHub Academy logo" width={32} height={32} className="w-8 h-8 object-contain" />
               <div>
                 <h1 className="text-lg font-bold text-gray-900">
                   {subadminPermissions ? 'Sub-Admin Dashboard' : 'Master Admin Dashboard'}
@@ -1480,7 +1480,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               >
                                 <div className="aspect-video bg-gradient-to-br from-yellow-500 to-yellow-500 relative">
                                   {course.image && (
-                                    <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
+                                    <img src={course.image} alt={course.title} className="w-full h-full object-cover" width={384} height={192} loading="lazy" decoding="async" />
                                   )}
                                   <div className="absolute top-4 right-4">
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${course.published ? 'bg-yellow-500 text-white' : 'bg-yellow-500 text-white'}`}>
@@ -2351,7 +2351,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 </div>
                                  
                                 {blog.image && (
-                                  <img src={blog.image} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" />
+                                  <img src={blog.image} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
                                 )}
                                  
                                 <p className="text-gray-600 mb-4 line-clamp-2">{blog.excerpt || blog.content}</p>
@@ -3066,7 +3066,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     className="w-full"
                   />
                   {typeof blogFormData.image === 'string' && blogFormData.image && (
-                    <img src={blogFormData.image} alt="preview" className="mt-2 w-32 h-20 object-cover rounded" />
+                    <img src={blogFormData.image} alt={blogFormData.title || 'Blog preview image'} className="mt-2 w-32 h-20 object-cover rounded" width={128} height={80} loading="lazy" decoding="async" />
                   )}
                   {blogFormData.image instanceof File && (
                     <p className="mt-2 text-sm text-gray-600">Selected file: {blogFormData.image.name}</p>

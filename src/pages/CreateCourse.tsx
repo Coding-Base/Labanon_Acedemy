@@ -568,7 +568,7 @@ export default function CreateCourse() {
                 <label className="block text-sm font-medium text-gray-700 mt-4">Course Image (thumbnail)</label>
                 <div className="mt-2 flex items-center gap-3">
                   <input type="file" accept="image/*" onChange={onCourseImageInput} />
-                  {courseImagePreview && <img src={courseImagePreview} alt="preview" className="w-24 h-16 object-cover rounded" />}
+                  {courseImagePreview && <img src={courseImagePreview} alt="Course image preview" className="w-24 h-16 object-cover rounded" width={192} height={128} loading="lazy" decoding="async" />}
                 </div>
 
                 <label className="block text-sm font-medium text-gray-700 mt-4">Linked Course (optional)</label>
@@ -692,7 +692,7 @@ export default function CreateCourse() {
                     <div className="flex items-center gap-4 p-4 border rounded bg-gray-50">
                         <div className="w-24 h-16 bg-gray-200 rounded overflow-hidden flex items-center justify-center">
                             {courseImagePreview ? (
-                                <img src={courseImagePreview} alt="preview" className="w-full h-full object-cover" />
+                                <img src={courseImagePreview} alt="Course image preview" className="w-full h-full object-cover" width={800} height={450} loading="lazy" decoding="async" />
                             ) : (
                                 <ImageIcon className="w-6 h-6 text-gray-400" />
                             )}
@@ -837,7 +837,7 @@ export default function CreateCourse() {
             </div>
             <div>
               <h2 className="text-2xl font-bold">{title || 'Untitled Course'}</h2>
-              {courseImagePreview && <img src={courseImagePreview} alt="course" className="w-48 mt-2 mb-4 object-cover rounded" />}
+              {courseImagePreview && <img src={courseImagePreview} alt="Course image preview" className="w-48 mt-2 mb-4 object-cover rounded" width={320} height={200} loading="lazy" decoding="async" />}
               <p className="text-sm text-gray-600">{description}</p>
               <div className="mt-4"><strong>Price:</strong> ₦{price}</div>
               

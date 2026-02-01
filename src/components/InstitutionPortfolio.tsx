@@ -456,18 +456,18 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <div className="space-y-3">
-              {gallery.length === 0 ? (
+                  {gallery.length === 0 ? (
                 <div className="text-sm text-gray-500">No gallery items yet.</div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {gallery.map((g) => (
                     <div key={g.id} className="border rounded-lg overflow-hidden relative">
-                      <img src={g.image} alt={g.title} className="w-full h-40 object-cover" />
+                      <img src={g.image} alt={g.title} className="w-full h-40 object-cover" width={640} height={320} loading="lazy" decoding="async" />
                       <div className="p-3">
                         <div className="font-semibold text-sm">{g.title}</div>
                         {g.description && <div className="text-xs text-gray-500">{g.description}</div>}
                       </div>
-                      <button onClick={() => deleteGalleryItem(g.id)} className="absolute top-2 right-2 bg-white/80 rounded-full p-1 text-red-600">✕</button>
+                      <button onClick={() => deleteGalleryItem(g.id)} className="absolute top-2 right-2 bg-white/80 rounded-full p-1 text-red-600" aria-label={`Delete gallery item ${g.title}`}>✕</button>
                     </div>
                   ))}
                 </div>

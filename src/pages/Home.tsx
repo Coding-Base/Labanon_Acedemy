@@ -501,8 +501,8 @@ export default function Home() {
               </motion.div>
               <motion.div variants={fadeInLeft}>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-                  <span className="block text-gray-900">Master Digital Skills,</span>
-                  <span className="block bg-gradient-to-r from-brand-600 to-brand-600 bg-clip-text text-transparent">e-learning courses </span>
+                  <span className="block text-gray-900">Master Digital</span>
+                  <span className="block bg-gradient-to-r from-brand-600 to-brand-600 bg-clip-text text-transparent">Skills </span>
                 </h1>
               </motion.div>
               <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto md:mx-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>

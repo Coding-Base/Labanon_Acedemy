@@ -501,12 +501,12 @@ export default function Home() {
               </motion.div>
               <motion.div variants={fadeInLeft}>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-                  <span className="block text-gray-900">Master Skills,</span>
-                  <span className="block bg-gradient-to-r from-brand-600 to-brand-600 bg-clip-text text-transparent">Ace Exams</span>
+                  <span className="block text-gray-900">Master Digital Skills,</span>
+                  <span className="block bg-gradient-to-r from-brand-600 to-brand-600 bg-clip-text text-transparent">e-learning courses </span>
                 </h1>
               </motion.div>
               <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto md:mx-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
-               Master JAMB, WAEC, and global standardized exams with our elite CBT practice platform. From scholarships to job recruitment and professional certifications Exams, access thousands of past questions on a real-world exam simulator.
+              Experience the all-in-one best online learning platform for digital skills, premium courses, and live online classes. Transform your career with expert-led training from top instructors and universities across Africa, USA, Europe and earn your certifications
               </motion.p>
               
               {/* Desktop CTA Buttons (Search is now in header) - Updated for Mobile Centering */}
@@ -638,7 +638,7 @@ export default function Home() {
                 the Smart Way
               </h2>
               <p className="text-lg text-gray-600">
-                Master your exams with our comprehensive CBT platform. Practice with over 5,000+ past questions and predicted questions designed to match the real exam format.
+               Master JAMB, WAEC, and global standardized exams with our elite CBT practice platform. From scholarships to job recruitment and professional certifications Exams, access thousands of past questions on a real-world exam simulator.
               </p>
               
               <div className="grid sm:grid-cols-2 gap-4">
@@ -750,7 +750,8 @@ export default function Home() {
                 <Globe className="w-4 h-4" /><span>Global Learning Access</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">Need a Personal <br/><span className="text-yellow-700">Home or Online Tutor?</span></h2>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">Whether you are in Nigeria or in the diaspora, finding the perfect tutor for your child shouldn't be a hassle. We connect you with vetted, expert tutors for personalized one-on-one learning in any subject.<br></br>Experience the all-in-one best online learning platform for digital skills, premium courses, and live online classes. Transform your career with expert-led training from top instructors and universities across Africa, USA, Europe and earn your certifications <br></br>Connect with verified personal and best online tutors for one-on-one tutoring, home or virtual lessons in USA, Africa, Europe and Nigeria 
+              <p className="text-lg text-gray-600 mb-8 leading-relaxed">Connect with verified personal and best online tutors for one-on-one tutoring, home or virtual lessons in USA, Africa, Europe and Nigeria 
+
 </p>
               <ul className="space-y-4 mb-10">
                 {['Expert tutors for primary, secondary & exam prep', 'Flexible schedules (Online or Physical)', 'Tailored curriculum for specific learning goals', 'Trusted by parents worldwide'].map((item, i) => (

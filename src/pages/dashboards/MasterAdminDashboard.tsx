@@ -111,6 +111,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [showBlogForm, setShowBlogForm] = useState(false)
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; excerpt: string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
+  const [savingBlog, setSavingBlog] = useState(false)
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const [settingsData, setSettingsData] = useState({firstName: '', lastName: '', email: ''})
@@ -118,6 +119,21 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
    
+  // Helper function to construct absolute image URLs for media files
+  const getImageUrl = (imageUrl: string | null) => {
+    if (!imageUrl) return ''
+    // If already absolute URL, return as-is
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl
+    }
+    // If relative path starting with /, prepend API base URL (without /api path)
+    if (imageUrl.startsWith('/')) {
+      const apiBaseWithoutPath = API_BASE.replace(/\/api\/?$/, '')
+      return apiBaseWithoutPath + imageUrl
+    }
+    return imageUrl
+  }
+
   // Manual Question Upload State
   const [manualQuestion, setManualQuestion] = useState({
     text: '',
@@ -133,6 +149,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [bulkMessage, setBulkMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [usersMessage, setUsersMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [uploadMode, setUploadMode] = useState<'json' | 'file' | 'manual'>('json')
+
+  // User Profile - Courses & Modules State
+  const [userCourses, setUserCourses] = useState<any[]>([])
+  const [selectedUserCourse, setSelectedUserCourse] = useState<any | null>(null)
+  const [userCourseModules, setUserCourseModules] = useState<any[]>([])
+  const [loadingUserCourses, setLoadingUserCourses] = useState(false)
+  const [loadingModules, setLoadingModules] = useState(false)
 
   // Exam & Subject Management State
   const [examsManagement, setExamsManagement] = useState<any[]>([])
@@ -187,12 +210,21 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
   }, [summary])
 
-  // Ensure current tab is accessible
+  // Ensure current tab is accessible and handle zero-permission subadmins
   useEffect(() => {
-    if (subadminPermissions && tabs.length > 0) {
+    if (subadminPermissions) {
+      // Check if subadmin has NO permissions at all
+      const hasAnyPermission = Object.values(subadminPermissions).some(v => v === true);
+      if (!hasAnyPermission && tabs.length === 0) {
+        // No permissions and no accessible tabs - show error or redirect
+        console.warn('Subadmin has no permissions assigned');
+        setTab(''); // Clear tab - will show "no access" message
+        return;
+      }
+      
       const currentTabAllowed = tabs.some(t => t.id === tab);
       if (!currentTabAllowed) {
-        setTab(tabs[0].id); // Default to first allowed tab
+        setTab(tabs.length > 0 ? tabs[0].id : ''); // Default to first allowed tab or empty
       }
     }
   }, [subadminPermissions, tabs, tab])
@@ -480,6 +512,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setBlogMessage({ type: 'error', text: 'Title and content are required' })
       return
     }
+    setSavingBlog(true)
     try {
       const token = localStorage.getItem('access')
       let headers: any = { Authorization: `Bearer ${token}` }
@@ -489,11 +522,12 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         fd.append('title', blogFormData.title)
         fd.append('content', blogFormData.content)
         fd.append('excerpt', blogFormData.excerpt)
-      fd.append('meta_title', blogFormData.meta_title || '')
-      fd.append('meta_description', blogFormData.meta_description || '')
-      fd.append('meta_keywords', blogFormData.meta_keywords || '')
-        fd.append('image', blogFormData.image)
-        headers['Content-Type'] = 'multipart/form-data'
+        fd.append('meta_title', blogFormData.meta_title || '')
+        fd.append('meta_description', blogFormData.meta_description || '')
+        fd.append('meta_keywords', blogFormData.meta_keywords || '')
+        fd.append('image_file', blogFormData.image)
+        // Do NOT set Content-Type manually; let the browser/axios set the correct
+        // multipart boundary so the server can parse files correctly.
         if (editingBlog) {
           res = await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, fd, { headers })
         } else {
@@ -504,8 +538,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           title: blogFormData.title,
           content: blogFormData.content,
           image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
-          excerpt: blogFormData.excerpt
-        ,
+          excerpt: blogFormData.excerpt,
           meta_title: blogFormData.meta_title || '',
           meta_description: blogFormData.meta_description || '',
           meta_keywords: blogFormData.meta_keywords || ''
@@ -516,15 +549,20 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           res = await axios.post(`${API_BASE}/blog/`, payload, { headers })
         }
       }
-       
+
+      // Success: close modal, reset form and reload list
       setShowBlogForm(false)
-      setBlogFormData({title: '', content: '', image: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
+      setBlogFormData({title: '', content: '', image: null, excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
       setEditingBlog(null)
       loadBlogs()
+      setBlogMessage({ type: 'success', text: editingBlog ? 'Blog updated' : 'Blog created' })
+      setTimeout(() => setBlogMessage(null), 3000)
     } catch (err) {
       console.error(err)
       setBlogMessage({ type: 'error', text: 'Failed to save blog' })
       setTimeout(() => setBlogMessage(null), 4000)
+    } finally {
+      setSavingBlog(false)
     }
   }
 
@@ -550,6 +588,46 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       console.error(err)
       setBlogMessage({ type: 'error', text: 'Failed to delete blog' })
       setTimeout(() => setBlogMessage(null), 4000)
+    }
+  }
+
+  // User Profile - Courses & Modules Functions
+  async function loadUserCourses(userId: number, userRole: string) {
+    // Only load courses for tutors or institutions
+    if (!['tutor', 'institution'].includes(userRole)) {
+      setUserCourses([])
+      setSelectedUserCourse(null)
+      return
+    }
+    
+    setLoadingUserCourses(true)
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/courses/?author=${userId}`, { headers: { Authorization: `Bearer ${token}` } })
+      const courses = res.data.results || res.data || []
+      setUserCourses(Array.isArray(courses) ? courses : [])
+      setSelectedUserCourse(null)
+      setUserCourseModules([])
+    } catch (err) {
+      console.error('Failed to load user courses:', err)
+      setUserCourses([])
+    } finally {
+      setLoadingUserCourses(false)
+    }
+  }
+
+  async function loadCourseModules(courseId: number) {
+    setLoadingModules(true)
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/courses/${courseId}/modules/`, { headers: { Authorization: `Bearer ${token}` } })
+      const modules = res.data.results || res.data || []
+      setUserCourseModules(Array.isArray(modules) ? modules : [])
+    } catch (err) {
+      console.error('Failed to load course modules:', err)
+      setUserCourseModules([])
+    } finally {
+      setLoadingModules(false)
     }
   }
 
@@ -1088,6 +1166,17 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               key={tab}
               className="bg-white rounded-2xl shadow-lg overflow-hidden"
             >
+              {/* No Permissions Message */}
+              {!tab || tabs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Shield className="w-16 h-16 text-red-300 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h3>
+                  <p className="text-gray-600 max-w-md text-center">
+                    You don't have any permissions assigned. Please contact your administrator to grant you access to the dashboard features.
+                  </p>
+                </div>
+              ) : (
+                <>
               {/* Tab Header */}
               <div className="border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center justify-between">
@@ -1171,7 +1260,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 <motion.div
                                   key={user.id}
                                   whileHover={{ x: 5 }}
-                                  onClick={() => setSelectedUser(user)}
+                                  onClick={() => {
+                                    setSelectedUser(user)
+                                    loadUserCourses(user.id, user.role)
+                                  }}
                                   className={`p-4 rounded-xl border cursor-pointer transition-all ${
                                     selectedUser?.id === user.id
                                       ? 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-yellow-50'
@@ -1313,6 +1405,84 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   </div>
                                 </div>
                               </div>
+
+                              {/* Courses Section - Only for Tutors/Institutions */}
+                              {['tutor', 'institution'].includes(selectedUser.role) && (
+                                <div className="mb-6">
+                                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Courses Created</h3>
+                                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                                    {loadingUserCourses ? (
+                                      <div className="flex items-center justify-center py-8">
+                                        <Loader2 className="w-6 h-6 text-yellow-600 animate-spin mr-2" />
+                                        <span className="text-gray-600">Loading courses...</span>
+                                      </div>
+                                    ) : userCourses.length === 0 ? (
+                                      <p className="text-gray-500 text-center py-4">No courses created yet</p>
+                                    ) : (
+                                      <div className="space-y-4">
+                                        <div>
+                                          <label className="block text-sm font-medium text-gray-700 mb-2">Select a Course</label>
+                                          <select
+                                            value={selectedUserCourse?.id || ''}
+                                            onChange={(e) => {
+                                              const courseId = parseInt(e.target.value);
+                                              const course = userCourses.find(c => c.id === courseId);
+                                              setSelectedUserCourse(course || null);
+                                              if (course) {
+                                                loadCourseModules(courseId);
+                                              }
+                                            }}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+                                          >
+                                            <option value="">Choose a course...</option>
+                                            {userCourses.map(course => (
+                                              <option key={course.id} value={course.id}>
+                                                {course.title}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+
+                                        {/* Course Details */}
+                                        {selectedUserCourse && (
+                                          <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-lg p-4 border border-yellow-200">
+                                            <h4 className="font-semibold text-gray-900 mb-2">{selectedUserCourse.title}</h4>
+                                            <p className="text-sm text-gray-600 mb-3">{selectedUserCourse.description}</p>
+                                            
+                                            {/* Modules */}
+                                            {loadingModules ? (
+                                              <div className="flex items-center justify-center py-6">
+                                                <Loader2 className="w-5 h-5 text-yellow-600 animate-spin mr-2" />
+                                                <span className="text-sm text-gray-600">Loading modules...</span>
+                                              </div>
+                                            ) : userCourseModules.length === 0 ? (
+                                              <p className="text-sm text-gray-500 py-3">No modules in this course</p>
+                                            ) : (
+                                              <div>
+                                                <h5 className="text-sm font-semibold text-gray-700 mb-3">Modules ({userCourseModules.length})</h5>
+                                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                                  {userCourseModules.map(module => (
+                                                    <div key={module.id} className="bg-white p-3 rounded-lg border border-gray-200">
+                                                      <div className="flex items-start justify-between">
+                                                        <div className="flex-1">
+                                                          <h6 className="font-medium text-gray-900 text-sm">{module.title}</h6>
+                                                          {module.description && (
+                                                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{module.description}</p>
+                                                          )}
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div className="text-center py-12">
@@ -2351,7 +2521,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 </div>
                                  
                                 {blog.image && (
-                                  <img src={blog.image} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
+                                  <img src={getImageUrl(blog.image)} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
                                 )}
                                  
                                 <p className="text-gray-600 mb-4 line-clamp-2">{blog.excerpt || blog.content}</p>
@@ -2940,6 +3110,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   <AdminMessages />
                 )}
               </div>
+              </>
+              )}
             </motion.div>
           </div>
         </div>
@@ -3066,7 +3238,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     className="w-full"
                   />
                   {typeof blogFormData.image === 'string' && blogFormData.image && (
-                    <img src={blogFormData.image} alt={blogFormData.title || 'Blog preview image'} className="mt-2 w-32 h-20 object-cover rounded" width={128} height={80} loading="lazy" decoding="async" />
+                    <img src={getImageUrl(blogFormData.image)} alt={blogFormData.title || 'Blog preview image'} className="mt-2 w-32 h-20 object-cover rounded" width={128} height={80} loading="lazy" decoding="async" />
                   )}
                   {blogFormData.image instanceof File && (
                     <p className="mt-2 text-sm text-gray-600">Selected file: {blogFormData.image.name}</p>
@@ -3088,9 +3260,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={saveBlog}
-                className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
+                disabled={savingBlog}
+                className={`px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow ${savingBlog ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                {editingBlog ? 'Update' : 'Create'} Post
+                {savingBlog ? <Loader2 className="w-5 h-5 animate-spin" /> : (editingBlog ? 'Update Post' : 'Create Post')}
               </motion.button>
             </div>
           </motion.div>

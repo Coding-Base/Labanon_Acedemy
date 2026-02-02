@@ -30,8 +30,8 @@ import ContactForm from '../components/ContactForm';
 
 import labanonLogo from './labanonlogo.png';
 import learningImage from './learningup.jpeg'; 
-import flyerImage from './lebanonflyer.jpg'; // Imported the flyer image
-
+import flyerImage from './reducedsize.png'; // Imported the flyer image
+import whitelogo from './labanon.png'
 const PRIMARY_HERO_IMAGE = learningImage; 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -506,7 +506,7 @@ export default function Home() {
                 </h1>
               </motion.div>
               <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto md:mx-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
-                Transform your learning experience with premium courses, interactive CBT practice, and live tutoring from top instructors across Africa.
+               Master JAMB, WAEC, and global standardized exams with our elite CBT practice platform. From scholarships to job recruitment and professional certifications Exams, access thousands of past questions on a real-world exam simulator.
               </motion.p>
               
               {/* Desktop CTA Buttons (Search is now in header) - Updated for Mobile Centering */}
@@ -750,7 +750,8 @@ export default function Home() {
                 <Globe className="w-4 h-4" /><span>Global Learning Access</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">Need a Personal <br/><span className="text-yellow-700">Home or Online Tutor?</span></h2>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">Whether you are in Nigeria or in the diaspora, finding the perfect tutor for your child shouldn't be a hassle. We connect you with vetted, expert tutors for personalized one-on-one learning in any subject.</p>
+              <p className="text-lg text-gray-600 mb-8 leading-relaxed">Whether you are in Nigeria or in the diaspora, finding the perfect tutor for your child shouldn't be a hassle. We connect you with vetted, expert tutors for personalized one-on-one learning in any subject.<br></br>Experience the all-in-one best online learning platform for digital skills, premium courses, and live online classes. Transform your career with expert-led training from top instructors and universities across Africa, USA, Europe and earn your certifications <br></br>Connect with verified personal and best online tutors for one-on-one tutoring, home or virtual lessons in USA, Africa, Europe and Nigeria 
+</p>
               <ul className="space-y-4 mb-10">
                 {['Expert tutors for primary, secondary & exam prep', 'Flexible schedules (Online or Physical)', 'Tailored curriculum for specific learning goals', 'Trusted by parents worldwide'].map((item, i) => (
                   <li key={i} className="flex items-center gap-3"><div className="w-6 h-6 rounded-full bg-yellow-200 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-yellow-700" /></div><span className="text-gray-700 font-medium">{item}</span></li>
@@ -816,7 +817,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
             <div className="col-span-2">
                 <Link to="/" className="flex items-center space-x-2 mb-4">
-                <img src={labanonLogo} width={32} height={32} className="w-8 h-8" alt="LightHub Academy logo"/>
+                <img src={whitelogo} width={32} height={32} className="w-8 h-8" alt="LightHub Academy logo"/>
                 <span className="text-xl font-bold">LightHub Academy</span>
               </Link>
               <p className="text-gray-400 max-w-sm">Africa's premier digital learning ecosystem, transforming education through technology.</p>

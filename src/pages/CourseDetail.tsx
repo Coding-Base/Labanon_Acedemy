@@ -472,12 +472,6 @@ export default function CourseDetail() {
                       {isScheduled ? 'Open Schedule' : 'Open Course Player'}
                     </button>
                   </div>
-
-                  {/* Money Back Guarantee */}
-                  <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
-                    <p className="font-semibold text-gray-900 text-sm">30-Day Money-Back Guarantee</p>
-                    <p className="text-xs text-gray-500 mt-1">Full refund if not satisfied</p>
-                  </div>
                 </div>
 
                 {/* Course Includes */}

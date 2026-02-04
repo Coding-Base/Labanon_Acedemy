@@ -9,10 +9,7 @@ const isMobileDevice = () => {
 
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
 
-// Disable context menu (blocks right-click on desktop and long-press menus on mobile)
-window.addEventListener('contextmenu', (e) => {
-  e.preventDefault()
-})
+// NOTE: Right-click/context menu handlers removed to allow normal browser interactions.
 
 // Desktop: Block PrintScreen and copy shortcuts
 if (!isMobileDevice()) {

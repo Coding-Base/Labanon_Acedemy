@@ -4,8 +4,17 @@ import { motion } from 'framer-motion'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Calendar, User, Loader2, Heart, MessageCircle, Share2 } from 'lucide-react'
 import CommentSection from '../components/blog/CommentSection'
+import DOMPurify from 'dompurify'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
+const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
+
+function getImageSrc(img?: string) {
+  if (!img) return undefined
+  if (img.startsWith('http') || img.startsWith('data:')) return img
+  if (img.startsWith('/')) return `${BACKEND_ORIGIN}${img}`
+  return `${BACKEND_ORIGIN}/${img}`
+}
 
 interface BlogPost {
   id: number
@@ -225,7 +234,7 @@ export default function BlogDetailPage() {
           {blog.image && (
             <div className="w-full h-96 overflow-hidden bg-gradient-to-br from-green-400 to-yellow-500">
               <img
-                src={blog.image}
+                src={getImageSrc(blog.image)}
                 alt={blog.title}
                 className="w-full h-full object-cover"
               />
@@ -260,8 +269,10 @@ export default function BlogDetailPage() {
 
             {/* Body */}
             <div className="prose prose-lg max-w-none">
-              <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {blog.content}
+              <div className="text-gray-700 leading-relaxed">
+                <div
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blog.content || '') }}
+                />
               </div>
             </div>
 

@@ -3,6 +3,7 @@ import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import axios from 'axios'
 import useTokenRefresher from '../../utils/useTokenRefresher'
+import { initGA, sendPageView } from '../../utils/googleAnalytics'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -247,6 +248,19 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   }, [tab])
 
   useTokenRefresher(50)
+
+  // Initialize Google Analytics (if measurement id provided)
+  useEffect(() => {
+    try {
+      const measurementId = (import.meta as any).env.VITE_GA_MEASUREMENT_ID
+      if (measurementId) {
+        initGA(measurementId)
+        sendPageView(window.location.pathname)
+      }
+    } catch (e) {
+      // ignore in environments where import.meta is unavailable
+    }
+  }, [])
 
   // fetch summary if not provided
   useEffect(() => {

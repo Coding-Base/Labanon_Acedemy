@@ -5,6 +5,14 @@ import { Search, Loader2, Calendar, User, ChevronRight, Heart, MessageCircle, Sh
 import { useNavigate } from 'react-router-dom'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
+const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
+
+function getImageSrc(img?: string) {
+  if (!img) return undefined
+  if (img.startsWith('http') || img.startsWith('data:')) return img
+  if (img.startsWith('/')) return `${BACKEND_ORIGIN}${img}`
+  return `${BACKEND_ORIGIN}/${img}`
+}
 
 interface BlogPost {
   id: number
@@ -163,7 +171,7 @@ export default function BlogPage() {
                 {blog.image && (
                   <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-400 to-yellow-500">
                     <img
-                      src={blog.image}
+                      src={getImageSrc(blog.image)}
                       alt={blog.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

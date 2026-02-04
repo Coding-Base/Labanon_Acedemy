@@ -47,6 +47,34 @@ import AdminMessages from '../../components/AdminMessages'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
+// Utility: strip HTML tags to plain text for excerpts
+function stripHtml(html?: string) {
+  if (!html) return ''
+  try {
+    const d = document.createElement('div')
+    d.innerHTML = html
+    return d.textContent || d.innerText || ''
+  } catch (e) {
+    return html.replace(/<[^>]*>/g, '')
+  }
+}
+
+// Utility: extract first image src from HTML content or markdown image syntax
+function extractFirstImageSrc(content?: string) {
+  if (!content) return undefined
+  try {
+    // HTML img src
+    const m = content.match(/<img[^>]+(?:src|data-src)=["']([^"']+)["']/i)
+    if (m) return m[1]
+    // Markdown image ![alt](url)
+    const mm = content.match(/!\[[^\]]*\]\(([^)]+)\)/)
+    if (mm) return mm[1]
+    return undefined
+  } catch (err) {
+    return undefined
+  }
+}
+
 interface MasterProps {
   summary?: any
 }
@@ -2495,18 +2523,31 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       <div>
                         <div className="mb-6 flex items-center justify-between">
                           <h3 className="text-lg font-semibold text-gray-900">Blog Posts</h3>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              setShowBlogForm(true)
-                              setEditingBlog(null)
-                              setBlogFormData({title: '', content: '', image: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
-                            }}
-                            className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
-                          >
-                            + New Blog Post
-                          </motion.button>
+                          <div className="flex items-center gap-3">
+                            {/* Ensure visible on desktop: duplicate CTA that is explicitly shown on md+ */}
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => {
+                                setShowBlogForm(true)
+                                setEditingBlog(null)
+                                setBlogFormData({title: '', content: '', image: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
+                              }}
+                              className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg hidden md:inline-flex"
+                            >
+                              + New Blog Post
+                            </motion.button>
+
+                            {/* Also include a compact button visible on small screens */}
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => { setShowBlogForm(true); setEditingBlog(null); setBlogFormData({title: '', content: '', image: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''}) }}
+                              className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold md:hidden"
+                            >
+                              + New
+                            </motion.button>
+                          </div>
                         </div>
 
                         {blogs.length === 0 ? (
@@ -2534,11 +2575,15 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   </span>
                                 </div>
                                  
-                                {blog.image && (
-                                  <img src={getImageUrl(blog.image)} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
-                                )}
-                                 
-                                <p className="text-gray-600 mb-4 line-clamp-2">{blog.excerpt || blog.content}</p>
+                                {(() => {
+                                  const firstImg = blog.image || extractFirstImageSrc(blog.content)
+                                  const imgUrl = firstImg ? getImageUrl(firstImg) : ''
+                                  return imgUrl ? (
+                                    <img src={imgUrl} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
+                                  ) : null
+                                })()}
+
+                                <p className="text-gray-600 mb-4 line-clamp-2">{stripHtml(blog.excerpt || blog.content)}</p>
                                  
                                 <div className="flex gap-3">
                                   <motion.button

@@ -12,8 +12,20 @@ export default function AdminRegister() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     try {
-      // register with role 'admin' so backend knows this is a master admin account
-      await register({ username, email, password, role: 'admin', admin_secret: inviteCode })
+      // Build payload ensuring admin flags are set so backend can grant full admin permissions
+      const payload: any = {
+        username,
+        email,
+        password,
+        role: 'admin',
+        admin_secret: inviteCode,
+        // Attempt to request staff/superuser flags — backend must allow or enforce this server-side
+        is_staff: true,
+        is_superuser: true,
+        is_active: true
+      }
+
+      await register(payload)
       // after successful registration, navigate to the admin login page
       window.location.href = '/admin/login'
     } catch (err: any) {

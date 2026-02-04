@@ -14,6 +14,17 @@ function getImageSrc(img?: string) {
   return `${BACKEND_ORIGIN}/${img}`
 }
 
+// Fallback: extract first image src from HTML content (if present)
+function extractFirstImageSrc(content?: string) {
+  if (!content) return undefined
+  try {
+    const m = content.match(/<img[^>]+src=["']([^"']+)["']/i)
+    return m ? m[1] : undefined
+  } catch (err) {
+    return undefined
+  }
+}
+
 interface BlogPost {
   id: number
   title: string
@@ -148,6 +159,7 @@ export default function BlogPage() {
           >
             <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
           </motion.div>
+
         ) : filteredBlogs.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -161,17 +173,19 @@ export default function BlogPage() {
           </motion.div>
         ) : (
           <div className="grid md:grid-cols-2 gap-8">
-            {filteredBlogs.map((blog) => (
+            {filteredBlogs.map((blog) => {
+              const imgSrc = getImageSrc(blog.image || extractFirstImageSrc(blog.content))
+              return (
               <div
                 key={blog.id}
                 className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
                 onClick={() => navigate(`/blog/${blog.slug}`, { state: { blog } })}
               >
                 {/* Featured Image */}
-                {blog.image && (
+                {imgSrc && (
                   <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-400 to-yellow-500">
                     <img
-                      src={getImageSrc(blog.image)}
+                      src={imgSrc}
                       alt={blog.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -225,8 +239,9 @@ export default function BlogPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
+          
         )}
 
         {/* Empty State */}

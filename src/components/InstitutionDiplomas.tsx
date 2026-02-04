@@ -15,6 +15,7 @@ import {
   GraduationCap 
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { SUPPORTED_CURRENCIES } from '../constants/currencies'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -41,6 +42,7 @@ interface DiplomaFormData {
   end_date: string
   meeting_place: string
   image: string // Used for preview URL
+  currency?: string
 }
 
 export default function InstitutionDiplomas() {
@@ -67,6 +69,7 @@ export default function InstitutionDiplomas() {
     end_date: '',
     meeting_place: '',
     image: '',
+    currency: 'NGN'
   })
 
   const loadDiplomas = async () => {
@@ -183,6 +186,7 @@ export default function InstitutionDiplomas() {
       payload.append('title', formData.title)
       payload.append('description', formData.description)
       payload.append('price', formData.price)
+      payload.append('currency', formData.currency || 'NGN')
       payload.append('duration', formData.duration)
       payload.append('meeting_place', formData.meeting_place)
       
@@ -256,6 +260,7 @@ export default function InstitutionDiplomas() {
       end_date: diploma.end_date || '',
       meeting_place: diploma.meeting_place,
       image: diploma.image || '',
+      currency: (diploma as any).currency || 'NGN',
     })
     setSelectedFile(null) 
     setEditingId(diploma.id)
@@ -358,6 +363,14 @@ export default function InstitutionDiplomas() {
                   disabled={submitting}
                   required
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Price (₦)</label>

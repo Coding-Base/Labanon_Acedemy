@@ -1,6 +1,7 @@
 // src/pages/CreateCourse.tsx
 import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
+import { SUPPORTED_CURRENCIES } from '../constants/currencies'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -39,6 +40,7 @@ export default function CreateCourse() {
   // Common Fields
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState('0')
+  const [currency, setCurrency] = useState('NGN')
   const [description, setDescription] = useState('')
   const [requiredTools, setRequiredTools] = useState('')
   const [numLessons, setNumLessons] = useState(0) 
@@ -205,6 +207,7 @@ export default function CreateCourse() {
         setTitle(data.title || '')
         setDescription(data.description || '')
         setPrice(String(data.price ?? 0))
+        setCurrency(data.currency || 'NGN')
         setCourseImagePreview(data.image || null)
         setLevel(data.level || levels[0])
         setOutcome(data.outcome || '')
@@ -294,6 +297,7 @@ export default function CreateCourse() {
       formData.append('title', title.trim())
       formData.append('description', description)
       formData.append('price', String(Number(price) || 0))
+      formData.append('currency', currency)
       formData.append('published', publish ? 'true' : 'false')
       formData.append('level', level)
       formData.append('outcome', outcome)
@@ -544,7 +548,14 @@ export default function CreateCourse() {
                 {errors.title && <div className="text-sm text-red-600 mt-1">{Array.isArray(errors.title) ? errors.title[0] : errors.title}</div>}
 
                 <label className="block text-sm font-medium text-gray-700 mt-4">Price</label>
-                <input className="mt-2 w-full border rounded p-2" value={price} onChange={(e) => setPrice(e.target.value)} />
+                <div className="mt-2 flex gap-2">
+                  <input className="flex-1 border rounded p-2" value={price} onChange={(e) => setPrice(e.target.value)} />
+                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-40 border rounded p-2">
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.code}</option>
+                    ))}
+                  </select>
+                </div>
                 {errors.price && <div className="text-sm text-red-600 mt-1">{Array.isArray(errors.price) ? errors.price[0] : errors.price}</div>}
 
                 <label className="block text-sm font-medium text-gray-700 mt-4">Course Description</label>

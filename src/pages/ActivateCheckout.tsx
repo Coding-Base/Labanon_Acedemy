@@ -13,6 +13,7 @@ export default function ActivateCheckout() {
   const query = useQuery()
   const navigate = useNavigate()
   const [amount, setAmount] = useState<number | null>(null)
+  const [currency, setCurrency] = useState<string>('NGN')
   const [title, setTitle] = useState('Activation')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -36,10 +37,12 @@ export default function ActivateCheckout() {
         const res = await axios.get(`${API_BASE}/payments/activation-fee/`, { params, headers: token ? { Authorization: `Bearer ${token}` } : undefined })
         if (!mounted) return
         const amt = res.data.amount ?? null
+        const cur = res.data.currency || 'NGN'
         if (amt === null || amt === undefined) {
           setError('Activation fee not configured. Please contact support.')
         } else {
           setAmount(Number(amt))
+          setCurrency(String(cur).toUpperCase())
           if (type === 'interview' && query.get('subject_name')) {
             setTitle(`Unlock: ${query.get('subject_name')}`)
           } else if (type === 'exam' && query.get('exam_title')) {
@@ -81,6 +84,7 @@ export default function ActivateCheckout() {
         itemId={itemId}
         itemType={'activation'}
         amount={amount}
+        currency={currency}
         itemTitle={title}
         meta={meta}
         returnTo={returnTo}

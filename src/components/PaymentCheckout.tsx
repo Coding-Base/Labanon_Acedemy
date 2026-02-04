@@ -11,6 +11,7 @@ interface PaymentCheckoutProps {
   itemId: number
   itemType: 'course' | 'diploma' | 'activation'
   amount: number
+  currency?: string
   itemTitle: string
   isScheduled?: boolean // <--- New Prop
   onSuccess?: () => void
@@ -28,12 +29,22 @@ export default function PaymentCheckout({
   itemId,
   itemType,
   amount,
+  currency = 'NGN',
   itemTitle,
   isScheduled = false, // Default to false
   onSuccess,
   meta,
   returnTo,
 }: PaymentCheckoutProps) {
+  // Helper: map ISO currency to symbol
+  const currencySymbol = (code?: string) => {
+    const c = (code || 'NGN').toUpperCase()
+    const map: Record<string,string> = {
+      'NGN': '₦', 'USD': '$', 'EUR': '€', 'GBP': '£', 'GHS': 'GH₵', 'KES': 'KSh',
+      'ZAR': 'R', 'CAD': 'C$', 'AUD': 'A$', 'INR': '₹'
+    }
+    return map[c] || (c + ' ')
+  }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [processing, setProcessing] = useState(false)
@@ -89,6 +100,7 @@ export default function PaymentCheckout({
         item_type: itemType,
         item_id: itemId,
         amount: amount,
+        currency: currency,
       }
       if (meta) {
         Object.assign(payload, meta)
@@ -124,7 +136,7 @@ export default function PaymentCheckout({
         const handler = window.PaystackPop.setup({
           key: (import.meta.env as any).VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_b5d0eaff52a5d2ed395c2ea99c881ec4ce62acc6',
           email: (await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } })).data.email,
-          amount: amount * 100, // Convert to kobo
+          amount: amount * 100, // Convert to subunits (kobo/cents)
           ref: reference,
           onClose: () => {
             setLoading(false)
@@ -217,12 +229,12 @@ export default function PaymentCheckout({
         <div className="border-t border-yellow-200 pt-4 mt-4">
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Subtotal:</span>
-            <span className="font-semibold text-gray-900">₦{amount.toLocaleString()}</span>
+            <span className="font-semibold text-gray-900">{currencySymbol(currency)}{amount.toLocaleString()}</span>
           </div>
           {itemType === 'activation' ? (
             <div className="text-sm text-gray-500 flex justify-between mb-4">
               <span>Platform receives:</span>
-              <span>₦{amount.toLocaleString()}</span>
+              <span>{currencySymbol(currency)}{amount.toLocaleString()}</span>
             </div>
           ) : (
             <>
@@ -237,11 +249,11 @@ export default function PaymentCheckout({
                   <>
                     <div className="text-sm text-gray-500 flex justify-between mb-4">
                       <span>Platform fee ({platformPercent}%):</span>
-                      <span>₦{platformAmount.toLocaleString()}</span>
+                      <span>{currencySymbol(currency)}{platformAmount.toLocaleString()}</span>
                     </div>
                     <div className="text-sm text-gray-500 flex justify-between pb-4 border-b border-yellow-200 mb-4">
                       <span>Creator gets ({creatorShare}%):</span>
-                      <span className="font-medium text-yellow-700">₦{creatorAmount.toLocaleString()}</span>
+                      <span className="font-medium text-yellow-700">{currencySymbol(currency)}{creatorAmount.toLocaleString()}</span>
                     </div>
                   </>
                 )
@@ -250,7 +262,7 @@ export default function PaymentCheckout({
           )}
           <div className="flex justify-between">
             <span className="text-lg font-bold text-gray-900">Total:</span>
-            <span className="text-2xl font-bold text-yellow-600">₦{amount.toLocaleString()}</span>
+            <span className="text-2xl font-bold text-yellow-600">{currencySymbol(currency)}{amount.toLocaleString()}</span>
           </div>
         </div>
       </div>

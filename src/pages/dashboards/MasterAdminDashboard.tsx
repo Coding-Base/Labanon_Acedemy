@@ -40,6 +40,7 @@ import {
 } from 'lucide-react'
 import labanonLogo from '../labanonlogo.png'
 import CreateCourse from '../CreateCourse'
+import { SUPPORTED_CURRENCIES } from '../../constants/currencies'
 import SubAdminForm from '../../components/dashboards/SubAdminForm'
 import AdminMessages from '../../components/AdminMessages'
 // If PaymentHistory is needed, import it, otherwise referencing internal table
@@ -2257,7 +2258,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                                  <input value={activationForm.currency} onChange={(e) => setActivationForm({ ...activationForm, currency: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
+                                  <select value={activationForm.currency} onChange={(e) => setActivationForm({ ...activationForm, currency: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
+                                    {SUPPORTED_CURRENCIES.map((c) => (
+                                      <option key={c.code} value={c.code}>{c.label}</option>
+                                    ))}
+                                  </select>
                                 </div>
 
                                 {(activationForm.type === 'exam' || activationForm.type === 'interview_subject') && (
@@ -3571,3 +3576,5 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     </div>
   )
 }
+
+// SUPPORTED_CURRENCIES imported from src/constants/currencies.ts

@@ -514,7 +514,6 @@ export default function CoursePlayer(): JSX.Element {
           preload="metadata"
           playsInline
           controlsList="nodownload nofullscreen noremoteplayback"
-          onContextMenu={(e) => e.preventDefault()}
         >
           <track kind="captions" />
           Your browser does not support the video tag.
@@ -797,7 +796,7 @@ export default function CoursePlayer(): JSX.Element {
               </div>
 
               {/* Media Player Container */}
-              <div className="bg-black" onContextMenu={(e) => e.preventDefault()}>
+              <div className="bg-black">
                 {renderMediaPlayer()}
               </div>
 

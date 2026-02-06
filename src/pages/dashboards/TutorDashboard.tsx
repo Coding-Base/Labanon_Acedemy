@@ -259,7 +259,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
               courses_created: item.courses_created !== undefined ? item.courses_created : (item.courses_count || 0),
               avatar_initial: (item.name || item.username || item.user?.username || 'T').charAt(0).toUpperCase()
             }));
-            console.log('Tutor leaderboard data:', tutorLeaderboardData); // Debug log
+            // Debug log removed for production
           }
         } catch (err) {
           console.error('Failed to fetch tutors leaderboard:', err);

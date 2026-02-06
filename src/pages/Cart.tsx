@@ -56,7 +56,7 @@ export default function Cart() {
         headers: { Authorization: `Bearer ${token}` }
       })
       const items = Array.isArray(res.data) ? res.data : (res.data.results || [])
-      console.log('[Cart] Loaded items:', items)
+      // Debug log removed for production
       setCartItems(items)
     } catch (err: any) {
       console.error('Failed to load cart:', err)

@@ -225,6 +225,14 @@ export default function CoursesList() {
                       decoding="async"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+                    {/* Course Type Badge */}
+                    {c.course_type && (
+                      <div className="absolute top-2 right-2">
+                        <span className="px-2 py-1 bg-brand-600 text-white text-xs font-semibold rounded-full capitalize">
+                          {c.course_type.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Content Section */}

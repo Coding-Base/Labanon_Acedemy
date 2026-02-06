@@ -214,7 +214,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
               exams_taken: item.attempts_count !== undefined ? item.attempts_count : (item.exams_taken || 0),
               avatar_initial: (item.name || item.username || item.user?.username || 'S').charAt(0).toUpperCase()
             }));
-            console.log('Student leaderboard data:', leaderboardData); // Debug log
+            // Debug log removed for production
           }
         } catch (err) {
           console.error('Failed to fetch leaderboard:', err);

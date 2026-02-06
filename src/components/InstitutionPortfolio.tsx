@@ -75,7 +75,7 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
           image: myPortfolio.image
         });
       } else {
-        console.log("No portfolio found, user can create one.");
+        // No portfolio found for this institution
       }
     } catch (err: any) {
        console.error('Failed to load portfolio', err);

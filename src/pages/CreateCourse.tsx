@@ -30,6 +30,24 @@ type ModuleItem = {
   title: string
   order?: number
   lessons?: Lesson[]
+  quiz?: {
+    id?: number
+    title: string
+    description?: string
+    passing_score: number
+    is_required: boolean
+    questions: Array<{
+      id?: number
+      text: string
+      points: number
+      explanation?: string
+      options: Array<{
+        id?: number
+        text: string
+        is_correct: boolean
+      }>
+    }>
+  }
 }
 
 export default function CreateCourse() {
@@ -46,6 +64,7 @@ export default function CreateCourse() {
   const [numLessons, setNumLessons] = useState(0) 
   const [level, setLevel] = useState<Level>(levels[0])
   const [outcome, setOutcome] = useState('')
+  const [courseCategory, setCourseCategory] = useState('other') // Course type/badge (master, beginner, etc.)
   
   // Linking
   const [linkedCourse, setLinkedCourse] = useState<any | null>(null)
@@ -59,6 +78,18 @@ export default function CreateCourse() {
   const [lessonTitle, setLessonTitle] = useState('')
   const [lessonContent, setLessonContent] = useState('') 
   const [editingLessonIndex, setEditingLessonIndex] = useState<number | null>(null)
+  
+  // Quiz builder state
+  const [quizEditingModuleIndex, setQuizEditingModuleIndex] = useState<number | null>(null)
+  const [quizTitle, setQuizTitle] = useState('Module Quiz')
+  const [quizPassingScore, setQuizPassingScore] = useState('70')
+  const [quizIsRequired, setQuizIsRequired] = useState(true)
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([])
+  const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null)
+  const [questionText, setQuestionText] = useState('')
+  const [questionPoints, setQuestionPoints] = useState('1')
+  const [questionExplanation, setQuestionExplanation] = useState('')
+  const [questionOptions, setQuestionOptions] = useState<any[]>([{ text: '', isCorrect: false }])
 
   // scheduled course fields
   const [startDate, setStartDate] = useState('')
@@ -212,6 +243,7 @@ export default function CreateCourse() {
         setLevel(data.level || levels[0])
         setOutcome(data.outcome || '')
         setRequiredTools(data.required_tools || '')
+        setCourseCategory(data.course_type || 'other')
         
         // Scheduled check
         if (data.meeting_link || (data.start_date && data.meeting_place)) {
@@ -237,7 +269,25 @@ export default function CreateCourse() {
               video_s3: ls.video_s3,
               video_s3_url: ls.video_s3_url,
               youtube_url: ls.youtube_url
-          }))
+          })),
+          quiz: m.quiz ? {
+            id: m.quiz.id,
+            title: m.quiz.title,
+            description: m.quiz.description || '',
+            passing_score: m.quiz.passing_score || 70,
+            is_required: m.quiz.is_required || false,
+            questions: (m.quiz.questions || []).map((q: any) => ({
+              id: q.id,
+              text: q.text,
+              points: q.points || 1,
+              explanation: q.explanation || '',
+              options: (q.options || []).map((opt: any) => ({
+                id: opt.id,
+                text: opt.text,
+                is_correct: opt.is_correct || false
+              }))
+            }))
+          } : undefined
         }))
         setModules(mods)
         if (mods.length > 0) setCurrentModuleIndex(0)
@@ -301,7 +351,8 @@ export default function CreateCourse() {
       formData.append('published', publish ? 'true' : 'false')
       formData.append('level', level)
       formData.append('outcome', outcome)
-      formData.append('required_tools', requiredTools) 
+      formData.append('required_tools', requiredTools)
+      formData.append('course_type', courseCategory) // Add course type/badge 
 
       // Handle Scheduled Fields
       if (courseType === 'scheduled') {
@@ -374,6 +425,79 @@ export default function CreateCourse() {
                       await axios.post(`${API_BASE}/lessons/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
                     }
                   } catch (err) { console.error(err) }
+                }
+
+                // Handle Module Quiz
+                if (mod.quiz && mod.quiz.questions && mod.quiz.questions.length > 0) {
+                  try {
+                    // Create or update the module quiz
+                    const quizPayload = {
+                      module: moduleId,
+                      title: mod.quiz.title,
+                      description: mod.quiz.description || '',
+                      passing_score: mod.quiz.passing_score || 70,
+                      is_required: mod.quiz.is_required || false
+                    }
+
+                    let quizId: number
+                    if (mod.quiz.id) {
+                      // Update existing quiz
+                      await axios.patch(`${API_BASE}/module-quizzes/${mod.quiz.id}/`, quizPayload, { headers: { Authorization: `Bearer ${token}` } })
+                      quizId = mod.quiz.id
+                    } else {
+                      // Create new quiz
+                      const qres = await axios.post(`${API_BASE}/module-quizzes/`, quizPayload, { headers: { Authorization: `Bearer ${token}` } })
+                      quizId = qres.data.id
+                    }
+
+                    // Save quiz questions
+                    for (let qi = 0; qi < mod.quiz.questions.length; qi++) {
+                      const q = mod.quiz.questions[qi]
+                      try {
+                        const questionPayload = {
+                          quiz: quizId,
+                          text: q.text,
+                          points: q.points || 1,
+                          explanation: q.explanation || '',
+                          order: qi
+                        }
+
+                        let questionId: number
+                        if (q.id) {
+                          // Update existing question
+                          await axios.patch(`${API_BASE}/quiz-questions/${q.id}/`, questionPayload, { headers: { Authorization: `Bearer ${token}` } })
+                          questionId = q.id
+                        } else {
+                          // Create new question
+                          const qres = await axios.post(`${API_BASE}/quiz-questions/`, questionPayload, { headers: { Authorization: `Bearer ${token}` } })
+                          questionId = qres.data.id
+                        }
+
+                        // Save quiz options (answers)
+                        if (q.options && q.options.length > 0) {
+                          for (let oi = 0; oi < q.options.length; oi++) {
+                            const opt = q.options[oi]
+                            try {
+                              const optionPayload = {
+                                question: questionId,
+                                text: opt.text,
+                                is_correct: opt.is_correct || false,
+                                order: oi
+                              }
+
+                              if (opt.id) {
+                                // Update existing option
+                                await axios.patch(`${API_BASE}/quiz-options/${opt.id}/`, optionPayload, { headers: { Authorization: `Bearer ${token}` } })
+                              } else {
+                                // Create new option
+                                await axios.post(`${API_BASE}/quiz-options/`, optionPayload, { headers: { Authorization: `Bearer ${token}` } })
+                              }
+                            } catch (err) { console.error('Error saving quiz option:', err) }
+                          }
+                        }
+                      } catch (err) { console.error('Error saving quiz question:', err) }
+                    }
+                  } catch (err) { console.error('Error saving quiz:', err) }
                 }
              }
           }
@@ -501,6 +625,74 @@ export default function CreateCourse() {
     setLessonContent((c) => (c || '') + block)
   }
 
+  // ===== QUIZ HELPER FUNCTIONS (DISTINCT FROM CBT) =====
+  function startQuizEditor(moduleIdx: number) {
+    setQuizEditingModuleIndex(moduleIdx)
+    setQuizTitle('Module Quiz')
+    setQuizPassingScore('70')
+    setQuizIsRequired(true)
+    setQuizQuestions([])
+    setEditingQuestionIndex(null)
+    setQuestionText('')
+    setQuestionPoints('1')
+    setQuestionExplanation('')
+    setQuestionOptions([{ text: '', isCorrect: false }])
+  }
+
+  function cancelQuizEditor() {
+    setQuizEditingModuleIndex(null)
+  }
+
+  function addOrEditQuestion() {
+    if (!questionText.trim()) return
+    if (questionOptions.filter((opt) => opt.text.trim()).length === 0) return
+    if (questionOptions.filter((opt) => opt.isCorrect).length === 0) return
+
+    const newQuestion = {
+      text: questionText.trim(),
+      points: Number(questionPoints) || 1,
+      explanation: questionExplanation,
+      options: questionOptions.map((opt) => ({ text: opt.text.trim(), is_correct: opt.isCorrect })),
+    }
+
+    setQuizQuestions((qs) => {
+      if (editingQuestionIndex !== null) {
+        const copy = [...qs]
+        copy[editingQuestionIndex] = newQuestion
+        return copy
+      }
+      return [...qs, newQuestion]
+    })
+
+    setQuestionText('')
+    setQuestionPoints('1')
+    setQuestionExplanation('')
+    setQuestionOptions([{ text: '', isCorrect: false }])
+    setEditingQuestionIndex(null)
+  }
+
+  function removeQuestion(idx: number) {
+    setQuizQuestions((qs) => qs.filter((_, i) => i !== idx))
+  }
+
+  function saveQuizToModule() {
+    if (quizEditingModuleIndex === null || quizQuestions.length === 0) return
+    // Store quiz data in module state (will be saved when course is submitted)
+    setModules((mods) => {
+      const copy = [...mods]
+      const mod = { ...copy[quizEditingModuleIndex] }
+      mod.quiz = {
+        title: quizTitle,
+        passing_score: Number(quizPassingScore),
+        is_required: quizIsRequired,
+        questions: quizQuestions,
+      }
+      copy[quizEditingModuleIndex] = mod
+      return copy
+    })
+    setQuizEditingModuleIndex(null)
+  }
+
   const quillModules = {
     toolbar: [
       [{ header: [1, 2, 3, false] }],
@@ -570,6 +762,19 @@ export default function CreateCourse() {
                 <label className="block text-sm font-medium text-gray-700 mt-4">Level</label>
                 <select value={level} onChange={(e) => setLevel(e.target.value as Level)} className="mt-2 w-full border rounded p-2">
                   {levels.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+
+                <label className="block text-sm font-medium text-gray-700 mt-4">Course Type/Badge</label>
+                <select value={courseCategory} onChange={(e) => setCourseCategory(e.target.value)} className="mt-2 w-full border rounded p-2">
+                  <option value="beginner">Beginner Course</option>
+                  <option value="intermediate">Intermediate Course</option>
+                  <option value="advanced">Advanced Course</option>
+                  <option value="master">Master Course</option>
+                  <option value="specialized">Specialized Course</option>
+                  <option value="certification">Certification Program</option>
+                  <option value="bootcamp">Bootcamp</option>
+                  <option value="workshop">Workshop</option>
+                  <option value="other">Other</option>
                 </select>
 
                 <label className="block text-sm font-medium text-gray-700 mt-4">Course Outcome</label>
@@ -831,6 +1036,119 @@ export default function CreateCourse() {
                     ))}
                     {currentModuleIndex !== null && (modules[currentModuleIndex]?.lessons || []).length === 0 && <div className="text-sm text-gray-500">No lessons yet in this module</div>}
                   </div>
+
+                  {/* QUIZ BUILDER UI - separate from lessons */}
+                  {currentModuleIndex !== null && (
+                    <div className="mt-6 border-t pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-900">Module Quiz</h4>
+                        {!quizEditingModuleIndex && (modules[currentModuleIndex]?.quiz ? (
+                          <button onClick={() => startQuizEditor(currentModuleIndex)} className="px-3 py-1 text-sm bg-yellow-500 text-white rounded">Edit Quiz</button>
+                        ) : (
+                          <button onClick={() => startQuizEditor(currentModuleIndex)} className="px-3 py-1 text-sm bg-blue-500 text-white rounded">Add Quiz</button>
+                        ))}
+                      </div>
+
+                      {quizEditingModuleIndex === currentModuleIndex && (
+                        <div className="bg-blue-50 border border-blue-200 rounded p-4">
+                          <label className="block text-sm font-medium mb-2">Quiz Title</label>
+                          <input value={quizTitle} onChange={(e) => setQuizTitle(e.target.value)} className="w-full border rounded p-2 text-sm mb-3" />
+                          
+                          <label className="block text-sm font-medium mb-2">Passing Score (%)</label>
+                          <input type="number" min="0" max="100" value={quizPassingScore} onChange={(e) => setQuizPassingScore(e.target.value)} className="w-20 border rounded p-2 text-sm mb-3" />
+                          
+                          <label className="flex items-center gap-2 mb-3 text-sm">
+                            <input type="checkbox" checked={quizIsRequired} onChange={(e) => setQuizIsRequired(e.target.checked)} />
+                            <span>Students must pass this quiz to proceed</span>
+                          </label>
+
+                          {/* Add Question Section */}
+                          <div className="border-t pt-3 mt-3">
+                            <h5 className="font-medium text-sm mb-2">Questions ({quizQuestions.length})</h5>
+                            
+                            <label className="block text-xs font-medium mb-1">Question Text</label>
+                            <input value={questionText} onChange={(e) => setQuestionText(e.target.value)} className="w-full border rounded p-2 text-sm mb-2" placeholder="e.g., What is the capital of France?" />
+
+                            <label className="block text-xs font-medium mb-1">Points</label>
+                            <input type="number" min="1" value={questionPoints} onChange={(e) => setQuestionPoints(e.target.value)} className="w-20 border rounded p-2 text-sm mb-2" />
+
+                            <label className="block text-xs font-medium mb-1">Explanation (optional)</label>
+                            <textarea value={questionExplanation} onChange={(e) => setQuestionExplanation(e.target.value)} className="w-full border rounded p-2 text-sm h-16 mb-2" placeholder="Explanation shown after answering" />
+
+                            <label className="block text-xs font-medium mb-2">Answer Options</label>
+                            <div className="space-y-2 mb-2">
+                              {questionOptions.map((opt, i) => (
+                                <div key={i} className="flex gap-2 items-center">
+                                  <input type="text" value={opt.text} onChange={(e) => {
+                                    const copy = [...questionOptions]
+                                    copy[i].text = e.target.value
+                                    setQuestionOptions(copy)
+                                  }} className="flex-1 border rounded p-2 text-sm" placeholder={`Option ${i + 1}`} />
+                                  <label className="flex items-center gap-1 text-xs">
+                                    <input type="radio" name={`correct-${editingQuestionIndex}`} checked={opt.isCorrect} onChange={() => {
+                                      const copy = [...questionOptions]
+                                      copy.forEach((o, idx) => o.isCorrect = idx === i)
+                                      setQuestionOptions(copy)
+                                    }} />
+                                    <span>Correct</span>
+                                  </label>
+                                  {questionOptions.length > 1 && (
+                                    <button onClick={() => setQuestionOptions((opts) => opts.filter((_, idx) => idx !== i))} className="text-xs text-red-600">Remove</button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <button onClick={() => setQuestionOptions((opts) => [...opts, { text: '', isCorrect: false }])} className="text-xs text-blue-600 mb-2">+ Add Option</button>
+
+                            <div className="flex gap-2">
+                              <button onClick={addOrEditQuestion} className="px-3 py-1 text-sm bg-green-600 text-white rounded">{editingQuestionIndex !== null ? 'Save Question' : 'Add Question'}</button>
+                              {editingQuestionIndex !== null && (
+                                <button onClick={() => {
+                                  setEditingQuestionIndex(null)
+                                  setQuestionText('')
+                                  setQuestionPoints('1')
+                                  setQuestionExplanation('')
+                                  setQuestionOptions([{ text: '', isCorrect: false }])
+                                }} className="px-3 py-1 text-sm bg-gray-400 text-white rounded">Cancel</button>
+                              )}
+                            </div>
+
+                            {/* List Questions */}
+                            {quizQuestions.length > 0 && (
+                              <div className="mt-3 border-t pt-2">
+                                {quizQuestions.map((q, idx) => (
+                                  <div key={idx} className="text-xs p-2 bg-white border rounded mb-1 flex justify-between">
+                                    <span><strong>Q{idx + 1}:</strong> {q.text} ({q.points}pts)</span>
+                                    <div className="flex gap-1">
+                                      <button onClick={() => {
+                                        setEditingQuestionIndex(idx)
+                                        setQuestionText(q.text)
+                                        setQuestionPoints(String(q.points))
+                                        setQuestionExplanation(q.explanation)
+                                        setQuestionOptions(q.options.map((o: any) => ({ text: o.text, isCorrect: o.is_correct })))
+                                      }} className="text-blue-600">Edit</button>
+                                      <button onClick={() => removeQuestion(idx)} className="text-red-600">Delete</button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2 mt-3">
+                            <button onClick={saveQuizToModule} className="px-4 py-2 bg-green-600 text-white rounded text-sm">Save Quiz</button>
+                            <button onClick={cancelQuizEditor} className="px-4 py-2 bg-gray-400 text-white rounded text-sm">Cancel</button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {modules[currentModuleIndex]?.quiz && !quizEditingModuleIndex && (
+                        <div className="text-xs p-2 bg-green-50 border border-green-200 rounded">
+                          ✓ Quiz configured ({quizQuestions.length} questions)
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

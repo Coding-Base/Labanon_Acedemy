@@ -11,11 +11,14 @@ import {
   Clock,
   BookOpen,
   User,
-  Settings, // <--- Added Settings Icon
-  Check     // <--- Added Check Icon for the menu
+  Settings,
+  Check,
+  HelpCircle,
+  Award
 } from 'lucide-react';
 import { useVideoAccess } from '../hooks/useVideoAccess';
 import CourseCompletionModal from '../components/CourseCompletionModal';
+import QuizTaker from '../components/QuizTaker';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -46,6 +49,14 @@ interface ModuleItem {
   title: string;
   order?: number;
   lessons: Lesson[];
+  quiz?: {
+    id: number;
+    title: string;
+    description?: string;
+    passing_score: number;
+    is_required: boolean;
+    questions?: any[];
+  };
 }
 
 interface Course {
@@ -135,6 +146,10 @@ export default function CoursePlayer(): JSX.Element {
   const [qualities, setQualities] = useState<QualityLevel[]>([]);
   const [currentQuality, setCurrentQuality] = useState<number>(-1); // -1 = Auto
   const [showQualityMenu, setShowQualityMenu] = useState<boolean>(false);
+
+  // Quiz State
+  const [selectedQuizId, setSelectedQuizId] = useState<number | null>(null);
+  const [quizAttempts, setQuizAttempts] = useState<{ [quizId: number]: any }>({});
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -226,11 +241,25 @@ export default function CoursePlayer(): JSX.Element {
   const modulesWithLessons: ModuleItem[] = useMemo(() => {
     if (!course) return [];
     const modules: ModuleItem[] = Array.isArray(course.modules) ? course.modules : [];
-    return modules.map((mod: ModuleItem) => ({
-      ...mod,
-      lessons: Array.isArray(mod.lessons) ? mod.lessons : []
-    }));
+    // Filter out obvious test/demo modules or lessons (case-insensitive) to avoid showing dev/test content
+    const isTestish = (s?: string) => typeof s === 'string' && /\b(test|demo|sample)\b/i.test(s);
+    return modules
+      .filter((mod: ModuleItem) => !isTestish(mod.title))
+      .map((mod: ModuleItem) => ({
+        ...mod,
+        lessons: (Array.isArray(mod.lessons) ? mod.lessons : []).filter((l: Lesson) => !isTestish(l.title)),
+        quiz: mod.quiz || undefined
+      }));
   }, [course]);
+
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [selectedModuleMobile, setSelectedModuleMobile] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (modulesWithLessons && modulesWithLessons.length > 0) {
+      setSelectedModuleMobile((prev) => prev ?? modulesWithLessons[0].id);
+    }
+  }, [modulesWithLessons]);
 
   // Clamp lessonIndex
   useEffect(() => {
@@ -253,6 +282,22 @@ export default function CoursePlayer(): JSX.Element {
 
   function goPrev(): void {
     setLessonIndex((s) => Math.max(0, s - 1));
+  }
+
+  function isLessonLastInModule(idx: number): boolean {
+    const lesson = lessons[idx];
+    if (!lesson) return false;
+    const moduleId = (lesson as any).moduleId;
+    const module = modulesWithLessons.find((m) => m.id === moduleId);
+    if (!module || !module.lessons || module.lessons.length === 0) return false;
+    const lastLessonId = module.lessons[module.lessons.length - 1].id;
+    const lastGlobalIndex = lessons.findIndex((l) => l.id === lastLessonId);
+    return idx === lastGlobalIndex;
+  }
+
+  function getModuleByQuizId(quizId: number | null | undefined) {
+    if (!quizId) return undefined;
+    return modulesWithLessons.find((m) => m.quiz && m.quiz.id === quizId);
   }
 
   // Reset video error and quality state on lesson change
@@ -596,6 +641,161 @@ export default function CoursePlayer(): JSX.Element {
     );
   }
 
+  // Navigation / Quiz gating helpers (computed before render)
+  const atModuleEnd = isLessonLastInModule(lessonIndex);
+  const currentModule = modulesWithLessons.find((m) => m.id === (currentLesson as any)?.moduleId);
+  const currentModuleQuiz = currentModule?.quiz;
+  const currentModuleQuizUnpassed = currentModuleQuiz && !quizAttempts[currentModuleQuiz.id]?.passed;
+  const firstUnpassedRequiredModule = modulesWithLessons.find((m) => m.quiz?.is_required && !quizAttempts[m.quiz.id]?.passed);
+
+  // Sidebar content renderer (used for desktop aside and mobile drawer)
+  const renderSidebarContent = (
+    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="p-5 border-b">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Course Content</h3>
+          <div className="flex items-center text-green-600 bg-yellow-50 px-3 py-1 rounded-full">
+            <Play className="w-4 h-4 mr-1" />
+            <span className="text-sm font-medium">Playing</span>
+          </div>
+        </div>
+
+        {enrolled && (
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Progress</span>
+              <span className="font-medium text-green-600">
+                {lessons.length > 0 ? `${Math.round(((lessonIndex + 1) / lessons.length) * 100)}%` : '0%'}
+              </span>
+            </div>
+            <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-yellow-600 rounded-full transition-all duration-300"
+                style={{ width: `${(lessonIndex + 1) / Math.max(1, lessons.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
+        {modulesWithLessons.length === 0 ? (
+          <div className="p-5 text-center text-gray-500">
+            <BookOpen className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+            No modules available
+          </div>
+        ) : (
+          modulesWithLessons.map((module: ModuleItem, moduleIndex: number) => (
+            <div key={module.id} className="border-b last:border-b-0">
+              <div className="px-5 py-3 bg-gray-50 border-b">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900">
+                    Module {moduleIndex + 1}: {module.title}
+                  </h4>
+                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                    {module.lessons.length} lessons
+                  </span>
+                </div>
+              </div>
+
+              <div className="divide-y">
+                {module.lessons.map((lesson: Lesson, lessonIdx: number) => {
+                  const globalIndex = lessons.findIndex((l) => l.id === lesson.id);
+                  const isActive = globalIndex === lessonIndex;
+                  const isLocked = !enrolled && globalIndex > 0;
+
+                  return (
+                    <button
+                      key={lesson.id}
+                      onClick={() => !isLocked && setLessonIndex(globalIndex)}
+                      disabled={isLocked}
+                      className={`w-full text-left p-4 flex items-start gap-3 transition-all ${
+                        isActive ? 'bg-yellow-50 border-l-4 border-l-green-600' : 'hover:bg-gray-50'
+                      } ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <div className="flex-shrink-0">
+                        {isActive ? (
+                          <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                            <Play className="w-4 h-4 text-green-600" />
+                          </div>
+                        ) : isLocked ? (
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                            <Lock className="w-4 h-4 text-gray-400" />
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center">
+                            <span className="text-sm text-gray-600">{globalIndex + 1}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className={`font-medium text-sm truncate ${isActive ? 'text-green-900' : 'text-gray-900'}`}>
+                          {lesson.title}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Clock className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-500">15 min</span>
+                        </div>
+                      </div>
+
+                      {globalIndex < lessonIndex && enrolled && (
+                        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Module Quiz Section */}
+              {module.quiz && (
+                <div className="border-t bg-blue-50 p-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <HelpCircle className="w-5 h-5 text-blue-600" />
+                      <h4 className="font-semibold text-gray-900">{module.quiz.title}</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Pass this quiz (≥{module.quiz.passing_score}%) to proceed{module.quiz.is_required ? '' : ' (optional)'}
+                    </p>
+
+                    {/* Compact summary only in sidebar; full quiz opens in main area when Start/Retake clicked */}
+                    {quizAttempts[module.quiz.id] ? (
+                      <div className="space-y-2">
+                        <div className={`p-2 rounded text-sm font-medium ${
+                          quizAttempts[module.quiz.id].passed
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          <CheckCircle className="w-4 h-4 inline mr-1" />
+                          Score: {quizAttempts[module.quiz.id].score.toFixed(1)}%
+                        </div>
+                        <button
+                          onClick={() => setSelectedQuizId(module.quiz.id)}
+                          className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition"
+                        >
+                          Retake Quiz
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedQuizId(module.quiz.id)}
+                        className="w-full px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                      >
+                        <Award className="w-4 h-4" />
+                        Start Quiz
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="w-full bg-gray-50">
       {/* Header */}
@@ -603,13 +803,23 @@ export default function CoursePlayer(): JSX.Element {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <button
-                onClick={() => navigate(-1)}
-                className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-2"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Back
-              </button>
+              <div className="flex items-center">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-2"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back
+                </button>
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-2 ml-3 lg:hidden"
+                  aria-label="Open contents"
+                >
+                  <BookOpen className="w-4 h-4 mr-1" />
+                  <span className="text-sm">Contents</span>
+                </button>
+              </div>
               <h1 className="text-2xl font-bold text-gray-900">{course.title}</h1>
               <div className="flex items-center gap-4 mt-2">
                 <span className="inline-flex items-center text-sm text-gray-600">
@@ -629,115 +839,105 @@ export default function CoursePlayer(): JSX.Element {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <aside className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border overflow-hidden sticky top-8">
-              <div className="p-5 border-b">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">Course Content</h3>
-                  <div className="flex items-center text-green-600 bg-yellow-50 px-3 py-1 rounded-full">
-                    <Play className="w-4 h-4 mr-1" />
-                    <span className="text-sm font-medium">Playing</span>
+          {/* Mobile Drawer */}
+          {sidebarOpen && (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
+
+              {/* Book-style menu: left = modules, right = lessons for selected module */}
+              <div className="absolute left-1 top-8 bottom-8 w-[92%] mx-auto max-w-3xl p-4 flex items-stretch justify-center">
+                <div className="relative w-full h-full bg-transparent flex gap-2">
+                  {/* Left cover / modules */}
+                  <div className="w-1/2 bg-white rounded-l-xl shadow-lg overflow-auto p-4 transform origin-left transition-transform duration-300">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Modules</h3>
+                      <button onClick={() => setSidebarOpen(false)} className="text-gray-600">Close</button>
+                    </div>
+                    <div className="space-y-2">
+                      {modulesWithLessons.map((m, idx) => (
+                        <button
+                          key={m.id}
+                          onClick={() => setSelectedModuleMobile(m.id)}
+                          className={`w-full text-left px-3 py-2 rounded ${selectedModuleMobile === m.id ? 'bg-yellow-50 border-l-4 border-l-green-600' : 'hover:bg-gray-50'}`}
+                        >
+                          <div className="font-medium text-sm truncate">Module {idx + 1}: {m.title}</div>
+                          <div className="text-xs text-gray-500">{m.lessons.length} lessons</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right pages / lessons */}
+                  <div className="w-1/2 bg-white rounded-r-xl shadow-inner overflow-auto p-4">
+                    <div className="mb-3">
+                      <h3 className="text-lg font-semibold">Lessons</h3>
+                      <div className="text-xs text-gray-500">Tap a lesson to open it</div>
+                    </div>
+                    <div className="space-y-2">
+                      {(modulesWithLessons.find((m) => m.id === selectedModuleMobile)?.lessons || []).map((lesson) => {
+                        const globalIndex = lessons.findIndex((l) => l.id === lesson.id);
+                        const isActive = globalIndex === lessonIndex;
+                        return (
+                          <button
+                            key={lesson.id}
+                            onClick={() => { setLessonIndex(globalIndex); setSidebarOpen(false); }}
+                            className={`w-full text-left px-3 py-2 rounded ${isActive ? 'bg-yellow-50 border-l-4 border-l-green-600' : 'hover:bg-gray-50'}`}
+                          >
+                            <div className="font-medium text-sm truncate">{lesson.title}</div>
+                            <div className="text-xs text-gray-500">15 min</div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-
-                {enrolled && (
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Progress</span>
-                      <span className="font-medium text-green-600">
-                        {lessons.length > 0 ? `${Math.round(((lessonIndex + 1) / lessons.length) * 100)}%` : '0%'}
-                      </span>
-                    </div>
-                    <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-yellow-600 rounded-full transition-all duration-300"
-                        style={{ width: `${(lessonIndex + 1) / Math.max(1, lessons.length) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
+            </div>
+          )}
 
-              <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
-                {modulesWithLessons.length === 0 ? (
-                  <div className="p-5 text-center text-gray-500">
-                    <BookOpen className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                    No modules available
-                  </div>
-                ) : (
-                  modulesWithLessons.map((module: ModuleItem, moduleIndex: number) => (
-                    <div key={module.id} className="border-b last:border-b-0">
-                      <div className="px-5 py-3 bg-gray-50 border-b">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-gray-900">
-                            Module {moduleIndex + 1}: {module.title}
-                          </h4>
-                          <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                            {module.lessons.length} lessons
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="divide-y">
-                        {module.lessons.map((lesson: Lesson, lessonIdx: number) => {
-                          const globalIndex = lessons.findIndex((l) => l.id === lesson.id);
-                          const isActive = globalIndex === lessonIndex;
-                          const isLocked = !enrolled && globalIndex > 0;
-
-                          return (
-                            <button
-                              key={lesson.id}
-                              onClick={() => !isLocked && setLessonIndex(globalIndex)}
-                              disabled={isLocked}
-                              className={`w-full text-left p-4 flex items-start gap-3 transition-all ${
-                                isActive ? 'bg-yellow-50 border-l-4 border-l-green-600' : 'hover:bg-gray-50'
-                              } ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-                            >
-                              <div className="flex-shrink-0">
-                                {isActive ? (
-                                  <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
-                                    <Play className="w-4 h-4 text-green-600" />
-                                  </div>
-                                ) : isLocked ? (
-                                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                    <Lock className="w-4 h-4 text-gray-400" />
-                                  </div>
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center">
-                                    <span className="text-sm text-gray-600">{globalIndex + 1}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <div className={`font-medium text-sm truncate ${isActive ? 'text-green-900' : 'text-gray-900'}`}>
-                                  {lesson.title}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Clock className="w-3 h-3 text-gray-400" />
-                                  <span className="text-xs text-gray-500">15 min</span>
-                                </div>
-                              </div>
-
-                              {globalIndex < lessonIndex && enrolled && (
-                                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+          {/* Desktop Aside */}
+          <aside className="hidden lg:block lg:col-span-1">
+            <div className="sticky top-8">
+              {renderSidebarContent}
             </div>
           </aside>
 
-          {/* Main Content */}
-          <main className="lg:col-span-3">
+          {/* Main Content - Show Quiz or Lesson */}
+          {selectedQuizId ? (
+            <main className="lg:col-span-3">
+              <div className="p-6 bg-white rounded-lg shadow">
+                <button
+                  onClick={() => setSelectedQuizId(null)}
+                  className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Back to Course</span>
+                </button>
+                <QuizTaker
+                  key={`quiz-${selectedQuizId}`}
+                  quizId={selectedQuizId}
+                  onComplete={(attempt) => {
+                    const qid = selectedQuizId as number | null;
+                    setQuizAttempts((prev) => ({
+                      ...prev,
+                      [qid as any]: attempt
+                    }));
+
+                    const moduleForQuiz = getModuleByQuizId(qid);
+                    if (!attempt.passed && moduleForQuiz?.quiz?.is_required) {
+                      setTimeout(() => setSelectedQuizId(qid), 250);
+                    } else {
+                      setSelectedQuizId(null);
+                    }
+                  }}
+                  onClose={() => setSelectedQuizId(null)}
+                />
+              </div>
+            </main>
+          ) : (
+            <main className="lg:col-span-3">
             {/* Enrollment Banner */}
             {checkingEnroll ? (
               <div className="mb-6 p-4 bg-yellow-50 rounded-xl border border-yellow-100">
@@ -836,21 +1036,39 @@ export default function CoursePlayer(): JSX.Element {
                           navigate(`/student/courses/${course.id}/details`);
                           return;
                         }
+
+                        // If user is at the end of the current module and the module has an unpassed quiz,
+                        // open the quiz instead of advancing.
+                        if (atModuleEnd && currentModuleQuiz && !quizAttempts[currentModuleQuiz.id]?.passed) {
+                          setSelectedQuizId(currentModuleQuiz.id);
+                          return;
+                        }
+
+                        // If on final lesson of the course, ensure all required module quizzes are passed
                         if (lessonIndex >= lessons.length - 1) {
-                          // Show completion modal
+                          if (firstUnpassedRequiredModule) {
+                            // Jump directly to that module's quiz
+                            setSelectedQuizId(firstUnpassedRequiredModule.quiz.id);
+                            return;
+                          }
+
+                          // Otherwise allow completion
                           setCompletionCourseData({
                             courseName: course.title,
                             username: '', // Will be filled in modal
                             courseId: course.id
                           });
                           setShowCompletionModal(true);
-                        } else {
-                          goNext();
+                          return;
                         }
+
+                        goNext();
                       }}
                       className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-medium inline-flex items-center gap-2"
                     >
-                      {lessonIndex >= lessons.length - 1 ? 'Complete Course' : 'Next Lesson'}
+                      {(atModuleEnd && currentModuleQuiz && !quizAttempts[currentModuleQuiz.id]?.passed)
+                        ? 'Take Module Quiz'
+                        : (lessonIndex >= lessons.length - 1 ? 'Complete Course' : 'Next Lesson')}
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -884,6 +1102,7 @@ export default function CoursePlayer(): JSX.Element {
               </div>
             )}
           </main>
+          )}
         </div>
       </div>
 

@@ -36,8 +36,7 @@ export default function UserMessages({ isOpen, onClose }: { isOpen: boolean; onC
       const res = await axios.get(`${API_BASE}/messages/inbox/`, { headers: { Authorization: `Bearer ${token}` } })
       // backend returns list or paginated results
       const items = res.data.results || res.data || []
-      console.log('[UserMessages] API Response:', res.data)
-      console.log('[UserMessages] Parsed items:', items)
+      // Debug logs removed for production
       setMessages(items)
     } catch (err: any) {
       console.error('Failed to load inbox', err)

@@ -45,8 +45,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
 
   const handleSelectExam = (exam: Exam) => {
     // Check if exam is globally unlocked for this user
-    console.log('DEBUG setSelectedExam type:', typeof setSelectedExam, 'value:', setSelectedExam)
-    try { setSelectedExam(exam) } catch (e) { console.error('DEBUG setSelectedExam call error', e) }
+    try { setSelectedExam(exam) } catch (e) { console.error('setSelectedExam call error', e) }
     (async () => {
       try {
         const token = localStorage.getItem('access')

@@ -129,9 +129,9 @@ export default function InstitutionDiplomas() {
           }
         } catch (instError: any) {
           if (!mounted) return
-          if (instError.response?.status === 404) {
-             console.log('No institution found')
-          }
+           if (instError.response?.status === 404) {
+             // No institution found for this user
+           }
         }
       } catch (err: any) {
          // Error handling

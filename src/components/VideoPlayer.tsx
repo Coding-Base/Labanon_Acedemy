@@ -71,10 +71,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               xhr.setRequestHeader(key, value)
             })
             
-            // Log header setup for debugging
-            if (Object.keys(customHeaders).length > 0) {
-              console.log(`[Video] Added custom headers to HLS requests:`, Object.keys(customHeaders))
-            }
+            // Debug logs removed for production
           }
         })
 
@@ -82,10 +79,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         hls.attachMedia(videoRef.current)
 
         hls.on(HlsJs.Events.MANIFEST_PARSED, () => {
-          console.log('HLS manifest loaded')
-          // Quality levels available
-          const levels = hls.levels
-          console.log(`Available qualities: ${levels.map((l: any) => l.height).join('p, ')}p`)
+          // Manifest parsed; quality levels available in hls.levels
         })
 
         hls.on(HlsJs.Events.ERROR, (event: any, data: any) => {
@@ -116,7 +110,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       } else {
         // Fallback to native HLS support
-        console.log('Using native HLS support')
         player.src({ src, type: 'application/x-mpegURL' })
       }
     } else if (src) {

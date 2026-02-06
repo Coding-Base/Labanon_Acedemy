@@ -50,7 +50,6 @@ attachInterceptors(api);
 export const setupAxiosInterceptors = () => {
   axios.defaults.baseURL = API_BASE;
   attachInterceptors(axios);
-  console.log('Global Axios Interceptors initialized');
 };
 
 // 3. Default export for new components

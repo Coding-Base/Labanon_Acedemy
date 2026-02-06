@@ -172,10 +172,15 @@ export default function CourseDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Course Info */}
             <div className="lg:col-span-2 order-2 lg:order-1">
-              {/* Course Category */}
+              {/* Course Category & Type Badge */}
               <div className="flex items-center gap-4 mb-4">
+                {course.course_type && (
+                  <span className="px-3 py-1 text-sm font-semibold rounded-full bg-brand-600 text-white capitalize">
+                    {course.course_type.replace(/_/g, ' ')}
+                  </span>
+                )}
                 <span className={`px-3 py-1 text-sm font-semibold rounded-full ${isScheduled ? 'bg-yellow-100 text-yellow-700' : 'bg-yellow-100 text-green-700'}`}>
-                  {isScheduled ? 'Live Scheduled Course' : (course.category || 'Professional Development')}
+                  {isScheduled ? 'Live Scheduled Course' : 'Self-Paced'}
                 </span>
                 <span className="text-sm text-gray-600 flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-500 fill-current" />

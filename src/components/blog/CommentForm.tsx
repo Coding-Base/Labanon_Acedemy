@@ -21,6 +21,7 @@ export default function CommentForm({
   onCancel
 }: CommentFormProps) {
   const [content, setContent] = useState('')
+  const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,22 +38,25 @@ export default function CommentForm({
 
     try {
       const token = localStorage.getItem('access')
-      if (!token) {
-        setError('Please log in to comment')
-        return
+
+      const payload: any = {
+        blog: blogId,
+        content: content.trim(),
+        parent_comment: parentCommentId || null
+      }
+      let headers: any = {}
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      } else {
+        // Allow anonymous comment with a display name
+        payload.author_name = (name || '').trim() || 'Guest'
       }
 
-      await axios.post(
-        `${API_BASE}/blog/comments/`,
-        {
-          blog: blogId,
-          content: content.trim(),
-          parent_comment: parentCommentId || null
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      await axios.post(`${API_BASE}/blog/comments/`, payload, { headers })
 
       setContent('')
+      setName('')
       onCommentAdded?.()
     } catch (err) {
       console.error('Failed to post comment:', err)
@@ -76,6 +80,16 @@ export default function CommentForm({
       )}
 
       <div>
+        {/* If user not logged in, ask for display name */}
+        {!localStorage.getItem('access') && !isReply && (
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name (optional)"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none mb-3"
+            disabled={loading}
+          />
+        )}
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}

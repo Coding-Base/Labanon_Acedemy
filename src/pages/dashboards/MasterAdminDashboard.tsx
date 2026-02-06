@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import axios from 'axios'
@@ -144,6 +144,70 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [savingBlog, setSavingBlog] = useState(false)
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
+  const quillRef = useRef<any>(null)
+  
+  // Memoize Quill modules to prevent re-initialization on every render
+  const quillModules = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link', 'image'],
+        ['clean']
+      ],
+      handlers: {
+        image: function () {
+          const input = document.createElement('input')
+          input.setAttribute('type', 'file')
+          input.setAttribute('accept', 'image/*')
+          input.click()
+          input.onchange = async () => {
+            const file = input.files?.[0]
+            if (!file) return
+            try {
+              const token = localStorage.getItem('access')
+              const fd = new FormData()
+              fd.append('image', file)
+              const res = await axios.post(`${API_BASE}/blog/upload-image/`, fd, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+              const url = res.data.url
+              // Convert relative backend paths to absolute URLs so the editor preview resolves correctly
+              const backendOrigin = API_BASE.replace(/\/api\/?$/, '')
+              let absUrl = url
+              if (url && url.startsWith('/')) {
+                absUrl = `${backendOrigin}${url}`
+              } else if (url && !/^https?:\/\//i.test(url)) {
+                absUrl = `${backendOrigin}/${url}`
+              }
+              console.log('Quill image uploaded, url=', url, 'absUrl=', absUrl)
+              const quill = (quillRef as any).current?.getEditor()
+                if (quill) {
+                const range = quill.getSelection(true)
+                quill.insertEmbed(range.index, 'image', absUrl)
+                quill.setSelection(range.index + 1)
+                // Ensure React state reflects the inserted content so the preview and save include the image
+                try {
+                  const html = quill.root.innerHTML
+                  setBlogFormData((prev) => ({ ...prev, content: html }))
+                } catch (e) {
+                  // ignore
+                }
+              }
+            } catch (err) {
+              console.error('Image upload failed', err)
+            }
+          }
+        }
+      }
+    }
+  }), [setBlogFormData])
+  
+  // Memoize the onChange handler for Quill
+  const handleQuillChange = useCallback((val: string) => {
+    setBlogFormData((prev) => ({...prev, content: val}))
+  }, [])
+  
   const [settingsData, setSettingsData] = useState({firstName: '', lastName: '', email: ''})
   const [passwordData, setPasswordData] = useState({old_password: '', new_password: '', confirm_password: ''})
   const [settingsSaving, setSettingsSaving] = useState(false)
@@ -560,11 +624,19 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       const token = localStorage.getItem('access')
       let headers: any = { Authorization: `Bearer ${token}` }
       let res
-      if (blogFormData.image instanceof File) {
+        // If user did not change excerpt (left it equal to original), clear it
+        // so frontend/public list will build an excerpt from updated content.
+        const originalExcerpt = editingBlog ? (editingBlog.excerpt || '') : ''
+        let excerptToSend = blogFormData.excerpt || ''
+        if (editingBlog && excerptToSend.trim() === originalExcerpt.trim()) {
+          excerptToSend = ''
+        }
+
+        if (blogFormData.image instanceof File) {
         const fd = new FormData()
         fd.append('title', blogFormData.title)
         fd.append('content', blogFormData.content)
-        fd.append('excerpt', blogFormData.excerpt)
+        fd.append('excerpt', excerptToSend)
         fd.append('meta_title', blogFormData.meta_title || '')
         fd.append('meta_description', blogFormData.meta_description || '')
         fd.append('meta_keywords', blogFormData.meta_keywords || '')
@@ -576,12 +648,12 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         } else {
           res = await axios.post(`${API_BASE}/blog/`, fd, { headers })
         }
-      } else {
+        } else {
         const payload = {
           title: blogFormData.title,
           content: blogFormData.content,
           image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
-          excerpt: blogFormData.excerpt,
+          excerpt: excerptToSend,
           meta_title: blogFormData.meta_title || '',
           meta_description: blogFormData.meta_description || '',
           meta_keywords: blogFormData.meta_keywords || ''
@@ -3196,9 +3268,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4"
+            className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 flex flex-col max-h-[85vh]"
           >
-            <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 p-6 rounded-t-2xl flex items-center justify-between">
+            <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 p-6 rounded-t-2xl flex items-center justify-between flex-shrink-0">
               <h2 className="text-2xl font-bold text-white">{editingBlog ? 'Edit Blog Post' : 'Create Blog Post'}</h2>
               <motion.button
                 whileHover={{ scale: 1.1 }}
@@ -3210,14 +3282,17 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               </motion.button>
             </div>
 
-            <div className="p-8 max-h-[80vh] overflow-y-auto">
+            <div className="p-8 overflow-y-auto flex-1 min-h-0">
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
                   <input
                     type="text"
                     value={blogFormData.title}
-                    onChange={(e) => setBlogFormData({...blogFormData, title: e.target.value})}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.preventDefault()
+                    }}
+                    onChange={(e) => setBlogFormData((prev) => ({...prev, title: e.target.value}))}
                     placeholder="Blog post title"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
                   />
@@ -3227,7 +3302,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   <label className="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
                   <textarea
                     value={blogFormData.excerpt}
-                    onChange={(e) => setBlogFormData({...blogFormData, excerpt: e.target.value})}
+                    onChange={(e) => setBlogFormData((prev) => ({...prev, excerpt: e.target.value}))}
                     placeholder="Brief summary of the post (max 500 characters)"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none h-24 resize-none"
                   />
@@ -3235,23 +3310,37 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                  <div className="w-full">
-                    <ReactQuill
-                      theme="snow"
-                      value={blogFormData.content}
-                      onChange={(val) => setBlogFormData({...blogFormData, content: val})}
-                      modules={{
-                        toolbar: [
-                          [{ 'header': [1, 2, 3, false] }],
-                          ['bold', 'italic', 'underline', 'strike'],
-                          ['blockquote', 'code-block'],
-                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                          ['link', 'image'],
-                          ['clean']
-                        ]
-                      }}
-                    />
-                  </div>
+                    <div className="w-full">
+                      {/* Quill editor with custom image upload handler */}
+                      <ReactQuill
+                        ref={quillRef as any}
+                        theme="snow"
+                        value={blogFormData.content}
+                        onChange={handleQuillChange}
+                        modules={quillModules}
+                      />
+                    </div>
+                </div>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Strip embedded <img> tags from the content
+                      try {
+                        const newContent = (blogFormData.content || '').replace(/<img[^>]*>/gi, '')
+                        setBlogFormData((prev) => ({ ...prev, content: newContent }))
+                        setBlogMessage({ type: 'success', text: 'Removed embedded images from content' })
+                        setTimeout(() => setBlogMessage(null), 3000)
+                      } catch (e) {
+                        console.error('Failed to remove embedded images', e)
+                        setBlogMessage({ type: 'error', text: 'Failed to remove images' })
+                        setTimeout(() => setBlogMessage(null), 3000)
+                      }
+                    }}
+                    className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded mr-2"
+                  >
+                    Remove embedded images
+                  </button>
                 </div>
 
                 {/* SEO Fields */}
@@ -3263,7 +3352,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       <input
                         type="text"
                         value={blogFormData.meta_title}
-                        onChange={(e) => setBlogFormData({...blogFormData, meta_title: e.target.value})}
+                        onChange={(e) => setBlogFormData((prev) => ({...prev, meta_title: e.target.value}))}
                         placeholder="Optional: title for search engines"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
                       />
@@ -3274,7 +3363,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       <input
                         type="text"
                         value={blogFormData.meta_description}
-                        onChange={(e) => setBlogFormData({...blogFormData, meta_description: e.target.value})}
+                        onChange={(e) => setBlogFormData((prev) => ({...prev, meta_description: e.target.value}))}
                         placeholder="Optional: short description for search engines (150-320 chars)"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
                       />
@@ -3285,7 +3374,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       <input
                         type="text"
                         value={blogFormData.meta_keywords}
-                        onChange={(e) => setBlogFormData({...blogFormData, meta_keywords: e.target.value})}
+                        onChange={(e) => setBlogFormData((prev) => ({...prev, meta_keywords: e.target.value}))}
                         placeholder="Optional: comma-separated keywords"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
                       />
@@ -3298,20 +3387,38 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setBlogFormData({...blogFormData, image: e.target.files?.[0] ?? null})}
+                    onChange={(e) => setBlogFormData((prev) => ({...prev, image: e.target.files?.[0] ?? null}))}
                     className="w-full"
                   />
                   {typeof blogFormData.image === 'string' && blogFormData.image && (
-                    <img src={getImageUrl(blogFormData.image)} alt={blogFormData.title || 'Blog preview image'} className="mt-2 w-32 h-20 object-cover rounded" width={128} height={80} loading="lazy" decoding="async" />
+                    <div className="mt-2 flex items-center gap-3">
+                      <img src={getImageUrl(blogFormData.image)} alt={blogFormData.title || 'Blog preview image'} className="w-32 h-20 object-cover rounded" width={128} height={80} loading="lazy" decoding="async" />
+                      <button
+                        type="button"
+                        onClick={() => setBlogFormData((prev) => ({...prev, image: ''}))}
+                        className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded"
+                      >
+                        Remove image
+                      </button>
+                    </div>
                   )}
                   {blogFormData.image instanceof File && (
-                    <p className="mt-2 text-sm text-gray-600">Selected file: {blogFormData.image.name}</p>
+                    <div className="mt-2 flex items-center gap-3">
+                      <p className="text-sm text-gray-600">Selected file: {blogFormData.image.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => setBlogFormData((prev) => ({...prev, image: null}))}
+                        className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded"
+                      >
+                        Remove selection
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="border-t p-6 flex gap-4 justify-end bg-gray-50">
+            <div className="border-t p-6 flex gap-4 justify-end bg-gray-50 flex-shrink-0">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

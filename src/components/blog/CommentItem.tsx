@@ -106,7 +106,7 @@ export default function CommentItem({
               {comment.author_username?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div>
-              <p className="font-semibold text-gray-900">{comment.author_username}</p>
+              <p className="font-semibold text-gray-900">{comment.author_username || comment.author_name || 'Guest'}</p>
               <p className="text-xs text-gray-500">{formatDate(comment.created_at)}</p>
             </div>
           </div>

@@ -103,6 +103,10 @@ export default function BlogDetailPage() {
       const blogs = response.data.results || response.data
       if (Array.isArray(blogs) && blogs.length > 0) {
         const blogData = blogs[0]
+        // Convert any relative src attributes in content to absolute backend URLs
+        if (blogData.content) {
+          blogData.content = blogData.content.replace(/src=(["'])(\/[^"']*)\1/g, `src="${BACKEND_ORIGIN}$2"`)
+        }
         setBlog(blogData)
         setLiked(blogData.user_liked)
         setLikesCount(blogData.likes_count)
@@ -269,7 +273,7 @@ export default function BlogDetailPage() {
 
             {/* Body */}
             <div className="prose prose-lg max-w-none">
-              <div className="text-gray-700 leading-relaxed">
+              <div className="text-gray-700 leading-relaxed blog-content">
                 <div
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blog.content || '') }}
                 />
@@ -333,6 +337,21 @@ export default function BlogDetailPage() {
         {/* Comments Section */}
         <CommentSection blogId={blog.id} currentUserId={currentUserId} />
 
+        {/* Site footer for blog pages */}
+        <footer className="max-w-4xl mx-auto px-4 py-12">
+          <div className="bg-gray-50 rounded-lg p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">About LightHub Academy</h3>
+              <p className="text-gray-600 mt-2">LightHub Academy provides practical learning resources, courses, and community insights for educators and learners. Explore our courses or get in touch to collaborate.</p>
+            </div>
+            <div className="flex gap-6">
+              <a href="/" className="text-green-600 hover:underline">Home</a>
+              <a href="/courses" className="text-green-600 hover:underline">Courses</a>
+              <a href="/blog" className="text-green-600 hover:underline">All Articles</a>
+              <a href="/contact" className="text-green-600 hover:underline">Contact</a>
+            </div>
+          </div>
+        </footer>
         {/* Navigation */}
         <motion.div
           initial={{ opacity: 0 }}

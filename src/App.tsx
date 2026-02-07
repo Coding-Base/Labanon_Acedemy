@@ -3,6 +3,8 @@ import React, { Suspense, lazy, useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Loader from './components/Loader'
 import { setupAxiosInterceptors } from './utils/axiosInterceptor'
+import { useLocation } from 'react-router-dom'
+import { initGA, sendPageView } from './utils/googleAnalytics'
 
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
@@ -49,8 +51,28 @@ export default function App() {
     return () => clearTimeout(timer)
   }, [])
 
+  // Initialize GA once (measurement id available via Vite env)
+  useEffect(() => {
+    const measurementId = (import.meta as any).env.VITE_GA_MEASUREMENT_ID
+    initGA(measurementId)
+  }, [])
+
+  // Route listener component to send page_view on location changes
+  function RouteListener() {
+    const location = useLocation()
+    useEffect(() => {
+      try {
+        sendPageView(location.pathname + (location.search || ''))
+      } catch (e) {
+        // ignore
+      }
+    }, [location])
+    return null
+  }
+
   return (
     <BrowserRouter>
+      <RouteListener />
       <div className="min-h-screen bg-gray-100"> 
         {isInitialLoading }
          <Suspense >

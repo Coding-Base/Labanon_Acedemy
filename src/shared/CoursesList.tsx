@@ -26,6 +26,7 @@ type Course = {
   slug?: string
   image?: string
   isDiploma?: boolean
+  course_type?: string
 }
 
 export default function CoursesList() {

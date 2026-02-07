@@ -708,17 +708,17 @@ export default function CreateCourse() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold">Create Course</h2>
-          <button onClick={() => setGuideOpen(true)} className="px-3 py-1 bg-brand-600 text-white rounded text-sm">How to use this panel — Watch Guide</button>
-        </div>
-        <div className="flex items-center gap-3">
-          {courseType === 'normal' && <button onClick={() => setPreviewOpen(true)} className="px-4 py-2 bg-gray-100 rounded">Preview</button>}
-          <button onClick={saveDraft} disabled={saving} className="px-4 py-2 bg-brand-500 text-white rounded">{saving ? 'Saving...' : 'Save Draft'}</button>
-          <button onClick={publishCourse} disabled={publishing} className="px-6 py-3 bg-brand-600 text-white rounded-lg font-semibold">{publishing ? 'Publishing...' : 'Publish Course'}</button>
-        </div>
-      </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">Create Course</h2>
+              <button onClick={() => setGuideOpen(true)} className="px-3 py-1 bg-brand-600 text-white rounded text-sm">How to use this panel — Watch Guide</button>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
+              {courseType === 'normal' && <button onClick={() => setPreviewOpen(true)} className="px-3 py-2 bg-gray-100 rounded text-sm">Preview</button>}
+              <button onClick={saveDraft} disabled={saving} className="px-3 py-2 bg-brand-500 text-white rounded text-sm">{saving ? 'Saving...' : 'Save Draft'}</button>
+              <button onClick={publishCourse} disabled={publishing} className="px-5 py-2 bg-brand-600 text-white rounded-lg font-semibold text-sm">{publishing ? 'Publishing...' : 'Publish Course'}</button>
+            </div>
+          </div>
 
       <div className="bg-white p-6 rounded-lg">
         {/* Dynamic Grid Layout: 2 Cols for Normal, 1 Centered Col for Scheduled */}
@@ -740,9 +740,9 @@ export default function CreateCourse() {
                 {errors.title && <div className="text-sm text-red-600 mt-1">{Array.isArray(errors.title) ? errors.title[0] : errors.title}</div>}
 
                 <label className="block text-sm font-medium text-gray-700 mt-4">Price</label>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex flex-col sm:flex-row gap-2">
                   <input className="flex-1 border rounded p-2" value={price} onChange={(e) => setPrice(e.target.value)} />
-                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-40 border rounded p-2">
+                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full sm:w-40 border rounded p-2">
                     {SUPPORTED_CURRENCIES.map((c) => (
                       <option key={c.code} value={c.code}>{c.code}</option>
                     ))}
@@ -757,7 +757,7 @@ export default function CreateCourse() {
                 <input className="mt-2 w-full border rounded p-2" value={requiredTools} onChange={(e) => setRequiredTools(e.target.value)} />
 
                 <label className="block text-sm font-medium text-gray-700 mt-4">Number of Lessons</label>
-                <input type="number" className="mt-2 w-32 border rounded p-2" value={numLessons} onChange={(e) => setNumLessons(Number(e.target.value))} />
+                <input type="number" className="mt-2 w-full sm:w-32 border rounded p-2" value={numLessons} onChange={(e) => setNumLessons(Number(e.target.value))} />
 
                 <label className="block text-sm font-medium text-gray-700 mt-4">Level</label>
                 <select value={level} onChange={(e) => setLevel(e.target.value as Level)} className="mt-2 w-full border rounded p-2">
@@ -959,7 +959,7 @@ export default function CreateCourse() {
                     <ReactQuill value={lessonContent} onChange={setLessonContent} modules={quillModules} formats={quillFormats} />
                   </div>
 
-                  <div className="mt-3 flex gap-2 items-center">
+                  <div className="mt-4 flex flex-col sm:flex-row gap-2 items-center">
                     <label className="block text-sm font-medium text-gray-700">Insert code snippet</label>
                   </div>
                   <div className="flex gap-2 mt-2">
@@ -1007,9 +1007,9 @@ export default function CreateCourse() {
                     </div>
                   )}
 
-                      <div className="mt-4 flex gap-2">
-                    <button onClick={addOrUpdateLesson} className="px-4 py-2 bg-brand-600 text-white rounded">{editingLessonIndex !== null ? 'Save Lesson' : 'Add Lesson'}</button>
-                    <button onClick={() => { cancelEditLesson(); setLessonTitle(''); setLessonContent('') }} className="px-4 py-2 bg-gray-100 rounded">Reset</button>
+                      <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                    <button onClick={addOrUpdateLesson} className="px-4 py-2 bg-brand-600 text-white rounded w-full sm:w-auto">{editingLessonIndex !== null ? 'Save Lesson' : 'Add Lesson'}</button>
+                    <button onClick={() => { cancelEditLesson(); setLessonTitle(''); setLessonContent('') }} className="px-4 py-2 bg-gray-100 rounded w-full sm:w-auto">Reset</button>
                   </div>
                 </div>
 

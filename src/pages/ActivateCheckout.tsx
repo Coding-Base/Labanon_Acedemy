@@ -21,6 +21,7 @@ export default function ActivateCheckout() {
   const type = query.get('type') || 'exam'
   const exam_id = query.get('exam_id')
   const subject_id = query.get('subject_id')
+  const account_role = query.get('account_role')
   const return_to_q = query.get('return_to')
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function ActivateCheckout() {
         const params: any = { type }
         if (exam_id) params.exam = exam_id
         if (subject_id) params.subject = subject_id
+        if (account_role) params.account_role = account_role
 
         const token = localStorage.getItem('access')
         const res = await axios.get(`${API_BASE}/payments/activation-fee/`, { params, headers: token ? { Authorization: `Bearer ${token}` } : undefined })
@@ -72,6 +74,7 @@ export default function ActivateCheckout() {
   const meta: any = { activation_type: type }
   if (exam_id) meta.exam_id = exam_id
   if (subject_id) meta.subject_id = subject_id
+  if (account_role) meta.activation_role = account_role
   const defaultReturn = `/student/cbt${exam_id ? `?exam_id=${encodeURIComponent(exam_id)}` : ''}${subject_id ? `${exam_id ? '&' : '?'}subject_id=${encodeURIComponent(subject_id)}` : ''}`
   const returnTo = return_to_q ? decodeURIComponent(return_to_q) : defaultReturn
 

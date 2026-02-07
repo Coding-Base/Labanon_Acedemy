@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { motion } from 'framer-motion'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Calendar, User, Loader2, Heart, MessageCircle, Share2 } from 'lucide-react'
+import { ArrowLeft, Calendar, User, Loader2, Heart, MessageCircle, Share2, BookOpen, Globe } from 'lucide-react'
 import CommentSection from '../components/blog/CommentSection'
 import DOMPurify from 'dompurify'
 
@@ -339,16 +339,49 @@ export default function BlogDetailPage() {
 
         {/* Site footer for blog pages */}
         <footer className="max-w-4xl mx-auto px-4 py-12">
-          <div className="bg-gray-50 rounded-lg p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">About LightHub Academy</h3>
-              <p className="text-gray-600 mt-2">LightHub Academy provides practical learning resources, courses, and community insights for educators and learners. Explore our courses or get in touch to collaborate.</p>
+          <div className="bg-gradient-to-tr from-white to-gray-50 rounded-lg p-8 shadow-sm border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-50 rounded-md text-green-600">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">About LightHub Academy</h3>
+                </div>
+                <p className="text-sm text-gray-600">Practical learning resources, courses, and community insights for educators and learners. Join our community and grow your skills with hands-on content.</p>
+                <div className="mt-2 flex items-center gap-3">
+                  <a href="/blog" className="text-sm text-gray-700 hover:text-green-600 flex items-center gap-2"><Share2 className="w-4 h-4" /> Follow our updates</a>
+                </div>
+              </div>
+
+              <div className="md:pl-6">
+                <h4 className="font-semibold text-gray-900 mb-2">Quick Links</h4>
+                <ul className="space-y-2 text-sm">
+                  <li><a href="/" className="text-gray-600 hover:text-green-600">Home</a></li>
+                  <li><a href="/courses" className="text-gray-600 hover:text-green-600">Courses</a></li>
+                  <li><a href="/blog" className="text-gray-600 hover:text-green-600">All Articles</a></li>
+                  <li><a href="/contact" className="text-gray-600 hover:text-green-600">Contact</a></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Stay in touch</h4>
+                <p className="text-sm text-gray-600 mb-3">Subscribe for occasional updates and course announcements.</p>
+                <div className="flex gap-2">
+                  <input aria-label="Email" placeholder="you@email.com" className="flex-1 px-3 py-2 border rounded-md text-sm" />
+                  <button className="px-3 py-2 bg-green-600 text-white rounded-md text-sm">Subscribe</button>
+                </div>
+
+                <div className="mt-4 flex items-center gap-3 text-sm text-gray-600">
+                  <a href="/" className="flex items-center gap-2 hover:text-green-600"><Globe className="w-4 h-4" /> Website</a>
+                  <a href="/contact" className="flex items-center gap-2 hover:text-green-600"><MessageCircle className="w-4 h-4" /> Contact</a>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-6">
-              <a href="/" className="text-green-600 hover:underline">Home</a>
-              <a href="/courses" className="text-green-600 hover:underline">Courses</a>
-              <a href="/blog" className="text-green-600 hover:underline">All Articles</a>
-              <a href="/contact" className="text-green-600 hover:underline">Contact</a>
+
+            <div className="mt-6 border-t pt-4 text-sm text-gray-500 flex flex-col md:flex-row md:justify-between items-start md:items-center">
+              <div>© {new Date().getFullYear()} LightHub Academy. All rights reserved.</div>
+              <div className="mt-2 md:mt-0">Made with <span className="text-red-500">♥</span> · <a href="/privacy" className="text-gray-700 underline">Privacy</a></div>
             </div>
           </div>
         </footer>

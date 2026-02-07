@@ -130,7 +130,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [activationFees, setActivationFees] = useState<any[]>([])
   const [activationLoading, setActivationLoading] = useState(false)
   const [showActivationForm, setShowActivationForm] = useState(false)
-  const [activationForm, setActivationForm] = useState({ id: null as number | null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' })
+  const [activationForm, setActivationForm] = useState({ id: null as number | null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '', activation_tutor_amount: '', activation_institution_amount: '' })
   const [activationMessage, setActivationMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [splitConfig, setSplitConfig] = useState<{tutor_share: string; institution_share: string} | null>(null)
   const [splitLoading, setSplitLoading] = useState(false)
@@ -145,6 +145,64 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const quillRef = useRef<any>(null)
+
+  // Autosave draft support (localStorage)
+  const draftKey = (id?: number | null) => `admin_blog_draft_${id ?? 'new'}`;
+  const autosaveTimer = useRef<number | null>(null);
+
+  // Load draft when opening the blog form
+  useEffect(() => {
+    if (!showBlogForm) return;
+    const key = draftKey(editingBlog?.id ?? null);
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Only load fields we persisted (no File objects)
+        setBlogFormData((prev) => ({
+          title: parsed.title || prev.title,
+          content: parsed.content || prev.content,
+          image: parsed.image || prev.image,
+          excerpt: parsed.excerpt || prev.excerpt,
+          meta_title: parsed.meta_title || prev.meta_title,
+          meta_description: parsed.meta_description || prev.meta_description,
+          meta_keywords: parsed.meta_keywords || prev.meta_keywords
+        }));
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showBlogForm, editingBlog?.id]);
+
+  // Autosave blogFormData to localStorage (debounced)
+  useEffect(() => {
+    if (!showBlogForm) return;
+    if (autosaveTimer.current) {
+      window.clearTimeout(autosaveTimer.current as any);
+    }
+    autosaveTimer.current = window.setTimeout(() => {
+      try {
+        const key = draftKey(editingBlog?.id ?? null);
+        const toSave: any = {
+          title: blogFormData.title || '',
+          content: blogFormData.content || '',
+          // only persist string image URLs, not File objects
+          image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
+          excerpt: blogFormData.excerpt || '',
+          meta_title: blogFormData.meta_title || '',
+          meta_description: blogFormData.meta_description || '',
+          meta_keywords: blogFormData.meta_keywords || ''
+        };
+        localStorage.setItem(key, JSON.stringify(toSave));
+      } catch (e) {
+        // ignore storage errors
+      }
+    }, 2000);
+    return () => {
+      if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current as any);
+    };
+  }, [blogFormData, showBlogForm, editingBlog?.id]);
   
   // Memoize Quill modules to prevent re-initialization on every render
   const quillModules = useMemo(() => ({
@@ -180,7 +238,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               } else if (url && !/^https?:\/\//i.test(url)) {
                 absUrl = `${backendOrigin}/${url}`
               }
-              console.log('Quill image uploaded, url=', url, 'absUrl=', absUrl)
+              // Debug log removed for production
               const quill = (quillRef as any).current?.getEditor()
                 if (quill) {
                 const range = quill.getSelection(true)
@@ -559,16 +617,47 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   }
 
   async function saveActivationFee() {
-    if (!activationForm.amount || Number(activationForm.amount) <= 0) {
-      setActivationMessage({ type: 'error', text: 'Amount must be greater than 0' })
-      return
-    }
     try {
       const token = localStorage.getItem('access')
+      // Handle account_tutor / account_institution as role-specific single-fee entries
+      if (activationForm.type === 'account_tutor' || activationForm.type === 'account_institution') {
+        if (!activationForm.amount || Number(activationForm.amount) <= 0) {
+          setActivationMessage({ type: 'error', text: 'Amount must be greater than 0' })
+          return
+        }
+        const role = activationForm.type === 'account_tutor' ? 'tutor' : 'institution'
+        // Check existing entry for this role
+        const existing = activationFees.find((f: any) => f.type === 'account' && f.account_role === role)
+        const payload: any = {
+          type: 'account',
+          account_role: role,
+          currency: activationForm.currency,
+          amount: Number(activationForm.amount)
+        }
+        if (existing && existing.id) payload.id = existing.id
+        await axios.post(`${API_BASE}/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+        setActivationMessage({ type: 'success', text: 'Account activation fee saved' })
+        setShowActivationForm(false)
+        setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '' , activation_tutor_amount: '', activation_institution_amount: ''})
+        loadActivationFees()
+        setTimeout(() => setActivationMessage(null), 3000)
+        return
+      }
+
+      // Legacy 'account' selected: require explicit role
+      
+
+      // Non-account types: single amount handling (create/update)
+      if (!activationForm.amount || Number(activationForm.amount) <= 0) {
+        setActivationMessage({ type: 'error', text: 'Amount must be greater than 0' })
+        return
+      }
+
       const payload: any = {
         type: activationForm.type,
         exam_identifier: activationForm.exam_identifier || null,
         subject_id: activationForm.subject_id || null,
+        account_role: activationForm.account_role || null,
         currency: activationForm.currency,
         amount: Number(activationForm.amount)
       }
@@ -576,7 +665,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       await axios.post(`${API_BASE}/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
       setActivationMessage({ type: 'success', text: activationForm.id ? 'Activation fee updated' : 'Activation fee created' })
       setShowActivationForm(false)
-      setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' })
+      setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '', activation_tutor_amount: '', activation_institution_amount: '' })
       loadActivationFees()
       setTimeout(() => setActivationMessage(null), 3000)
     } catch (err: any) {
@@ -669,6 +758,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setShowBlogForm(false)
       setBlogFormData({title: '', content: '', image: null, excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
       setEditingBlog(null)
+      // Clear any saved draft for this post
+      try {
+        const key = draftKey(editingBlog?.id ?? null);
+        localStorage.removeItem(key);
+      } catch (e) {}
       loadBlogs()
       setBlogMessage({ type: 'success', text: editingBlog ? 'Blog updated' : 'Blog created' })
       setTimeout(() => setBlogMessage(null), 3000)
@@ -2305,8 +2399,32 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-900">Activation Fees</h3>
-                            <div className="flex items-center space-x-3">
-                              <button onClick={() => { setShowActivationForm(true); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' }); if (examsManagement.length === 0) loadExamsManagement() }} className="px-4 py-2 bg-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg">+ New Fee</button>
+                              <div className="flex items-center space-x-3">
+                              <button onClick={() => { setShowActivationForm(true); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '', activation_tutor_amount: '', activation_institution_amount: '' }); if (examsManagement.length === 0) loadExamsManagement() }} className="px-4 py-2 bg-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg">+ New Fee</button>
+                              {activationFees.some((f:any) => f.type === 'account' && !f.account_role) && (
+                                <button onClick={async () => {
+                                  if (!confirm('Split combined account activation fees into separate Tutor and Institution entries?')) return
+                                  try {
+                                    const token = localStorage.getItem('access')
+                                    const combined = activationFees.filter((f: any) => f.type === 'account' && !f.account_role)
+                                    for (const f of combined) {
+                                      // create tutor
+                                      await axios.post(`${API_BASE}/payments/admin/activation-fees/`, { type: 'account', account_role: 'tutor', currency: f.currency || 'NGN', amount: Number(f.amount) }, { headers: { Authorization: `Bearer ${token}` } })
+                                      // create institution
+                                      await axios.post(`${API_BASE}/payments/admin/activation-fees/`, { type: 'account', account_role: 'institution', currency: f.currency || 'NGN', amount: Number(f.amount) }, { headers: { Authorization: `Bearer ${token}` } })
+                                      // delete original combined
+                                      await axios.delete(`${API_BASE}/payments/admin/activation-fees/${f.id}/`, { headers: { Authorization: `Bearer ${token}` } })
+                                    }
+                                    setActivationMessage({ type: 'success', text: 'Combined account fees split' })
+                                    loadActivationFees()
+                                    setTimeout(() => setActivationMessage(null), 3000)
+                                  } catch (err) {
+                                    console.error('Failed to split combined fees', err)
+                                    setActivationMessage({ type: 'error', text: 'Failed to split combined fees' })
+                                    setTimeout(() => setActivationMessage(null), 3000)
+                                  }
+                                }} className="px-4 py-2 bg-gray-800 text-white rounded-xl font-semibold hover:shadow-lg">Split Combined Account Fees</button>
+                              )}
                             </div>
                           </div>
 
@@ -2323,8 +2441,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                                   <select value={activationForm.type} onChange={(e) => setActivationForm({ ...activationForm, type: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
                                     <option value="exam">Exam</option>
-                                    <option value="interview_subject">Interview Subject</option>
-                                    <option value="account">Tutor/Institution Account</option>
+                                    <option value="interview">Interview Subject</option>
+                                    <option value="account_tutor">Account (Tutor)</option>
+                                    <option value="account_institution">Account (Institution)</option>
                                   </select>
                                 </div>
 
@@ -2337,10 +2456,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   </select>
                                 </div>
 
-                                {(activationForm.type === 'exam' || activationForm.type === 'interview_subject') && (
+                                {(activationForm.type === 'exam' || activationForm.type === 'interview') && (
                                   <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Select Exam</label>
-                                    <select value={activationForm.exam_identifier} onChange={(e) => { setActivationForm({ ...activationForm, exam_identifier: e.target.value }); if (activationForm.type === 'interview_subject') loadSubjectsForExam(Number(e.target.value)) }} className="w-full px-3 py-2 border rounded-lg">
+                                    <select value={activationForm.exam_identifier} onChange={(e) => { setActivationForm({ ...activationForm, exam_identifier: e.target.value }); if (activationForm.type === 'interview' || activationForm.type === 'interview_subject') loadSubjectsForExam(Number(e.target.value)) }} className="w-full px-3 py-2 border rounded-lg">
                                       <option value="">Choose an exam...</option>
                                       {examsManagement.map((ex) => (
                                         <option key={ex.id} value={ex.id}>{ex.title}</option>
@@ -2349,7 +2468,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   </div>
                                 )}
 
-                                {activationForm.type === 'interview_subject' && (
+                                
+
+                                {activationForm.type === 'interview' && (
                                   <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Select Subject</label>
                                     <select value={activationForm.subject_id} onChange={(e) => setActivationForm({ ...activationForm, subject_id: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
@@ -2368,7 +2489,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                                 <div className="flex items-end justify-end">
                                   <div className="flex space-x-2">
-                                    <button onClick={() => { setShowActivationForm(false); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', currency: 'NGN', amount: '' }) }} className="px-4 py-2 bg-gray-100 rounded-lg">Cancel</button>
+                                    <button onClick={() => { setShowActivationForm(false); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '', activation_tutor_amount: '', activation_institution_amount: '' }) }} className="px-4 py-2 bg-gray-100 rounded-lg">Cancel</button>
                                     <button onClick={() => saveActivationFee()} className="px-4 py-2 bg-yellow-600 text-white rounded-lg">Save</button>
                                   </div>
                                 </div>
@@ -2389,7 +2510,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     <tr className="border-b border-gray-200">
                                       <th className="text-left px-4 py-2 text-sm font-semibold">ID</th>
                                       <th className="text-left px-4 py-2 text-sm font-semibold">Type</th>
-                                      <th className="text-left px-4 py-2 text-sm font-semibold">Exam / Subject</th>
+                                      <th className="text-left px-4 py-2 text-sm font-semibold">Exam / Subject / Role</th>
                                       <th className="text-left px-4 py-2 text-sm font-semibold">Currency</th>
                                       <th className="text-left px-4 py-2 text-sm font-semibold">Amount</th>
                                       <th className="text-left px-4 py-2 text-sm font-semibold">Actions</th>
@@ -2399,13 +2520,19 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     {activationFees.map((f: any) => (
                                       <tr key={f.id} className="border-b border-gray-100 hover:bg-gray-50">
                                         <td className="px-4 py-3 text-sm text-gray-900">#{f.id}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-600">{f.type}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-600">{f.exam_identifier || f.subject_id || '—'}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{f.type === 'account' ? `account${f.account_role ? ` (${f.account_role})` : ''}` : f.type}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{f.type === 'account' ? (f.account_role || 'All') : (f.exam_identifier || f.subject_id || '—')}</td>
                                         <td className="px-4 py-3 text-sm text-gray-600">{f.currency}</td>
                                         <td className="px-4 py-3 text-sm font-semibold text-gray-900">{parseFloat(f.amount).toFixed(2)}</td>
                                         <td className="px-4 py-3 text-sm">
                                           <div className="flex items-center space-x-2">
-                                            <button onClick={() => { setActivationForm({ id: f.id, type: f.type, exam_identifier: f.exam_identifier || '', subject_id: f.subject_id || '', currency: f.currency || 'NGN', amount: String(f.amount) }); setShowActivationForm(true); if (examsManagement.length === 0) loadExamsManagement(); if (f.type === 'interview_subject' && f.exam_identifier) loadSubjectsForExam(Number(f.exam_identifier)) }} className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg">Edit</button>
+                                            <button onClick={() => {
+                                              const newType = f.type === 'account' ? (f.account_role === 'tutor' ? 'account_tutor' : (f.account_role === 'institution' ? 'account_institution' : 'account_tutor')) : f.type
+                                              setActivationForm({ id: f.id, type: newType, exam_identifier: f.exam_identifier || '', subject_id: f.subject_id || '', account_role: f.account_role || '', currency: f.currency || 'NGN', amount: String(f.amount), activation_tutor_amount: '', activation_institution_amount: '' })
+                                              setShowActivationForm(true);
+                                              if (examsManagement.length === 0) loadExamsManagement();
+                                              if ((f.type === 'interview_subject' || f.type === 'interview') && f.exam_identifier) loadSubjectsForExam(Number(f.exam_identifier))
+                                            }} className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg">Edit</button>
                                             <button onClick={() => deleteActivationFee(f.id)} className="px-3 py-1 bg-red-100 text-red-700 rounded-lg">Delete</button>
                                           </div>
                                         </td>

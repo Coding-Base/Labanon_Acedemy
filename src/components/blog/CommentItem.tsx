@@ -9,6 +9,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:
 interface Comment {
   id: number
   author_username: string
+  author_name?: string
   author_id: number
   content: string
   likes_count: number

@@ -38,6 +38,22 @@ import {
   Menu,
   X
 } from 'lucide-react'
+// Recharts for analytics charts
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts'
 import labanonLogo from '../labanonlogo.png'
 import CreateCourse from '../CreateCourse'
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies'
@@ -125,6 +141,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [payments, setPayments] = useState<any[]>([])
   const [paymentStats, setPaymentStats] = useState<any>(null)
   const [paymentsLoading, setPaymentsLoading] = useState(false)
+  const [adminLoading, setAdminLoading] = useState(false)
+  const [gaSummary, setGaSummary] = useState<any | null>(null)
   const [paymentPage, setPaymentPage] = useState(1)
   const [paymentPageInfo, setPaymentPageInfo] = useState<{count: number; next: string | null; previous: string | null}>({count: 0, next: null, previous: null})
   const [activationFees, setActivationFees] = useState<any[]>([])
@@ -338,6 +356,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
     { id: 'gospel', label: 'Gospel', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
@@ -388,6 +407,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     if (tab === 'institutions') loadInstitutions()
     if (tab === 'courses') loadCourses()
     if (tab === 'cbt') loadCbtAnalytics()
+    if (tab === 'analytics') loadAdminAnalytics()
     if (tab === 'payments') loadPayments(paymentPage)
     if (tab === 'blog') loadBlogs()
     if (tab === 'gospel') loadGospels()
@@ -566,6 +586,29 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     } finally {
       setPaymentsLoading(false)
       try { loadActivationFees() } catch (e) { /* ignore */ }
+    }
+  }
+
+  async function loadAdminAnalytics() {
+    setAdminLoading(true)
+    try {
+      // Reuse existing loaders to populate analytics data and fetch GA summary
+      await Promise.all([loadCbtAnalytics(), loadPayments(1), loadGaSummary()])
+    } catch (err) {
+      console.error('Failed to load admin analytics', err)
+    } finally {
+      setAdminLoading(false)
+    }
+  }
+
+  async function loadGaSummary() {
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/analytics/admin/summary/`, { headers: { Authorization: `Bearer ${token}` } })
+      setGaSummary(res.data || null)
+    } catch (err) {
+      console.error('Failed to load GA summary', err)
+      setGaSummary(null)
     }
   }
 
@@ -1699,6 +1742,125 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               <p className="text-gray-500">Select a user to view details</p>
                             </div>
                           )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {tab === 'analytics' && (
+                  <div>
+                    {adminLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+                        <span className="text-gray-600">Loading analytics...</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="grid md:grid-cols-4 gap-4 mb-8">
+                          <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+                                <Globe className="w-6 h-6 text-white" />
+                              </div>
+                            </div>
+                            <h3 className="text-gray-700 text-sm font-medium mb-1">Page Views</h3>
+                            <p className="text-3xl font-bold text-yellow-900">{gaSummary?.summary?.screenPageViews ?? 'N/A'}</p>
+                          </motion.div>
+
+                          <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+                                <BarChart3 className="w-6 h-6 text-white" />
+                              </div>
+                            </div>
+                            <h3 className="text-gray-700 text-sm font-medium mb-1">Total Attempts</h3>
+                            <p className="text-3xl font-bold text-yellow-900">{cbtAnalytics?.total_attempts || 0}</p>
+                          </motion.div>
+
+                          <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+                                <Briefcase className="w-6 h-6 text-white" />
+                              </div>
+                            </div>
+                            <h3 className="text-gray-700 text-sm font-medium mb-1">Total Revenue</h3>
+                            <p className="text-3xl font-bold text-yellow-900">{paymentStats?.total_revenue ? String(paymentStats.total_revenue) : '0'}</p>
+                          </motion.div>
+
+                          <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                                <User className="w-6 h-6 text-white" />
+                              </div>
+                            </div>
+                            <h3 className="text-gray-700 text-sm font-medium mb-1">Transactions</h3>
+                            <p className="text-3xl font-bold text-orange-900">{paymentStats?.total_transactions || 0}</p>
+                          </motion.div>
+                        </div>
+
+                        <div className="bg-white rounded-xl p-6 border border-gray-200">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Traffic Overview</h3>
+                          <div className="grid lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2">
+                              <h4 className="text-sm text-gray-600 mb-3">Page Views (last 28 days)</h4>
+                              <div style={{ width: '100%', height: 260 }}>
+                                <ResponsiveContainer>
+                                  <LineChart data={gaSummary?.timeseries || []} margin={{ top: 10, right: 16, left: -8, bottom: 6 }}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Line type="monotone" dataKey="views" stroke="#F59E0B" strokeWidth={2} dot={{ r: 2 }} />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm text-gray-600 mb-3">Top Browsers</h4>
+                              <div style={{ width: '100%', height: 200 }}>
+                                <ResponsiveContainer>
+                                  <PieChart>
+                                    <Pie data={ (gaSummary?.technology?.browsers || []).map(b => ({ name: b.browser || b.name, value: b.users || b.value })) }
+                                         dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} fill="#8884d8">
+                                      { (gaSummary?.technology?.browsers || []).map((entry: any, index: number) => (
+                                        <Cell key={`cell-${index}`} fill={["#F59E0B", "#F97316", "#FB923C", "#FCD34D", "#93C5FD"][index % 5]} />
+                                      ))}
+                                    </Pie>
+                                    <Legend verticalAlign="bottom" height={36} />
+                                  </PieChart>
+                                </ResponsiveContainer>
+                              </div>
+                              <h4 className="text-sm text-gray-600 mb-3 mt-4">Top Countries</h4>
+                              <div style={{ width: '100%', height: 160 }}>
+                                <ResponsiveContainer>
+                                  <BarChart data={(gaSummary?.countries || []).slice(0,8)}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="country" tick={{ fontSize: 11 }} />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Bar dataKey="users" fill="#F59E0B" />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-6 grid md:grid-cols-3 gap-4">
+                            <div>
+                              <h4 className="text-sm text-gray-600 mb-2">GA Summary</h4>
+                              <pre className="text-xs text-gray-700 bg-gray-50 p-3 rounded">{JSON.stringify(gaSummary?.summary || {}, null, 2)}</pre>
+                            </div>
+                            <div>
+                              <h4 className="text-sm text-gray-600 mb-2">Technology Raw</h4>
+                              <pre className="text-xs text-gray-700 bg-gray-50 p-3 rounded">{JSON.stringify(gaSummary?.technology || {}, null, 2)}</pre>
+                            </div>
+                            <div>
+                              <h4 className="text-sm text-gray-600 mb-2">Countries Raw</h4>
+                              <pre className="text-xs text-gray-700 bg-gray-50 p-3 rounded">{JSON.stringify(gaSummary?.countries || [], null, 2)}</pre>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

@@ -1848,17 +1848,78 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           </div>
 
                           <div className="mt-6 grid md:grid-cols-3 gap-4">
-                            <div>
-                              <h4 className="text-sm text-gray-600 mb-2">GA Summary</h4>
-                              <pre className="text-xs text-gray-700 bg-gray-50 p-3 rounded">{JSON.stringify(gaSummary?.summary || {}, null, 2)}</pre>
+                            <div className="space-y-3">
+                              <h4 className="text-sm text-gray-600">GA Summary</h4>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-white p-4 rounded-lg shadow-sm border">
+                                  <div className="text-xs text-gray-500">Active Users</div>
+                                  <div className="text-2xl font-bold text-gray-900">{gaSummary?.summary?.activeUsers ?? 0}</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-lg shadow-sm border">
+                                  <div className="text-xs text-gray-500">Total Users</div>
+                                  <div className="text-2xl font-bold text-gray-900">{gaSummary?.summary?.totalUsers ?? 0}</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-lg shadow-sm border">
+                                  <div className="text-xs text-gray-500">Sessions</div>
+                                  <div className="text-2xl font-bold text-gray-900">{gaSummary?.summary?.sessions ?? 0}</div>
+                                </div>
+                                <div className="bg-white p-4 rounded-lg shadow-sm border">
+                                  <div className="text-xs text-gray-500">Page Views</div>
+                                  <div className="text-2xl font-bold text-gray-900">{gaSummary?.summary?.screenPageViews ?? 0}</div>
+                                </div>
+                              </div>
                             </div>
+
                             <div>
-                              <h4 className="text-sm text-gray-600 mb-2">Technology Raw</h4>
-                              <pre className="text-xs text-gray-700 bg-gray-50 p-3 rounded">{JSON.stringify(gaSummary?.technology || {}, null, 2)}</pre>
+                              <h4 className="text-sm text-gray-600 mb-2">Technology</h4>
+                              <div className="bg-white p-4 rounded-lg shadow-sm border">
+                                <div style={{ width: '100%', height: 180 }}>
+                                  <ResponsiveContainer>
+                                    <PieChart>
+                                      <Pie data={ (gaSummary?.technology?.browsers || []).map((b:any)=>({ name: b.browser || b.name, value: b.users || b.value })) }
+                                           dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={30}>
+                                        { (gaSummary?.technology?.browsers || []).map((entry: any, index: number) => (
+                                          <Cell key={`cell-tech-${index}`} fill={["#F59E0B", "#F97316", "#FB923C", "#FCD34D", "#93C5FD"][index % 5]} />
+                                        ))}
+                                      </Pie>
+                                      <Legend verticalAlign="bottom" height={28} />
+                                    </PieChart>
+                                  </ResponsiveContainer>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-1 gap-2">
+                                  {(gaSummary?.technology?.devices || []).map((d:any, i:number) => (
+                                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded">
+                                      <div className="text-sm text-gray-700">{d.device}</div>
+                                      <div className="text-sm font-semibold text-gray-900">{d.users}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
+
                             <div>
-                              <h4 className="text-sm text-gray-600 mb-2">Countries Raw</h4>
-                              <pre className="text-xs text-gray-700 bg-gray-50 p-3 rounded">{JSON.stringify(gaSummary?.countries || [], null, 2)}</pre>
+                              <h4 className="text-sm text-gray-600 mb-2">Top Countries</h4>
+                              <div className="bg-white p-4 rounded-lg shadow-sm border">
+                                <div style={{ width: '100%', height: 240 }}>
+                                  <ResponsiveContainer>
+                                    <BarChart data={(gaSummary?.countries || []).slice(0,8)} layout="vertical" margin={{ left: 0, right: 8 }}>
+                                      <XAxis type="number" hide />
+                                      <YAxis dataKey="country" type="category" width={110} tick={{ fontSize: 12 }} />
+                                      <Tooltip />
+                                      <Bar dataKey="users" fill="#F59E0B" />
+                                    </BarChart>
+                                  </ResponsiveContainer>
+                                </div>
+                                <div className="mt-3">
+                                  {(gaSummary?.countries || []).slice(0,6).map((c:any, idx:number) => (
+                                    <div key={idx} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                                      <div className="text-sm text-gray-700">{c.country}</div>
+                                      <div className="text-sm font-semibold text-gray-900">{c.users}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>

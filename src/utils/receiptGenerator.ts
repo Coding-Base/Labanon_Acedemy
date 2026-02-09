@@ -35,6 +35,18 @@ const loadPlatformSignatureImage = (): Promise<HTMLImageElement> => {
   })
 }
 
+const loadPlatformSignerName = async (): Promise<string | null> => {
+  try {
+    const apiBase = (import.meta.env as any).VITE_API_BASE || ''
+    const res = await fetch(`${apiBase}/admin/signature/`)
+    if (!res.ok) return null
+    const json = await res.json()
+    return json.signer_name || null
+  } catch (e) {
+    return null
+  }
+}
+
 export const generateReceipt = async (data: ReceiptData): Promise<Blob> => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
   const width = doc.internal.pageSize.getWidth()
@@ -122,12 +134,14 @@ export const generateReceipt = async (data: ReceiptData): Promise<Blob> => {
   // Platform signature (left)
   try {
     const platSig = await loadPlatformSignatureImage().catch(() => null)
+    const platformSigner = await loadPlatformSignerName()
     if (platSig) {
       const sigW = 50
       const sigH = (platSig.height / platSig.width) * sigW
       doc.addImage(platSig, 'PNG', 30, sigY, sigW, sigH)
       doc.setFontSize(9)
-      doc.text('Platform Authorized', 30 + sigW / 2, sigY + sigH + 6, { align: 'center' })
+      const signerLabel = platformSigner || 'Platform Authorized'
+      doc.text(signerLabel, 30 + sigW / 2, sigY + sigH + 6, { align: 'center' })
     }
   } catch (e) {
     // ignore

@@ -225,16 +225,40 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   doc.setLineWidth(0.5);
   doc.line(35, footerY + 5, 95, footerY + 5);
 
-  // Name & Title
+  // Name & Title - attempt to fetch platform signer name from API
+  let platformSignerRaw: string | null = null;
+  try {
+    const apiUrl = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
+    const res = await fetch(`${apiUrl}/admin/signature/`)
+    if (res.ok) {
+      const json = await res.json()
+      platformSignerRaw = json.signer_name || null
+    }
+  } catch (e) {
+    // ignore and fallback to defaults
+  }
+
+  let platformNameLine = 'Ndubuisi Osinachi Blessed'
+  let platformTitleLine = 'CEO, LightHub Academy'
+  if (platformSignerRaw) {
+    const parts = platformSignerRaw.split(',').map(s => s.trim())
+    if (parts.length >= 2) {
+      platformNameLine = parts.slice(0, parts.length - 1).join(', ')
+      platformTitleLine = parts.slice(parts.length - 1).join(', ')
+    } else {
+      platformNameLine = platformSignerRaw
+    }
+  }
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(50, 50, 50);
-  doc.text('Ndubuisi Osinachi Blessed', 35, footerY + 11);
+  doc.text(platformNameLine, 35, footerY + 11);
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(100, 100, 100);
-  doc.text('CEO, LightHub Academy', 35, footerY + 16);
+  doc.text(platformTitleLine, 35, footerY + 16);
 
 
   // --- RIGHT SIDE & SEAL PLACEMENT ---

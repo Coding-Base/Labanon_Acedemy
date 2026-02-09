@@ -56,6 +56,8 @@ import {
 } from 'recharts'
 import labanonLogo from '../labanonlogo.png'
 import CreateCourse from '../CreateCourse'
+import InstitutionSignature from './InstitutionSignature'
+import MasterSignature from './MasterSignature'
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies'
 import SubAdminForm from '../../components/dashboards/SubAdminForm'
 import AdminMessages from '../../components/AdminMessages'
@@ -356,6 +358,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
+    { id: 'signature', label: 'Signature', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
@@ -2030,6 +2033,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {tab === 'signature' && (
+                  <div>
+                    {/* Master signature management for platform CEO */}
+                    <MasterSignature />
                   </div>
                 )}
 

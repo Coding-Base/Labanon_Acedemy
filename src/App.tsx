@@ -63,6 +63,16 @@ export default function App() {
     useEffect(() => {
       try {
         sendPageView(location.pathname + (location.search || ''))
+        // also notify backend about referrer and UTM data
+        // sendServerPageView is fire-and-forget
+        ;(async () => {
+          try {
+            const mod = await import('./utils/googleAnalytics')
+            if (typeof mod.sendServerPageView === 'function') mod.sendServerPageView(location.pathname + (location.search || ''))
+          } catch (e) {
+            // ignore
+          }
+        })()
       } catch (e) {
         // ignore
       }

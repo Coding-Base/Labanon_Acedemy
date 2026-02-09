@@ -145,6 +145,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [paymentsLoading, setPaymentsLoading] = useState(false)
   const [adminLoading, setAdminLoading] = useState(false)
   const [gaSummary, setGaSummary] = useState<any | null>(null)
+  const [utmSources, setUtmSources] = useState<any[] | null>(null)
+  const [topReferrers, setTopReferrers] = useState<any[] | null>(null)
+  const [referrersLoading, setReferrersLoading] = useState(false)
   const [paymentPage, setPaymentPage] = useState(1)
   const [paymentPageInfo, setPaymentPageInfo] = useState<{count: number; next: string | null; previous: string | null}>({count: 0, next: null, previous: null})
   const [activationFees, setActivationFees] = useState<any[]>([])
@@ -165,6 +168,24 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const quillRef = useRef<any>(null)
+
+  // --- Referrer / UTM stats loader ---
+  const loadReferrerStats = async () => {
+    setReferrersLoading(true)
+    try {
+      const res = await axios.get(`${API_BASE}/analytics/referrers/`)
+      if (res && res.data) {
+        setUtmSources(res.data.utm_sources || [])
+        setTopReferrers(res.data.referrers || [])
+      }
+    } catch (e) {
+      console.warn('Failed to load referrer stats', e)
+      setUtmSources([])
+      setTopReferrers([])
+    } finally {
+      setReferrersLoading(false)
+    }
+  }
 
   // Autosave draft support (localStorage)
   const draftKey = (id?: number | null) => `admin_blog_draft_${id ?? 'new'}`;
@@ -410,7 +431,14 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     if (tab === 'institutions') loadInstitutions()
     if (tab === 'courses') loadCourses()
     if (tab === 'cbt') loadCbtAnalytics()
-    if (tab === 'analytics') loadAdminAnalytics()
+    if (tab === 'analytics') {
+      loadAdminAnalytics()
+      try {
+        loadReferrerStats()
+      } catch (e) {
+        // ignore
+      }
+    }
     if (tab === 'payments') loadPayments(paymentPage)
     if (tab === 'blog') loadBlogs()
     if (tab === 'gospel') loadGospels()
@@ -1851,6 +1879,44 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           </div>
 
                           <div className="mt-6 grid md:grid-cols-3 gap-4">
+                            <div className="md:col-span-3">
+                              <h4 className="text-lg font-semibold text-gray-900 mb-3">Referrer & UTM Sources</h4>
+                              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                <div className="bg-white p-4 rounded-lg border">
+                                  <h5 className="text-sm text-gray-600 mb-3">Top UTM Sources</h5>
+                                  {referrersLoading ? (
+                                    <div className="text-center py-6"><Loader2 className="animate-spin w-6 h-6 text-yellow-600" /></div>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      {(utmSources || []).slice(0,10).map((s:any, i:number) => (
+                                        <div key={i} className="flex items-center justify-between">
+                                          <div className="text-sm text-gray-700">{s.utm_source || s.utm_source || 'Direct'}</div>
+                                          <div className="text-sm font-semibold text-gray-900">{s.count}</div>
+                                        </div>
+                                      ))}
+                                      {(!utmSources || utmSources.length === 0) && <div className="text-sm text-gray-500">No data yet</div>}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="bg-white p-4 rounded-lg border">
+                                  <h5 className="text-sm text-gray-600 mb-3">Top Referrers (URLs)</h5>
+                                  {referrersLoading ? (
+                                    <div className="text-center py-6"><Loader2 className="animate-spin w-6 h-6 text-yellow-600" /></div>
+                                  ) : (
+                                    <div className="space-y-2 max-h-56 overflow-y-auto">
+                                      {(topReferrers || []).slice(0,12).map((r:any, idx:number) => (
+                                        <div key={idx} className="flex items-start justify-between">
+                                          <div className="text-sm text-gray-700 break-words max-w-[70%]">{r.referrer || '(direct)'}</div>
+                                          <div className="text-sm font-semibold text-gray-900 ml-3">{r.count}</div>
+                                        </div>
+                                      ))}
+                                      {(!topReferrers || topReferrers.length === 0) && <div className="text-sm text-gray-500">No data yet</div>}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                             <div className="space-y-3">
                               <h4 className="text-sm text-gray-600">GA Summary</h4>
                               <div className="grid grid-cols-2 gap-3">

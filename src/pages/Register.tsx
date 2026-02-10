@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { register } from '../api/auth';
 import labanonLogo from './labanonlogo.png';
-import Footer from '../components/Footer';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -637,7 +636,7 @@ export default function Register() {
           </motion.div>
         </div>
       </motion.div>
-      <Footer />
+      
     </div>
   );
 }

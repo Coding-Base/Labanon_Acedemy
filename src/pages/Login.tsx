@@ -5,7 +5,6 @@ import { login } from '../api/auth'
 import axios from 'axios'
 import { Eye, EyeOff, KeyRound } from 'lucide-react'
 import labanonLogo from './labanonlogo.png'
-import Footer from '../components/Footer'
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -132,7 +131,7 @@ export default function Login() {
           <Link to={`/register${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-yellow-600 font-medium hover:underline">Create account</Link>
         </div>
       </div>
-      <Footer />
+      
     </div>
   )
 }

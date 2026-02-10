@@ -127,8 +127,7 @@ export default function PublicPortfolio() {
           </div>
         </div>
       )}
+      <Footer />
     </div>
-    <Footer />
-    </>
   )
 }

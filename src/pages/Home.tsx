@@ -749,7 +749,7 @@ export default function Home() {
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-yellow-700 font-semibold text-sm mb-6 shadow-sm">
                 <Globe className="w-4 h-4" /><span>Global Learning Access</span>
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">Need a Personal <br/><span className="text-yellow-700">Home or Online Tutor?</span></h2>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight"> Online Tutorial <br/><span className="text-yellow-700"> For  Students Application</span></h2>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">Connect with verified personal and best online tutors for one-on-one tutoring, home or virtual lessons in USA, Africa, Europe and Nigeria 
 
 </p>

@@ -17,6 +17,7 @@ import {
   Youtube,
   Facebook
 } from 'lucide-react'
+import Footer from '../components/Footer'
 
 type ValueItem = { icon: React.ComponentType<any>; title: string; description: string }
 type StatItem = { number: string; label: string }
@@ -293,6 +294,7 @@ const About: React.FC = () => {
           </motion.div>
         </section>
       </main>
+      <Footer />
     </div>
   )
 }

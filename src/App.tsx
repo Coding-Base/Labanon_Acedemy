@@ -121,7 +121,7 @@ export default function App() {
             <Route path="/blog/:slug" element={<BlogDetail />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/portfolio/:token" element={<PublicPortfolio />} />
-            <Route path="/tutor-application" element={<TutorApplication />} />
+            <Route path="/online-tutorial-for-student-application" element={<TutorApplication />} />
             <Route path="/documentation" element={<Documentation />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/about" element={<About />} />

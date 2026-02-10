@@ -13,6 +13,7 @@ import {
   ChevronUp,
   Mail
 } from 'lucide-react'
+import Footer from '../components/Footer'
 
 type Section = { title: string; icon: React.ComponentType<any>; content: string }
 type OffPlatformWarning = { role: string; warning: string }
@@ -238,6 +239,7 @@ const PrivacyPolicy: React.FC = () => {
           </Link>
         </motion.section>
       </main>
+      <Footer />
     </div>
   )
 }

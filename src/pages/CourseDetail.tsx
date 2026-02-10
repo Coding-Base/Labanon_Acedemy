@@ -20,6 +20,7 @@ import {
   Video
 } from 'lucide-react';
 import PaymentCheckout from '../components/PaymentCheckout';
+import Footer from '../components/Footer';
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api';
 

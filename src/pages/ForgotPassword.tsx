@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { Mail, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
-import labanonLogo from './labanonlogo.png' // Make sure this path is correct
+import labanonLogo from './labanonlogo.png'
+import Footer from '../components/Footer'
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -90,6 +91,7 @@ export default function ForgotPassword() {
           </>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

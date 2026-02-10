@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import PaymentCheckout from '../components/PaymentCheckout'
+import Footer from '../components/Footer'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -342,6 +343,7 @@ export default function DiplomaDetail() {
           </div>
         </motion.div>
       </div>
+      <Footer />
     </motion.div>
   )
 }

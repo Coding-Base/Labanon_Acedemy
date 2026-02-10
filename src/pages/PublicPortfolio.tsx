@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useParams } from 'react-router-dom'
+import Footer from '../components/Footer'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -127,5 +128,7 @@ export default function PublicPortfolio() {
         </div>
       )}
     </div>
+    <Footer />
+    </>
   )
 }

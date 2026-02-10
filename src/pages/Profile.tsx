@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
+import Footer from '../components/Footer'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -106,6 +107,7 @@ export default function Profile() {
           <button className="px-4 py-2 bg-brand-600 text-white rounded" onClick={save}>Save</button>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

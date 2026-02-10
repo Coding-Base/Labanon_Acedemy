@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import Footer from '../components/Footer'
 
 export default function NotFound() {
   return (
@@ -11,6 +12,7 @@ export default function NotFound() {
           <Link to="/" className="px-4 py-2 bg-yellow-600 text-white rounded-lg">Go Home</Link>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

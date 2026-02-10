@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
+import Footer from '../components/Footer'
 
 type Step = {
   step: number
@@ -210,6 +211,7 @@ const Documentation: React.FC = () => {
           </Link>
         </motion.section>
       </main>
+      <Footer />
     </div>
   )
 }

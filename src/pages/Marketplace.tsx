@@ -3,6 +3,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import CoursesList from '../shared/CoursesList'
+import Footer from '../components/Footer'
 
 export default function Marketplace() {
   const navigate = useNavigate()
@@ -31,6 +32,9 @@ export default function Marketplace() {
           <CoursesList />
         </section>
       </div>
+      <Footer />
     </div>
   )
 }
+
+export default Marketplace

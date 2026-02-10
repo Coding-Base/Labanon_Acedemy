@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { Lock, CheckCircle, Loader2, AlertTriangle } from 'lucide-react'
-import labanonLogo from './labanonlogo.png' 
+import labanonLogo from './labanonlogo.png'
+import Footer from '../components/Footer'
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -104,6 +105,7 @@ export default function ResetPassword() {
           </form>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

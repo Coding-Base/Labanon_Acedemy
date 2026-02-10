@@ -4,6 +4,7 @@ import axios from 'axios'
 import { motion } from 'framer-motion'
 import { Search, Loader2, Calendar, User, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import Footer from '../components/Footer'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
 const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
@@ -321,6 +322,7 @@ export default function BlogPage() {
           </motion.div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

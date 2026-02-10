@@ -247,7 +247,7 @@ export default function Home() {
     { label: 'Blog', path: '/blog' },
     { label: 'Documentation', path: '/documentation' },
     { label: 'About', path: '/about' },
-    { label: 'Find a Tutor', path: '/tutor-application' }, 
+    { label: 'Find a Tutor', path: '/online-tutorial-for-student-application' }, 
   ];
 
   // Static content arrays
@@ -759,7 +759,7 @@ export default function Home() {
                 ))}
               </ul>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Link to="/tutor-application" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-yellow-600/30 transition-all">Request a Tutor Now <ArrowRight className="ml-2 w-5 h-5" /></Link>
+                <Link to="/online-tutorial-for-student-application" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-yellow-600/30 transition-all">Request a Tutor Now <ArrowRight className="ml-2 w-5 h-5" /></Link>
               </motion.div>
             </motion.div>
 

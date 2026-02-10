@@ -148,6 +148,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [utmSources, setUtmSources] = useState<any[] | null>(null)
   const [topReferrers, setTopReferrers] = useState<any[] | null>(null)
   const [referrersLoading, setReferrersLoading] = useState(false)
+  const [dailyAnalytics, setDailyAnalytics] = useState<any[] | null>(null)
+  const [dailyTotals, setDailyTotals] = useState<any | null>(null)
+  const [dailyLoading, setDailyLoading] = useState(false)
+  const [dateRangeStart, setDateRangeStart] = useState<string>('')
+  const [dateRangeEnd, setDateRangeEnd] = useState<string>('')
   const [paymentPage, setPaymentPage] = useState(1)
   const [paymentPageInfo, setPaymentPageInfo] = useState<{count: number; next: string | null; previous: string | null}>({count: 0, next: null, previous: null})
   const [activationFees, setActivationFees] = useState<any[]>([])
@@ -184,6 +189,30 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setTopReferrers([])
     } finally {
       setReferrersLoading(false)
+    }
+  }
+
+  // --- Daily analytics loader ---
+  const loadDailyAnalytics = async () => {
+    setDailyLoading(true)
+    try {
+      const token = localStorage.getItem('access')
+      const params = new URLSearchParams()
+      if (dateRangeStart) params.append('start', dateRangeStart)
+      if (dateRangeEnd) params.append('end', dateRangeEnd)
+      const res = await axios.get(`${API_BASE}/analytics/daily/?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res && res.data) {
+        setDailyAnalytics(res.data.daily || [])
+        setDailyTotals(res.data.totals || {})
+      }
+    } catch (e) {
+      console.warn('Failed to load daily analytics', e)
+      setDailyAnalytics([])
+      setDailyTotals(null)
+    } finally {
+      setDailyLoading(false)
     }
   }
 
@@ -624,7 +653,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     setAdminLoading(true)
     try {
       // Reuse existing loaders to populate analytics data and fetch GA summary
-      await Promise.all([loadCbtAnalytics(), loadPayments(1), loadGaSummary()])
+      await Promise.all([loadCbtAnalytics(), loadPayments(1), loadGaSummary(), loadDailyAnalytics()])
     } catch (err) {
       console.error('Failed to load admin analytics', err)
     } finally {
@@ -1992,12 +2021,124 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             </div>
                           </div>
                         </div>
+
+                        {/* Daily Reports Section */}
+                        <div className="bg-white rounded-xl p-6 border border-gray-200 mt-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Analytics Report</h3>
+                          
+                          {/* Date Range Selector */}
+                          <div className="grid md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-2">Start Date</label>
+                              <input
+                                type="date"
+                                value={dateRangeStart}
+                                onChange={(e) => setDateRangeStart(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-2">End Date</label>
+                              <input
+                                type="date"
+                                value={dateRangeEnd}
+                                onChange={(e) => setDateRangeEnd(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              />
+                            </div>
+                            <div className="flex items-end">
+                              <button
+                                onClick={loadDailyAnalytics}
+                                disabled={dailyLoading}
+                                className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 text-sm font-medium"
+                              >
+                                {dailyLoading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
+                                Apply Filter
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Daily Totals Summary */}
+                          {dailyTotals && (
+                            <div className="grid md:grid-cols-3 gap-4 mb-6">
+                              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                                <div className="text-sm text-gray-600 mb-1">Total Views</div>
+                                <div className="text-2xl font-bold text-blue-900">{dailyTotals.views || 0}</div>
+                                <div className="text-xs text-gray-500 mt-1">Landing: {dailyTotals.landing_views || 0}</div>
+                              </div>
+                              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                                <div className="text-sm text-gray-600 mb-1">Transactions</div>
+                                <div className="text-2xl font-bold text-green-900">{dailyTotals.transactions || 0}</div>
+                                <div className="text-xs text-gray-500 mt-1">Revenue: ${(dailyTotals.revenue || 0).toFixed(2)}</div>
+                              </div>
+                              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                                <div className="text-sm text-gray-600 mb-1">Platform Fee</div>
+                                <div className="text-2xl font-bold text-purple-900">${(dailyTotals.platform_fee || 0).toFixed(2)}</div>
+                                <div className="text-xs text-gray-500 mt-1">Creator: ${(dailyTotals.creator_amount || 0).toFixed(2)}</div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Daily Chart */}
+                          {dailyAnalytics && dailyAnalytics.length > 0 && (
+                            <div className="mb-6">
+                              <h4 className="text-sm text-gray-600 mb-3">Daily Page Views & Transactions</h4>
+                              <div style={{ width: '100%', height: 300 }}>
+                                <ResponsiveContainer>
+                                  <BarChart data={dailyAnalytics} margin={{ top: 10, right: 16, left: -8, bottom: 6 }}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                    <YAxis yAxisId="left" />
+                                    <YAxis yAxisId="right" orientation="right" />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar yAxisId="left" dataKey="views" fill="#F59E0B" name="Page Views" />
+                                    <Bar yAxisId="right" dataKey="transactions" fill="#10B981" name="Transactions" />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Daily Table */}
+                          <div className="overflow-x-auto">
+                            <h4 className="text-sm text-gray-600 mb-3">Daily Breakdown</h4>
+                            {dailyLoading ? (
+                              <div className="text-center py-6"><Loader2 className="animate-spin w-6 h-6 text-yellow-600 mx-auto" /></div>
+                            ) : dailyAnalytics && dailyAnalytics.length > 0 ? (
+                              <table className="w-full text-sm">
+                                <thead className="bg-gray-50 border-b border-gray-200">
+                                  <tr>
+                                    <th className="px-4 py-2 text-left text-gray-700 font-semibold">Date</th>
+                                    <th className="px-4 py-2 text-right text-gray-700 font-semibold">Views</th>
+                                    <th className="px-4 py-2 text-right text-gray-700 font-semibold">Landing</th>
+                                    <th className="px-4 py-2 text-right text-gray-700 font-semibold">Trans.</th>
+                                    <th className="px-4 py-2 text-right text-gray-700 font-semibold">Revenue</th>
+                                    <th className="px-4 py-2 text-right text-gray-700 font-semibold">Platform Fee</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {dailyAnalytics.map((row: any, idx: number) => (
+                                    <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
+                                      <td className="px-4 py-2 text-gray-700">{row.date}</td>
+                                      <td className="px-4 py-2 text-right text-gray-900 font-medium">{row.views || 0}</td>
+                                      <td className="px-4 py-2 text-right text-gray-700">{row.landing_views || 0}</td>
+                                      <td className="px-4 py-2 text-right text-gray-700">{row.transactions || 0}</td>
+                                      <td className="px-4 py-2 text-right text-gray-900 font-medium">${(row.revenue || 0).toFixed(2)}</td>
+                                      <td className="px-4 py-2 text-right text-gray-700">${(row.platform_fee || 0).toFixed(2)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            ) : (
+                              <div className="text-center py-6 text-gray-500">No data available for the selected period</div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
-
-                {tab === 'institutions' && (
                   <div>
                     {institutionLoading ? (
                       <div className="flex items-center justify-center py-12">

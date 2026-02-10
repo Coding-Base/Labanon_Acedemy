@@ -2139,6 +2139,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     )}
                   </div>
                 )}
+                {tab === 'institutions' && (
                   <div>
                     {institutionLoading ? (
                       <div className="flex items-center justify-center py-12">

@@ -11,6 +11,7 @@ export interface CertificateData {
   institutionSignatureUrl?: string;
   institutionSignerName?: string;
   institutionSignerPosition?: string; // <--- Added this new field
+  institutionLogoUrl?: string; // <--- URL to institution logo
   // Optional fallbacks
   first_name?: string;
   last_name?: string;
@@ -18,14 +19,73 @@ export interface CertificateData {
 }
 
 // --- Helper: Load Image ---
-const loadImage = (url: string): Promise<HTMLImageElement> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.src = url;
-    img.onload = () => resolve(img);
-    img.onerror = (e) => reject(e);
-  });
+const loadImage = async (url: string): Promise<HTMLImageElement> => {
+  if (!url) throw new Error('Image URL is required');
+  
+  // For localhost or data URLs, try direct load first
+  if (url.startsWith('data:') || url.includes('localhost') || url.includes('127.0.0.1')) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = (e) => {
+        console.warn(`Direct load failed for ${url}, trying fetch...`);
+        reject(e);
+      };
+      img.src = url;
+      // Set timeout in case onload/onerror never fire
+      setTimeout(() => {
+        if (!img.complete) {
+          reject(new Error('Image load timeout'));
+        }
+      }, 5000);
+    }).catch(() => {
+      // Fallback to fetch for localhost URLs
+      return fetchImageAsBlob(url);
+    });
+  }
+  
+  // For external URLs (Cloudinary), use fetch-as-blob
+  return fetchImageAsBlob(url);
+};
+
+const fetchImageAsBlob = async (url: string): Promise<HTMLImageElement> => {
+  try {
+    const resp = await fetch(url, { mode: 'cors', credentials: 'omit' });
+    if (!resp.ok) throw new Error(`Fetch failed: ${resp.status}`);
+    const blob = await resp.blob();
+    if (blob.size === 0) throw new Error('Empty blob');
+    
+    const blobUrl = URL.createObjectURL(blob);
+    
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = (e) => {
+        console.warn(`Blob image load failed for ${url}:`, e);
+        reject(e);
+      };
+      img.src = blobUrl;
+      // Set timeout
+      setTimeout(() => {
+        if (!img.complete) reject(new Error('Blob image load timeout'));
+      }, 5000);
+    });
+  } catch (err) {
+    console.warn(`Fetch failed for ${url}:`, err);
+    // Last resort: direct image load
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = (e) => reject(e);
+      img.src = url;
+      setTimeout(() => {
+        if (!img.complete) reject(new Error('Direct load timeout'));
+      }, 5000);
+    });
+  }
 };
 
 // --- Helper: Fetch Platform Signature ---
@@ -264,6 +324,19 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   // --- RIGHT SIDE & SEAL PLACEMENT ---
   const hasInstSig = data.institutionSignatureUrl && data.institutionSignerName;
 
+  // Institution Logo handling: right side, under "COURSE CERTIFICATE" text
+  if (data.institutionLogoUrl) {
+    try {
+      const logoImg = await loadImage(data.institutionLogoUrl);
+      const maxLogoWidth = 20; // 20mm width
+      const logoHeight = (logoImg.height / logoImg.width) * maxLogoWidth;
+      // Position on right side, below header
+      doc.addImage(logoImg, 'PNG', width - maxLogoWidth - 40, 35, maxLogoWidth, logoHeight);
+    } catch (e) {
+      console.warn('Failed to load institution logo', e);
+    }
+  }
+
   if (hasInstSig) {
     // === DUAL SIGNATURE MODE ===
     
@@ -323,6 +396,7 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   doc.setTextColor(100, 100, 100);
   doc.text(`Certificate ID: ${data.certificateId}`, width - 20, verifyY, { align: 'right' });
 
+  // Output PDF blob (blob URLs will remain valid during and after rendering)
   return doc.output('blob');
 };
 

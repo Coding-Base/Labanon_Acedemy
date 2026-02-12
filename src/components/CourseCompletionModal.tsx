@@ -7,6 +7,15 @@ import {
 } from '../utils/certificateGenerator';
 import api from '../utils/axiosInterceptor';
 
+// Helper to ensure URLs are absolute
+const getAbsoluteUrl = (url: string | null | undefined): string | undefined => {
+  if (!url) return undefined;
+  if (url.startsWith('http')) return url;
+  const cleanPath = url.replace(/^\/api/, '');
+  const baseUrl = (import.meta.env as any).VITE_API_BASE?.replace('/api', '') || 'http://localhost:8000';
+  return `${baseUrl}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
+};
+
 interface CourseCompletionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,8 +38,13 @@ export default function CourseCompletionModal({
   
   // Store the course creator string and potential institution signature details
   const [courseCreator, setCourseCreator] = useState<string>('');
-  // UPDATED: State now includes position
-  const [instSignature, setInstSignature] = useState<{url: string, name: string, position?: string} | null>(null);
+  // State now includes signature, logo, name, and position
+  const [instSignature, setInstSignature] = useState<{
+    url: string;
+    logo_url?: string;
+    name: string;
+    position?: string;
+  } | null>(null);
 
   // Fetch course details when modal opens to get the creator info
   useEffect(() => {
@@ -62,12 +76,13 @@ export default function CourseCompletionModal({
                     } catch (e) { console.error("Failed to search institution", e); }
                 }
 
-                // 3. Set Signature State if data found
+                // 3. Set Signature State if data found (with absolute URLs)
                 if (institutionData && institutionData.signature_image && institutionData.signer_name) {
                     setInstSignature({
-                        url: institutionData.signature_image,
+                        url: getAbsoluteUrl(institutionData.signature_image) || institutionData.signature_image,
+                        logo_url: getAbsoluteUrl(institutionData.logo_image),
                         name: institutionData.signer_name,
-                        position: institutionData.signer_position // <--- Captured Position
+                        position: institutionData.signer_position
                     });
                 }
             })
@@ -121,8 +136,9 @@ export default function CourseCompletionModal({
         instructorName: courseCreator, // Generator checks for "(institution)" here
         verificationUrl: `https://lebanonacademy.ng/verify/${certData.certificate_id}`,
         institutionSignatureUrl: instSignature?.url,
+        institutionLogoUrl: instSignature?.logo_url,
         institutionSignerName: instSignature?.name,
-        institutionSignerPosition: instSignature?.position // <--- Passed Position
+        institutionSignerPosition: instSignature?.position
       });
 
       // 4. Download — prefer first+last for filename when present

@@ -77,8 +77,9 @@ export default function CertificatesPage() {
       const creatorUsername = courseData.creator_username;
 
       let instSignerName = undefined;
-      let instSignerPosition = undefined; // <--- New Variable
+      let instSignerPosition = undefined;
       let instSignatureUrl = undefined;
+      let instLogoUrl = undefined;
 
       // 2. Logic to find Institution Signature
       try {
@@ -100,12 +101,15 @@ export default function CertificatesPage() {
             }
         }
 
-        // If we found institution data, extract signature details
+        // If we found institution data, extract signature & logo details
         if (institutionData) {
             if (institutionData.signer_name) instSignerName = institutionData.signer_name;
-            if (institutionData.signer_position) instSignerPosition = institutionData.signer_position; // <--- Extract Position
+            if (institutionData.signer_position) instSignerPosition = institutionData.signer_position;
             if (institutionData.signature_image) {
                 instSignatureUrl = getAbsoluteUrl(institutionData.signature_image);
+            }
+            if (institutionData.logo_image) {
+                instLogoUrl = getAbsoluteUrl(institutionData.logo_image);
             }
         }
       } catch (instErr) {
@@ -143,7 +147,8 @@ export default function CertificatesPage() {
         verificationUrl: `https://lebanonacademy.ng/verify/${cert.certificate_id}`,
         institutionSignerName: instSignerName,
         institutionSignerPosition: instSignerPosition, // <--- Pass Position to Generator
-        institutionSignatureUrl: instSignatureUrl
+        institutionSignatureUrl: instSignatureUrl,
+        institutionLogoUrl: instLogoUrl
       });
 
       // 5. Download

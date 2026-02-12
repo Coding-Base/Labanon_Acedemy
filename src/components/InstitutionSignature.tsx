@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import api from '../utils/axiosInterceptor';
 import { Save, Loader2, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 
+// Helper to ensure URLs are absolute
+const getAbsoluteUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  const cleanPath = url.replace(/^\/api/, '');
+  const baseUrl = (import.meta.env as any).VITE_API_BASE?.replace('/api', '') || 'http://localhost:8000';
+  return `${baseUrl}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
+};
+
 export default function InstitutionSignature() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -137,7 +146,7 @@ export default function InstitutionSignature() {
             />
             {formData.signature_image ? (
               <div className="flex flex-col items-center">
-                <img src={formData.signature_image} alt="Institution signature image" className="h-24 object-contain mb-2" width={240} height={96} loading="lazy" decoding="async" />
+                <img src={getAbsoluteUrl(formData.signature_image)} alt="Institution signature image" className="h-24 object-contain mb-2" width={240} height={96} loading="lazy" decoding="async" />
                 <p className="text-sm text-green-600 font-medium group-hover:underline">Click to replace</p>
               </div>
             ) : (

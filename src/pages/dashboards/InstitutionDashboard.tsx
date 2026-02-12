@@ -43,6 +43,7 @@ import ContactAdminForm from '../../components/ContactAdminForm';
 import UserMessages from '../../components/UserMessages';
 import SchedulePage from '../../components/SchedulePage';
 import InstitutionSignature from '../../components/InstitutionSignature';
+import InstitutionLogo from '../../components/InstitutionLogo';
 import GospelVideoModal from '../../components/GospelVideoModal';
 
 // Recharts
@@ -281,6 +282,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
     { path: 'diploma', label: 'Onsite Diplomas', icon: <GraduationCap className="w-5 h-5" /> },
     { path: 'portfolio', label: 'My Portfolio', icon: <Briefcase className="w-5 h-5" /> },
     { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> },
+    { path: 'logo', label: 'Logo', icon: <Upload className="w-5 h-5" /> },
     { path: 'signature', label: 'Signature', icon: <PenTool className="w-5 h-5" /> },
     { path: 'payments', label: 'Payments & Payouts', icon: <DollarSign className="w-5 h-5" /> },
   ];
@@ -662,6 +664,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   <Route path="schedule" element={<div className="p-4"><SchedulePage userRole="institution" /></div>} />
 
                   {/* Signature Page */}
+                  <Route path="logo" element={<InstitutionLogo />} />
                   <Route path="signature" element={<InstitutionSignature />} />
 
                   {/* Payments & Flutterwave */}

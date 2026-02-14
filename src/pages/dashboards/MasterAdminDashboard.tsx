@@ -36,7 +36,8 @@ import {
   LogOut,
   Clock,
   Menu,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react'
 // Recharts for analytics charts
 import {
@@ -168,7 +169,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [blogsLoading, setBlogsLoading] = useState(false)
   const [showBlogForm, setShowBlogForm] = useState(false)
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
-  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; excerpt: string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
+  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, image_description: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
   const [savingBlog, setSavingBlog] = useState(false)
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
@@ -233,6 +234,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           title: parsed.title || prev.title,
           content: parsed.content || prev.content,
           image: parsed.image || prev.image,
+          image_description: parsed.image_description || prev.image_description,
           excerpt: parsed.excerpt || prev.excerpt,
           meta_title: parsed.meta_title || prev.meta_title,
           meta_description: parsed.meta_description || prev.meta_description,
@@ -259,6 +261,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           content: blogFormData.content || '',
           // only persist string image URLs, not File objects
           image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
+          image_description: blogFormData.image_description || '',
           excerpt: blogFormData.excerpt || '',
           meta_title: blogFormData.meta_title || '',
           meta_description: blogFormData.meta_description || '',
@@ -829,6 +832,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         fd.append('title', blogFormData.title)
         fd.append('content', blogFormData.content)
         fd.append('excerpt', excerptToSend)
+        fd.append('image_description', blogFormData.image_description || '')
         fd.append('meta_title', blogFormData.meta_title || '')
         fd.append('meta_description', blogFormData.meta_description || '')
         fd.append('meta_keywords', blogFormData.meta_keywords || '')
@@ -846,6 +850,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           content: blogFormData.content,
           image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
           excerpt: excerptToSend,
+          image_description: blogFormData.image_description || '',
           meta_title: blogFormData.meta_title || '',
           meta_description: blogFormData.meta_description || '',
           meta_keywords: blogFormData.meta_keywords || ''
@@ -859,7 +864,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
       // Success: close modal, reset form and reload list
       setShowBlogForm(false)
-      setBlogFormData({title: '', content: '', image: null, excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
+      setBlogFormData({title: '', content: '', image: null, excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: ''})
       setEditingBlog(null)
       // Clear any saved draft for this post
       try {
@@ -1929,7 +1934,19 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 </div>
 
                                 <div className="bg-white p-4 rounded-lg border">
-                                  <h5 className="text-sm text-gray-600 mb-3">Top Referrers (URLs)</h5>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h5 className="text-sm text-gray-600">Top Referrers (URLs)</h5>
+                                    <motion.button
+                                      whileHover={{ rotate: 180 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => loadReferrerStats()}
+                                      disabled={referrersLoading}
+                                      className="p-1 hover:bg-yellow-100 rounded-lg transition-colors disabled:opacity-50"
+                                      title="Refresh referrer data"
+                                    >
+                                      <RefreshCw className="w-4 h-4 text-yellow-600" />
+                                    </motion.button>
+                                  </div>
                                   {referrersLoading ? (
                                     <div className="text-center py-6"><Loader2 className="animate-spin w-6 h-6 text-yellow-600" /></div>
                                   ) : (
@@ -3176,7 +3193,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               onClick={() => {
                                 setShowBlogForm(true)
                                 setEditingBlog(null)
-                                setBlogFormData({title: '', content: '', image: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
+                                setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: ''})
                               }}
                               className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg hidden md:inline-flex"
                             >
@@ -3187,7 +3204,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              onClick={() => { setShowBlogForm(true); setEditingBlog(null); setBlogFormData({title: '', content: '', image: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''}) }}
+                              onClick={() => { setShowBlogForm(true); setEditingBlog(null); setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: ''}) }}
                               className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold md:hidden"
                             >
                               + New
@@ -3241,6 +3258,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                         content: blog.content,
                                         image: blog.image,
                                         excerpt: blog.excerpt,
+                                        image_description: blog.image_description || '',
                                         meta_title: blog.meta_title || '',
                                         meta_description: blog.meta_description || '',
                                         meta_keywords: blog.meta_keywords || ''
@@ -3982,6 +4000,18 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       </button>
                     </div>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Image Description (Alt Text)</label>
+                  <textarea
+                    value={blogFormData.image_description}
+                    onChange={(e) => setBlogFormData((prev) => ({...prev, image_description: e.target.value}))}
+                    placeholder="Brief description of the image for accessibility and SEO"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none h-16 resize-none"
+                    maxLength={255}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{blogFormData.image_description.length}/255 characters</p>
                 </div>
               </div>
             </div>

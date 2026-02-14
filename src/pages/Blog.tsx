@@ -237,9 +237,9 @@ export default function BlogPage() {
                 className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
                 onClick={() => navigate(`/blog/${blog.slug}`, { state: { blog } })}
               >
-                {/* Featured Image */}
+                {/* Featured Image - Professional Thumbnail */}
                 {imgSrc && (
-                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-green-400 to-yellow-500">
+                  <div className="relative w-full bg-gradient-to-br from-green-400 to-yellow-500 overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
                     <img
                       src={imgSrc}
                       alt={blog.title}

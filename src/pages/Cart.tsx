@@ -38,6 +38,10 @@ export default function Cart() {
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave'>('paystack')
+  const [promoInput, setPromoInput] = useState('')
+  const [promoData, setPromoData] = useState<any | null>(null)
+  const [applyingPromo, setApplyingPromo] = useState(false)
+  const [promoError, setPromoError] = useState('')
 
   useEffect(() => {
     loadCart()
@@ -103,7 +107,11 @@ export default function Cart() {
         // Calculate Amount (Item Price + 5% Fee)
         const rawPrice = parseFloat(String(item.course?.price || item.diploma?.price || item.price || 0))
         const platformFee = rawPrice * 0.05
-        const finalAmount = rawPrice + platformFee
+        let finalAmount = rawPrice + platformFee
+        // If promo applied, use backend-calculated new total (assumed to apply to finalTotal)
+        if (promoData && promoData.valid) {
+          try { finalAmount = Number(promoData.new_total) } catch (e) { /* ignore */ }
+        }
         
         if (!itemId) {
           setError('Invalid cart item: missing item ID')
@@ -121,7 +129,8 @@ export default function Cart() {
           {
             item_type: itemType,
             item_id: itemId,
-            amount: finalAmount
+            amount: finalAmount,
+            promo_code: promoData && promoData.valid ? (promoData.promo?.code || promoInput) : undefined
           },
           { headers: { Authorization: `Bearer ${token}` } }
         )
@@ -168,6 +177,7 @@ export default function Cart() {
   }, 0)
   const platformFee = +(total * 0.05).toFixed(2)
   const finalTotal = +(total + platformFee).toFixed(2)
+  const displayFinalTotal = promoData && promoData.valid ? Number(promoData.new_total) : finalTotal
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 py-8">
@@ -280,7 +290,7 @@ export default function Cart() {
 
                 <div className="flex justify-between mb-6">
                   <span className="font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-bold text-green-600">₦{finalTotal.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                  <span className="text-2xl font-bold text-green-600">₦{displayFinalTotal.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                 </div>
 
                 {/* Payment Method Selector */}
@@ -290,6 +300,28 @@ export default function Cart() {
                     onMethodChange={setPaymentMethod}
                     disabled={processing}
                   />
+                  {/* Promo code input */}
+                  <div className="mt-4 flex gap-2">
+                    <input value={promoInput} onChange={(e) => setPromoInput(e.target.value)} placeholder="Promo code" className="flex-1 px-3 py-2 border rounded" />
+                    {!promoData ? (
+                      <button disabled={applyingPromo} onClick={async () => {
+                        setApplyingPromo(true); setPromoError('')
+                        try {
+                          const token = localStorage.getItem('access')
+                          const res = await axios.post(`${API_BASE}/promos/promocodes/apply/`, { code: (promoInput||'').trim(), total_amount: finalTotal, payment_type: 'cart' }, { headers: token ? { Authorization: `Bearer ${token}` } : undefined })
+                          setPromoData(res.data)
+                        } catch (e: any) {
+                          setPromoError(e.response?.data?.detail || (e.response?.data && JSON.stringify(e.response.data)) || 'Failed to apply promo')
+                        } finally { setApplyingPromo(false) }
+                      }} className="px-4 py-2 bg-yellow-600 text-white rounded">Apply</button>
+                    ) : (
+                      <button onClick={() => { setPromoData(null); setPromoInput(''); setPromoError('') }} className="px-4 py-2 bg-gray-100 rounded">Remove</button>
+                    )}
+                  </div>
+                  {promoError && <div className="text-sm text-red-600 mt-2">{promoError}</div>}
+                  {promoData && promoData.valid && (
+                    <div className="mt-2 text-sm text-green-700">Applied: Discount {promoData.discount} — New total {promoData.new_total}</div>
+                  )}
                 </div>
 
                 <button

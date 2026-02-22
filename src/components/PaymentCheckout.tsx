@@ -47,6 +47,10 @@ export default function PaymentCheckout({
   }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [promoInput, setPromoInput] = useState('')
+  const [promoData, setPromoData] = useState<any | null>(null)
+  const [applyingPromo, setApplyingPromo] = useState(false)
+  const [promoError, setPromoError] = useState('')
   const [processing, setProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave'>('paystack')
   const [tutorShare, setTutorShare] = useState<number>(95)
@@ -79,6 +83,9 @@ export default function PaymentCheckout({
     return () => { mounted = false }
   }, [])
 
+  const displayAmount = promoData && promoData.valid ? Number(promoData.new_total) : amount
+  const discountAmount = promoData && promoData.valid ? Number(promoData.discount) : 0
+
   const initiatePayment = async () => {
     setError('')
     setLoading(true)
@@ -96,14 +103,18 @@ export default function PaymentCheckout({
         : `${API_BASE}/payments/initiate/`
 
       // Call backend to initiate payment (include optional meta)
+      // If a promo is applied, prefer the backend-calculated new_total
       const payload: any = {
         item_type: itemType,
         item_id: itemId,
-        amount: amount,
+        amount: promoData && promoData.valid ? Number(promoData.new_total) : amount,
         currency: currency,
       }
       if (meta) {
         Object.assign(payload, meta)
+      }
+      if (promoData && promoData.valid) {
+        payload.promo_code = promoData.promo?.code || (promoInput || '').trim()
       }
       const res = await axios.post(endpoint, payload, { headers: { Authorization: `Bearer ${token}` } })
 
@@ -133,10 +144,11 @@ export default function PaymentCheckout({
 
       // Option 2: Use Paystack Popup (if available)
       if (window.PaystackPop && paymentMethod === 'paystack') {
+        const payAmount = promoData && promoData.valid ? Number(promoData.new_total) : amount
         const handler = window.PaystackPop.setup({
           key: (import.meta.env as any).VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_b5d0eaff52a5d2ed395c2ea99c881ec4ce62acc6',
           email: (await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } })).data.email,
-          amount: amount * 100, // Convert to subunits (kobo/cents)
+          amount: payAmount * 100, // Convert to subunits (kobo/cents)
           ref: reference,
           onClose: () => {
             setLoading(false)
@@ -231,20 +243,25 @@ export default function PaymentCheckout({
             <span className="text-gray-600">Subtotal:</span>
             <span className="font-semibold text-gray-900">{currencySymbol(currency)}{amount.toLocaleString()}</span>
           </div>
+          {discountAmount > 0 && (
+            <div className="flex justify-between text-sm text-green-700 mb-2">
+              <span>Discount:</span>
+              <span>- {currencySymbol(currency)}{discountAmount.toLocaleString()}</span>
+            </div>
+          )}
           {itemType === 'activation' ? (
             <div className="text-sm text-gray-500 flex justify-between mb-4">
               <span>Platform receives:</span>
-              <span>{currencySymbol(currency)}{amount.toLocaleString()}</span>
+              <span>{currencySymbol(currency)}{displayAmount.toLocaleString()}</span>
             </div>
           ) : (
             <>
               {(() => {
-                // Decide which creator share to use. Default to tutorShare; if item appears to be an institution-led purchase,
-                // server-side will use institution_share when initiating payment. For display here we use tutorShare as a best-effort.
+                const useAmount = displayAmount
                 const creatorShare = tutorShare
                 const platformPercent = Math.max(0, 100 - creatorShare)
-                const platformAmount = Math.round((amount * (platformPercent / 100)) * 100) / 100
-                const creatorAmount = Math.round((amount - platformAmount) * 100) / 100
+                const platformAmount = Math.round((useAmount * (platformPercent / 100)) * 100) / 100
+                const creatorAmount = Math.round((useAmount - platformAmount) * 100) / 100
                 return (
                   <>
                     <div className="text-sm text-gray-500 flex justify-between mb-4">
@@ -262,7 +279,7 @@ export default function PaymentCheckout({
           )}
           <div className="flex justify-between">
             <span className="text-lg font-bold text-gray-900">Total:</span>
-            <span className="text-2xl font-bold text-yellow-600">{currencySymbol(currency)}{amount.toLocaleString()}</span>
+            <span className="text-2xl font-bold text-yellow-600">{currencySymbol(currency)}{displayAmount.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -273,6 +290,33 @@ export default function PaymentCheckout({
         onMethodChange={setPaymentMethod}
         disabled={loading || processing}
       />
+
+      {/* Promo code input */}
+      <div className="mt-4">
+        <div className="flex gap-2">
+          <input value={promoInput} onChange={(e) => setPromoInput(e.target.value)} placeholder="Promo code" className="flex-1 px-3 py-2 border rounded" />
+          {!promoData ? (
+            <button disabled={applyingPromo} onClick={async () => {
+              setApplyingPromo(true); setPromoError('')
+              try {
+                const token = localStorage.getItem('access')
+                const payload: any = { code: (promoInput||'').trim(), total_amount: amount, payment_type: itemType }
+                if (meta) Object.assign(payload, meta)
+                const res = await axios.post(`${API_BASE}/promos/promocodes/apply/`, payload, { headers: token ? { Authorization: `Bearer ${token}` } : undefined })
+                setPromoData(res.data)
+              } catch (e: any) {
+                setPromoError(e.response?.data?.detail || (e.response?.data && JSON.stringify(e.response.data)) || 'Failed to apply promo')
+              } finally { setApplyingPromo(false) }
+            }} className="px-4 py-2 bg-yellow-600 text-white rounded">Apply</button>
+          ) : (
+            <button onClick={() => { setPromoData(null); setPromoInput(''); setPromoError('') }} className="px-4 py-2 bg-gray-100 rounded">Remove</button>
+          )}
+        </div>
+        {promoError && <div className="text-sm text-red-600 mt-2">{promoError}</div>}
+        {promoData && promoData.valid && (
+          <div className="mt-2 text-sm text-green-700">Applied: Discount {promoData.discount} — New total {promoData.new_total}</div>
+        )}
+      </div>
 
       <button
         onClick={initiatePayment}

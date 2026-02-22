@@ -108,7 +108,8 @@ type PermissionKey =
   | 'can_view_payments'
   | 'can_manage_blog'
   | 'can_view_messages'
-  | 'can_manage_subadmins';
+  | 'can_manage_subadmins'
+  | 'can_manage_promos'
 
 export default function MasterAdminDashboard({ summary: propSummary }: MasterProps) {
   const location = useLocation()
@@ -171,6 +172,12 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, image_description: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
   const [savingBlog, setSavingBlog] = useState(false)
+  // Promo codes management
+  const [promos, setPromos] = useState<any[]>([])
+  const [promosLoading, setPromosLoading] = useState(false)
+  const [showPromoForm, setShowPromoForm] = useState(false)
+  const [editingPromo, setEditingPromo] = useState<any | null>(null)
+  const [promoFormData, setPromoFormData] = useState<{code?: string; amount: string; is_percentage: boolean; max_uses?: string; expires_at?: string; applicable_to?: string; applicable_id?: string; active: boolean}>({code: '', amount: '', is_percentage: false, max_uses: '', expires_at: '', applicable_to: 'all', applicable_id: '', active: true})
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const quillRef = useRef<any>(null)
@@ -420,6 +427,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'exams', label: 'Exams & Subjects', icon: <GraduationCap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     // Bulk upload tied to course management permission usually
     { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
+    { id: 'promos', label: 'Promos', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_promos' as PermissionKey },
   ]
 
   // Filter tabs based on permissions
@@ -473,6 +481,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
     if (tab === 'payments') loadPayments(paymentPage)
     if (tab === 'blog') loadBlogs()
+    if (tab === 'promos') loadPromos()
     if (tab === 'gospel') loadGospels()
     if (tab === 'exams') {
       loadExamsManagement()
@@ -806,6 +815,66 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setBlogs([])
     } finally {
       setBlogsLoading(false)
+    }
+  }
+
+  // --- Promos loader / CRUD ---
+  async function loadPromos() {
+    setPromosLoading(true)
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/promos/promocodes/`, { headers: { Authorization: `Bearer ${token}` } })
+      const data = res.data.results || res.data
+      setPromos(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Failed to load promos', err)
+      setPromos([])
+    } finally {
+      setPromosLoading(false)
+    }
+  }
+
+  async function savePromo() {
+    setPromosLoading(true)
+    try {
+      const token = localStorage.getItem('access')
+      const headers: any = { Authorization: `Bearer ${token}` }
+      const payload: any = {
+        code: promoFormData.code || undefined,
+        amount: promoFormData.amount,
+        is_percentage: promoFormData.is_percentage,
+        max_uses: promoFormData.max_uses || undefined,
+        // convert local datetime-local value to UTC ISO for backend
+        expires_at: promoFormData.expires_at ? new Date(promoFormData.expires_at).toISOString() : undefined,
+        // If admin selected a specific exam, encode as `exam:<id>` so backend can match activation exam ids
+        applicable_to: (promoFormData.applicable_to === 'exam' && promoFormData.applicable_id) ? `exam:${promoFormData.applicable_id}` : (promoFormData.applicable_to || 'all'),
+        active: promoFormData.active,
+      }
+      let res
+      if (editingPromo) {
+        res = await axios.patch(`${API_BASE}/promos/promocodes/${editingPromo.id}/`, payload, { headers })
+      } else {
+        res = await axios.post(`${API_BASE}/promos/promocodes/`, payload, { headers })
+      }
+      setShowPromoForm(false)
+      setEditingPromo(null)
+      setPromoFormData({code: '', amount: '', is_percentage: false, max_uses: '', expires_at: '', applicable_to: 'all', applicable_id: '', active: true})
+      loadPromos()
+    } catch (err) {
+      console.error('Failed to save promo', err)
+    } finally {
+      setPromosLoading(false)
+    }
+  }
+
+  async function deletePromo(id: number) {
+    if (!confirm('Delete this promo code?')) return
+    try {
+      const token = localStorage.getItem('access')
+      await axios.delete(`${API_BASE}/promos/promocodes/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+      loadPromos()
+    } catch (err) {
+      console.error('Failed to delete promo', err)
     }
   }
 
@@ -3166,6 +3235,139 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {tab === 'promos' && (
+                  <div>
+                    <div className="mb-6 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">Promo Codes</h3>
+                      <div>
+                        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => { setShowPromoForm(true); setEditingPromo(null); setPromoFormData({code: '', amount: '', is_percentage: false, max_uses: '', expires_at: '', applicable_to: 'all', applicable_id: '', active: true}); if (exams.length === 0) loadExams(); }} className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium">+ New Promo</motion.button>
+                      </div>
+                    </div>
+
+                    {promosLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+                        <span className="text-gray-600">Loading promos...</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="overflow-x-auto bg-white rounded-lg shadow">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Code</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Amount</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Uses</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Expires</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Active</th>
+                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-100">
+                              {promos.map((p) => (
+                                <tr key={p.id}>
+                                  <td className="px-4 py-3 text-sm text-gray-900 font-mono">{p.code}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">{p.is_percentage ? `${p.amount}%` : p.amount}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">{p.uses}{p.max_uses ? ` / ${p.max_uses}` : ''}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">{p.expires_at ? new Date(p.expires_at).toLocaleString() : '—'}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">{p.active ? 'Yes' : 'No'}</td>
+                                  <td className="px-4 py-3 text-sm text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => {
+                                        // parse applicable_to (support exam:<id> encoding)
+                                        let applicable_to = p.applicable_to || 'all'
+                                        let applicable_id = ''
+                                        if (typeof applicable_to === 'string' && applicable_to.startsWith('exam:')) {
+                                          applicable_id = applicable_to.split(':', 2)[1] || ''
+                                          applicable_to = 'exam'
+                                        }
+                                          setEditingPromo(p);
+                                          setShowPromoForm(true);
+                                          if (exams.length === 0) loadExams();
+                                        // convert server UTC time to local datetime-local value
+                                        let expiresLocal = ''
+                                        if (p.expires_at) {
+                                          try {
+                                            const d = new Date(p.expires_at)
+                                            expiresLocal = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0,16)
+                                          } catch (e) {
+                                            expiresLocal = ''
+                                          }
+                                        }
+                                        setPromoFormData({
+                                          code: p.code || '',
+                                          amount: String(p.amount),
+                                          is_percentage: !!p.is_percentage,
+                                          max_uses: p.max_uses ? String(p.max_uses) : '',
+                                          expires_at: expiresLocal,
+                                          applicable_to: applicable_to,
+                                          applicable_id: applicable_id,
+                                          active: !!p.active
+                                        })
+                                      }} className="px-3 py-1 bg-gray-100 rounded">Edit</motion.button>
+                                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => deletePromo(p.id)} className="px-3 py-1 bg-red-100 text-red-700 rounded">Delete</motion.button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                              {promos.length === 0 && (
+                                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">No promo codes yet</td></tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    <AnimatePresence>
+                      {showPromoForm && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+                          <motion.div initial={{ y: 20 }} animate={{ y: 0 }} exit={{ y: 20 }} className="w-full max-w-md bg-white rounded-lg p-6">
+                            <h4 className="text-lg font-semibold mb-3">{editingPromo ? 'Edit Promo' : 'New Promo'}</h4>
+                            <div className="space-y-3">
+                              <input placeholder="Code (optional - auto)" value={promoFormData.code} onChange={(e) => setPromoFormData(prev => ({...prev, code: e.target.value}))} className="w-full px-3 py-2 border rounded" />
+                              <div className="flex gap-2">
+                                <input placeholder="Amount" value={promoFormData.amount} onChange={(e) => setPromoFormData(prev => ({...prev, amount: e.target.value}))} className="w-2/3 px-3 py-2 border rounded" />
+                                <label className="flex items-center gap-2"><input type="checkbox" checked={promoFormData.is_percentage} onChange={(e) => setPromoFormData(prev => ({...prev, is_percentage: e.target.checked}))} /> Percentage</label>
+                              </div>
+                              <input placeholder="Max uses (empty for unlimited)" value={promoFormData.max_uses} onChange={(e) => setPromoFormData(prev => ({...prev, max_uses: e.target.value}))} className="w-full px-3 py-2 border rounded" />
+                              <input type="datetime-local" value={promoFormData.expires_at} onChange={(e) => setPromoFormData(prev => ({...prev, expires_at: e.target.value}))} className="w-full px-3 py-2 border rounded" />
+                              <div className="flex items-center justify-between">
+                                <div className="w-2/3">
+                                  <label className="block text-xs text-gray-500 mb-1">Applicable To</label>
+                                  <select value={promoFormData.applicable_to} onChange={(e) => setPromoFormData(prev => ({...prev, applicable_to: e.target.value, applicable_id: ''}))} className="w-full px-3 py-2 border rounded">
+                                    <option value="all">All</option>
+                                    <option value="exam">Exam</option>
+                                    <option value="interview">Interview Subject</option>
+                                    <option value="account_tutor">Account (Tutor)</option>
+                                    <option value="account_institution">Account (Institution)</option>
+                                  </select>
+                                  {promoFormData.applicable_to === 'exam' && (
+                                    <div className="mt-2">
+                                      <label className="block text-xs text-gray-500 mb-1">Choose Exam</label>
+                                      <select value={promoFormData.applicable_id || ''} onChange={(e) => setPromoFormData(prev => ({...prev, applicable_id: e.target.value}))} className="w-full px-3 py-2 border rounded">
+                                        <option value="">-- Select exam --</option>
+                                        {exams.map((ex: any) => (
+                                          <option key={ex.id} value={ex.id}>{ex.title || ex.name || ex.slug || `Exam ${ex.id}`}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                                <label className="flex items-center gap-2"><input type="checkbox" checked={promoFormData.active} onChange={(e) => setPromoFormData(prev => ({...prev, active: e.target.checked}))} /> Active</label>
+                              </div>
+                            </div>
+                            <div className="mt-4 flex justify-end gap-2">
+                              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setShowPromoForm(false); setEditingPromo(null) }} className="px-4 py-2 bg-gray-100 rounded">Cancel</motion.button>
+                              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => savePromo()} className="px-4 py-2 bg-yellow-600 text-white rounded">Save</motion.button>
+                            </div>
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
 

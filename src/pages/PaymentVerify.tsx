@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import { generateReceipt, downloadReceipt } from '../utils/receiptGenerator'
-import Footer from '../components/Footer'
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -252,7 +251,7 @@ export default function PaymentVerify() {
           </div>
         )}
       </div>
-      <Footer />
+      {/* Footer intentionally omitted on verification page */}
     </div>
   )
 }

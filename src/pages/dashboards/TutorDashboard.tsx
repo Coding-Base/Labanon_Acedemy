@@ -33,6 +33,7 @@ import {
   Edit3
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
+import { getTrialDaysLocal } from '../../utils/trialConfig'
 import ManageCourses from '../ManageCourses';
 import ManageCourseDetail from '../ManageCourseDetail';
 import CreateCourse from '../CreateCourse';
@@ -122,6 +123,8 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   // Flutterwave State
   const [fwAccount, setFwAccount] = useState<FlutterwaveSubAccount | null>(null);
   const [showFwUpdateForm, setShowFwUpdateForm] = useState(false); // State to toggle update form
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState<number | null>(null)
+  const [trialDaysTotal, setTrialDaysTotal] = useState<number | null>(null)
 
   // Leaderboard
   const [leaderboard, setLeaderboard] = useState<LeaderboardTutor[]>([]);
@@ -187,12 +190,62 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         const userId = userRes.data.id;
         
         setSummary({ ...currentSummary, id: userId });
-        // account unlocked check
+        // account unlocked check with configurable free trial for tutor accounts
         try {
-          const isUnlocked = userRes.data?.is_unlocked === true || userRes.data?.is_unlocked === 'true';
+          let isUnlocked = userRes.data?.is_unlocked === true || userRes.data?.is_unlocked === 'true';
+          if (!isUnlocked) {
+            const role = userRes.data?.role || localStorage.getItem('role');
+            const createdAt = userRes.data?.date_joined || userRes.data?.created_at || userRes.data?.created;
+            if ((role === 'tutor' || role === 'institution') && createdAt) {
+                // tolerate multiple createdAt formats (ISO string, numeric timestamp)
+                let created: Date
+                if (typeof createdAt === 'number') created = new Date(createdAt)
+                else if (/^\d+$/.test(String(createdAt || ''))) created = new Date(Number(createdAt))
+                else created = new Date(String(createdAt))
+                const now = new Date();
+                const diffDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
+                // debug helper when trial logic is applied
+                console.debug('Trial check', { role, createdAt, created: created.toISOString(), diffDays });
+                  try {
+                    // show user data for debugging
+                    console.log('Trial check - user data:', userRes.data)
+                    // lazy-load configured trial days (env/localStorage/server)
+                    // import locally to avoid circular deps
+                    // @ts-ignore
+                    const { getTrialDaysLocal } = await import('../../utils/trialConfig')
+                    const trialDays = getTrialDaysLocal()
+                    console.log('Trial check - trialDays used:', trialDays, 'diffDays:', diffDays)
+                    if (diffDays <= trialDays) {
+                      isUnlocked = true
+                    }
+                  } catch (e) {
+                    console.log('Trial check - failed to load trialDays, falling back to 30 days, diffDays:', diffDays, e)
+                    if (diffDays <= 30) isUnlocked = true
+                  }
+            }
+          }
           setAccountLocked(!isUnlocked);
         } catch (e) {
           setAccountLocked(false);
+        }
+
+        // Compute trial days remaining for display
+        try {
+          const trialDays = getTrialDaysLocal()
+          setTrialDaysTotal(trialDays)
+          const createdAtRaw = userRes.data?.date_joined || userRes.data?.created_at || userRes.data?.created
+          if (createdAtRaw) {
+            let created: Date
+            if (typeof createdAtRaw === 'number') created = new Date(createdAtRaw)
+            else if (/^\d+$/.test(String(createdAtRaw || ''))) created = new Date(Number(createdAtRaw))
+            else created = new Date(String(createdAtRaw))
+            const now = new Date()
+            const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24))
+            const remaining = Math.max(0, trialDays - diffDays)
+            setTrialDaysRemaining(remaining)
+          }
+        } catch (e) {
+          // ignore
         }
 
         // Parse Flutterwave Data
@@ -632,6 +685,22 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   <Route path="overview" element={
                     <div>
                       <div className="mb-6"><div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div><h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome, {summary?.username}! 🎓</h1></div><motion.button whileHover={{ scale: 1.05 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold"><Sparkles className="w-5 h-5 inline mr-2" />Go Live</motion.button></div></div>
+                      {/* Trial card */}
+                      {trialDaysRemaining !== null && (summary?.role === 'tutor') && (
+                        <div className="mb-6">
+                          <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="text-sm text-yellow-700 font-medium">Free Trial</div>
+                              <div className="text-2xl font-bold text-gray-900 mt-1">{trialDaysRemaining} day{trialDaysRemaining !== 1 ? 's' : ''} remaining</div>
+                              <div className="text-xs text-gray-500 mt-1">Your account is on a free trial for tutor features.</div>
+                              <div className="text-sm text-gray-600 mt-2">During the trial you can access the dashboard. After the trial ends your account will be locked until you complete activation.</div>
+                            </div>
+                            <div className="text-right w-full sm:w-auto">
+                              <Link to={`/activate?type=account&return_to=${encodeURIComponent('/tutor/overview')}`} className="px-4 py-2 bg-yellow-600 text-white rounded whitespace-nowrap">Unlock Account</Link>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">{quickActions.map((a, i) => (<motion.div key={i} whileHover={{ y: -5 }} className="bg-white rounded-xl shadow-lg p-4"><Link to={a.path}><div className={`w-12 h-12 ${a.color} rounded-xl flex items-center justify-center mb-3`}>{a.icon}</div><h3 className="font-semibold text-gray-900">{a.title}</h3></Link></motion.div>))}</div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">{stats.map((s, i) => (<motion.div key={i} whileHover={{ y: -5 }} className="bg-white rounded-2xl shadow-lg p-6"><div className="flex justify-between items-center"><div className={`w-12 h-12 bg-gradient-to-br ${s.color} rounded-xl flex items-center justify-center text-white`}>{s.icon}</div><div className="text-right"><div className="text-2xl font-bold text-gray-900">{s.value}</div><div className="text-sm text-gray-500">{s.change}</div></div></div><h3 className="font-semibold text-gray-900 mt-4">{s.title}</h3></motion.div>))}</div>
                       <div className="grid grid-cols-1 gap-8">

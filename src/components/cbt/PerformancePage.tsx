@@ -18,6 +18,50 @@ import {
 } from 'recharts'
 import { TrendingUp, Clock, Target, Award, AlertCircle } from 'lucide-react'
 
+ 
+function CbtReviewForm({ performance }: { performance: any }) {
+  const [rating, setRating] = useState(5)
+  const [message, setMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function submit() {
+    setSubmitting(true)
+    try {
+      const token = localStorage.getItem('access')
+      const payload = {
+        rating,
+        message,
+        category: 'cbt',
+        cbt_exam: performance.exam_title,
+        cbt_subject: performance.subject_name,
+        cbt_score: performance.percentage_score
+      }
+      await axios.post(`${API_BASE}/users/reviews/`, payload, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
+      setMessage('')
+      alert('Thanks for your feedback — it will appear after moderation.')
+    } catch (e) {
+      alert('Failed to submit review')
+    } finally { setSubmitting(false) }
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="md:col-span-3">
+        <div className="flex items-center gap-3">
+          <label className="text-sm">Rating</label>
+          <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="p-2 rounded">
+            {[5,4,3,2,1].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <textarea value={message} onChange={(e) => setMessage(e.target.value)} className="w-full mt-3 p-3 rounded text-gray-900" rows={3} placeholder="How was the exam?" />
+      </div>
+      <div className="md:col-span-1 flex items-center">
+        <button onClick={submit} disabled={submitting || message.trim() === ''} className="w-full bg-white text-yellow-600 font-bold py-2 rounded">{submitting ? 'Sending…' : 'Send Feedback'}</button>
+      </div>
+    </div>
+  )
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
 interface Performance {
@@ -377,6 +421,13 @@ export default function PerformancePage() {
             <p>• Accuracy rate: {performance.percentage_score.toFixed(1)}%</p>
             <p>• Questions attempted: {performance.num_questions}</p>
           </div>
+        </div>
+
+        {/* CBT Review Submission Card (appears after exam completion) */}
+        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 mb-8 text-white">
+          <h3 className="text-lg font-bold mb-2">How was this exam?</h3>
+          <p className="text-sm mb-4">Share a short review about this CBT exam. Your feedback helps us improve.</p>
+          <CbtReviewForm performance={performance} />
         </div>
 
         {/* All Answers Section */}

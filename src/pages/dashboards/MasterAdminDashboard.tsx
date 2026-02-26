@@ -56,6 +56,7 @@ import {
   Legend,
 } from 'recharts'
 import labanonLogo from '../labanonlogo.png'
+import { getTrialDaysLocal, fetchTrialDaysServer, saveTrialDaysServer } from '../../utils/trialConfig'
 import CreateCourse from '../CreateCourse'
 import InstitutionSignature from './InstitutionSignature'
 import MasterSignature from './MasterSignature'
@@ -175,6 +176,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   // Promo codes management
   const [promos, setPromos] = useState<any[]>([])
   const [promosLoading, setPromosLoading] = useState(false)
+  const [adminReviews, setAdminReviews] = useState<any[] | null>(null)
   const [showPromoForm, setShowPromoForm] = useState(false)
   const [editingPromo, setEditingPromo] = useState<any | null>(null)
   const [promoFormData, setPromoFormData] = useState<{code?: string; amount: string; is_percentage: boolean; max_uses?: string; expires_at?: string; applicable_to?: string; applicable_id?: string; active: boolean}>({code: '', amount: '', is_percentage: false, max_uses: '', expires_at: '', applicable_to: 'all', applicable_id: '', active: true})
@@ -222,6 +224,36 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     } finally {
       setDailyLoading(false)
     }
+  }
+
+  async function loadAdminReviews() {
+    setAdminLoading(true)
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/admin/reviews/`, { headers: { Authorization: `Bearer ${token}` } })
+      setAdminReviews(res.data.results || res.data || [])
+    } catch (e) {
+      console.warn('Failed to load admin reviews', e)
+      setAdminReviews([])
+    } finally { setAdminLoading(false) }
+  }
+
+  async function approveReview(id: number) {
+    if (!confirm('Approve this review?')) return
+    try {
+      const token = localStorage.getItem('access')
+      await axios.patch(`${API_BASE}/admin/reviews/${id}/`, { is_approved: true }, { headers: { Authorization: `Bearer ${token}` } })
+      loadAdminReviews()
+    } catch (e) { alert('Failed to approve') }
+  }
+
+  async function deleteReview(id: number) {
+    if (!confirm('Delete this review? This cannot be undone.')) return
+    try {
+      const token = localStorage.getItem('access')
+      await axios.delete(`${API_BASE}/admin/reviews/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+      loadAdminReviews()
+    } catch (e) { alert('Failed to delete') }
   }
 
   // Autosave draft support (localStorage)
@@ -350,6 +382,45 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [passwordData, setPasswordData] = useState({old_password: '', new_password: '', confirm_password: ''})
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [trialDays, setTrialDays] = useState<number | ''>(getTrialDaysLocal() || 30)
+  const [trialLoading, setTrialLoading] = useState(false)
+  const [trialSaving, setTrialSaving] = useState(false)
+
+  async function loadTrialDays() {
+    setTrialLoading(true)
+    try {
+      const days = await fetchTrialDaysServer()
+      setTrialDays(days)
+      setSettingsMessage({ type: 'success', text: 'Loaded trial days from server' })
+      setTimeout(() => setSettingsMessage(null), 2500)
+    } catch (e) {
+      // ignore - fallback to local/env
+    } finally {
+      setTrialLoading(false)
+    }
+  }
+
+  async function saveTrialDays() {
+    if (!trialDays || Number(trialDays) <= 0) {
+      setSettingsMessage({ type: 'error', text: 'Please enter a valid number of days' })
+      setTimeout(() => setSettingsMessage(null), 2500)
+      return
+    }
+    setTrialSaving(true)
+    try {
+      const saved = await saveTrialDaysServer(Number(trialDays))
+      setTrialDays(saved)
+      setSettingsMessage({ type: 'success', text: 'Trial days updated' })
+      setTimeout(() => setSettingsMessage(null), 2500)
+    } catch (err) {
+      // fallback: save locally
+      try { localStorage.setItem('trial_days', String(trialDays)); } catch {}
+      setSettingsMessage({ type: 'success', text: 'Saved trial days locally (server unavailable)' })
+      setTimeout(() => setSettingsMessage(null), 2500)
+    } finally {
+      setTrialSaving(false)
+    }
+  }
    
   // Helper function to construct absolute image URLs for media files
   const getImageUrl = (imageUrl: string | null) => {
@@ -428,6 +499,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     // Bulk upload tied to course management permission usually
     { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'promos', label: 'Promos', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_promos' as PermissionKey },
+    { id: 'trial', label: 'Trial Period', icon: <Clock className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
   ]
 
   // Filter tabs based on permissions
@@ -482,10 +554,14 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     if (tab === 'payments') loadPayments(paymentPage)
     if (tab === 'blog') loadBlogs()
     if (tab === 'promos') loadPromos()
+    if (tab === 'trial') loadTrialDays()
     if (tab === 'gospel') loadGospels()
     if (tab === 'exams') {
       loadExamsManagement()
       try { loadActivationFees(); loadSplitConfig() } catch (e) { /* ignore */ }
+    }
+    if (tab === 'cbt') {
+      loadAdminReviews()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
@@ -1431,6 +1507,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
             </div>
           </div>
         </div>
+
+              
       </motion.header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -1879,6 +1957,30 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+                {tab === 'trial' && (
+                  <div>
+                    <div className={`p-3 rounded-lg mb-4 ${settingsMessage?.type === 'success' ? 'bg-yellow-50 text-yellow-800' : settingsMessage?.type === 'error' ? 'bg-red-50 text-red-800' : ''}`}>
+                      {settingsMessage?.text}
+                    </div>
+
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-2">Free Trial Period (days)</h3>
+                      <p className="text-sm text-gray-600 mb-4">This value determines how long new tutor and institution accounts can use the dashboard before seeing the activation modal. You can load the value from server or provide via environment variable <code>VITE_TRIAL_DAYS</code>.</p>
+
+                      <div className="flex items-center gap-3">
+                        <input type="number" min={1} value={trialDays as any} onChange={(e) => setTrialDays(e.target.value === '' ? '' : Number(e.target.value))} className="w-40 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none" />
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={saveTrialDays} disabled={trialSaving} className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50">
+                          {trialSaving ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
+                          Save
+                        </motion.button>
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={loadTrialDays} disabled={trialLoading} className="px-3 py-2 bg-gray-100 text-gray-800 rounded-lg border border-gray-200">
+                          {trialLoading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
+                          Load From Server
+                        </motion.button>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -2549,6 +2651,32 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               ))}
                             </div>
                           )}
+                        </div>
+
+                        {/* Reviews Management for CBT */}
+                        <div className="bg-white rounded-xl p-6 border border-gray-200 mt-8">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">CBT Reviews Management</h3>
+                            <button onClick={() => loadAdminReviews()} className="px-3 py-2 bg-yellow-50 text-yellow-700 rounded">Refresh</button>
+                          </div>
+                          <div>
+                            {adminReviews && adminReviews.length === 0 && <div className="text-gray-500">No reviews found.</div>}
+                            <div className="space-y-3">
+                              {adminReviews?.map((r: any) => (
+                                <div key={r.id} className="p-3 border rounded flex items-start justify-between">
+                                  <div>
+                                    <div className="font-semibold">{r.name || r.author?.username || 'Anonymous'} <span className="text-xs text-gray-500">• {r.role}</span></div>
+                                    <div className="text-xs text-gray-500">{r.message}</div>
+                                    <div className="text-xs text-gray-400 mt-1">Exam: {r.cbt_exam} • Subject: {r.cbt_subject} • Score: {r.cbt_score}</div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {!r.is_approved && <button onClick={() => approveReview(r.id)} className="px-3 py-1 bg-green-600 text-white rounded">Approve</button>}
+                                    <button onClick={() => deleteReview(r.id)} className="px-3 py-1 bg-red-50 text-red-600 rounded">Delete</button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

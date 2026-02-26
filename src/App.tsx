@@ -32,6 +32,7 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 
 // CBT pages (lazy)
 const PerformancePage = lazy(() => import('./components/cbt/PerformancePage'))
+const ReviewsPage = lazy(() => import('./pages/ReviewsPage'))
 const BulkUploadPage = lazy(() => import('./pages/BulkUploadPage'))
 const PaymentVerify = lazy(() => import('./pages/PaymentVerify'))
 const ActivateCheckout = lazy(() => import('./pages/ActivateCheckout'))
@@ -102,6 +103,7 @@ export default function App() {
 
             {/* CBT/Exam Routes */}
             <Route path="/performance/:attemptId" element={<PerformancePage />} />
+            <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/bulk-upload" element={<BulkUploadPage />} />
             
             {/* Payment verification routes */}

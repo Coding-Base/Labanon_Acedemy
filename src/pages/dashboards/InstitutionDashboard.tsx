@@ -110,6 +110,8 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
 
   // Flutterwave State
   const [fwAccount, setFwAccount] = useState<FlutterwaveSubAccount | null>(null);
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState<number | null>(null);
+  const [trialDaysTotal, setTrialDaysTotal] = useState<number | null>(null);
 
   const base = '/institution';
 
@@ -169,12 +171,60 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
         // 2. Fetch Basic Dashboard Summary
         const summaryRes = await api.get('/dashboard/');
         if (mounted) setSummary(summaryRes.data);
-        // account unlocked check
+        // account unlocked check with configurable free trial for institution accounts
         try {
-          const isUnlocked = userRes.data?.is_unlocked === true || userRes.data?.is_unlocked === 'true';
+          let isUnlocked = userRes.data?.is_unlocked === true || userRes.data?.is_unlocked === 'true';
+          if (!isUnlocked) {
+            const role = userRes.data?.role || localStorage.getItem('role');
+            const createdAt = userRes.data?.date_joined || userRes.data?.created_at || userRes.data?.created;
+            if ((role === 'tutor' || role === 'institution') && createdAt) {
+                // tolerate multiple createdAt formats (ISO string, numeric timestamp)
+                let created: Date
+                if (typeof createdAt === 'number') created = new Date(createdAt)
+                else if (/^\d+$/.test(String(createdAt || ''))) created = new Date(Number(createdAt))
+                else created = new Date(String(createdAt))
+                const now = new Date();
+                const diffDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
+                console.debug('Trial check', { role, createdAt, created: created.toISOString(), diffDays });
+              try {
+                console.log('Trial check - user data:', userRes.data)
+                // @ts-ignore
+                const { getTrialDaysLocal } = await import('../../utils/trialConfig')
+                const trialDays = getTrialDaysLocal()
+                console.log('Trial check - trialDays used:', trialDays, 'diffDays:', diffDays)
+                if (diffDays <= trialDays) {
+                  isUnlocked = true
+                }
+              } catch (e) {
+                console.log('Trial check - failed to load trialDays, falling back to 30 days, diffDays:', diffDays, e)
+                if (diffDays <= 30) isUnlocked = true
+              }
+            }
+          }
           setAccountLocked(!isUnlocked);
         } catch (e) {
           setAccountLocked(false);
+        }
+
+        // Compute trial days remaining for display
+        try {
+          // @ts-ignore
+          const { getTrialDaysLocal } = await import('../../utils/trialConfig');
+          const trialDays = getTrialDaysLocal();
+          setTrialDaysTotal(trialDays);
+          const createdAtRaw = userRes.data?.date_joined || userRes.data?.created_at || userRes.data?.created;
+          if (createdAtRaw) {
+            let created: Date;
+            if (typeof createdAtRaw === 'number') created = new Date(createdAtRaw);
+            else if (/^\d+$/.test(String(createdAtRaw || ''))) created = new Date(Number(createdAtRaw));
+            else created = new Date(String(createdAtRaw));
+            const now = new Date();
+            const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+            const remaining = Math.max(0, trialDays - diffDays);
+            setTrialDaysRemaining(remaining);
+          }
+        } catch (e) {
+          // ignore
         }
 
         // 3. Fetch Institution Profile
@@ -443,6 +493,23 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform translate-x-12"></div>
                         <Globe className="absolute -right-6 -bottom-10 w-64 h-64 text-white opacity-10" />
                       </div>
+
+                        {/* Trial card - Institution */}
+                        {trialDaysRemaining !== null && (summary?.role === 'institution') && (
+                          <div className="mb-6 flex justify-end">
+                            <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full lg:w-1/2">
+                              <div className="flex-1">
+                                <div className="text-sm text-yellow-700 font-medium">Free Trial</div>
+                                <div className="text-2xl font-bold text-gray-900 mt-1">{trialDaysRemaining} day{trialDaysRemaining !== 1 ? 's' : ''} remaining</div>
+                                <div className="text-xs text-gray-500 mt-1">Your account is on a free trial for institution features.</div>
+                                <div className="text-sm text-gray-600 mt-2">During the trial you can access the dashboard. After the trial ends your account will be locked until you complete activation.</div>
+                              </div>
+                              <div className="text-right w-full sm:w-auto">
+                                <Link to={`/activate?type=account&return_to=${encodeURIComponent('/institution/overview')}`} className="px-4 py-2 bg-yellow-600 text-white rounded whitespace-nowrap">Unlock Account</Link>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                       {/* Stats Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

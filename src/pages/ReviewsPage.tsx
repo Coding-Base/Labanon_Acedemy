@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useLocation } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 import showToast from '../utils/toast';
+import Footer from '../components/Footer';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -79,7 +81,33 @@ export default function ReviewsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <>
+      {/* Navbar */}
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1 sm:gap-2 text-gray-700 hover:text-yellow-600 transition-colors font-medium text-xs sm:text-base whitespace-nowrap"
+              title="Back to Home"
+            >
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <span className="hidden sm:inline">Back to Home</span>
+            </Link>
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex-1 text-center">Reviews</h1>
+            <Link
+              to="/marketplace"
+              className="text-xs sm:text-sm text-gray-600 hover:text-yellow-600 transition-colors whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">Explore Courses</span>
+              <span className="sm:hidden">Courses</span>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">Public Reviews</h1>
@@ -92,10 +120,10 @@ export default function ReviewsPage() {
         )}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Reviews List */}
         <div className="lg:col-span-2">
-          {loading ? (
+            {loading ? (
             <div className="flex justify-center items-center h-40">
               <div className="animate-pulse text-gray-500">Loading reviews...</div>
             </div>
@@ -103,19 +131,19 @@ export default function ReviewsPage() {
             <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
               <p className="text-gray-500">No reviews yet. Be the first to leave one!</p>
             </div>
-          ) : (
+            ) : (
             <div className="space-y-5">
               {reviews.map((review) => (
                 <div
                   key={review.id}
-                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+                  className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow md:hover:shadow-md transition-shadow duration-200 break-words"
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold text-gray-900">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                         {review.name || review.author?.username || 'Anonymous'}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mt-1">
                         {review.role && (
                           <>
                             <span className="capitalize">{review.role}</span>
@@ -125,12 +153,12 @@ export default function ReviewsPage() {
                         <span>{new Date(review.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2 shrink-0">
                       <div className="flex">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <svg
                             key={star}
-                            className={`w-5 h-5 ${
+                            className={`w-4 h-4 sm:w-5 sm:h-5 ${
                               star <= review.rating ? 'text-yellow-400' : 'text-gray-200'
                             }`}
                             fill="currentColor"
@@ -140,14 +168,14 @@ export default function ReviewsPage() {
                           </svg>
                         ))}
                       </div>
-                      <span className="text-sm font-medium text-gray-700 ml-1">{review.rating}/5</span>
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 ml-1">{review.rating}/5</span>
                     </div>
                   </div>
 
-                  <p className="mt-4 text-gray-700 leading-relaxed">{review.message}</p>
+                  <p className="mt-3 text-sm sm:text-base text-gray-700 leading-relaxed break-words">{review.message}</p>
 
                   {review.category === 'cbt' && (
-                    <div className="mt-4 text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+                    <div className="mt-3 text-xs sm:text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
                       <span className="font-medium">Exam:</span> {review.cbt_exam} •{' '}
                       <span className="font-medium">Subject:</span> {review.cbt_subject} •{' '}
                       <span className="font-medium">Score:</span> {review.cbt_score}
@@ -161,9 +189,9 @@ export default function ReviewsPage() {
 
         {/* Submit Form */}
         <aside className="lg:col-span-1">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 sticky top-6">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative sm:sticky sm:top-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Leave a review</h3>
-            <form onSubmit={submitReview} className="space-y-4">
+              <form onSubmit={submitReview} className="space-y-4">
               <div>
                 <label htmlFor="rating" className="block text-sm font-medium text-gray-700 mb-1">
                   Rating
@@ -172,7 +200,7 @@ export default function ReviewsPage() {
                   id="rating"
                   value={rating}
                   onChange={(e) => setRating(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white/90"
                 >
                   {[5, 4, 3, 2, 1].map((n) => (
                     <option key={n} value={n}>
@@ -192,7 +220,7 @@ export default function ReviewsPage() {
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 resize-vertical"
                   placeholder="Share your experience..."
                 />
               </div>
@@ -214,7 +242,7 @@ export default function ReviewsPage() {
       </div>
 
       {/* Footer Link */}
-      <div className="text-center mt-12">
+      <div className="text-center mt-12 mb-8">
         <Link
           to="/"
           className="inline-flex items-center text-sm text-gray-600 hover:text-yellow-600 transition-colors"
@@ -232,5 +260,9 @@ export default function ReviewsPage() {
         </Link>
       </div>
     </div>
+
+    {/* Footer Component */}
+    <Footer />
+    </>
   );
 }

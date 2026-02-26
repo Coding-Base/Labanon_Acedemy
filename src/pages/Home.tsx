@@ -244,6 +244,7 @@ export default function Home() {
     { label: 'Courses', path: '/marketplace' },
     { label: 'CBT Practice', path: '/register' },
     { label: 'Interview Questions', path: '/register' },
+    { label: 'Reviews', path: '/reviews' },
     { label: 'Blog', path: '/blog' },
     { label: 'Documentation', path: '/documentation' },
     { label: 'About', path: '/about' },
@@ -805,7 +806,52 @@ export default function Home() {
         </div>
       </motion.section>
 
-      {/* Footer */}
+      {/* Reviews Showcase Card */}
+      <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-gradient-to-r from-yellow-50 to-orange-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-3xl p-8 sm:p-12 text-white shadow-2xl">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              {/* Left: Content */}
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Users Say</h2>
+                <p className="text-lg text-white/90 mb-6">Join thousands of students, tutors, and educators who have shared their experiences on our platform. Read verified reviews and share your own journey.</p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link 
+                    to="/reviews" 
+                    className="px-8 py-3 bg-white text-yellow-600 font-bold rounded-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center gap-2"
+                  >
+                    <span>Read Reviews</span>
+                    <ChevronRight className="w-5 h-5" />
+                  </Link>
+                  <Link 
+                    to="/reviews" 
+                    className="px-8 py-3 bg-white/20 text-white font-bold rounded-lg hover:bg-white/30 transition-colors inline-flex items-center justify-center gap-2 border border-white/50"
+                  >
+                    <span>Leave a Review</span>
+                    <Star className="w-5 h-5" />
+                  </Link>
+                </div>
+              </div>
+              
+              {/* Right: Stats/Visual */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/20 backdrop-blur rounded-2xl p-6 border border-white/30">
+                  <div className="text-4xl font-bold mb-2">4.8★</div>
+                  <p className="text-sm text-white/80">Average Rating</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur rounded-2xl p-6 border border-white/30">
+                  <div className="text-4xl font-bold mb-2">500+</div>
+                  <p className="text-sm text-white/80">Verified Reviews</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur rounded-2xl p-6 border border-white/30 col-span-2">
+                  <p className="text-center text-sm text-white/80">Help shape our community by sharing your feedback and experiences with LightHub Academy.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
       {/* Contact form section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

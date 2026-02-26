@@ -6,6 +6,7 @@ import whitelogo from '../pages/labanonlogo.png'
 const navItems = [
   { label: 'Home', path: '/' },
   { label: 'Marketplace', path: '/marketplace' },
+  { label: 'Reviews', path: '/reviews' },
   { label: 'Blog', path: '/blog' },
   { label: 'About', path: '/about' },
 ]
@@ -63,6 +64,7 @@ export default function Footer() {
           <div>
             <h4 className="font-bold mb-4 text-sm sm:text-base">Resources</h4>
             <ul className="space-y-2 text-gray-400 text-sm">
+              <li><Link to="/reviews" className="hover:text-white transition-colors">Reviews</Link></li>
               <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
               <li><Link to="/documentation" className="hover:text-white transition-colors">Documentation</Link></li>
               <li><Link to="/about" className="hover:text-white transition-colors">About Us</Link></li>

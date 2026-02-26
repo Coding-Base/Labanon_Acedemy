@@ -701,6 +701,19 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                           </div>
                         </div>
                       )}
+                      {/* Review card linking to reviews page */}
+                      <div className="mb-6">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between gap-4">
+                          <div>
+                            <div className="text-sm text-gray-700 font-medium">Share Feedback</div>
+                            <div className="text-lg font-bold text-gray-900">Tell us about your experience</div>
+                            <div className="text-xs text-gray-500 mt-1">Leave a review about the platform or your recent exam.</div>
+                          </div>
+                          <div>
+                            <Link to="/reviews?role=tutor" className="px-4 py-2 bg-yellow-600 text-white rounded">Write a Review</Link>
+                          </div>
+                        </div>
+                      </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">{quickActions.map((a, i) => (<motion.div key={i} whileHover={{ y: -5 }} className="bg-white rounded-xl shadow-lg p-4"><Link to={a.path}><div className={`w-12 h-12 ${a.color} rounded-xl flex items-center justify-center mb-3`}>{a.icon}</div><h3 className="font-semibold text-gray-900">{a.title}</h3></Link></motion.div>))}</div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">{stats.map((s, i) => (<motion.div key={i} whileHover={{ y: -5 }} className="bg-white rounded-2xl shadow-lg p-6"><div className="flex justify-between items-center"><div className={`w-12 h-12 bg-gradient-to-br ${s.color} rounded-xl flex items-center justify-center text-white`}>{s.icon}</div><div className="text-right"><div className="text-2xl font-bold text-gray-900">{s.value}</div><div className="text-sm text-gray-500">{s.change}</div></div></div><h3 className="font-semibold text-gray-900 mt-4">{s.title}</h3></motion.div>))}</div>
                       <div className="grid grid-cols-1 gap-8">

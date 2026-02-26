@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import axios from 'axios'
+import showToast from '../../utils/toast'
 import useTokenRefresher from '../../utils/useTokenRefresher'
 import { initGA, sendPageView } from '../../utils/googleAnalytics'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -243,8 +244,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     try {
       const token = localStorage.getItem('access')
       await axios.patch(`${API_BASE}/admin/reviews/${id}/`, { is_approved: true }, { headers: { Authorization: `Bearer ${token}` } })
+      showToast('Review approved', 'success')
       loadAdminReviews()
-    } catch (e) { alert('Failed to approve') }
+    } catch (e) { showToast('Failed to approve review', 'error') }
   }
 
   async function deleteReview(id: number) {
@@ -252,8 +254,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     try {
       const token = localStorage.getItem('access')
       await axios.delete(`${API_BASE}/admin/reviews/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+      showToast('Review deleted', 'success')
       loadAdminReviews()
-    } catch (e) { alert('Failed to delete') }
+    } catch (e) { showToast('Failed to delete review', 'error') }
   }
 
   // Autosave draft support (localStorage)

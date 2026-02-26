@@ -313,53 +313,77 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Rank</th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Exams Taken</th>
-              <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">High Score</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {leaderboard.map((user, index) => (
-              <tr 
-                key={user.id} 
-                className={`transition-colors ${user.is_current_user ? 'bg-yellow-50 border-l-4 border-yellow-500' : 'hover:bg-gray-50'}`}
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    {index === 0 && <Crown className="w-5 h-5 text-yellow-500 mr-2" />}
-                    {index === 1 && <Crown className="w-5 h-5 text-gray-400 mr-2" />}
-                    {index === 2 && <Crown className="w-5 h-5 text-amber-700 mr-2" />}
-                    <span className={`font-bold ${index < 3 ? 'text-gray-900' : 'text-gray-500'}`}>#{index + 1}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold mr-3 ${
-                      index === 0 ? 'bg-yellow-500' : 'bg-gray-400'
-                    }`}>
-                      {user.avatar_initial}
+        {/* Desktop / Tablet Table */}
+        <div className="hidden sm:block">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Rank</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Exams Taken</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">High Score</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {leaderboard.map((user, index) => (
+                <tr 
+                  key={user.id} 
+                  className={`transition-colors ${user.is_current_user ? 'bg-yellow-50 border-l-4 border-yellow-500' : 'hover:bg-gray-50'}`}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {index === 0 && <Crown className="w-5 h-5 text-yellow-500 mr-2" />}
+                      {index === 1 && <Crown className="w-5 h-5 text-gray-400 mr-2" />}
+                      {index === 2 && <Crown className="w-5 h-5 text-amber-700 mr-2" />}
+                      <span className={`font-bold ${index < 3 ? 'text-gray-900' : 'text-gray-500'}`}>#{index + 1}</span>
                     </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {user.name} {user.is_current_user && <span className="ml-2 px-2 py-0.5 rounded text-xs bg-yellow-200 text-yellow-800">You</span>}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold mr-3 ${
+                        index === 0 ? 'bg-yellow-500' : 'bg-gray-400'
+                      }`}>
+                        {user.avatar_initial}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.name} {user.is_current_user && <span className="ml-2 px-2 py-0.5 rounded text-xs bg-yellow-200 text-yellow-800">You</span>}
+                        </div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {user.exams_taken} Tests
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-yellow-700">
+                    {parseFloat(user.score.toFixed(1))} pts
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile list */}
+        <div className="sm:hidden p-4 space-y-3">
+          {leaderboard.map((user, index) => (
+            <div key={user.id} className={`p-3 rounded-lg border ${user.is_current_user ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold ${index === 0 ? 'bg-yellow-500' : 'bg-gray-400'}`}>{user.avatar_initial}</div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">{user.name} {user.is_current_user && <span className="ml-2 px-2 py-0.5 rounded text-xs bg-yellow-200 text-yellow-800">You</span>}</div>
+                    <div className="text-xs text-gray-500">{user.exams_taken} Tests</div>
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {user.exams_taken} Tests
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-yellow-700">
-                  {parseFloat(user.score.toFixed(1))} pts
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+                <div className="text-right">
+                  <div className="text-yellow-700 font-bold">{parseFloat(user.score.toFixed(1))} pts</div>
+                  <div className="text-xs text-gray-400">#{index + 1}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -520,6 +544,19 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                               </div>
                             </div>
                           ))}
+                        </div>
+                        {/* Review card linking to reviews page */}
+                        <div className="mb-6">
+                          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between gap-4">
+                            <div>
+                              <div className="text-sm text-gray-700 font-medium">Share Feedback</div>
+                              <div className="text-lg font-bold text-gray-900">Tell us about your experience</div>
+                              <div className="text-xs text-gray-500 mt-1">Leave a review about the platform or your recent exam.</div>
+                            </div>
+                            <div>
+                              <Link to="/reviews?role=student" className="px-4 py-2 bg-yellow-600 text-white rounded">Write a Review</Link>
+                            </div>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

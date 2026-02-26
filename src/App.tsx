@@ -104,6 +104,8 @@ export default function App() {
             {/* CBT/Exam Routes */}
             <Route path="/performance/:attemptId" element={<PerformancePage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
+            {/* legacy singular route -> redirect to /reviews */}
+            <Route path="/review" element={<ReviewsPage />} />
             <Route path="/bulk-upload" element={<BulkUploadPage />} />
             
             {/* Payment verification routes */}

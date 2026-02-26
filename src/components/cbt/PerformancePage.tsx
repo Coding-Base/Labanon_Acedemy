@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useNavigate, useParams } from 'react-router-dom'
+import showToast from '../../utils/toast'
 import {
   PieChart,
   Pie,
@@ -38,9 +39,9 @@ function CbtReviewForm({ performance }: { performance: any }) {
       }
       await axios.post(`${API_BASE}/users/reviews/`, payload, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
       setMessage('')
-      alert('Thanks for your feedback — it will appear after moderation.')
+      showToast('Thanks for your feedback — it will appear after moderation.', 'success')
     } catch (e) {
-      alert('Failed to submit review')
+      showToast('Failed to submit review', 'error')
     } finally { setSubmitting(false) }
   }
 
@@ -49,7 +50,11 @@ function CbtReviewForm({ performance }: { performance: any }) {
       <div className="md:col-span-3">
         <div className="flex items-center gap-3">
           <label className="text-sm">Rating</label>
-          <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="p-2 rounded">
+          <select
+            value={rating}
+            onChange={(e) => setRating(Number(e.target.value))}
+            className="p-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
             {[5,4,3,2,1].map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>

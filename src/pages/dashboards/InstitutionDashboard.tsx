@@ -510,6 +510,19 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             </div>
                           </div>
                         )}
+                        {/* Review card linking to reviews page */}
+                        <div className="mb-6 flex justify-end">
+                          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between gap-4 w-full lg:w-1/2">
+                            <div>
+                              <div className="text-sm text-gray-700 font-medium">Share Feedback</div>
+                              <div className="text-lg font-bold text-gray-900">Tell us about your experience</div>
+                              <div className="text-xs text-gray-500 mt-1">Leave a review about the platform or your recent exam.</div>
+                            </div>
+                            <div className="text-right">
+                              <Link to="/reviews?role=institution" className="px-4 py-2 bg-yellow-600 text-white rounded">Write a Review</Link>
+                            </div>
+                          </div>
+                        </div>
 
                       {/* Stats Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

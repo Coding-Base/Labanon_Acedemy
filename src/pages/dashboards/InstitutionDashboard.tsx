@@ -185,18 +185,15 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                 else created = new Date(String(createdAt))
                 const now = new Date();
                 const diffDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
-                console.debug('Trial check', { role, createdAt, created: created.toISOString(), diffDays });
               try {
-                console.log('Trial check - user data:', userRes.data)
                 // @ts-ignore
                 const { getTrialDaysLocal } = await import('../../utils/trialConfig')
                 const trialDays = getTrialDaysLocal()
-                console.log('Trial check - trialDays used:', trialDays, 'diffDays:', diffDays)
                 if (diffDays <= trialDays) {
                   isUnlocked = true
                 }
               } catch (e) {
-                console.log('Trial check - failed to load trialDays, falling back to 30 days, diffDays:', diffDays, e)
+                // failed to load trialDays; fallback to 30 days
                 if (diffDays <= 30) isUnlocked = true
               }
             }
@@ -494,10 +491,10 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         <Globe className="absolute -right-6 -bottom-10 w-64 h-64 text-white opacity-10" />
                       </div>
 
-                        {/* Trial card - Institution */}
-                        {trialDaysRemaining !== null && (summary?.role === 'institution') && (
-                          <div className="mb-6 flex justify-end">
-                            <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full lg:w-1/2">
+                        {/* Trial + Review cards: show side-by-side on small+ screens */}
+                        <div className="mb-6 flex flex-col sm:flex-row sm:justify-end gap-4">
+                          {trialDaysRemaining !== null && (summary?.role === 'institution') && (
+                            <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full sm:w-1/2">
                               <div className="flex-1">
                                 <div className="text-sm text-yellow-700 font-medium">Free Trial</div>
                                 <div className="text-2xl font-bold text-gray-900 mt-1">{trialDaysRemaining} day{trialDaysRemaining !== 1 ? 's' : ''} remaining</div>
@@ -508,11 +505,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                                 <Link to={`/activate?type=account&return_to=${encodeURIComponent('/institution/overview')}`} className="px-4 py-2 bg-yellow-600 text-white rounded whitespace-nowrap">Unlock Account</Link>
                               </div>
                             </div>
-                          </div>
-                        )}
-                        {/* Review card linking to reviews page */}
-                        <div className="mb-6 flex justify-end">
-                          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between gap-4 w-full lg:w-1/2">
+                          )}
+
+                          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between gap-4 w-full sm:w-1/2">
                             <div>
                               <div className="text-sm text-gray-700 font-medium">Share Feedback</div>
                               <div className="text-lg font-bold text-gray-900">Tell us about your experience</div>

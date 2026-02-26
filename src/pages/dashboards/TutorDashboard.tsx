@@ -204,22 +204,20 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                 else created = new Date(String(createdAt))
                 const now = new Date();
                 const diffDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
-                // debug helper when trial logic is applied
-                console.debug('Trial check', { role, createdAt, created: created.toISOString(), diffDays });
                   try {
                     // show user data for debugging
-                    console.log('Trial check - user data:', userRes.data)
+                    
                     // lazy-load configured trial days (env/localStorage/server)
                     // import locally to avoid circular deps
                     // @ts-ignore
                     const { getTrialDaysLocal } = await import('../../utils/trialConfig')
                     const trialDays = getTrialDaysLocal()
-                    console.log('Trial check - trialDays used:', trialDays, 'diffDays:', diffDays)
+                    
                     if (diffDays <= trialDays) {
                       isUnlocked = true
                     }
                   } catch (e) {
-                    console.log('Trial check - failed to load trialDays, falling back to 30 days, diffDays:', diffDays, e)
+                    // failed to load trialDays; fallback to 30 days
                     if (diffDays <= 30) isUnlocked = true
                   }
             }

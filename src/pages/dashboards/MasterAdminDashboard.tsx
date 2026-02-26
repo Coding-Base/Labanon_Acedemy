@@ -2611,7 +2611,37 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </div>
 
                         {/* Exams List */}
-                        <div className="bg-white rounded-xl p-6 border border-gray-200">
+                          <div className="bg-white rounded-xl p-6 border border-gray-200">
+                            {/* Additional CBT summary: pass rate, avg time, active students, top subject */}
+                            <div className="grid sm:grid-cols-4 gap-4 mb-6">
+                              <div className="bg-white rounded-lg p-4 border border-gray-100">
+                                <div className="text-sm text-gray-600">Pass Rate</div>
+                                <div className="text-lg font-bold text-green-700 mt-1">{cbtAnalytics?.pass_rate != null ? `${(cbtAnalytics.pass_rate * 100).toFixed(1)}%` : (cbtAnalytics?.passed_attempts != null && cbtAnalytics?.total_attempts ? `${((cbtAnalytics.passed_attempts / cbtAnalytics.total_attempts) * 100).toFixed(1)}%` : 'N/A')}</div>
+                              </div>
+
+                              <div className="bg-white rounded-lg p-4 border border-gray-100">
+                                <div className="text-sm text-gray-600">Avg Time (mins)</div>
+                                <div className="text-lg font-bold text-gray-900 mt-1">{cbtAnalytics?.average_time_minutes != null ? cbtAnalytics.average_time_minutes.toFixed(1) : (cbtAnalytics?.average_time_seconds ? (cbtAnalytics.average_time_seconds/60).toFixed(1) : 'N/A')}</div>
+                              </div>
+
+                              <div className="bg-white rounded-lg p-4 border border-gray-100">
+                                <div className="text-sm text-gray-600">Active Students</div>
+                                <div className="text-lg font-bold text-yellow-800 mt-1">{cbtAnalytics?.active_students_count ?? cbtAnalytics?.unique_students ?? 'N/A'}</div>
+                              </div>
+
+                              <div className="bg-white rounded-lg p-4 border border-gray-100">
+                                <div className="text-sm text-gray-600">Top Subject</div>
+                                <div className="text-lg font-bold text-orange-800 mt-1">{
+                                  (function(){
+                                    const subjects = cbtAnalytics?.subjects || [];
+                                    if (!subjects || subjects.length === 0) return 'N/A';
+                                    // subjects may be [{name, attempts}]
+                                    const top = subjects.reduce((a: any, b: any) => ( (b.attempts||0) > (a.attempts||0) ? b : a), subjects[0]);
+                                    return top.name || top.title || 'N/A';
+                                  })()
+                                }</div>
+                              </div>
+                            </div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-6">Available Exams</h3>
                           {exams.length === 0 ? (
                             <div className="text-center py-12">
@@ -2681,6 +2711,30 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             </div>
                           </div>
                         </div>
+
+                        {/* Top Scorers */}
+                        {(cbtAnalytics?.top_scorers?.length || cbtAnalytics?.top_students?.length) ? (
+                          <div className="bg-white rounded-xl p-6 border border-gray-200 mt-8">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-lg font-semibold text-gray-900">Top Scorers</h3>
+                              <div className="text-sm text-gray-500">Top 3 recent high scorers</div>
+                            </div>
+                            <div className="space-y-3">
+                              {(cbtAnalytics.top_scorers || cbtAnalytics.top_students).slice(0,3).map((s: any, idx: number) => (
+                                <div key={idx} className="flex items-center justify-between p-3 border rounded">
+                                  <div>
+                                    <div className="font-semibold">{s.name || s.username || s.user_name || 'Anonymous'}</div>
+                                    <div className="text-xs text-gray-500">{s.exam || s.cbt_exam || ''} • {s.subject || s.cbt_subject || ''}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-lg font-bold text-yellow-700">{s.score != null ? `${s.score}%` : (s.cbt_score != null ? `${s.cbt_score}` : 'N/A')}</div>
+                                    <div className="text-xs text-gray-400">{s.date ? new Date(s.date).toLocaleDateString() : (s.attempted_at ? new Date(s.attempted_at).toLocaleDateString() : '')}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     )}
                   </div>

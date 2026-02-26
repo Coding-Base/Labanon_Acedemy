@@ -67,7 +67,7 @@ export function showToast(message: string, type: ToastType = 'info', timeout = 4
     el.addEventListener('click', () => { clearTimeout(t); hide() })
 
   } catch (e) {
-    try { console.log('Toast:', message) } catch {}
+    // swallow errors silently in environments where DOM isn't available
   }
 }
 

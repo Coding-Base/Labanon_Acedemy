@@ -493,7 +493,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
 
                         {/* Trial + Review cards: show side-by-side on small+ screens */}
                         <div className="mb-6 flex flex-col sm:flex-row sm:justify-end gap-4">
-                          {trialDaysRemaining !== null && (summary?.role === 'institution') && (
+                          {trialDaysRemaining !== null && (summary?.role === 'institution') && accountLocked && (
                             <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full sm:w-1/2">
                               <div className="flex-1">
                                 <div className="text-sm text-yellow-700 font-medium">Free Trial</div>

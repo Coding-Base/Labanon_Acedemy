@@ -716,7 +716,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                     <div>
                       <div className="mb-6"><div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div><h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome, {summary?.username}! 🎓</h1></div><motion.button whileHover={{ scale: 1.05 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold"><Sparkles className="w-5 h-5 inline mr-2" />Go Live</motion.button></div></div>
                       {/* Trial card */}
-                      {trialDaysRemaining !== null && (summary?.role === 'tutor') && (
+                      {trialDaysRemaining !== null && (summary?.role === 'tutor') && accountLocked && (
                         <div className="mb-6">
                           <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div className="flex-1">

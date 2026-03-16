@@ -191,8 +191,10 @@ export default function TutorDashboard(props: TutorDashboardProps) {
         
         setSummary({ ...currentSummary, id: userId });
         // account unlocked check with configurable free trial for tutor accounts
+        // declare here so other blocks (trial-days calc) can read it
+        let isUnlocked: boolean | undefined = undefined;
         try {
-          let isUnlocked = userRes.data?.is_unlocked === true || userRes.data?.is_unlocked === 'true';
+          isUnlocked = userRes.data?.is_unlocked === true || userRes.data?.is_unlocked === 'true';
           if (!isUnlocked) {
             const role = userRes.data?.role || localStorage.getItem('role');
             const createdAt = userRes.data?.date_joined || userRes.data?.created_at || userRes.data?.created;
@@ -202,24 +204,34 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                 if (typeof createdAt === 'number') created = new Date(createdAt)
                 else if (/^\d+$/.test(String(createdAt || ''))) created = new Date(Number(createdAt))
                 else created = new Date(String(createdAt))
-                const now = new Date();
-                const diffDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
+
+                // If created is invalid, treat as locked (defensive)
+                if (isNaN(created.getTime())) {
+                  isUnlocked = false
+                } else {
+                  const now = new Date();
+                  const diffDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
                   try {
-                    // show user data for debugging
-                    
-                    // lazy-load configured trial days (env/localStorage/server)
-                    // import locally to avoid circular deps
-                    // @ts-ignore
-                    const { getTrialDaysLocal } = await import('../../utils/trialConfig')
-                    const trialDays = getTrialDaysLocal()
-                    
+                    // Prefer fetching configured trial days from server; fallback to local config
+                    const trialConfig = await import('../../utils/trialConfig')
+                    let trialDays = 30
+                    try {
+                      // try server first (may throw if endpoint unavailable)
+                      // @ts-ignore
+                      trialDays = await trialConfig.fetchTrialDaysServer()
+                    } catch (e) {
+                      // fallback to local/env configured days
+                      // @ts-ignore
+                      trialDays = trialConfig.getTrialDaysLocal()
+                    }
                     if (diffDays <= trialDays) {
                       isUnlocked = true
                     }
                   } catch (e) {
-                    // failed to load trialDays; fallback to 30 days
+                    // failed to determine trial config; fallback to 30 days
                     if (diffDays <= 30) isUnlocked = true
                   }
+                }
             }
           }
           setAccountLocked(!isUnlocked);
@@ -227,9 +239,17 @@ export default function TutorDashboard(props: TutorDashboardProps) {
           setAccountLocked(false);
         }
 
-        // Compute trial days remaining for display
+        // Compute trial days remaining for display (prefer server-configured value)
         try {
-          const trialDays = getTrialDaysLocal()
+          const trialConfig = await import('../../utils/trialConfig')
+          let trialDays = 30
+          try {
+            // @ts-ignore
+            trialDays = await trialConfig.fetchTrialDaysServer()
+          } catch (e) {
+            // @ts-ignore
+            trialDays = trialConfig.getTrialDaysLocal()
+          }
           setTrialDaysTotal(trialDays)
           const createdAtRaw = userRes.data?.date_joined || userRes.data?.created_at || userRes.data?.created
           if (createdAtRaw) {
@@ -237,10 +257,22 @@ export default function TutorDashboard(props: TutorDashboardProps) {
             if (typeof createdAtRaw === 'number') created = new Date(createdAtRaw)
             else if (/^\d+$/.test(String(createdAtRaw || ''))) created = new Date(Number(createdAtRaw))
             else created = new Date(String(createdAtRaw))
-            const now = new Date()
-            const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24))
-            const remaining = Math.max(0, trialDays - diffDays)
-            setTrialDaysRemaining(remaining)
+            if (!isNaN(created.getTime())) {
+              const now = new Date()
+              const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24))
+              const remaining = Math.max(0, trialDays - diffDays)
+              setTrialDaysRemaining(remaining)
+              // If backend does not mark the account unlocked, but trial has expired,
+              // force the locked UI so users lose access when remaining <= 0.
+              try {
+                // use previously computed `isUnlocked` from above
+                if (typeof isUnlocked !== 'undefined' && !isUnlocked) {
+                  setAccountLocked(remaining <= 0)
+                }
+              } catch (e) {
+                // ignore
+              }
+            }
           }
         } catch (e) {
           // ignore

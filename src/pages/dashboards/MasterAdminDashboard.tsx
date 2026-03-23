@@ -156,6 +156,34 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [utmSources, setUtmSources] = useState<any[] | null>(null)
   const [topReferrers, setTopReferrers] = useState<any[] | null>(null)
   const [referrersLoading, setReferrersLoading] = useState(false)
+  const filteredReferrers = useMemo(() => {
+    if (!topReferrers || typeof window === 'undefined') return []
+    const origin = window.location.origin
+    return (topReferrers || []).filter((r:any) => {
+      const ref = r.referrer || ''
+      if (!ref) return true // keep direct
+      // exclude path-only internal refs
+      if (ref.startsWith('/')) return false
+      try {
+        const url = new URL(ref)
+        // exclude same-origin referrers
+        if (url.origin === origin) return false
+        // exclude hostname matches (covers subdomains if desired)
+        if (url.hostname === window.location.hostname) return false
+        return true
+      } catch (e) {
+        return false
+      }
+    }).map((r:any) => {
+      const ref = r.referrer || '(direct)'
+      let display = ref
+      try {
+        const url = new URL(ref)
+        display = url.hostname + (url.pathname && url.pathname !== '/' ? url.pathname : '')
+      } catch (e) { /* keep raw */ }
+      return { ...r, display }
+    })
+  }, [topReferrers])
   const [dailyAnalytics, setDailyAnalytics] = useState<any[] | null>(null)
   const [dailyTotals, setDailyTotals] = useState<any | null>(null)
   const [dailyLoading, setDailyLoading] = useState(false)
@@ -182,6 +210,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [showSettings, setShowSettings] = useState(false)
   const [blogs, setBlogs] = useState<any[]>([])
   const [blogsLoading, setBlogsLoading] = useState(false)
+  const [showAllSignups, setShowAllSignups] = useState(false)
   const [showBlogForm, setShowBlogForm] = useState(false)
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, image_description: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
@@ -1770,13 +1799,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
             {tab === 'overview' && (
               <div className="p-4">
                 <div className={darkMode ? 'rounded-xl p-6 bg-slate-800 text-slate-100' : 'rounded-xl p-6 bg-white'}>
-                  <div className="grid md:grid-cols-6 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
                     <div
                       role="button"
                       tabIndex={0}
                       onClick={() => { setTab('users'); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') setTab('users') }}
-                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-yellow-50'} cursor-pointer hover:shadow-md transition`}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-yellow-50'} cursor-pointer hover:shadow-md transition w-full`}
                     >
                       <div className="text-sm">Total Users</div>
                       <div className="text-2xl font-bold">{pageInfo.count?.toLocaleString() || 0}</div>
@@ -1787,7 +1816,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       tabIndex={0}
                       onClick={() => { setTab('institutions'); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') setTab('institutions') }}
-                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
                     >
                       <div className="text-sm">Institutions</div>
                       <div className="text-2xl font-bold">{institutions.length}</div>
@@ -1798,7 +1827,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       tabIndex={0}
                       onClick={() => { setTab('courses'); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') setTab('courses') }}
-                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
                     >
                       <div className="text-sm">Courses</div>
                       <div className="text-2xl font-bold">{courses.length}</div>
@@ -1809,7 +1838,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       tabIndex={0}
                       onClick={() => { setTab('payments'); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') setTab('payments') }}
-                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
                     >
                       <div className="text-sm">Revenue</div>
                       <div className="text-2xl font-bold">{paymentStats?.total_revenue ? new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats.total_revenue) : '₦0'}</div>
@@ -1820,7 +1849,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       tabIndex={0}
                       onClick={() => { setAnalyticsActivePanel('registrations'); setTab('analytics'); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') { setAnalyticsActivePanel('registrations'); setTab('analytics') } }}
-                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
                     >
                       <div className="text-sm">Registrations (daily)</div>
                       <div className="text-2xl font-bold truncate max-w-full">{registrationsLoading ? '...' : (registrations?.daily ?? dailyTotals?.new_registrations ?? 0)}</div>
@@ -1836,7 +1865,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       tabIndex={0}
                       onClick={() => { setAnalyticsActivePanel('downloads'); setTab('analytics'); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') { setAnalyticsActivePanel('downloads'); setTab('analytics') } }}
-                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
                     >
                       <div className="text-sm">Downloads</div>
                       <div className="text-2xl font-bold truncate max-w-full">{downloadsLoading ? '...' : (downloads?.total_downloads ?? 0)}</div>
@@ -1848,26 +1877,35 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     </div>
                   </div>
 
-                  <div className="grid lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 bg-white rounded-lg p-4">
-                      <h4 className="font-semibold mb-3">Recent Signups</h4>
+                      <h4 className="font-semibold mb-2">Recent Signups <span className="text-sm text-gray-500 ml-2">({users.length})</span></h4>
                       {users.length === 0 ? (
                         <div className="text-gray-500">No recent signups</div>
                       ) : (
+                        <>
                         <div className="space-y-2">
-                          {users.slice(0, 6).map((u) => (
+                          {(showAllSignups ? users : users.slice(0,5)).map((u) => (
                             <div key={u.id} className="flex items-center justify-between p-2 border rounded">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white">{u.username?.charAt(0).toUpperCase()}</div>
-                                <div>
-                                  <div className="font-medium">{u.username}</div>
-                                  <div className="text-xs text-gray-500">{u.email}</div>
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white flex-shrink-0">{u.username?.charAt(0).toUpperCase()}</div>
+                                <div className="min-w-0">
+                                  <div className="font-medium truncate">{u.username}</div>
+                                  <div className="text-xs text-gray-500 truncate">{u.email}</div>
                                 </div>
                               </div>
-                              <div className="text-sm text-gray-600">{u.role}</div>
+                              <div className="text-sm text-gray-600 flex-shrink-0 ml-4">{u.role}</div>
                             </div>
                           ))}
                         </div>
+                        {users.length > 5 && (
+                          <div className="mt-3 flex justify-center">
+                            <button onClick={() => setShowAllSignups(prev => !prev)} className={`${darkMode ? 'px-4 py-2 text-sm border rounded bg-slate-700 text-slate-100 border-slate-600 hover:bg-slate-600' : 'px-4 py-2 text-sm border rounded hover:bg-gray-50'}`}>
+                              {showAllSignups ? 'Show less' : `Show more (${users.length - 5} more)`}
+                            </button>
+                          </div>
+                        )}
+                        </>
                       )}
                     </div>
 
@@ -2143,7 +2181,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </div>
 
                         {/* Registrations & Downloads quick panels (targets for drill-through) */}
-                        <div className="mt-4 grid md:grid-cols-2 gap-4">
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div id="analytics-registrations" className={`${darkMode ? 'bg-slate-700 text-slate-100' : 'bg-white'} p-4 rounded-lg border`}>
                             <h4 className="text-sm font-semibold mb-2">Registrations</h4>
                             <div className="flex items-center justify-between">
@@ -2152,7 +2190,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 <div className="text-2xl font-bold">{registrationsLoading ? '...' : (registrations?.daily ?? dailyTotals?.new_registrations ?? 0)}</div>
                                 <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs`}>Weekly: {registrations?.weekly ?? '-'} • Monthly: {registrations?.monthly ?? '-'}</div>
                               </div>
-                              <div style={{ width: 220, height: 80 }}>
+                              <div className="w-24 sm:w-40 h-20">
                                 {registrations?.timeseries && (
                                   <ResponsiveContainer>
                                     <LineChart data={registrations.timeseries}>
@@ -2175,7 +2213,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 <div className="text-2xl font-bold">{downloadsLoading ? '...' : (downloads?.total_downloads ?? 0)}</div>
                                 <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs`}>Top: {downloads?.top?.[0]?.full_url ? (downloads.top[0].full_url.length > 40 ? downloads.top[0].full_url.slice(0,40)+'...' : downloads.top[0].full_url) : '-'}</div>
                               </div>
-                              <div style={{ width: 220, height: 80 }}>
+                              <div className="w-24 sm:w-40 h-20">
                                 {downloads?.timeseries && (
                                   <ResponsiveContainer>
                                     <LineChart data={downloads.timeseries}>
@@ -2367,7 +2405,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       </div>
                     ) : (
                       <div>
-                        <div className="grid md:grid-cols-4 gap-4 mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                           <motion.div whileHover={{ y: -5 }} className={`${darkMode ? 'bg-slate-700 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200'} rounded-xl p-6`}>
                             <div className="flex items-center justify-between mb-4">
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
@@ -2496,13 +2534,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     <div className="text-center py-6"><Loader2 className="animate-spin w-6 h-6 text-yellow-600" /></div>
                                   ) : (
                                     <div className="space-y-2 max-h-56 overflow-y-auto">
-                                      {(topReferrers || []).slice(0,12).map((r:any, idx:number) => (
+                                      {(filteredReferrers || []).slice(0,12).map((r:any, idx:number) => (
                                         <div key={idx} className="flex items-start justify-between">
-                                          <div className="text-sm text-gray-700 break-words max-w-[70%]">{r.referrer || '(direct)'}</div>
+                                          <div className="text-sm text-gray-700 truncate max-w-[70%]" title={r.referrer}>{r.display || r.referrer || '(direct)'}</div>
                                           <div className="text-sm font-semibold text-gray-900 ml-3">{r.count}</div>
                                         </div>
                                       ))}
-                                      {(!topReferrers || topReferrers.length === 0) && <div className="text-sm text-gray-500">No data yet</div>}
+                                      {(filteredReferrers.length === 0) && <div className="text-sm text-gray-500">No external referrers found</div>}
                                     </div>
                                   )}
                                 </div>
@@ -2928,7 +2966,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     ) : (
                       <div>
                         {/* Analytics Cards */}
-                        <div className="grid md:grid-cols-4 gap-4 mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                           <motion.div
                             whileHover={{ y: -5 }}
                             className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"
@@ -3643,7 +3681,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     ) : (
                       <div>
                         {/* Payment Stats Cards */}
-                        <div className="grid md:grid-cols-4 gap-4 mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                           <motion.div
                             whileHover={{ y: -5 }}
                             className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"

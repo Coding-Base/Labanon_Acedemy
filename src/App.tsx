@@ -26,6 +26,7 @@ const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'
 const TutorDashboard = lazy(() => import('./pages/dashboards/TutorDashboard'))
 const InstitutionDashboard = lazy(() => import('./pages/dashboards/InstitutionDashboard'))
 const MasterAdminDashboard = lazy(() => import('./pages/dashboards/MasterAdminDashboard'))
+const AdminCourseDetail = lazy(() => import('./pages/AdminCourseDetail'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const NotFound = lazy(() => import('./pages/NotFound'))
@@ -99,6 +100,7 @@ export default function App() {
             <Route path="/student/*" element={<StudentDashboard />} />
             <Route path="/tutor/*" element={<TutorDashboard />} />
             <Route path="/institution/*" element={<InstitutionDashboard />} />
+            <Route path="/admin/course/:id" element={<AdminCourseDetail />} />
             <Route path="/admin/*" element={<MasterAdminDashboard />} />
 
             {/* CBT/Exam Routes */}

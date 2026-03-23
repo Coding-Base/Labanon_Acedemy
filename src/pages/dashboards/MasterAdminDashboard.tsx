@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react'
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+import { CssBaseline, Switch, FormControlLabel } from '@mui/material'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import axios from 'axios'
@@ -64,6 +66,8 @@ import MasterSignature from './MasterSignature'
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies'
 import SubAdminForm from '../../components/dashboards/SubAdminForm'
 import AdminMessages from '../../components/AdminMessages'
+import AnalyticsDrillModal from '../../components/AnalyticsDrillModal'
+import AdminCourseDetail from '../../pages/AdminCourseDetail'
 // If PaymentHistory is needed, import it, otherwise referencing internal table
 // import PaymentHistory from '../../components/PaymentHistory'
 
@@ -119,7 +123,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const navSummary = (location.state as any)?.summary
   const [summary, setSummary] = useState<any | null>(propSummary ?? navSummary ?? null)
 
-  const [tab, setTab] = useState<string>('users')
+  const [tab, setTab] = useState<string>('overview')
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any | null>(null)
@@ -155,6 +159,14 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [dailyAnalytics, setDailyAnalytics] = useState<any[] | null>(null)
   const [dailyTotals, setDailyTotals] = useState<any | null>(null)
   const [dailyLoading, setDailyLoading] = useState(false)
+  const [registrations, setRegistrations] = useState<any | null>(null)
+  const [registrationsLoading, setRegistrationsLoading] = useState(false)
+  const [downloads, setDownloads] = useState<any | null>(null)
+  const [downloadsLoading, setDownloadsLoading] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalType, setModalType] = useState<'registrations' | 'downloads' | null>(null)
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null)
+  const [analyticsActivePanel, setAnalyticsActivePanel] = useState<string | null>(null)
   const [dateRangeStart, setDateRangeStart] = useState<string>('')
   const [dateRangeEnd, setDateRangeEnd] = useState<string>('')
   const [paymentPage, setPaymentPage] = useState(1)
@@ -185,6 +197,32 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const quillRef = useRef<any>(null)
 
+  // Dark / Light mode (persisted)
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try { return localStorage.getItem('master_dark_mode') === 'true' } catch (e) { return false }
+  })
+
+  const theme = useMemo(() => createTheme({ palette: { mode: darkMode ? 'dark' : 'light' } }), [darkMode])
+
+  useEffect(() => {
+    try { localStorage.setItem('master_dark_mode', darkMode ? 'true' : 'false') } catch (e) { /* ignore */ }
+  }, [darkMode])
+
+  // Sync Tailwind's `dark` class for class-based dark mode and set html/body classes
+  useEffect(() => {
+    try {
+      if (darkMode) {
+        document.documentElement.classList.add('dark')
+        document.body.classList.add('bg-slate-900', 'text-slate-100')
+      } else {
+        document.documentElement.classList.remove('dark')
+        document.body.classList.remove('bg-slate-900', 'text-slate-100')
+      }
+    } catch (e) {
+      // ignore in environments without DOM
+    }
+  }, [darkMode])
+
   // --- Referrer / UTM stats loader ---
   const loadReferrerStats = async () => {
     setReferrersLoading(true)
@@ -200,6 +238,62 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setTopReferrers([])
     } finally {
       setReferrersLoading(false)
+    }
+  }
+
+  // --- Overview stats loader ---
+  const loadOverviewStats = async () => {
+    try {
+      const token = localStorage.getItem('access')
+      if (!token) return
+      // Try to fetch dashboard summary which often contains platform-wide counts
+      const res = await axios.get(`${API_BASE}/dashboard/`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null)
+      if (res && res.data) {
+        setSummary(res.data)
+      }
+
+      // Try a dedicated registrations endpoint first (if available), fallback to gaSummary/dailyTotals
+      try {
+        setRegistrationsLoading(true)
+        const regRes = await axios.get(`${API_BASE}/analytics/registrations/`, { headers: { Authorization: `Bearer ${token}` } })
+        if (regRes?.data) {
+          // expected { daily, weekly, monthly, timeseries }
+          setRegistrations(regRes.data)
+          setDailyTotals((prev:any) => ({ ...(prev || {}), new_registrations: regRes.data.daily }))
+        }
+      } catch (e) {
+        console.warn('registrations endpoint not available', e)
+      } finally {
+        setRegistrationsLoading(false)
+      }
+
+      // Try downloads analytics
+      try {
+        setDownloadsLoading(true)
+        const dlRes = await axios.get(`${API_BASE}/analytics/downloads/`, { headers: { Authorization: `Bearer ${token}` } })
+        if (dlRes?.data) {
+          setDownloads(dlRes.data)
+        }
+      } catch (e) {
+        console.warn('downloads endpoint not available', e)
+      } finally {
+        setDownloadsLoading(false)
+      }
+
+      // Ensure daily analytics used by overview activity chart are loaded
+      try {
+        await loadDailyAnalytics()
+      } catch (e) {
+        console.warn('failed to load daily analytics for overview', e)
+      }
+
+      // populate institutions, courses and users lists for accurate counts
+      try { await loadInstitutions() } catch (e) { /* ignore */ }
+      try { await loadCourses() } catch (e) { /* ignore */ }
+      try { await loadPayments(1) } catch (e) { /* ignore */ }
+      try { await loadUsers(1) } catch (e) { /* ignore */ }
+    } catch (err) {
+      console.warn('Failed to load overview stats', err)
     }
   }
 
@@ -488,6 +582,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
   // Define tabs
   const allTabs = [
+    { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-5 h-5" />, permission: undefined as any },
     { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
     { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
@@ -505,13 +600,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'trial', label: 'Trial Period', icon: <Clock className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
   ]
 
-  // Filter tabs based on permissions
-  const tabs = subadminPermissions 
+  // Filter tabs based on permissions. Tabs with no `permission` are shown to all.
+  const tabs = subadminPermissions
     ? allTabs.filter(tab => {
-        // Explicit check: strictly true or undefined (fallback logic if needed, but strictly true is safer)
-        return subadminPermissions[tab.permission] === true;
+        if (!tab.permission) return true
+        return subadminPermissions[tab.permission] === true
       })
-    : allTabs;
+    : allTabs
 
   // Load sub-admin permissions from summary
   useEffect(() => {
@@ -554,6 +649,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         // ignore
       }
     }
+    if (tab === 'overview') {
+      loadOverviewStats()
+    }
     if (tab === 'payments') loadPayments(paymentPage)
     if (tab === 'blog') loadBlogs()
     if (tab === 'promos') loadPromos()
@@ -583,6 +681,18 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       // ignore in environments where import.meta is unavailable
     }
   }, [])
+
+  const token = localStorage.getItem('access')
+
+  function openModal(type:'registrations'|'downloads'){
+    setModalType(type)
+    setModalOpen(true)
+  }
+
+  function closeModal(){
+    setModalOpen(false)
+    setModalType(null)
+  }
 
   // fetch summary if not provided
   useEffect(() => {
@@ -1461,32 +1571,56 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-yellow-50">
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      {/* Scoped dark-mode & scrollbar styles to improve contrast and replace the local, heavy scrollbar */}
+      <style>{`
+        .dashboard-root { scrollbar-width: thin; }
+        .dashboard-root ::-webkit-scrollbar { width: 10px; height: 10px; }
+        .dashboard-root ::-webkit-scrollbar-track { background: transparent; }
+        .dashboard-root ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 9999px; border: 2px solid transparent; background-clip: padding-box; }
+        .dashboard-root ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.18); }
+        .dashboard-root.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); }
+        .dashboard-root.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+        .dashboard-root.dark { scrollbar-color: rgba(255,255,255,0.10) transparent; }
+
+        .dashboard-root.dark .bg-white { background-color: #0f1724 !important; }
+        .dashboard-root.dark .bg-gray-50 { background-color: #071028 !important; }
+        .dashboard-root.dark .bg-yellow-50 { background-color: #0f1724 !important; }
+        .dashboard-root.dark .text-gray-900, .dashboard-root.dark .text-gray-800 { color: #e6eef8 !important; }
+        .dashboard-root.dark .text-gray-700, .dashboard-root.dark .text-gray-600, .dashboard-root.dark .text-gray-500 { color: #9ca3af !important; }
+        .dashboard-root.dark .border-gray-200, .dashboard-root.dark .border-gray-100 { border-color: #1f2a3a !important; }
+        .dashboard-root.dark .shadow-lg { box-shadow: 0 6px 18px rgba(2,6,23,0.6) !important; }
+        .dashboard-root.dark .bg-yellow-100 { background-color: #1b2a3a !important; color: #f8fafc !important; }
+        .dashboard-root.dark .bg-yellow-500 { background-color: #b45309 !important; }
+        .dashboard-root.dark input, .dashboard-root.dark select, .dashboard-root.dark textarea { background-color: #071026 !important; color: #e6eef8 !important; border-color: #1f2a3a !important; }
+      `}</style>
+      <div className={`dashboard-root min-h-screen ${darkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-gradient-to-br from-gray-50 to-yellow-50 text-gray-900'}`}>
       {/* Header */}
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200"
+        className={`sticky top-0 z-40 ${darkMode ? 'bg-slate-900/80 border-b border-slate-700 text-slate-100' : 'bg-white/80 backdrop-blur-md border-b border-gray-200'}`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <img src={labanonLogo} alt="LightHub Academy logo" width={32} height={32} className="w-8 h-8 object-contain" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">
+                <div>
+                <h1 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
                   {subadminPermissions ? 'Sub-Admin Dashboard' : 'Master Admin Dashboard'}
                 </h1>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
+                <div className="hidden md:flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold">
                   {summary.username?.charAt(0).toUpperCase() || 'A'}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{summary.username}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className={`text-sm font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary.username}</p>
+                  <p className={`text-xs ${darkMode ? 'text-slate-300' : 'text-gray-500'}`}>
                     {subadminPermissions ? 'Restricted Access' : 'Master Administrator'}
                   </p>
                 </div>
@@ -1498,15 +1632,12 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               >
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleLogout}
-                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </motion.button>
+
+              {/* Theme toggle (Material UI Switch) */}
+              <div className="flex items-center mr-2">
+                <Switch checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)} color="default" />
+              </div>
+              {/* logout button removed from header (moved to sidebar) */}
             </div>
           </div>
         </div>
@@ -1514,8 +1645,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               
       </motion.header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col lg:flex-row gap-6 relative">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex flex-col lg:flex-row gap-6 relative w-full">
           {/* Sidebar Backdrop for mobile */}
           {sidebarOpen && (
             <div
@@ -1532,7 +1663,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               sidebarOpen ? 'fixed left-0 top-16 bottom-0 w-64 z-40' : 'hidden'
             } lg:static lg:block lg:w-64 lg:flex-shrink-0 h-fit lg:h-auto`}
           >
-            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24 max-h-[calc(100vh-100px)] overflow-y-auto">
+            <div className={`${darkMode ? 'bg-slate-800 text-slate-100' : 'bg-white'} rounded-2xl shadow-lg p-6 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto overflow-x-hidden box-border`}>
               {/* Admin Profile */}
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
@@ -1569,11 +1700,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     }}
                       className={`flex items-center space-x-3 w-full h-12 px-4 py-3 rounded-xl transition-all duration-300 ${
                       tab === item.id
-                        ? 'bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-600 border-l-4 border-yellow-500'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? `${darkMode ? 'bg-slate-700 text-yellow-400 border-l-4 border-yellow-500' : 'bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-600 border-l-4 border-yellow-500'}`
+                        : `${darkMode ? 'text-slate-200 hover:bg-slate-700' : 'text-gray-700 hover:bg-gray-50'}`
                     }`}
                   >
-                    <div className={`${tab === item.id ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    <div className={`${tab === item.id ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-slate-300' : 'text-gray-500')}`}>
                       {item.icon}
                     </div>
                       <span className="font-medium whitespace-nowrap">{item.label}</span>
@@ -1605,6 +1736,15 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 <Settings className="w-5 h-5 inline mr-2" />
                 System Settings
               </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleLogout}
+                className="mt-3 w-full py-3 bg-red-50 text-red-700 rounded-xl font-semibold hover:bg-red-100 transition-colors"
+              >
+                <LogOut className="w-5 h-5 inline mr-2" />
+                Logout
+              </motion.button>
             </div>
           </motion.aside>
 
@@ -1616,7 +1756,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               animate={{ opacity: 1, y: 0 }}
               className="mb-6"
             >
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
                 Welcome back, <span className="bg-gradient-to-r from-yellow-600 to-yellow-600 bg-clip-text text-transparent">{summary.username}</span>
               </h1>
               <p className="text-gray-600 mt-2">
@@ -1626,13 +1766,190 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               </p>
             </motion.div>
 
+            {/* Overview Widgets */}
+            {tab === 'overview' && (
+              <div className="p-4">
+                <div className={darkMode ? 'rounded-xl p-6 bg-slate-800 text-slate-100' : 'rounded-xl p-6 bg-white'}>
+                  <div className="grid md:grid-cols-6 gap-4 mb-6">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setTab('users'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setTab('users') }}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-yellow-50'} cursor-pointer hover:shadow-md transition`}
+                    >
+                      <div className="text-sm">Total Users</div>
+                      <div className="text-2xl font-bold">{pageInfo.count?.toLocaleString() || 0}</div>
+                    </div>
+
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setTab('institutions'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setTab('institutions') }}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                    >
+                      <div className="text-sm">Institutions</div>
+                      <div className="text-2xl font-bold">{institutions.length}</div>
+                    </div>
+
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setTab('courses'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setTab('courses') }}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                    >
+                      <div className="text-sm">Courses</div>
+                      <div className="text-2xl font-bold">{courses.length}</div>
+                    </div>
+
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setTab('payments'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setTab('payments') }}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                    >
+                      <div className="text-sm">Revenue</div>
+                      <div className="text-2xl font-bold">{paymentStats?.total_revenue ? new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats.total_revenue) : '₦0'}</div>
+                    </div>
+
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setAnalyticsActivePanel('registrations'); setTab('analytics'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { setAnalyticsActivePanel('registrations'); setTab('analytics') } }}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                    >
+                      <div className="text-sm">Registrations (daily)</div>
+                      <div className="text-2xl font-bold truncate max-w-full">{registrationsLoading ? '...' : (registrations?.daily ?? dailyTotals?.new_registrations ?? 0)}</div>
+                      <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs mt-1`}>Weekly: {registrations?.weekly ?? '-'} • Monthly: {registrations?.monthly ?? '-'}</div>
+                      <div className="mt-3 flex gap-2">
+                        <button onClick={()=>openModal('registrations')} className="px-2 py-1 text-xs bg-yellow-600 text-white rounded">View details</button>
+                        <button onClick={()=>{ setAnalyticsActivePanel('registrations'); setTab('analytics'); }} className="px-2 py-1 text-xs border rounded">Open in analytics</button>
+                      </div>
+                    </div>
+
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setAnalyticsActivePanel('downloads'); setTab('analytics'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { setAnalyticsActivePanel('downloads'); setTab('analytics') } }}
+                      className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition`}
+                    >
+                      <div className="text-sm">Downloads</div>
+                      <div className="text-2xl font-bold truncate max-w-full">{downloadsLoading ? '...' : (downloads?.total_downloads ?? 0)}</div>
+                      <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs mt-1`}>Top: {downloads?.top?.[0]?.full_url ? (downloads.top[0].full_url.length > 40 ? downloads.top[0].full_url.slice(0,40)+'...' : downloads.top[0].full_url) : '-'}</div>
+                      <div className="mt-3 flex gap-2">
+                        <button onClick={()=>openModal('downloads')} className="px-2 py-1 text-xs bg-yellow-600 text-white rounded">View details</button>
+                        <button onClick={()=>{ setAnalyticsActivePanel('downloads'); setTab('analytics'); }} className="px-2 py-1 text-xs border rounded">Open in analytics</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 bg-white rounded-lg p-4">
+                      <h4 className="font-semibold mb-3">Recent Signups</h4>
+                      {users.length === 0 ? (
+                        <div className="text-gray-500">No recent signups</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {users.slice(0, 6).map((u) => (
+                            <div key={u.id} className="flex items-center justify-between p-2 border rounded">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white">{u.username?.charAt(0).toUpperCase()}</div>
+                                <div>
+                                  <div className="font-medium">{u.username}</div>
+                                  <div className="text-xs text-gray-500">{u.email}</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-600">{u.role}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-white rounded-lg p-4">
+                      <h4 className="font-semibold mb-3">Top Courses</h4>
+                      {courses.length === 0 ? (
+                        <div className="text-gray-500">No courses</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {courses.slice(0, 6).map((c) => (
+                            <div key={c.id} className="flex items-center justify-between">
+                              <div className="text-sm truncate">{c.title}</div>
+                              <div className="text-xs text-gray-600">{c.enrollment_count ?? c.students_count ?? '-'}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="lg:col-span-3 mt-6">
+                      <h4 className="font-semibold mb-3">Activity (last 30 days)</h4>
+                      <div style={{ width: '100%', height: 220 }} className="bg-white rounded-lg p-2">
+                        <ResponsiveContainer>
+                          <LineChart data={dailyAnalytics || gaSummary?.timeseries || []}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                            <YAxis />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="views" stroke="#F59E0B" strokeWidth={2} dot={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      {downloads?.timeseries && (
+                        <div className={`${darkMode ? 'bg-slate-700 text-slate-100' : 'bg-white'} mt-4 rounded-lg p-2`} style={{ width: '100%', height: 240 }}>
+                          <h5 className="text-sm font-medium mb-2">Downloads (last 30 days)</h5>
+                          <div style={{ width: '100%', height: 120 }}>
+                            <ResponsiveContainer>
+                              <LineChart data={downloads.timeseries}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                <YAxis />
+                                <Tooltip />
+                                <Line type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+
+                          {downloads?.top && downloads.top.length > 0 && (
+                            <div className="mt-3 overflow-hidden rounded">
+                              <h6 className="text-xs font-semibold mb-2">Top downloads</h6>
+                              <div className="text-sm">
+                                {downloads.top.slice(0,6).map((d:any, idx:number) => (
+                                  <div key={idx} className={`flex items-center justify-between py-2 border-t ${darkMode ? 'border-slate-600' : 'border-gray-100'}`}>
+                                    <div className="truncate max-w-[70%]">{d.full_url}</div>
+                                    <div className="text-xs text-gray-500">{d.count}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Tab Content */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               key={tab}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden"
+              className={`${darkMode ? 'bg-slate-800 text-slate-100' : 'bg-white'} rounded-2xl shadow-lg overflow-hidden`}
             >
+              {/* Scroll to analytics subpanel when requested */}
+              {tab === 'analytics' && analyticsActivePanel && (
+                <EffectRunner panel={analyticsActivePanel} />
+              )}
+
+              {/* Drill modal */}
+              <AnalyticsDrillModal open={modalOpen} type={modalType} onClose={closeModal} apiBase={API_BASE} token={token} darkMode={darkMode} />
               {/* No Permissions Message */}
               {!tab || tabs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20">
@@ -1733,8 +2050,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   }}
                                   className={`p-4 rounded-xl border cursor-pointer transition-all ${
                                     selectedUser?.id === user.id
-                                      ? 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-yellow-50'
-                                      : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                                      ? (darkMode ? 'border-yellow-500 bg-slate-700' : 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-yellow-50')
+                                      : (darkMode ? 'border-slate-700 hover:bg-slate-800 hover:shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-md')
                                   }`}
                                 >
                                     <div className="grid grid-cols-2 items-center gap-4">
@@ -1743,13 +2060,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                         {user.username?.charAt(0).toUpperCase()}
                                       </div>
                                       <div className="min-w-0">
-                                        <h4 className="font-semibold text-gray-900 truncate">{user.username}</h4>
+                                        <h4 className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'} truncate`}>{user.username}</h4>
                                         <div className="flex items-center mt-1 space-x-3">
                                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
                                             {getRoleIcon(user.role)}
                                             <span className="ml-1">{user.role}</span>
                                           </span>
-                                          <span className="text-sm text-gray-500 truncate">{user.email}</span>
+                                          <span className={`${darkMode ? 'text-slate-300' : 'text-sm text-gray-500'} truncate`}>{user.email}</span>
                                         </div>
                                       </div>
                                     </div>
@@ -1761,7 +2078,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                           e.stopPropagation()
                                           setSelectedUser(user)
                                         }}
-                                        className="p-1 text-gray-500 hover:text-yellow-600 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded"
+                                        className={`${darkMode ? 'p-1 text-slate-300 hover:text-yellow-400' : 'p-1 text-gray-500 hover:text-yellow-600'} flex-shrink-0 w-8 h-8 flex items-center justify-center rounded`}
                                         title="View"
                                       >
                                         <Eye className="w-4 h-4" />
@@ -1773,7 +2090,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                           e.stopPropagation()
                                           setDeleteConfirmation({open: true, userId: user.id, userName: user.username})
                                         }}
-                                        className="p-1 text-gray-500 hover:text-red-600 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded"
+                                        className={`${darkMode ? 'p-1 text-slate-300 hover:text-red-500' : 'p-1 text-gray-500 hover:text-red-600'} flex-shrink-0 w-8 h-8 flex items-center justify-center rounded`}
                                         title="Delete"
                                       >
                                         <Trash2 className="w-4 h-4" />
@@ -1825,19 +2142,68 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           )}
                         </div>
 
+                        {/* Registrations & Downloads quick panels (targets for drill-through) */}
+                        <div className="mt-4 grid md:grid-cols-2 gap-4">
+                          <div id="analytics-registrations" className={`${darkMode ? 'bg-slate-700 text-slate-100' : 'bg-white'} p-4 rounded-lg border`}>
+                            <h4 className="text-sm font-semibold mb-2">Registrations</h4>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-xs text-gray-500">Today</div>
+                                <div className="text-2xl font-bold">{registrationsLoading ? '...' : (registrations?.daily ?? dailyTotals?.new_registrations ?? 0)}</div>
+                                <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs`}>Weekly: {registrations?.weekly ?? '-'} • Monthly: {registrations?.monthly ?? '-'}</div>
+                              </div>
+                              <div style={{ width: 220, height: 80 }}>
+                                {registrations?.timeseries && (
+                                  <ResponsiveContainer>
+                                    <LineChart data={registrations.timeseries}>
+                                      <XAxis dataKey="date" hide />
+                                      <YAxis hide />
+                                      <Tooltip />
+                                      <Line dataKey="count" stroke="#F59E0B" dot={false} strokeWidth={2} />
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div id="analytics-downloads" className={`${darkMode ? 'bg-slate-700 text-slate-100' : 'bg-white'} p-4 rounded-lg border`}>
+                            <h4 className="text-sm font-semibold mb-2">Downloads</h4>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-xs text-gray-500">Total</div>
+                                <div className="text-2xl font-bold">{downloadsLoading ? '...' : (downloads?.total_downloads ?? 0)}</div>
+                                <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs`}>Top: {downloads?.top?.[0]?.full_url ? (downloads.top[0].full_url.length > 40 ? downloads.top[0].full_url.slice(0,40)+'...' : downloads.top[0].full_url) : '-'}</div>
+                              </div>
+                              <div style={{ width: 220, height: 80 }}>
+                                {downloads?.timeseries && (
+                                  <ResponsiveContainer>
+                                    <LineChart data={downloads.timeseries}>
+                                      <XAxis dataKey="date" hide />
+                                      <YAxis hide />
+                                      <Tooltip />
+                                      <Line dataKey="count" stroke="#3B82F6" dot={false} strokeWidth={2} />
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         {/* User Details */}
                         <div className="lg:border-l lg:pl-6">
                           {selectedUser ? (
                             <div>
                               <div className="mb-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">User Details</h3>
-                                <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-2xl p-6">
+                                <h3 className={`text-lg font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'} mb-4`}>User Details</h3>
+                                <div className={darkMode ? 'rounded-2xl p-6 bg-slate-800' : 'bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-2xl p-6'}>
                                   <div className="flex items-center space-x-4 mb-6">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+                                    <div className={darkMode ? 'w-16 h-16 bg-yellow-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold' : 'w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold'}>
                                       {selectedUser.username?.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                      <h4 className="text-xl font-bold text-gray-900">{selectedUser.username}</h4>
+                                      <h4 className={`text-xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{selectedUser.username}</h4>
                                       <div className="flex items-center mt-2">
                                         <span className={`inline-flex items-center px-4 py-2 rounded-full font-medium ${getRoleColor(selectedUser.role)}`}>
                                           {getRoleIcon(selectedUser.role)}
@@ -1849,23 +2215,23 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                                   <div className="space-y-4">
                                     <div>
-                                      <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                      <div className="flex items-center p-3 bg-white rounded-lg">
+                                      <label className={`block text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'} mb-1`}>Email Address</label>
+                                      <div className={darkMode ? 'flex items-center p-3 rounded-lg bg-slate-900' : 'flex items-center p-3 bg-white rounded-lg'}>
                                         <Mail className="w-5 h-5 text-gray-400 mr-3" />
-                                        <span className="text-gray-900">{selectedUser.email}</span>
+                                        <span className={`${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{selectedUser.email}</span>
                                       </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                       <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                                        <div className="p-3 bg-white rounded-lg">
-                                          <span className="text-gray-900">{selectedUser.first_name || 'Not provided'}</span>
+                                        <label className={`block text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'} mb-1`}>First Name</label>
+                                        <div className={darkMode ? 'p-3 rounded-lg bg-slate-900' : 'p-3 bg-white rounded-lg'}>
+                                          <span className={`${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{selectedUser.first_name || 'Not provided'}</span>
                                         </div>
                                       </div>
                                       <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                                        <div className="p-3 bg-white rounded-lg">
-                                          <span className="text-gray-900">{selectedUser.last_name || 'Not provided'}</span>
+                                        <label className={`block text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'} mb-1`}>Last Name</label>
+                                        <div className={darkMode ? 'p-3 rounded-lg bg-slate-900' : 'p-3 bg-white rounded-lg'}>
+                                          <span className={`${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{selectedUser.last_name || 'Not provided'}</span>
                                         </div>
                                       </div>
                                     </div>
@@ -1962,6 +2328,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     )}
                   </div>
                 )}
+                {tab === 'courseDetail' && selectedCourseId && (
+                  <div>
+                    <AdminCourseDetail idParam={String(selectedCourseId)} onClose={() => { setSelectedCourseId(null); setTab('courses') }} />
+                  </div>
+                )}
                 {tab === 'trial' && (
                   <div>
                     <div className={`p-3 rounded-lg mb-4 ${settingsMessage?.type === 'success' ? 'bg-yellow-50 text-yellow-800' : settingsMessage?.type === 'error' ? 'bg-red-50 text-red-800' : ''}`}>
@@ -1987,7 +2358,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   </div>
                 )}
 
-                {tab === 'analytics' && (
+                {(tab === 'analytics') && (
                   <div>
                     {adminLoading ? (
                       <div className="flex items-center justify-center py-12">
@@ -1997,7 +2368,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     ) : (
                       <div>
                         <div className="grid md:grid-cols-4 gap-4 mb-8">
-                          <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200">
+                          <motion.div whileHover={{ y: -5 }} className={`${darkMode ? 'bg-slate-700 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200'} rounded-xl p-6`}>
                             <div className="flex items-center justify-between mb-4">
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
                                 <Globe className="w-6 h-6 text-white" />
@@ -2007,7 +2378,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             <p className="text-3xl font-bold text-yellow-900">{gaSummary?.summary?.screenPageViews ?? 'N/A'}</p>
                           </motion.div>
 
-                          <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200">
+                          <motion.div whileHover={{ y: -5 }} className={`${darkMode ? 'bg-slate-700 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200'} rounded-xl p-6`}>
                             <div className="flex items-center justify-between mb-4">
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
                                 <BarChart3 className="w-6 h-6 text-white" />
@@ -2017,17 +2388,17 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             <p className="text-3xl font-bold text-yellow-900">{cbtAnalytics?.total_attempts || 0}</p>
                           </motion.div>
 
-                          <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200">
+                          <motion.div whileHover={{ y: -5 }} className={`${darkMode ? 'bg-slate-700 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200'} rounded-xl p-6`}>
                             <div className="flex items-center justify-between mb-4">
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
                                 <Briefcase className="w-6 h-6 text-white" />
                               </div>
                             </div>
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Total Revenue</h3>
-                            <p className="text-3xl font-bold text-yellow-900">{paymentStats?.total_revenue ? String(paymentStats.total_revenue) : '0'}</p>
+                            <p className="text-3xl font-bold text-yellow-900 truncate max-w-full">{paymentStats?.total_revenue ? new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats.total_revenue) : '₦0'}</p>
                           </motion.div>
 
-                          <motion.div whileHover={{ y: -5 }} className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+                          <motion.div whileHover={{ y: -5 }} className={`${darkMode ? 'bg-slate-700 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200'} rounded-xl p-6`}>
                             <div className="flex items-center justify-between mb-4">
                               <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
                                 <User className="w-6 h-6 text-white" />
@@ -2038,7 +2409,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           </motion.div>
                         </div>
 
-                        <div className="bg-white rounded-xl p-6 border border-gray-200">
+                        <div className={`${darkMode ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white rounded-xl p-6 border border-gray-200'}`}>
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">Traffic Overview</h3>
                           <div className="grid lg:grid-cols-3 gap-6">
                             <div className="lg:col-span-2">
@@ -2524,6 +2895,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     <motion.button
                                       whileHover={{ scale: 1.05 }}
                                       whileTap={{ scale: 0.95 }}
+                                      onClick={() => { setSelectedCourseId(course.id); setTab('courseDetail') }}
                                       className="flex-1 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
                                     >
                                       View
@@ -4245,14 +4617,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           >
             <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 p-6 rounded-t-2xl flex items-center justify-between flex-shrink-0">
               <h2 className="text-2xl font-bold text-white">{editingBlog ? 'Edit Blog Post' : 'Create Blog Post'}</h2>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setShowBlogForm(false)}
-                className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
-              >
-                <XCircle className="w-6 h-6" />
-              </motion.button>
             </div>
 
             <div className="p-8 overflow-y-auto flex-1 min-h-0">
@@ -4665,8 +5029,27 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           setShowSubAdminForm(false)
         }}
       />
-    </div>
+      </div>
+    </ThemeProvider>
   )
+}
+
+// Small helper component to run a scroll effect when analytics tab is opened with a target panel
+function EffectRunner({ panel }: { panel: string }) {
+  useEffect(() => {
+    try {
+      const id = panel === 'registrations' ? 'analytics-registrations' : panel === 'downloads' ? 'analytics-downloads' : null
+      if (id) {
+        const el = document.getElementById(id)
+        if (el) {
+          setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [panel])
+  return null
 }
 
 // SUPPORTED_CURRENCIES imported from src/constants/currencies.ts

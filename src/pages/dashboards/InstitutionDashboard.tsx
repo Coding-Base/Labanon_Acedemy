@@ -92,6 +92,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   const [summary, setSummary] = useState<DashboardSummary | null>(props.summary ?? initialFromState ?? null);
   const [loadingSummary, setLoadingSummary] = useState(!summary);
   const [accountLocked, setAccountLocked] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
   
   // Institution Identity
   const [institutionId, setInstitutionId] = useState<number | null>(null);
@@ -189,18 +190,26 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                 // @ts-ignore
                 const { getTrialDaysLocal } = await import('../../utils/trialConfig')
                 const trialDays = getTrialDaysLocal()
-                if (diffDays <= trialDays) {
-                  isUnlocked = true
+                // IMPORTANT: isUnlocked should only reflect backend is_unlocked status
+                // Don't override based on trial days - trial countdown is shown independently
+                // Only lock access if trial has EXPIRED AND account is not unlocked
+                if (diffDays > trialDays && !userRes.data?.is_unlocked) {
+                  isUnlocked = false
                 }
               } catch (e) {
                 // failed to load trialDays; fallback to 30 days
-                if (diffDays <= 30) isUnlocked = true
+                if (diffDays > 30 && !userRes.data?.is_unlocked) {
+                  isUnlocked = false
+                }
               }
             }
           }
+          setIsUnlocked(isUnlocked);
           setAccountLocked(!isUnlocked);
         } catch (e) {
-          setAccountLocked(false);
+          // Be conservative: if we can't determine unlock status, keep account locked
+          setIsUnlocked(false);
+          setAccountLocked(true);
         }
 
         // Compute trial days remaining for display
@@ -219,7 +228,6 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
             const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
             const remaining = Math.max(0, trialDays - diffDays);
             setTrialDaysRemaining(remaining);
-          }
         } catch (e) {
           // ignore
         }
@@ -234,7 +242,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                 currentInstId = instRes.data.id;
             }
         } catch (instErr: any) {
-            console.warn("Institution profile not found or error:", instErr);
+            // Institution profile not found or error
         }
 
         // 4. Parallel Fetch
@@ -491,9 +499,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         <Globe className="absolute -right-6 -bottom-10 w-64 h-64 text-white opacity-10" />
                       </div>
 
-                        {/* Trial + Review cards: show side-by-side on small+ screens */}
+                        {/* Trial card - show during active trial period (days remaining > 0) */}
                         <div className="mb-6 flex flex-col sm:flex-row sm:justify-end gap-4">
-                          {trialDaysRemaining !== null && (summary?.role === 'institution') && accountLocked && (
+                          {trialDaysRemaining !== null && (summary?.role === 'institution') && !isUnlocked && trialDaysRemaining > 0 && (
                             <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full sm:w-1/2">
                               <div className="flex-1">
                                 <div className="text-sm text-yellow-700 font-medium">Free Trial</div>

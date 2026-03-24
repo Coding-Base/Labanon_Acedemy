@@ -113,6 +113,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   const [summary, setSummary] = useState<DashboardSummary | null>(props.summary ?? initialFromState ?? null);
   const [loadingSummary, setLoadingSummary] = useState(!summary);
   const [accountLocked, setAccountLocked] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
   // Calculated Real-Time Stats
   const [calculatedEarnings, setCalculatedEarnings] = useState(0);
@@ -224,20 +225,28 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                       // @ts-ignore
                       trialDays = trialConfig.getTrialDaysLocal()
                     }
-                    if (diffDays <= trialDays) {
-                      isUnlocked = true
+                    // IMPORTANT: isUnlocked should only reflect backend is_unlocked status
+                    // Don't override based on trial days - trial countdown is shown independently
+                    // Only lock access if trial has EXPIRED AND account is not unlocked
+                    if (diffDays > trialDays && !userRes.data?.is_unlocked) {
+                      isUnlocked = false
                     }
                   } catch (e) {
                     // failed to determine trial config; fallback to 30 days
-                    if (diffDays <= 30) isUnlocked = true
+                    if (diffDays > 30 && !userRes.data?.is_unlocked) {
+                      isUnlocked = false
+                    }
                   }
                 }
             }
           }
-          setAccountLocked(!isUnlocked);
-        } catch (e) {
-          setAccountLocked(false);
-        }
+            setIsUnlocked(isUnlocked);
+            setAccountLocked(!isUnlocked);
+          } catch (e) {
+            // Be conservative: if we can't determine unlock status, keep account locked
+            setIsUnlocked(false);
+            setAccountLocked(true);
+          }
 
         // Compute trial days remaining for display (prefer server-configured value)
         try {
@@ -715,8 +724,8 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   <Route path="overview" element={
                     <div>
                       <div className="mb-6"><div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div><h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome, {summary?.username}! 🎓</h1></div><motion.button whileHover={{ scale: 1.05 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold"><Sparkles className="w-5 h-5 inline mr-2" />Go Live</motion.button></div></div>
-                      {/* Trial card */}
-                      {trialDaysRemaining !== null && (summary?.role === 'tutor') && accountLocked && (
+                      {/* Trial card - show during active trial period (days remaining > 0) */}
+                      {trialDaysRemaining !== null && (summary?.role === 'tutor') && !isUnlocked && trialDaysRemaining > 0 && (
                         <div className="mb-6">
                           <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div className="flex-1">

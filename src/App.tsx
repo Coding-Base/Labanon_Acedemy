@@ -110,12 +110,8 @@ export default function App() {
             <Route path="/review" element={<ReviewsPage />} />
             <Route path="/bulk-upload" element={<BulkUploadPage />} />
             
-            {/* Payment verification routes */}
-            {/* 1. Paystack Verification */}
+            {/* Payment verification route */}
             <Route path="/payment/verify" element={<PaymentVerify />} />
-            
-            {/* 2. Flutterwave Verification (ADDED THIS ROUTE) */}
-            <Route path="/payment/flutterwave/verify" element={<PaymentVerify />} />
 
             {/* Activation / Checkout for exam / subject unlocks */}
             <Route path="/activate" element={<ActivateCheckout />} />

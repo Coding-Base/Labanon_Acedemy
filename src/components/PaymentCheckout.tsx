@@ -52,7 +52,6 @@ export default function PaymentCheckout({
   const [applyingPromo, setApplyingPromo] = useState(false)
   const [promoError, setPromoError] = useState('')
   const [processing, setProcessing] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave'>('paystack')
   const [tutorShare, setTutorShare] = useState<number>(95)
   const [institutionShare, setInstitutionShare] = useState<number>(95)
   const navigate = useNavigate()
@@ -97,11 +96,6 @@ export default function PaymentCheckout({
         return
       }
 
-      // Determine endpoint based on selected payment method
-      const endpoint = paymentMethod === 'flutterwave'
-        ? `${API_BASE}/payments/flutterwave/initiate/`
-        : `${API_BASE}/payments/initiate/`
-
       // Call backend to initiate payment (include optional meta)
       // If a promo is applied, prefer the backend-calculated new_total
       const payload: any = {
@@ -116,7 +110,7 @@ export default function PaymentCheckout({
       if (promoData && promoData.valid) {
         payload.promo_code = promoData.promo?.code || (promoInput || '').trim()
       }
-      const res = await axios.post(endpoint, payload, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await axios.post(`${API_BASE}/payments/initiate/`, payload, { headers: { Authorization: `Bearer ${token}` } })
 
       const { authorization_url, link, reference } = res.data
 
@@ -124,14 +118,14 @@ export default function PaymentCheckout({
       sessionStorage.setItem('paymentReference', reference)
       sessionStorage.setItem('paymentItemType', itemType)
       sessionStorage.setItem('paymentItemId', itemId.toString())
-      sessionStorage.setItem('paymentMethod', paymentMethod)
+      sessionStorage.setItem('paymentMethod', 'paystack')
       
       // Store scheduled flag so verification page knows where to redirect
       sessionStorage.setItem('isScheduled', isScheduled ? 'true' : 'false')
       // Optional return path for activation flows
       if (returnTo) sessionStorage.setItem('paymentReturnTo', returnTo)
 
-      // Redirect to payment gateway (Paystack or Flutterwave)
+      // Redirect to payment gateway (Paystack)
       if (authorization_url) {
         window.location.href = authorization_url
         return
@@ -143,7 +137,7 @@ export default function PaymentCheckout({
       }
 
       // Option 2: Use Paystack Popup (if available)
-      if (window.PaystackPop && paymentMethod === 'paystack') {
+      if (window.PaystackPop) {
         const payAmount = promoData && promoData.valid ? Number(promoData.new_total) : amount
         const handler = window.PaystackPop.setup({
           key: (import.meta.env as any).VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_b5d0eaff52a5d2ed395c2ea99c881ec4ce62acc6',
@@ -173,13 +167,8 @@ export default function PaymentCheckout({
   const verifyPayment = async (reference: string, token: string) => {
     setProcessing(true)
     try {
-      // Determine endpoint based on payment method
-      const endpoint = paymentMethod === 'flutterwave'
-        ? `${API_BASE}/payments/flutterwave/verify/${reference}/`
-        : `${API_BASE}/payments/verify/${reference}/`
-
       const res = await axios.get(
-        endpoint,
+        `${API_BASE}/payments/verify/${reference}/`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
@@ -286,8 +275,8 @@ export default function PaymentCheckout({
 
       {/* Payment Method Selector */}
       <PaymentMethodSelector
-        selectedMethod={paymentMethod}
-        onMethodChange={setPaymentMethod}
+        selectedMethod="paystack"
+        onMethodChange={() => {}}
         disabled={loading || processing}
       />
 
@@ -330,13 +319,13 @@ export default function PaymentCheckout({
           </>
         ) : (
           <>
-            Proceed to {paymentMethod === 'paystack' ? 'Paystack' : 'Flutterwave'}
+            Proceed to Paystack
           </>
         )}
       </button>
 
       <p className="text-xs text-gray-500 text-center">
-        Your payment is secure and encrypted. You will be redirected to {paymentMethod === 'paystack' ? 'Paystack' : 'Flutterwave'} to complete payment.
+        Your payment is secure and encrypted. You will be redirected to Paystack to complete payment.
       </p>
     </div>
   )

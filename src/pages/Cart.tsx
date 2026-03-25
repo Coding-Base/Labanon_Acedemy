@@ -37,7 +37,6 @@ export default function Cart() {
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'flutterwave'>('paystack')
   const [promoInput, setPromoInput] = useState('')
   const [promoData, setPromoData] = useState<any | null>(null)
   const [applyingPromo, setApplyingPromo] = useState(false)
@@ -120,9 +119,7 @@ export default function Cart() {
         }
 
         // Determine endpoint based on selected payment method
-        const endpoint = paymentMethod === 'flutterwave' 
-          ? `${API_BASE}/payments/flutterwave/initiate/`
-          : `${API_BASE}/payments/initiate/`
+        const endpoint = `${API_BASE}/payments/initiate/`
 
         const res = await axios.post(
           endpoint,
@@ -139,13 +136,12 @@ export default function Cart() {
         sessionStorage.setItem('paymentReference', res.data.reference)
         sessionStorage.setItem('paymentItemType', itemType)
         sessionStorage.setItem('paymentItemId', itemId.toString())
-        sessionStorage.setItem('paymentMethod', paymentMethod)
+        sessionStorage.setItem('paymentMethod', 'paystack')
 
-        // Redirect to payment page (works for both Paystack and Flutterwave)
+        // Redirect to payment page
         if (res.data.authorization_url) {
           window.location.href = res.data.authorization_url
         } else if (res.data.link) {
-          // Flutterwave returns 'link' instead of 'authorization_url'
           window.location.href = res.data.link
         } else {
           navigate(`/payment?reference=${res.data.reference}&method=${paymentMethod}`)
@@ -296,8 +292,8 @@ export default function Cart() {
                 {/* Payment Method Selector */}
                 <div className="mb-6 pb-6 border-b border-gray-200">
                   <PaymentMethodSelector
-                    selectedMethod={paymentMethod}
-                    onMethodChange={setPaymentMethod}
+                    selectedMethod="paystack"
+                    onMethodChange={() => {}}
                     disabled={processing}
                   />
                   {/* Promo code input */}
@@ -341,7 +337,7 @@ export default function Cart() {
                 </button>
 
                 <p className="text-xs text-gray-500 text-center mt-4">
-                  You will be redirected to {paymentMethod === 'paystack' ? 'Paystack' : 'Flutterwave'} to complete payment securely.
+                  You will be redirected to Paystack to complete payment securely.
                 </p>
               </div>
             </motion.div>

@@ -20,21 +20,8 @@ export default function PaymentVerify() {
 
     const verifyPayment = async () => {
       try {
-        // --- 1. Robust reference retrieval ---
-        // Paystack sends 'reference' or 'trxref'
-        // Flutterwave sends 'tx_ref'
-        const reference = searchParams.get('reference') || searchParams.get('trxref') || searchParams.get('tx_ref')
-        const fwStatus = searchParams.get('status') // Flutterwave sends 'status=completed' or 'cancelled'
-
-        // --- 2. Determine Method ---
-        const isFlutterwavePath = location.pathname.includes('flutterwave')
-        const hasFwParams = searchParams.has('tx_ref')
-        const storedMethod = sessionStorage.getItem('paymentMethod')
-        
-        let method = 'paystack'
-        if (isFlutterwavePath || hasFwParams || storedMethod === 'flutterwave') {
-            method = 'flutterwave'
-        }
+        // --- 1. Get Paystack reference ---
+        const reference = searchParams.get('reference') || searchParams.get('trxref')
 
         const token = localStorage.getItem('access')
 
@@ -47,16 +34,6 @@ export default function PaymentVerify() {
           return
         }
 
-        // Handle Flutterwave "cancelled" state specifically
-        if (method === 'flutterwave' && fwStatus === 'cancelled') {
-            if(mounted) {
-                setStatus('error')
-                setMessage('Payment was cancelled.')
-                setTimeout(() => navigate('/student'), 3000)
-            }
-            return
-        }
-
         if (!reference) {
           if(mounted) {
             setStatus('error')
@@ -66,20 +43,14 @@ export default function PaymentVerify() {
           return
         }
 
-        // Determine endpoint based on payment method
-        const endpoint = method === 'flutterwave'
-          ? `${API_BASE}/payments/flutterwave/verify/${reference}/`
-          : `${API_BASE}/payments/verify/${reference}/`
-
-        // Verify payment with backend
+        // Verify payment with backend (Paystack only)
         const res = await axios.get(
-          endpoint,
+          `${API_BASE}/payments/verify/${reference}/`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
 
         if (mounted) {
             // Paystack returns {status: 'success', ...} inside data
-            // Flutterwave endpoint returns {status: 'success', ...} inside data
             if (res.data.status === 'success') {
               setStatus('success')
               setMessage('Payment verified! You now have access to your content.')

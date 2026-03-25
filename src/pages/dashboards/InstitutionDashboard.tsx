@@ -228,6 +228,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
             const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
             const remaining = Math.max(0, trialDays - diffDays);
             setTrialDaysRemaining(remaining);
+          }
         } catch (e) {
           // ignore
         }

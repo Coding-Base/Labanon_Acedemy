@@ -68,6 +68,11 @@ import SubAdminForm from '../../components/dashboards/SubAdminForm'
 import AdminMessages from '../../components/AdminMessages'
 import AnalyticsDrillModal from '../../components/AnalyticsDrillModal'
 import AdminCourseDetail from '../../pages/AdminCourseDetail'
+import LegalDocumentsManagement from './LegalDocumentsManagement'
+import StudentsManagement from './StudentsManagement'
+import TutorsManagement from './TutorsManagement'
+import InstitutionsManagement from './InstitutionsManagement'
+import AdminsManagement from './AdminsManagement'
 // If PaymentHistory is needed, import it, otherwise referencing internal table
 // import PaymentHistory from '../../components/PaymentHistory'
 
@@ -355,7 +360,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     try {
       const token = localStorage.getItem('access')
       const res = await axios.get(`${API_BASE}/admin/reviews/`, { headers: { Authorization: `Bearer ${token}` } })
-      setAdminReviews(res.data.results || res.data || [])
+      const payload = res.data
+      const items = Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload) ? payload : [])
+      setAdminReviews(items)
     } catch (e) {
       console.warn('Failed to load admin reviews', e)
       setAdminReviews([])
@@ -613,12 +620,17 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const allTabs = [
     { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-5 h-5" />, permission: undefined as any },
     { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
+    { id: 'students', label: 'Students', icon: <GraduationCap className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
+    { id: 'tutors', label: 'Tutors', icon: <Briefcase className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
     { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
+    { id: 'admins', label: 'Admins', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
     { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     { id: 'signature', label: 'Signature', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
+    { id: 'verification', label: 'Verification', icon: <CheckCircle className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
+    { id: 'legal-documents', label: 'Legal Documents', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
     { id: 'gospel', label: 'Gospel', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
     { id: 'messages', label: 'Messages', icon: <Mail className="w-5 h-5" />, permission: 'can_view_messages' as PermissionKey },
@@ -766,9 +778,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       const params: any = { page }
       if (searchTerm) params.search = searchTerm
       if (roleFilter) params.role = roleFilter
-      const res = await axios.get(`${API_BASE}/admin/users/`, { params, headers: { Authorization: `Bearer ${token}` } })
+      // Use the users endpoint (registered under users router in backend)
+      const res = await axios.get(`${API_BASE}/users/`, { params, headers: { Authorization: `Bearer ${token}` } })
       const data = res.data
-      const items = data.results || data
+      const items = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : [])
       setUsers(items)
       setPageInfo({ count: data.count || items.length, next: data.next || null, previous: data.previous || null, current: page })
     } catch (err) {
@@ -781,7 +794,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     try {
       const token = localStorage.getItem('access')
       const res = await axios.get(`${API_BASE}/cbt/exams/`, { headers: { Authorization: `Bearer ${token}` } })
-      setExams(res.data.results || res.data)
+      const payload = res.data
+      const items = Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload) ? payload : [])
+      setExams(items)
     } catch (err) { console.error(err) }
   }
 
@@ -790,7 +805,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       try {
           const token = localStorage.getItem('access')
           const res = await axios.get(`${API_BASE}/cbt/exams/${examId}/subjects/`, { headers: { Authorization: `Bearer ${token}` } })
-          setSubjects(res.data.results || res.data || [])
+          const payload = res.data
+          const items = Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload) ? payload : [])
+          setSubjects(items)
       } catch (err) {
           console.error('Failed to load subjects', err)
           setSubjects([])
@@ -2366,6 +2383,21 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     )}
                   </div>
                 )}
+                {tab === 'students' && (
+                  <StudentsManagement />
+                )}
+
+                {tab === 'tutors' && (
+                  <TutorsManagement />
+                )}
+
+                {tab === 'institutions' && (
+                  <InstitutionsManagement />
+                )}
+
+                {tab === 'admins' && (
+                  <AdminsManagement />
+                )}
                 {tab === 'courseDetail' && selectedCourseId && (
                   <div>
                     <AdminCourseDetail idParam={String(selectedCourseId)} onClose={() => { setSelectedCourseId(null); setTab('courses') }} />
@@ -2501,121 +2533,69 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               <div className="grid md:grid-cols-2 gap-4 mb-6">
                                 <div className="bg-white p-4 rounded-lg border">
                                   <h5 className="text-sm text-gray-600 mb-3">Top UTM Sources</h5>
-                                  {referrersLoading ? (
-                                    <div className="text-center py-6"><Loader2 className="animate-spin w-6 h-6 text-yellow-600" /></div>
-                                  ) : (
-                                    <div className="space-y-2">
-                                      {(utmSources || []).slice(0,10).map((s:any, i:number) => (
-                                        <div key={i} className="flex items-center justify-between">
-                                          <div className="text-sm text-gray-700">{s.utm_source || s.utm_source || 'Direct'}</div>
-                                          <div className="text-sm font-semibold text-gray-900">{s.count}</div>
-                                        </div>
-                                      ))}
-                                      {(!utmSources || utmSources.length === 0) && <div className="text-sm text-gray-500">No data yet</div>}
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="bg-white p-4 rounded-lg border">
-                                  <div className="flex items-center justify-between mb-3">
-                                    <h5 className="text-sm text-gray-600">Top Referrers (URLs)</h5>
-                                    <motion.button
-                                      whileHover={{ rotate: 180 }}
-                                      whileTap={{ scale: 0.95 }}
-                                      onClick={() => loadReferrerStats()}
-                                      disabled={referrersLoading}
-                                      className="p-1 hover:bg-yellow-100 rounded-lg transition-colors disabled:opacity-50"
-                                      title="Refresh referrer data"
-                                    >
-                                      <RefreshCw className="w-4 h-4 text-yellow-600" />
-                                    </motion.button>
+                                  <div className="space-y-2 text-sm">
+                                    {(utmSources || []).slice(0, 5).map((r: any, idx: number) => (
+                                      <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                        <span className="text-gray-700">{r.source || r.utm_source || '—'}</span>
+                                        <span className="font-semibold text-gray-900">{r.users || r.visits || 0}</span>
+                                      </div>
+                                    ))}
+                                    {(!utmSources || utmSources.length === 0) && (
+                                      <p className="text-gray-500">No referrer data available</p>
+                                    )}
                                   </div>
-                                  {referrersLoading ? (
-                                    <div className="text-center py-6"><Loader2 className="animate-spin w-6 h-6 text-yellow-600" /></div>
-                                  ) : (
-                                    <div className="space-y-2 max-h-56 overflow-y-auto">
-                                      {(filteredReferrers || []).slice(0,12).map((r:any, idx:number) => (
-                                        <div key={idx} className="flex items-start justify-between">
-                                          <div className="text-sm text-gray-700 truncate max-w-[70%]" title={r.referrer}>{r.display || r.referrer || '(direct)'}</div>
-                                          <div className="text-sm font-semibold text-gray-900 ml-3">{r.count}</div>
-                                        </div>
-                                      ))}
-                                      {(filteredReferrers.length === 0) && <div className="text-sm text-gray-500">No external referrers found</div>}
-                                    </div>
-                                  )}
                                 </div>
                               </div>
-                            </div>
-                            <div className="space-y-3">
-                              <h4 className="text-sm text-gray-600">GA Summary</h4>
-                              <div className="grid grid-cols-2 gap-3">
+
+                              <div>
+                                <h4 className="text-sm text-gray-600 mb-2">Technology</h4>
                                 <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                  <div className="text-xs text-gray-500">Active Users</div>
-                                  <div className="text-2xl font-bold text-gray-900">{gaSummary?.summary?.activeUsers ?? 0}</div>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                  <div className="text-xs text-gray-500">Total Users</div>
-                                  <div className="text-2xl font-bold text-gray-900">{gaSummary?.summary?.totalUsers ?? 0}</div>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                  <div className="text-xs text-gray-500">Sessions</div>
-                                  <div className="text-2xl font-bold text-gray-900">{gaSummary?.summary?.sessions ?? 0}</div>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                  <div className="text-xs text-gray-500">Page Views</div>
-                                  <div className="text-2xl font-bold text-gray-900">{gaSummary?.summary?.screenPageViews ?? 0}</div>
+                                  <div style={{ width: '100%', height: 180 }}>
+                                    <ResponsiveContainer>
+                                      <PieChart>
+                                        <Pie data={ (gaSummary?.technology?.browsers || []).map((b:any)=>({ name: b.browser || b.name, value: b.users || b.value })) }
+                                             dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={30}>
+                                          { (gaSummary?.technology?.browsers || []).map((entry: any, index: number) => (
+                                            <Cell key={`cell-tech-${index}`} fill={["#F59E0B", "#F97316", "#FB923C", "#FCD34D", "#93C5FD"][index % 5]} />
+                                          ))}
+                                        </Pie>
+                                        <Legend verticalAlign="bottom" height={28} />
+                                      </PieChart>
+                                    </ResponsiveContainer>
+                                  </div>
+
+                                  <div className="mt-3 grid grid-cols-1 gap-2">
+                                    {(gaSummary?.technology?.devices || []).map((d:any, i:number) => (
+                                      <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded">
+                                        <div className="text-sm text-gray-700">{d.device}</div>
+                                        <div className="text-sm font-semibold text-gray-900">{d.users}</div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div>
-                              <h4 className="text-sm text-gray-600 mb-2">Technology</h4>
-                              <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                <div style={{ width: '100%', height: 180 }}>
-                                  <ResponsiveContainer>
-                                    <PieChart>
-                                      <Pie data={ (gaSummary?.technology?.browsers || []).map((b:any)=>({ name: b.browser || b.name, value: b.users || b.value })) }
-                                           dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={30}>
-                                        { (gaSummary?.technology?.browsers || []).map((entry: any, index: number) => (
-                                          <Cell key={`cell-tech-${index}`} fill={["#F59E0B", "#F97316", "#FB923C", "#FCD34D", "#93C5FD"][index % 5]} />
-                                        ))}
-                                      </Pie>
-                                      <Legend verticalAlign="bottom" height={28} />
-                                    </PieChart>
-                                  </ResponsiveContainer>
-                                </div>
-
-                                <div className="mt-3 grid grid-cols-1 gap-2">
-                                  {(gaSummary?.technology?.devices || []).map((d:any, i:number) => (
-                                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded">
-                                      <div className="text-sm text-gray-700">{d.device}</div>
-                                      <div className="text-sm font-semibold text-gray-900">{d.users}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <h4 className="text-sm text-gray-600 mb-2">Top Countries</h4>
-                              <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                <div style={{ width: '100%', height: 240 }}>
-                                  <ResponsiveContainer>
-                                    <BarChart data={(gaSummary?.countries || []).slice(0,8)} layout="vertical" margin={{ left: 0, right: 8 }}>
-                                      <XAxis type="number" hide />
-                                      <YAxis dataKey="country" type="category" width={110} tick={{ fontSize: 12 }} />
-                                      <Tooltip />
-                                      <Bar dataKey="users" fill="#F59E0B" />
-                                    </BarChart>
-                                  </ResponsiveContainer>
-                                </div>
-                                <div className="mt-3">
-                                  {(gaSummary?.countries || []).slice(0,6).map((c:any, idx:number) => (
-                                    <div key={idx} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                                      <div className="text-sm text-gray-700">{c.country}</div>
-                                      <div className="text-sm font-semibold text-gray-900">{c.users}</div>
-                                    </div>
-                                  ))}
+                              <div>
+                                <h4 className="text-sm text-gray-600 mb-2">Top Countries</h4>
+                                <div className="bg-white p-4 rounded-lg shadow-sm border">
+                                  <div style={{ width: '100%', height: 240 }}>
+                                    <ResponsiveContainer>
+                                      <BarChart data={(gaSummary?.countries || []).slice(0,8)} layout="vertical" margin={{ left: 0, right: 8 }}>
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="country" type="category" width={110} tick={{ fontSize: 12 }} />
+                                        <Tooltip />
+                                        <Bar dataKey="users" fill="#F59E0B" />
+                                      </BarChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                  <div className="mt-3">
+                                    {(gaSummary?.countries || []).slice(0,6).map((c:any, idx:number) => (
+                                      <div key={idx} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                                        <div className="text-sm text-gray-700">{c.country}</div>
+                                        <div className="text-sm font-semibold text-gray-900">{c.users}</div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -4625,13 +4605,17 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   </div>
                 )}
 
-                {tab === 'messages' && (
+                 {tab === 'messages' && (
                   <AdminMessages />
+                )} 
+
+                {tab === 'legal-documents' && (
+                  <LegalDocumentsManagement />
                 )}
               </div>
               </>
               )}
-            </motion.div>
+             </motion.div> 
           </div>
         </div>
       </div>
@@ -5058,7 +5042,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         </motion.div>
       )}
 
-      </>
       {/* Sub-Admin Form Modal */}
       <SubAdminForm
         isOpen={showSubAdminForm}
@@ -5067,6 +5050,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           setShowSubAdminForm(false)
         }}
       />
+      </>
       </div>
     </ThemeProvider>
   )

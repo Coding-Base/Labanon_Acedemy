@@ -31,6 +31,7 @@ import {
   TrendingUp,
   PenTool
 } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 import labanonLogo from '../labanonlogo.png';
 import ManageCourses from '../ManageCourses';
@@ -43,6 +44,7 @@ import ContactAdminForm from '../../components/ContactAdminForm';
 import UserMessages from '../../components/UserMessages';
 import SchedulePage from '../../components/SchedulePage';
 import InstitutionSignature from '../../components/InstitutionSignature';
+import InstitutionCompliancePage from './InstitutionCompliancePage';
 import InstitutionLogo from '../../components/InstitutionLogo';
 import GospelVideoModal from '../../components/GospelVideoModal';
 
@@ -340,6 +342,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
     { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> },
     { path: 'logo', label: 'Logo', icon: <Upload className="w-5 h-5" /> },
     { path: 'signature', label: 'Signature', icon: <PenTool className="w-5 h-5" /> },
+    { path: 'compliance', label: 'Compliance', icon: <FileText className="w-5 h-5" /> },
     { path: 'payments', label: 'Payments & Payouts', icon: <DollarSign className="w-5 h-5" /> },
   ];
 
@@ -750,6 +753,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   {/* Signature Page */}
                   <Route path="logo" element={<InstitutionLogo />} />
                   <Route path="signature" element={<InstitutionSignature />} />
+                  <Route path="compliance" element={<InstitutionCompliancePage />} />
 
                   {/* Payments & Flutterwave */}
                   <Route path="payments" element={

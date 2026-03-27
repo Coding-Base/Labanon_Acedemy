@@ -22,7 +22,11 @@ interface ComplianceFormProps {
 export default function ComplianceForm({ entityType, entityId }: ComplianceFormProps) {
   const [loading, setLoading] = useState(false)
   const [files, setFiles] = useState<File[]>([])
+  const [filesMeta, setFilesMeta] = useState<{ document_name: string; document_type: string }[]>([])
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedFile[]>([])
+  const [contactName, setContactName] = useState('')
+  const [contactPhone, setContactPhone] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
@@ -40,16 +44,34 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
       if (!token) return
 
       const endpoint = entityType === 'institution'
-        ? `/institutions/verification-documents/`
-        : `/tutors/verification-documents/`
+        ? `/institutions/compliance/form/`
+        : `/tutors/compliance/form/`
 
       const res = await axios.get(`${API_BASE}${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
 
-      setUploadedDocuments(res.data.documents || [])
-      setVerificationStatus(res.data.status || 'pending')
-      setRejectionReason(res.data.rejection_reason || '')
+      // Backend returns different shapes for institution vs tutor
+      if (entityType === 'institution') {
+        // institution endpoint returns a list of institution entries
+        if (Array.isArray(res.data)) {
+          // flatten documents from all institutions (usually one)
+          const docs = res.data.flatMap((entry: any) => entry.documents || [])
+          setUploadedDocuments(docs)
+          // prefer institution-level status if present
+          const first = res.data[0]
+          setVerificationStatus(first?.verification_status || 'pending')
+          setRejectionReason(first?.rejection_reason || '')
+        } else {
+          setUploadedDocuments(res.data.documents || [])
+          setVerificationStatus(res.data.status || 'pending')
+          setRejectionReason(res.data.rejection_reason || '')
+        }
+      } else {
+        setUploadedDocuments(res.data.documents || [])
+        setVerificationStatus(res.data.status || 'pending')
+        setRejectionReason(res.data.rejection_reason || '')
+      }
     } catch (err) {
       console.error('Failed to load documents:', err)
     }
@@ -57,11 +79,20 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || [])
-    setFiles(prev => [...prev, ...selectedFiles])
+    setFiles(prev => {
+      const next = [...prev, ...selectedFiles]
+      // extend meta for each newly added file
+      setFilesMeta(prevMeta => {
+        const added = selectedFiles.map(() => ({ document_name: '', document_type: '' }))
+        return [...prevMeta, ...added]
+      })
+      return next
+    })
   }
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index))
+    setFilesMeta(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,6 +103,21 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
       return
     }
 
+    // basic contact validation
+    if (!contactName || !contactPhone || !contactEmail) {
+      showToast('Please provide your name, phone and email', 'error')
+      return
+    }
+
+    // ensure each file has meta
+    for (let i = 0; i < files.length; i++) {
+      const meta = filesMeta[i]
+      if (!meta || !meta.document_name || !meta.document_type) {
+        showToast('Please provide a document name and type for each file', 'error')
+        return
+      }
+    }
+
     setSubmitting(true)
     try {
       const token = localStorage.getItem('access')
@@ -80,26 +126,53 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
         return
       }
 
-      const formData = new FormData()
-      files.forEach(file => {
-        formData.append('files', file)
-      })
-      formData.append('comments', comments)
-
       const endpoint = entityType === 'institution'
-        ? `/institutions/submit-verification/`
-        : `/tutors/submit-verification/`
+        ? `/institutions/compliance/form/`
+        : `/tutors/compliance/form/`
 
-      const res = await axios.post(`${API_BASE}${endpoint}`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
+      // Submit each file individually with required backend field names
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const meta = filesMeta[i]
+        const perForm = new FormData()
+        perForm.append('document_file', file)
+        perForm.append('document_type', meta.document_type)
+        perForm.append('document_name', meta.document_name)
+        perForm.append('comments', comments)
+        // include contact info to help admins
+        perForm.append('contact_name', contactName)
+        perForm.append('contact_phone', contactPhone)
+        perForm.append('contact_email', contactEmail)
+
+        if (entityType === 'institution') {
+          // Try to include institution_id if provided as prop
+          if (entityId) perForm.append('institution_id', String(entityId))
+          else {
+            // attempt to fetch my_institution id
+            try {
+              const instRes = await axios.get(`${API_BASE}/institutions/my_institution/`, { headers: { Authorization: `Bearer ${token}` } })
+              if (instRes?.data?.id) perForm.append('institution_id', String(instRes.data.id))
+            } catch (e) {
+              // ignore; backend will validate presence
+            }
+          }
         }
-      })
+
+        await axios.post(`${API_BASE}${endpoint}`, perForm, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+      }
 
       showToast('Documents submitted successfully for review', 'success')
       setFiles([])
+      setFilesMeta([])
       setComments('')
+      setContactName('')
+      setContactPhone('')
+      setContactEmail('')
       await loadUploadedDocuments()
     } catch (err: any) {
       const errorMsg = err.response?.data?.detail || 'Failed to submit documents'
@@ -152,6 +225,21 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Submit Verification Documents</h3>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Contact Details */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Full name / Business name</label>
+              <input value={contactName} onChange={(e) => setContactName(e.target.value)} className="w-full px-3 py-2 border rounded" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Phone</label>
+              <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className="w-full px-3 py-2 border rounded" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Email</label>
+              <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} className="w-full px-3 py-2 border rounded" />
+            </div>
+          </div>
           {/* File Upload Area */}
           <div
             onClick={() => fileInputRef.current?.click()}
@@ -175,21 +263,49 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
             <div className="space-y-2 bg-gray-50 p-4 rounded">
               <p className="text-sm font-semibold text-gray-900">Selected Files ({files.length})</p>
               {files.map((file, idx) => (
-                <div key={idx} className="flex items-center justify-between bg-white p-3 rounded border border-gray-200">
-                  <div className="flex items-center gap-2 flex-1">
-                    <FileText className="w-4 h-4 text-gray-400" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                      <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
+                <div key={idx} className="bg-white p-3 rounded border border-gray-200">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <FileText className="w-5 h-5 text-gray-400 mt-1" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                          <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
+                        </div>
+                        <button type="button" onClick={() => removeFile(idx)} className="text-red-500 hover:text-red-700"><X className="w-4 h-4" /></button>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-600">Document Name</label>
+                          <input
+                            value={filesMeta[idx]?.document_name || ''}
+                            onChange={(e) => setFilesMeta(prev => { const next = [...prev]; next[idx] = { ...(next[idx] || {}), document_name: e.target.value }; return next })}
+                            className="w-full px-3 py-2 border rounded"
+                            placeholder="e.g. Certificate of Incorporation"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-600">Document Type</label>
+                          <select
+                            value={filesMeta[idx]?.document_type || ''}
+                            onChange={(e) => setFilesMeta(prev => { const next = [...prev]; next[idx] = { ...(next[idx] || {}), document_type: e.target.value }; return next })}
+                            className="w-full px-3 py-2 border rounded"
+                          >
+                            <option value="">Select type</option>
+                            <option value="registration">Registration / Incorporation</option>
+                            <option value="tax">Tax ID / Business Tax</option>
+                            <option value="proof_of_address">Proof of Address</option>
+                            <option value="id">ID / Passport</option>
+                            <option value="qualification">Qualification / Certificate</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(idx)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
                 </div>
               ))}
             </div>

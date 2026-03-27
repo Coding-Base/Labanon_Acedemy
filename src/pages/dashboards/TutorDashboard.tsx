@@ -32,6 +32,7 @@ import {
   CreditCard,
   Edit3
 } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import { getTrialDaysLocal } from '../../utils/trialConfig'
 import ManageCourses from '../ManageCourses';
@@ -45,6 +46,7 @@ import MessageModal from '../../components/MessageModal';
 import UserMessages from '../../components/UserMessages';
 import SchedulePage from '../../components/SchedulePage';
 import GospelVideoModal from '../../components/GospelVideoModal';
+import TutorCompliancePage from './TutorCompliancePage';
 
 // Recharts imports
 import {
@@ -533,6 +535,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
     { path: 'earnings', label: 'Earnings', icon: <DollarSign className="w-5 h-5" /> },
     { path: 'leaderboard', label: 'Leaderboard', icon: <Trophy className="w-5 h-5" /> },
     { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> },
+    { path: 'compliance', label: 'Compliance', icon: <FileText className="w-5 h-5" /> },
   ];
 
   const stats = [
@@ -883,6 +886,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                    
                   <Route path="leaderboard" element={<LeaderboardPage />} />
                   <Route path="schedule" element={<div className="p-4"><SchedulePage userRole="tutor" /></div>} />
+                  <Route path="compliance" element={<TutorCompliancePage />} />
                   <Route path="" element={<div><h2 className="text-2xl font-bold mb-4">Welcome</h2><div className="bg-yellow-50 p-8 rounded-xl"><Link to="/tutor/manage/create" className="px-6 py-3 bg-yellow-600 text-white rounded-lg">Create Course</Link></div></div>} />
                 </Routes>
               </div>

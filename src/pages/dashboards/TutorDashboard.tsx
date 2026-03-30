@@ -47,6 +47,7 @@ import UserMessages from '../../components/UserMessages';
 import SchedulePage from '../../components/SchedulePage';
 import GospelVideoModal from '../../components/GospelVideoModal';
 import TutorCompliancePage from './TutorCompliancePage';
+import VerificationAlert from '../../components/VerificationAlert';
 
 // Recharts imports
 import {
@@ -726,6 +727,11 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                 <Routes>
                   <Route path="overview" element={
                     <div>
+                      <VerificationAlert 
+                        verificationStatus={summary?.verification_status || null}
+                        dashboardType="tutor"
+                        rejectionReason={summary?.rejection_reason}
+                      />
                       <div className="mb-6"><div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div><h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome, {summary?.username}! 🎓</h1></div><motion.button whileHover={{ scale: 1.05 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold"><Sparkles className="w-5 h-5 inline mr-2" />Go Live</motion.button></div></div>
                       {/* Trial card - show during active trial period (days remaining > 0) */}
                       {trialDaysRemaining !== null && (summary?.role === 'tutor') && !isUnlocked && trialDaysRemaining > 0 && (

@@ -144,7 +144,7 @@ export default function Cart() {
         } else if (res.data.link) {
           window.location.href = res.data.link
         } else {
-          navigate(`/payment?reference=${res.data.reference}&method=${paymentMethod}`)
+          navigate(`/payment?reference=${res.data.reference}&method=paystack`)
         }
       } else {
         // For multiple items, show error (implement bulk checkout later)

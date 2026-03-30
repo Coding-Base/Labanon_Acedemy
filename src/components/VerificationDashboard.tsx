@@ -55,7 +55,67 @@ export default function VerificationDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       })
 
-      setSubmissions(res.data)
+      // Normalize various backend response shapes:
+      const payload = res.data
+      let items: any[] = []
+
+      if (Array.isArray(payload)) {
+        items = payload
+      } else if (payload?.pending_tutor_documents || payload?.pending_institution_documents) {
+        // Admin compliance dashboard shape — merge pending tutor and institution docs into unified submissions
+        const tutors = (payload.pending_tutor_documents || []).map((d: any) => ({
+          id: d.id || (d.tutor || 0),
+          entity_id: d.tutor || null,
+          entity_type: 'tutor',
+          entity_name: d.tutor_username || (d.tutor && d.tutor.username) || 'Tutor',
+          owner_name: d.tutor_username || '',
+          email: d.tutor_email || '',
+          phone: '',
+          status: d.status || 'pending',
+          submitted_at: d.submitted_at || d.reviewed_at || d.created_at || null,
+          reviewed_at: d.reviewed_at || null,
+          documents: [
+            {
+              id: d.id,
+              filename: d.document_name || '',
+              file_type: d.document_type || '',
+              uploaded_at: d.submitted_at || d.created_at || null,
+              file_url: d.document_file || ''
+            }
+          ]
+        }))
+
+        const inst = (payload.pending_institution_documents || []).map((d: any) => ({
+          id: d.id || (d.institution || 0),
+          entity_id: d.institution || null,
+          entity_type: 'institution',
+          entity_name: d.institution_name || (d.institution && d.institution.name) || 'Institution',
+          owner_name: d.institution_owner_name || (d.institution && d.institution.owner && d.institution.owner.username) || '',
+          email: d.institution_owner_email || '',
+          phone: '',
+          status: d.status || 'pending',
+          submitted_at: d.submitted_at || d.reviewed_at || d.created_at || null,
+          reviewed_at: d.reviewed_at || null,
+          documents: [
+            {
+              id: d.id,
+              filename: d.document_name || '',
+              file_type: d.document_type || '',
+              uploaded_at: d.submitted_at || d.created_at || null,
+              file_url: d.document_file || ''
+            }
+          ]
+        }))
+
+        items = [...tutors, ...inst]
+      } else if (Array.isArray(payload?.results)) {
+        items = payload.results
+      } else {
+        // unknown shape — try to coerce
+        items = Array.isArray(payload) ? payload : (payload ? [payload] : [])
+      }
+
+      setSubmissions(items)
     } catch (err) {
       console.error('Failed to load submissions:', err)
       showToast('Failed to load verification submissions', 'error')

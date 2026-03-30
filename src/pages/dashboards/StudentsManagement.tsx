@@ -10,6 +10,7 @@ import {
   BarChart3,
   TrendingUp,
   Award,
+  CheckCircle2,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -427,7 +428,7 @@ export default function StudentsManagement() {
             : 'bg-red-500 text-white'
         }`}>
           {toast.type === 'success' ? (
-            <CheckCircle className="w-5 h-5" />
+            <CheckCircle2 className="w-5 h-5" />
           ) : (
             <AlertCircle className="w-5 h-5" />
           )}

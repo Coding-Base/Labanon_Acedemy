@@ -336,9 +336,9 @@ export default function InstitutionsManagement() {
                       <td className="py-4 px-6">
                         <div>
                           <p className="font-medium text-gray-900">
-                            { (inst as any).institution_name || inst.name || `${inst.first_name || ''} ${inst.last_name || ''}` }
+                            { (inst as any).institution_name || inst.name || 'Institution' }
                           </p>
-                          <p className="text-xs text-gray-500">Owner: {((inst as any).owner?.first_name ? `${(inst as any).owner.first_name} ${(inst as any).owner.last_name}` : (inst.first_name || inst.username || ''))}</p>
+                          <p className="text-xs text-gray-500">Owner: {((inst as any).owner?.first_name ? `${(inst as any).owner.first_name} ${(inst as any).owner.last_name}` : ((inst as any).owner?.username || 'Unknown'))} ({inst.email})</p>
                         </div>
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-600">{inst.email}</td>

@@ -16,9 +16,13 @@ export default function InstitutionCompliancePage() {
   async function loadLegalDocs() {
     try {
       const res = await axios.get(`${API_BASE}/legal-documents/`)
-      setLegalDocs(res.data || [])
+      // Handle both paginated response (with results property) and direct array response
+      const payload = res.data
+      const items = Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload) ? payload : [])
+      setLegalDocs(items)
     } catch (e) {
       console.error('Failed to load legal documents', e)
+      setLegalDocs([])
     }
   }
 

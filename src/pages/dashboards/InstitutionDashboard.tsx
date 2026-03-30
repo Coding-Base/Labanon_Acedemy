@@ -47,6 +47,7 @@ import InstitutionSignature from '../../components/InstitutionSignature';
 import InstitutionCompliancePage from './InstitutionCompliancePage';
 import InstitutionLogo from '../../components/InstitutionLogo';
 import GospelVideoModal from '../../components/GospelVideoModal';
+import VerificationAlert from '../../components/VerificationAlert';
 
 // Recharts
 import {
@@ -485,6 +486,11 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   {/* Overview Tab */}
                   <Route path="overview" element={
                     <div className="space-y-6">
+                      <VerificationAlert 
+                        verificationStatus={summary?.verification_status || null}
+                        dashboardType="institution"
+                        rejectionReason={summary?.rejection_reason}
+                      />
                       {/* Welcome Banner */}
                       <div className="bg-gradient-to-r from-yellow-700 to-yellow-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
                         <div className="relative z-10">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../utils/axiosInterceptor';
+import api from '../../utils/axiosInterceptor';
 import { Save, Loader2, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function InstitutionSignature() {

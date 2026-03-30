@@ -1,5 +1,6 @@
 // src/shared/CoursesList.tsx
 import React, { useEffect, useState } from 'react'
+import useDebounce from '../utils/useDebounce'
 import axios from 'axios'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Search, ShoppingCart, ChevronLeft, ChevronRight, Loader2, BookOpen } from 'lucide-react'
@@ -40,6 +41,7 @@ export default function CoursesList() {
   
   // Initialize search state from URL param
   const [search, setSearch] = useState(searchParams.get('search') || '')
+  const debouncedSearch = useDebounce(search, 400)
   
   const [loading, setLoading] = useState(false)
   const [addingIds, setAddingIds] = useState<number[]>([])
@@ -57,15 +59,15 @@ export default function CoursesList() {
   useEffect(() => {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search])
+  }, [page, debouncedSearch])
 
   async function load() {
     setLoading(true)
     try {
       // fetch courses
       const [coursesRes, diplomasRes] = await Promise.all([
-        axios.get(`${API_BASE}/courses/`, { params: { page, page_size: pageSize, search } }),
-        axios.get(`${API_BASE}/diplomas/`, { params: { page, page_size: pageSize, search } }),
+        axios.get(`${API_BASE}/courses/`, { params: { page, page_size: pageSize, search: debouncedSearch } }),
+        axios.get(`${API_BASE}/diplomas/`, { params: { page, page_size: pageSize, search: debouncedSearch } }),
       ])
 
       const courseResults = coursesRes.data.results || []

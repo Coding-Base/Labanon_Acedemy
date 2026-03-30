@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Search, Loader2, Calendar, User, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Footer from '../components/Footer'
+import useDebounce from '../utils/useDebounce'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
 const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
@@ -103,6 +104,7 @@ export default function BlogPage() {
   const [blogs, setBlogs] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearch = useDebounce(searchTerm, 300)
   const [pageInfo, setPageInfo] = useState({ count: 0, next: null, previous: null })
 
   useEffect(() => {
@@ -141,10 +143,10 @@ export default function BlogPage() {
   }
 
   const filteredBlogs = blogs.filter(blog => {
-    if (!searchTerm) return true // Show all if search is empty
+    if (!debouncedSearch) return true // Show all if search is empty
     const title = (blog.title || '').toLowerCase()
     const excerpt = (blog.excerpt || '').toLowerCase()
-    const search = searchTerm.toLowerCase()
+    const search = debouncedSearch.toLowerCase()
     return title.includes(search) || excerpt.includes(search)
   })
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { AlertCircle, CheckCircle, XCircle, Loader2, Download, Filter, Search, User, Mail, Phone, FileText } from 'lucide-react'
 import showToast from '../utils/toast'
+import useDebounce from '../utils/useDebounce'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -34,6 +35,7 @@ export default function VerificationDashboard() {
   const [selectedSubmission, setSelectedSubmission] = useState<VerificationSubmission | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending')
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearch = useDebounce(searchTerm, 300)
   const [approvalReason, setApprovalReason] = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -125,10 +127,12 @@ export default function VerificationDashboard() {
   }
 
   const filteredSubmissions = submissions.filter(sub => {
+    const s = debouncedSearch.toLowerCase()
+    if (!s) return true
     const matchesSearch =
-      sub.entity_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.owner_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.email.toLowerCase().includes(searchTerm.toLowerCase())
+      sub.entity_name.toLowerCase().includes(s) ||
+      sub.owner_name.toLowerCase().includes(s) ||
+      sub.email.toLowerCase().includes(s)
     return matchesSearch
   })
 

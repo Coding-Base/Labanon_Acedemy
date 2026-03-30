@@ -50,7 +50,7 @@ export default function VerificationDashboard() {
       if (!token) return
 
       const params = filterStatus !== 'all' ? { status: filterStatus } : {}
-      const res = await axios.get(`${API_BASE}/admin/verification-submissions/`, {
+      const res = await axios.get(`${API_BASE}/admin/compliance/dashboard/`, {
         params,
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -142,7 +142,10 @@ export default function VerificationDashboard() {
 
       await axios.post(
         `${API_BASE}/admin/verify-submission/${selectedSubmission.id}/approve/`,
-        { reason: approvalReason },
+        {
+          entity_type: selectedSubmission.entity_type,
+          reason: approvalReason
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
@@ -171,7 +174,10 @@ export default function VerificationDashboard() {
 
       await axios.post(
         `${API_BASE}/admin/verify-submission/${selectedSubmission.id}/reject/`,
-        { reason: rejectionReason },
+        {
+          entity_type: selectedSubmission.entity_type,
+          reason: rejectionReason
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       )
 

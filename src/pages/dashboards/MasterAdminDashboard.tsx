@@ -73,6 +73,7 @@ import StudentsManagement from './StudentsManagement'
 import TutorsManagement from './TutorsManagement'
 import InstitutionsManagement from './InstitutionsManagement'
 import AdminsManagement from './AdminsManagement'
+import VerificationDashboard from '../../components/VerificationDashboard'
 // If PaymentHistory is needed, import it, otherwise referencing internal table
 // import PaymentHistory from '../../components/PaymentHistory'
 
@@ -4611,6 +4612,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                 {tab === 'legal-documents' && (
                   <LegalDocumentsManagement />
+                )}
+
+                {tab === 'verification' && (
+                  <VerificationDashboard />
                 )}
               </div>
               </>

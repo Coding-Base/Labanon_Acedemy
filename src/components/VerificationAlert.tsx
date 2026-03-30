@@ -15,8 +15,15 @@ export default function VerificationAlert({ verificationStatus, dashboardType, r
   if (verificationStatus === 'approved') return null
 
   const handleNavigateToCompliance = () => {
-    // Navigate to absolute compliance route (avoid relative navigation like /overview/compliance)
-    navigate('/compliance')
+    // Navigate to role-specific compliance route
+    if (dashboardType === 'tutor') {
+      navigate('/tutor/compliance')
+    } else if (dashboardType === 'institution') {
+      navigate('/institution/compliance')
+    } else {
+      // Fallback to absolute compliance if role unknown
+      navigate('/compliance')
+    }
   }
 
   return (

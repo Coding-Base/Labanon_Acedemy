@@ -22,6 +22,12 @@ interface ComplianceFormProps {
   entityId?: number
 }
 
+interface DocumentLink {
+  document_name: string
+  document_type: string
+  document_link: string
+}
+
 const DOCUMENT_TYPES = [
   { value: 'registration', label: 'Registration / Incorporation Certificate', icon: '📋' },
   { value: 'tax', label: 'Tax ID / Business License', icon: '💼' },
@@ -34,8 +40,7 @@ const DOCUMENT_TYPES = [
 
 export default function ComplianceForm({ entityType, entityId }: ComplianceFormProps) {
   const [userLoading, setUserLoading] = useState(true)
-  const [files, setFiles] = useState<File[]>([])
-  const [filesMeta, setFilesMeta] = useState<{ document_name?: string; document_type?: string }[]>([])
+  const [documentLinks, setDocumentLinks] = useState<DocumentLink[]>([]) // Changed from files
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedFile[]>([])
   const [contactName, setContactName] = useState('')
   const [contactPhone, setContactPhone] = useState('')
@@ -45,8 +50,7 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [comments, setComments] = useState('')
-  const [uploadMode, setUploadMode] = useState<'single' | 'bulk'>('bulk') // 'single' or 'bulk'
-  const [hasSubmitted, setHasSubmitted] = useState(false) // Track if user has submitted
+  const [hasSubmitted, setHasSubmitted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
@@ -54,6 +58,25 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
     loadUploadedDocuments()
     loadLegalDocs()
   }, [entityId, entityType])
+
+  // Auto-refresh when user returns to the page
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadUploadedDocuments()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Also refresh periodically every 30 seconds to catch status updates
+    const refreshInterval = setInterval(loadUploadedDocuments, 30000)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      clearInterval(refreshInterval)
+    }
+  }, [])
 
   const prefillUserInfo = async () => {
     try {
@@ -124,27 +147,27 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
     }
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || [])
-    const validFiles = selectedFiles.filter(f => f.size <= 10 * 1024 * 1024) // 10MB limit
-    
-    if (validFiles.length < selectedFiles.length) {
-      showToast(`Some files exceeded 10MB limit and were skipped`, 'warn')
-    }
+  const addDocumentLink = () => {
+    // Add a new empty document link entry
+    setDocumentLinks(prev => [...prev, { document_name: '', document_type: '', document_link: '' }])
+  }
 
-    setFiles(prev => {
-      const next = [...prev, ...validFiles]
-      setFilesMeta(prevMeta => {
-        const added = validFiles.map(() => ({ document_name: '', document_type: '' }))
-        return [...prevMeta, ...added]
-      })
+  const removeDocumentLink = (index: number) => {
+    setDocumentLinks(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const updateDocumentLink = (index: number, field: keyof DocumentLink, value: string) => {
+    setDocumentLinks(prev => {
+      const next = [...prev]
+      next[index] = { ...next[index], [field]: value }
       return next
     })
   }
 
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index))
-    setFilesMeta(prev => prev.filter((_, i) => i !== index))
+  const isValidGoogleDriveLink = (link: string): boolean => {
+    if (!link.trim()) return false
+    // Check if it's a valid Google Drive link format
+    return link.includes('drive.google.com') || link.includes('docs.google.com')
   }
 
   const validateForm = () => {
@@ -160,19 +183,23 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
       showToast('Please provide a valid email address', 'error')
       return false
     }
-    if (files.length === 0) {
-      showToast('Please select at least one file to upload', 'error')
+    if (documentLinks.length === 0) {
+      showToast('Please add at least one document link', 'error')
       return false
     }
 
-    for (let i = 0; i < files.length; i++) {
-      const meta = filesMeta[i]
-      if (!meta?.document_name?.trim()) {
-        showToast(`Please provide a document name for file ${i + 1}`, 'error')
+    for (let i = 0; i < documentLinks.length; i++) {
+      const doc = documentLinks[i]
+      if (!doc.document_name.trim()) {
+        showToast(`Please provide a document name for item ${i + 1}`, 'error')
         return false
       }
-      if (!meta?.document_type) {
-        showToast(`Please select a document type for file ${i + 1}`, 'error')
+      if (!doc.document_type) {
+        showToast(`Please select a document type for item ${i + 1}`, 'error')
+        return false
+      }
+      if (!isValidGoogleDriveLink(doc.document_link)) {
+        showToast(`Please provide a valid Google Drive link for "${doc.document_name}"`, 'error')
         return false
       }
     }
@@ -197,35 +224,34 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
         ? `/institutions/compliance/form/`
         : `/tutors/compliance/form/`
 
-      // Submit each file individually with required backend field names
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        const meta = filesMeta[i]
-        const perForm = new FormData()
-        perForm.append('document_file', file)
-        perForm.append('document_type', meta.document_type)
-        perForm.append('document_name', meta.document_name)
-        perForm.append('comments', comments)
+      // Submit each document link
+      for (let i = 0; i < documentLinks.length; i++) {
+        const doc = documentLinks[i]
+        const payload = new FormData()
+        payload.append('document_type', doc.document_type)
+        payload.append('document_name', doc.document_name)
+        payload.append('document_link', doc.document_link) // Google Drive link
+        payload.append('comments', comments)
         // include contact info to help admins
-        perForm.append('contact_name', contactName)
-        perForm.append('contact_phone', contactPhone)
-        perForm.append('contact_email', contactEmail)
+        payload.append('contact_name', contactName)
+        payload.append('contact_phone', contactPhone)
+        payload.append('contact_email', contactEmail)
 
         if (entityType === 'institution') {
           // Try to include institution_id if provided as prop
-          if (entityId) perForm.append('institution_id', String(entityId))
+          if (entityId) payload.append('institution_id', String(entityId))
           else {
             // attempt to fetch my_institution id
             try {
               const instRes = await axios.get(`${API_BASE}/institutions/my_institution/`, { headers: { Authorization: `Bearer ${token}` } })
-              if (instRes?.data?.id) perForm.append('institution_id', String(instRes.data.id))
+              if (instRes?.data?.id) payload.append('institution_id', String(instRes.data.id))
             } catch (e) {
               // ignore; backend will validate presence
             }
           }
         }
 
-        await axios.post(`${API_BASE}${endpoint}`, perForm, {
+        await axios.post(`${API_BASE}${endpoint}`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -234,10 +260,9 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
       }
 
       showToast('✅ Documents submitted successfully! Awaiting admin review...', 'success')
-      setFiles([])
-      setFilesMeta([])
+      setDocumentLinks([])
       setComments('')
-      setHasSubmitted(true) // Mark as submitted to show pending status
+      setHasSubmitted(true)
       await loadUploadedDocuments()
     } catch (err: any) {
       const errorMsg = err.response?.data?.detail || 'Failed to submit documents'
@@ -388,91 +413,42 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
             </div>
           )}
 
-          {/* Step 2: Document Upload */}
+          {/* Step 2: Document Links */}
           <div>
             <div className="flex items-center gap-3 mb-6">
               <div className="flex-shrink-0 w-8 h-8 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
-              <h3 className="text-lg font-bold text-gray-900">Upload Documents</h3>
+              <h3 className="text-lg font-bold text-gray-900">Submit Document Links</h3>
             </div>
 
-            {/* Upload Mode Toggle */}
-            <div className="flex gap-2 mb-6">
-              <button
-                type="button"
-                onClick={() => setUploadMode('bulk')}
-                className={`flex-1 px-4 py-3 rounded-lg font-semibold transition ${
-                  uploadMode === 'bulk'
-                    ? 'bg-yellow-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                📁 Bulk Upload
-              </button>
-              <button
-                type="button"
-                onClick={() => setUploadMode('single')}
-                className={`flex-1 px-4 py-3 rounded-lg font-semibold transition ${
-                  uploadMode === 'single'
-                    ? 'bg-yellow-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                📄 Single Upload
-              </button>
+            {/* Info Banner */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
+              <p className="text-sm text-blue-900">
+                📎 <strong>Share via Google Drive:</strong> Instead of uploading files, please share Google Drive links to your documents. This allows you to easily update documents if needed and admins can view them directly.
+              </p>
             </div>
 
-            {/* Upload Info Text */}
-            <p className="text-xs text-gray-600 mb-4">
-              {uploadMode === 'bulk'
-                ? '💡 Drag multiple files or click to select them all at once'
-                : '💡 Select one file at a time. Upload will be added to the list below.'}
-            </p>
-
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-3 border-dashed border-yellow-300 hover:border-yellow-500 rounded-xl p-8 md:p-12 text-center cursor-pointer transition bg-yellow-50 hover:bg-yellow-100"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple={uploadMode === 'bulk'}
-                onChange={handleFileSelect}
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                className="hidden"
-              />
-              <div className="flex justify-center mb-4">
-                <Upload className="w-12 h-12 text-yellow-600" />
-              </div>
-              <p className="text-lg font-bold text-gray-900 mb-2">Click to upload or drag files here</p>
-              <p className="text-sm text-gray-600">PDF, PNG, JPG, DOCX (max 10MB each)</p>
-            </div>
-
-            {/* File List */}
-            {files.length > 0 && (
-              <div className="mt-6 space-y-4">
-                <p className="font-bold text-gray-900">Selected Files ({files.length})</p>
-                {files.map((file, idx) => (
+            {/* Document Links List */}
+            {documentLinks.length > 0 && (
+              <div className="space-y-4 mb-6">
+                {documentLinks.map((doc, idx) => (
                   <div key={idx} className="bg-white border-2 border-gray-300 rounded-xl overflow-hidden shadow-sm">
-                    {/* File Header */}
+                    {/* Header */}
                     <div className="p-4 flex items-center justify-between bg-gray-50 border-b-2 border-gray-200">
-                      <div className="flex items-center gap-3 flex-1 text-left">
-                        <FileText className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 truncate">{file.name}</p>
-                          <p className="text-xs text-gray-600">{(file.size / 1024).toFixed(0)} KB</p>
-                        </div>
+                      <div className="flex items-center gap-3 flex-1">
+                        <span className="px-3 py-1 bg-yellow-600 text-white rounded-lg font-bold text-sm">#{idx + 1}</span>
+                        <p className="font-semibold text-gray-900">{doc.document_name || 'Untitled'}</p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => removeFile(idx)}
-                        className="p-2 hover:bg-red-100 text-red-600 hover:text-red-700 rounded-lg transition"
-                        title="Remove file"
+                        onClick={() => removeDocumentLink(idx)}
+                        className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition"
+                        title="Remove this document"
                       >
                         <X className="w-5 h-5" />
                       </button>
                     </div>
 
-                    {/* Metadata Fields - Always Visible */}
+                    {/* Input Fields */}
                     <div className="p-4 space-y-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -480,10 +456,10 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
                         </label>
                         <input
                           type="text"
-                          value={filesMeta[idx]?.document_name || ''}
-                          onChange={(e) => setFilesMeta(prev => { const next = [...prev]; next[idx] = { ...(next[idx] || {}), document_name: e.target.value }; return next })}
+                          value={doc.document_name}
+                          onChange={(e) => updateDocumentLink(idx, 'document_name', e.target.value)}
                           className="w-full px-4 py-2 bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-yellow-500 focus:outline-none focus:bg-white transition"
-                          placeholder="e.g., Signed Terms of Service"
+                          placeholder="e.g., Tax Certificate, Business License"
                           required
                         />
                       </div>
@@ -493,8 +469,8 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
                           📂 Document Type *
                         </label>
                         <select
-                          value={filesMeta[idx]?.document_type || ''}
-                          onChange={(e) => setFilesMeta(prev => { const next = [...prev]; next[idx] = { ...(next[idx] || {}), document_type: e.target.value }; return next })}
+                          value={doc.document_type}
+                          onChange={(e) => updateDocumentLink(idx, 'document_type', e.target.value)}
                           className="w-full px-4 py-2 bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-900 focus:border-yellow-500 focus:outline-none focus:bg-white transition"
                           required
                         >
@@ -504,11 +480,48 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
                           ))}
                         </select>
                       </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                          🔗 Google Drive Link *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="url"
+                            value={doc.document_link}
+                            onChange={(e) => updateDocumentLink(idx, 'document_link', e.target.value)}
+                            className={`w-full px-4 py-2 bg-gray-100 border-2 rounded-lg text-gray-900 placeholder-gray-500 focus:border-yellow-500 focus:outline-none focus:bg-white transition ${
+                              doc.document_link && !isValidGoogleDriveLink(doc.document_link) ? 'border-red-400' : 'border-gray-300'
+                            }`}
+                            placeholder="https://drive.google.com/file/d/..."
+                            required
+                          />
+                          {doc.document_link && isValidGoogleDriveLink(doc.document_link) && (
+                            <CheckCircle className="absolute right-3 top-2.5 w-5 h-5 text-green-600" />
+                          )}
+                          {doc.document_link && !isValidGoogleDriveLink(doc.document_link) && (
+                            <AlertCircle className="absolute right-3 top-2.5 w-5 h-5 text-red-600" />
+                          )}
+                        </div>
+                        {doc.document_link && !isValidGoogleDriveLink(doc.document_link) && (
+                          <p className="text-xs text-red-600 mt-1">⚠️ Please provide a valid Google Drive or Docs link</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+
+            {/* Add Document Button */}
+            <button
+              type="button"
+              onClick={addDocumentLink}
+              className="w-full px-4 py-3 border-2 border-dashed border-yellow-400 hover:border-yellow-600 rounded-lg font-semibold text-yellow-700 hover:text-yellow-800 hover:bg-yellow-50 transition flex items-center justify-center gap-2"
+            >
+              <Upload className="w-5 h-5" />
+              + Add Document Link
+            </button>
           </div>
 
           {/* Step 3: Additional Comments */}
@@ -531,7 +544,7 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
           <div className="flex gap-4">
             <button
               type="submit"
-              disabled={submitting || files.length === 0}
+              disabled={submitting || documentLinks.length === 0}
               className="flex-1 px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition transform hover:scale-105 active:scale-95"
             >
               {submitting ? (
@@ -553,10 +566,22 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
       {/* History Section */}
       {uploadedDocuments.length > 0 && (
         <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-            <File className="w-6 h-6 text-yellow-600" />
-            Submission History
-          </h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+              <File className="w-6 h-6 text-yellow-600" />
+              Submission History
+            </h3>
+            <button
+              onClick={loadUploadedDocuments}
+              className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-semibold hover:bg-yellow-200 transition flex items-center gap-2"
+              title="Refresh to check for admin updates"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+          </div>
           <div className="space-y-3">
             {uploadedDocuments.map((doc) => {
               const badge = getStatusBadge(doc.status)
@@ -601,19 +626,28 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
         </h4>
         <ul className="space-y-3">
           {[
-            '✅ Government-issued ID (Passport, Driver License, or National ID)',
-            '✅ Business registration certificate or proof of incorporation',
-            '✅ Signed copy of our legal document (download above)',
-            '✅ Proof of business address (utility bill, lease, or official letter)',
-            '✅ Tax ID or company business license number',
-            entityType === 'tutor' && '✅ Professional certifications or academic qualifications'
+            '📎 Government-issued ID (Passport, Driver License, or National ID) - share Google Drive link',
+            '📎 Business registration certificate or proof of incorporation - share Google Drive link',
+            '📎 Signed copy of our legal document (download above) - share Google Drive link',
+            '📎 Proof of business address (utility bill, lease, or official letter) - share Google Drive link',
+            '📎 Tax ID or company business license number - share Google Drive link',
+            entityType === 'tutor' && '📎 Professional certifications or academic qualifications - share Google Drive link'
           ].filter(Boolean).map((req, i) => (
             <li key={i} className="flex items-start gap-3">
-              <span className="text-green-600 font-bold text-lg flex-shrink-0">•</span>
+              <span className="text-yellow-600 font-bold text-lg flex-shrink-0">•</span>
               <span className="text-gray-700">{req}</span>
             </li>
           ))}
         </ul>
+        <div className="mt-6 p-4 bg-white rounded-lg border-l-4 border-yellow-600">
+          <p className="text-sm text-gray-800">
+            <strong>💡 How to share Google Drive links:</strong>
+            <br />1. Open each document in Google Drive
+            <br />2. Click "Share" → Select "Anyone with the link" (or "Viewer" access for admins)
+            <br />3. Copy the link and paste it below
+            <br />4. Make sure the link is accessible (not requiring permission)
+          </p>
+        </div>
       </div>
     </div>
   )

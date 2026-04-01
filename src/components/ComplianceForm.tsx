@@ -220,52 +220,51 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
         return
       }
 
-      const endpoint = entityType === 'institution'
-        ? `/institutions/compliance/form/`
-        : `/tutors/compliance/form/`
+      // Build documents array for batch submission
+      const documents = documentLinks.map(doc => ({
+        document_type: doc.document_type,
+        document_name: doc.document_name,
+        document_link: doc.document_link
+      }))
 
-      // Submit each document link
-      for (let i = 0; i < documentLinks.length; i++) {
-        const doc = documentLinks[i]
-        const payload = new FormData()
-        payload.append('document_type', doc.document_type)
-        payload.append('document_name', doc.document_name)
-        payload.append('document_link', doc.document_link) // Google Drive link
-        payload.append('comments', comments)
-        // include contact info to help admins
-        payload.append('contact_name', contactName)
-        payload.append('contact_phone', contactPhone)
-        payload.append('contact_email', contactEmail)
-
-        if (entityType === 'institution') {
-          // Try to include institution_id if provided as prop
-          if (entityId) payload.append('institution_id', String(entityId))
-          else {
-            // attempt to fetch my_institution id
-            try {
-              const instRes = await axios.get(`${API_BASE}/institutions/my_institution/`, { headers: { Authorization: `Bearer ${token}` } })
-              if (instRes?.data?.id) payload.append('institution_id', String(instRes.data.id))
-            } catch (e) {
-              // ignore; backend will validate presence
-            }
+      // Get institution ID if institution
+      let entity_id = null
+      if (entityType === 'institution') {
+        if (entityId) {
+          entity_id = entityId
+        } else {
+          try {
+            const instRes = await axios.get(`${API_BASE}/institutions/my_institution/`, { headers: { Authorization: `Bearer ${token}` } })
+            entity_id = instRes?.data?.id
+          } catch (e) {
+            showToast('Could not find your institution. Please try again.', 'error')
+            return
           }
         }
-
-        await axios.post(`${API_BASE}${endpoint}`, payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        })
       }
 
-      showToast('✅ Documents submitted successfully! Awaiting admin review...', 'success')
+      // Submit as a batch using the new compliance batch endpoint
+      const payload = {
+        entity_type: entityType,
+        entity_id: entity_id,
+        contact_name: contactName,
+        contact_email: contactEmail,
+        contact_phone: contactPhone,
+        comments: comments,
+        documents: documents
+      }
+
+      await axios.post(`${API_BASE}/compliance/batch-submit/`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      showToast('✅ Compliance folder submitted successfully! Your submission is now under review...', 'success')
       setDocumentLinks([])
       setComments('')
       setHasSubmitted(true)
       await loadUploadedDocuments()
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || 'Failed to submit documents'
+      const errorMsg = err.response?.data?.detail || 'Failed to submit compliance folder'
       showToast(`❌ ${errorMsg}`, 'error')
     } finally {
       setSubmitting(false)

@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 
 import ContactForm from '../components/ContactForm';
+import SearchInput from '../components/SearchInput'
 
 import labanonLogo from './labanonlogo.png';
 import learningImage from './learningup.jpeg'; 
@@ -388,22 +389,23 @@ export default function Home() {
 
             {/* Center: Search Bar (Desktop) */}
             <div className="hidden md:flex flex-1 max-w-xl mx-4">
-               <div className="relative w-full">
-                  <input 
-                    type="text" 
-                    placeholder="What do you want to learn?" 
-                    className="w-full pl-10 pr-12 py-2.5 rounded-full border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit()}
-                  />
-                  <Search className="absolute left-3.5 top-2.5 w-5 h-5 text-gray-400" />
-                  <button 
-                    onClick={handleSearchSubmit}
-                    className="absolute right-1 top-1 p-1.5 bg-brand-600 rounded-full text-white hover:bg-brand-700 transition-colors"
-                  >
-                    <Search className="w-4 h-4" />
-                  </button>
+               <div className="w-full">
+                 {/* Shared debounced search input */}
+                 <SearchInput
+                   value={searchQuery}
+                   onChange={setSearchQuery}
+                   onDebounced={(v) => {/* optional: could update suggestions */}}
+                   onEnter={handleSearchSubmit}
+                   placeholder="What do you want to learn?"
+                   className="w-full"
+                 />
+                 <button 
+                   onClick={handleSearchSubmit}
+                   className="absolute right-1 top-1 p-1.5 bg-brand-600 rounded-full text-white hover:bg-brand-700 transition-colors"
+                   aria-label="Search"
+                 >
+                   <Search className="w-4 h-4" />
+                 </button>
                </div>
             </div>
 
@@ -447,13 +449,12 @@ export default function Home() {
             >
               <div className="p-4 space-y-4 max-h-[80vh] overflow-y-auto">
                 <form onSubmit={(e) => { e.preventDefault(); handleSearchSubmit(); }} className="relative">
-                   <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                   <input 
-                     type="text" 
-                     placeholder="Search..." 
-                     className="w-full pl-10 py-2.5 bg-gray-100 rounded-lg outline-none text-sm"
+                   <SearchInput
                      value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
+                     onChange={setSearchQuery}
+                     onEnter={handleSearchSubmit}
+                     placeholder="Search..."
+                     className="w-full"
                    />
                 </form>
 

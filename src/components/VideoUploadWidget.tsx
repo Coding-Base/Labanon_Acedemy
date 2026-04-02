@@ -168,6 +168,7 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
       )
 
       setUploadStatus('Video processing...')
+      console.log('[VideoUploadWidget] Upload complete, calling onUploadComplete:', { video_id })
       onUploadComplete({
         video_id: video_id,
         status: 'processing',

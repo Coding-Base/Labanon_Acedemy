@@ -1,12 +1,17 @@
-// src/pages/CreateCourse.tsx
+// src/pages/CreateCourse.tsx - Wizard Version
 import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import { SUPPORTED_CURRENCIES } from '../constants/currencies'
 import { useNavigate, useLocation } from 'react-router-dom'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
-import { VideoUploadWidget } from '../components/VideoUploadWidget'
-import { Calendar, Clock, MapPin, Link as LinkIcon, Image as ImageIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useVerificationStatus } from '../hooks/useVerificationStatus'
+import { VerificationBanner } from '../components/VerificationBanner'
+import { StepProgress } from '../components/wizard/StepProgress'
+import { CourseStep1_BasicInfo } from '../components/wizard/CourseStep1_BasicInfo'
+import { CourseStep2_Structure } from '../components/wizard/CourseStep2_Structure'
+import { CourseStep3_Content } from '../components/wizard/CourseStep3_Content'
+import { CourseStep4_Quiz } from '../components/wizard/CourseStep4_Quiz'
+import { CourseStep5_Preview } from '../components/wizard/CourseStep5_Preview'
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -31,18 +36,18 @@ type ModuleItem = {
   order?: number
   lessons?: Lesson[]
   quiz?: {
-    id?: number
+    id?: number | string
     title: string
     description?: string
     passing_score: number
     is_required: boolean
     questions: Array<{
-      id?: number
+      id?: number | string
       text: string
       points: number
       explanation?: string
       options: Array<{
-        id?: number
+        id?: number | string
         text: string
         is_correct: boolean
       }>
@@ -50,80 +55,71 @@ type ModuleItem = {
   }
 }
 
+const STEP_LABELS = [
+  'Basic Info',
+  'Structure',
+  'Content',
+  'Quizzes',
+  'Review'
+]
+
 export default function CreateCourse() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [courseType, setCourseType] = useState<'normal' | 'scheduled'>('normal')
+  const { status: verificationStatus, loading: verificationLoading } = useVerificationStatus()
   
-  // Common Fields
+  // Wizard navigation
+  const [currentStep, setCurrentStep] = useState(1)
+  
+  // Course fields
+  const [courseType, setCourseType] = useState<'normal' | 'scheduled'>('normal')
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState('0')
   const [currency, setCurrency] = useState('NGN')
   const [description, setDescription] = useState('')
   const [requiredTools, setRequiredTools] = useState('')
-  const [numLessons, setNumLessons] = useState(0) 
   const [level, setLevel] = useState<Level>(levels[0])
   const [outcome, setOutcome] = useState('')
-  const [courseCategory, setCourseCategory] = useState('other') // Course type/badge (master, beginner, etc.)
+  const [courseCategory, setCourseCategory] = useState('other')
   
-  // Linking
-  const [linkedCourse, setLinkedCourse] = useState<any | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
-
-  // modules + lessons local state (Normal Course Only)
-  const [modules, setModules] = useState<ModuleItem[]>([])
-  const [currentModuleIndex, setCurrentModuleIndex] = useState<number | null>(null)
-  const [moduleTitleInput, setModuleTitleInput] = useState('')
-  const [lessonTitle, setLessonTitle] = useState('')
-  const [lessonContent, setLessonContent] = useState('') 
-  const [editingLessonIndex, setEditingLessonIndex] = useState<number | null>(null)
-  
-  // Quiz builder state
-  const [quizEditingModuleIndex, setQuizEditingModuleIndex] = useState<number | null>(null)
-  const [quizTitle, setQuizTitle] = useState('Module Quiz')
-  const [quizPassingScore, setQuizPassingScore] = useState('70')
-  const [quizIsRequired, setQuizIsRequired] = useState(true)
-  const [quizQuestions, setQuizQuestions] = useState<any[]>([])
-  const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null)
-  const [questionText, setQuestionText] = useState('')
-  const [questionPoints, setQuestionPoints] = useState('1')
-  const [questionExplanation, setQuestionExplanation] = useState('')
-  const [questionOptions, setQuestionOptions] = useState<any[]>([{ text: '', isCorrect: false }])
-
-  // scheduled course fields
+  // Scheduled course fields
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [meetingTime, setMeetingTime] = useState('')
   const [meetingPlace, setMeetingPlace] = useState('zoom')
   const [meetingLink, setMeetingLink] = useState('')
 
-  // image for course
+  // Content management
+  const [modules, setModules] = useState<ModuleItem[]>([])
+  const [currentModuleIndex, setCurrentModuleIndex] = useState<number | null>(null)
+  const [moduleTitleInput, setModuleTitleInput] = useState('')
+  const [lessonTitle, setLessonTitle] = useState('')
+  const [lessonContent, setLessonContent] = useState('')
+  const [editingLessonIndex, setEditingLessonIndex] = useState<number | null>(null)
+
+  // Image upload
   const [courseImageFile, setCourseImageFile] = useState<File | null>(null)
   const [courseImagePreview, setCourseImagePreview] = useState<string | null>(null)
 
-  // UI / status
+  // UI state
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [guideOpen, setGuideOpen] = useState(false)
-  const [pendingDelete, setPendingDelete] = useState<any | null>(null)
   const [errors, setErrors] = useState<Record<string, any>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
 
-  // Encoding feedback state
+  // Encoding status tracking (restored from old version)
   const [isEncodingVideo, setIsEncodingVideo] = useState(false)
   const [encodingVideoId, setEncodingVideoId] = useState<string | null>(null)
-
-  // Polling refs for background video status checks
   const videoPollingRefs = useRef<Record<string, number>>({})
 
-  // ... (Video helper functions: waitForVideoReady, ensureAllVideosReady, startPollingForVideo - Same as before)
+  // ===== VIDEO POLLING HELPERS (from old version) =====
   async function waitForVideoReady(videoId: string, token: string | null, timeoutMs = 30000, intervalMs = 3000) {
     const start = Date.now()
     while (Date.now() - start < timeoutMs) {
       try {
-        const res = await axios.get(`${API_BASE}/videos/${videoId}/`, { headers: { Authorization: `Bearer ${token}` } })
+        const res = await axios.get(`${API_BASE}/videos/${videoId}/`, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        })
         const data = res.data
         if (data && data.status === 'ready') return data
       } catch (err) {}
@@ -132,7 +128,7 @@ export default function CreateCourse() {
     return null
   }
 
-  async function ensureAllVideosReady(token: string | null, timeoutMs = 30000) {
+  async function ensureAllVideosReady(token: string | null, timeoutMs = 120000) {
     const pending: string[] = []
     modules.forEach((mod) => {
       (mod.lessons || []).forEach((ls: any) => {
@@ -152,7 +148,11 @@ export default function CreateCourse() {
             for (let li = 0; li < (mod.lessons || []).length; li++) {
               const ls = mod.lessons![li]
               if (ls.video_s3 === res.id) {
-                copy[mi].lessons![li] = { ...ls, video_s3_url: res.cloudfront_url, video_s3_status: res.status }
+                copy[mi].lessons![li] = { 
+                  ...ls, 
+                  video_s3_url: res.cloudfront_url, 
+                  video_s3_status: res.status 
+                }
               }
             }
           }
@@ -163,78 +163,114 @@ export default function CreateCourse() {
   }
 
   function startPollingForVideo(videoId: string, moduleIdx: number, lessonIdx: number) {
+    console.log('[CreateCourse] startPollingForVideo called:', { videoId, moduleIdx, lessonIdx })
     const token = localStorage.getItem('access')
-    if (!videoId || !token) return
-    if (videoPollingRefs.current[videoId]) return
+    if (!videoId || !token) {
+      console.warn('[CreateCourse] Missing videoId or token:', { videoId: !!videoId, token: !!token })
+      return
+    }
+    if (videoPollingRefs.current[videoId]) {
+      console.log('[CreateCourse] Already polling this video:', videoId)
+      return
+    }
+    
+    // Immediately update modules with initial video info (status: processing)
+    console.log('[CreateCourse] Initializing modules with video info')
+    setModules((prev) => {
+      const copy = JSON.parse(JSON.stringify(prev))
+      if (copy[moduleIdx] && copy[moduleIdx].lessons && copy[moduleIdx].lessons[lessonIdx]) {
+        copy[moduleIdx].lessons[lessonIdx] = {
+          ...copy[moduleIdx].lessons[lessonIdx],
+          video_s3: videoId,
+          video_s3_status: 'processing'
+        }
+      }
+      return copy
+    })
     
     // Start encoding feedback
+    console.log('[CreateCourse] Setting encoding state: true')
     setIsEncodingVideo(true)
     setEncodingVideoId(videoId)
     
     const interval = window.setInterval(async () => {
       try {
-        const res = await axios.get(`${API_BASE}/videos/${videoId}/`, { headers: { Authorization: `Bearer ${token}` } })
+        console.log('[CreateCourse] Polling video:', videoId)
+        const res = await axios.get(`${API_BASE}/videos/${videoId}/`, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        })
         const data = res.data
+        console.log('[CreateCourse] Full video response:', data)
+        console.log('[CreateCourse] Video status poll:', { videoId, status: data?.status, cloudfront_url: data?.cloudfront_url })
         if (data && data.status === 'ready') {
+          console.log('[CreateCourse] 🎉 Video READY! Attaching to lesson:', { videoId, moduleIdx, lessonIdx, cloudfront_url: data.cloudfront_url })
           setModules((prev) => {
-            const copy = [...prev]
+            const copy = JSON.parse(JSON.stringify(prev))  // Deep copy
+            console.log('[CreateCourse] Before update:', { 
+              moduleIdx, 
+              lessonIdx,
+              lesson: copy[moduleIdx]?.lessons?.[lessonIdx]
+            })
+            
             if (copy[moduleIdx] && copy[moduleIdx].lessons) {
               const lesson = copy[moduleIdx].lessons![lessonIdx]
-              copy[moduleIdx].lessons![lessonIdx] = { ...lesson, video_s3_url: data.cloudfront_url, video_s3_status: data.status }
+              console.log('[CreateCourse] Updating lesson with video URL:', data.cloudfront_url)
+              copy[moduleIdx].lessons![lessonIdx] = { 
+                ...lesson, 
+                video_s3_url: data.cloudfront_url, 
+                video_s3_status: data.status 
+              }
+              console.log('[CreateCourse] After update:', copy[moduleIdx].lessons![lessonIdx])
             }
+            console.log('[CreateCourse] Setting new modules state')
             return copy
           })
           window.clearInterval(videoPollingRefs.current[videoId])
           delete videoPollingRefs.current[videoId]
           
           // Stop encoding feedback
+          console.log('[CreateCourse] Encoding complete, hiding loader')
           setIsEncodingVideo(false)
           setEncodingVideoId(null)
           
-          try { alert('Video encoding complete — URL attached to lesson.') } catch { }
+          // Show success message
+          alert('✓ Video encoding complete — URL attached to lesson.')
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('[CreateCourse] Polling error:', err)
+      }
     }, 3000)
     videoPollingRefs.current[videoId] = interval as unknown as number
   }
-  // ... (End video helpers)
 
+  // Log whenever modules changes in parent
   useEffect(() => {
-    let mounted = true
-    async function search() {
-      if (!searchQuery) { setSearchResults([]); return }
-      try {
-        const token = localStorage.getItem('access')
-        const res = await axios.get(`${API_BASE}/courses/?search=${encodeURIComponent(searchQuery)}&page_size=5`, { headers: { Authorization: `Bearer ${token}` } })
-        if (mounted) setSearchResults(res.data.results || res.data || [])
-      } catch (err) { console.error(err) }
-    }
-    const t = setTimeout(search, 300)
-    return () => { mounted = false; clearTimeout(t) }
-  }, [searchQuery])
-
-  // Lock body scroll while guide modal is open
-  useEffect(() => {
-    if (guideOpen) {
-      const prev = document.body.style.overflow
-      document.body.style.overflow = 'hidden'
-      return () => { document.body.style.overflow = prev }
-    }
-    return
-  }, [guideOpen])
+    console.log('[CreateCourse Parent] modules state changed:', modules)
+    modules.forEach((mod, mIdx) => {
+      mod.lessons?.forEach((lesson, lIdx) => {
+        console.log(`[CreateCourse Parent] Module ${mIdx}, Lesson ${lIdx}:`, {
+          title: lesson.title,
+          video_s3_url: lesson.video_s3_url ? '✓ PRESENT' : lesson.video_s3_url ? lesson.video_s3_url : '✗ MISSING'
+        })
+      })
+    })
+  }, [modules])
 
   // Load course for editing
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const courseId = params.get('courseId')
     let mounted = true
+
     async function loadCourse(id: string) {
       try {
         const token = localStorage.getItem('access')
-        const res = await axios.get(`${API_BASE}/courses/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+        const res = await axios.get(`${API_BASE}/courses/${id}/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
         if (!mounted) return
-        const data = res.data
         
+        const data = res.data
         setTitle(data.title || '')
         setDescription(data.description || '')
         setPrice(String(data.price ?? 0))
@@ -244,95 +280,111 @@ export default function CreateCourse() {
         setOutcome(data.outcome || '')
         setRequiredTools(data.required_tools || '')
         setCourseCategory(data.course_type || 'other')
-        
-        // Scheduled check
+
+        // Check if scheduled
         if (data.meeting_link || (data.start_date && data.meeting_place)) {
-            setCourseType('scheduled')
-            setStartDate(data.start_date || '')
-            setEndDate(data.end_date || '')
-            setMeetingTime(data.meeting_time || '')
-            setMeetingPlace(data.meeting_place || 'zoom')
-            setMeetingLink(data.meeting_link || '')
+          setCourseType('scheduled')
+          setStartDate(data.start_date || '')
+          setEndDate(data.end_date || '')
+          setMeetingTime(data.meeting_time || '')
+          setMeetingPlace(data.meeting_place || 'zoom')
+          setMeetingLink(data.meeting_link || '')
         } else {
-            setCourseType('normal')
+          setCourseType('normal')
         }
 
+        // Load modules
         const mods = (data.modules || []).map((m: any) => ({
           id: m.id,
           title: m.title,
           order: m.order || 0,
-          lessons: (m.lessons || []).map((ls: any) => ({ 
-              id: ls.id, 
-              title: ls.title, 
-              content: ls.content, 
-              video: ls.video,
-              video_s3: ls.video_s3,
-              video_s3_url: ls.video_s3_url,
-              youtube_url: ls.youtube_url
+          lessons: (m.lessons || []).map((ls: any) => ({
+            id: ls.id,
+            title: ls.title,
+            content: ls.content,
+            video: ls.video,
+            video_s3: ls.video_s3,
+            video_s3_url: ls.video_s3_url,
+            youtube_url: ls.youtube_url
           })),
-          quiz: m.quiz ? {
-            id: m.quiz.id,
-            title: m.quiz.title,
-            description: m.quiz.description || '',
-            passing_score: m.quiz.passing_score || 70,
-            is_required: m.quiz.is_required || false,
-            questions: (m.quiz.questions || []).map((q: any) => ({
-              id: q.id,
-              text: q.text,
-              points: q.points || 1,
-              explanation: q.explanation || '',
-              options: (q.options || []).map((opt: any) => ({
-                id: opt.id,
-                text: opt.text,
-                is_correct: opt.is_correct || false
+          // Load quiz if it exists for this module
+          ...(m.quiz ? {
+            quiz: {
+              id: m.quiz.id,
+              title: m.quiz.title,
+              description: m.quiz.description || '',
+              passing_score: m.quiz.passing_score || 70,
+              is_required: m.quiz.is_required || false,
+              questions: (m.quiz.questions || []).map((q: any) => ({
+                id: q.id,
+                text: q.text,
+                points: q.points || 1,
+                explanation: q.explanation || '',
+                options: (q.options || []).map((opt: any) => ({
+                  id: opt.id,
+                  text: opt.text,
+                  is_correct: opt.is_correct || false
+                }))
               }))
-            }))
-          } : undefined
+            }
+          } : {})
         }))
         setModules(mods)
         if (mods.length > 0) setCurrentModuleIndex(0)
-
-      } catch (err) { console.error('Failed to load course for editing', err) }
+      } catch (err) {
+        console.error('Failed to load course for editing', err)
+      }
     }
+
     if (courseId) loadCourse(courseId)
     return () => { mounted = false }
   }, [location.search])
 
-  async function uploadCourseImageIfNeeded(courseId: any, token: string | null) {
-    if (!courseImageFile || !courseId) return
-    try {
-      const form = new FormData()
-      form.append('image_upload', courseImageFile) // Use image_upload key
-      await axios.patch(`${API_BASE}/courses/${courseId}/`, form, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } })
-    } catch (err) {
-      console.error('Failed to upload course image', err)
+  // Navigation
+  const handleNextStep = () => {
+    if (currentStep < STEP_LABELS.length) {
+      setCurrentStep(currentStep + 1)
     }
   }
 
-  // --- SUBMIT HANDLER FOR BOTH PUBLISH AND SAVE ---
-  async function handleCourseSubmit(publish: boolean) {
+  const handlePrevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
+  const handleStepClick = (step: number) => {
+    if (step < currentStep) {
+      setCurrentStep(step)
+    }
+  }
+
+  // Submit handler
+  const handleCourseSubmit = async (publish: boolean) => {
     setErrors({})
     setGeneralError(null)
-    
-    // Basic Validation
-    if (!title.trim()) { setErrors(prev => ({ ...prev, title: ['Title required'] })); return }
-    
-    // Scheduled Validation
+
+    // Validation
+    if (!title.trim()) {
+      setErrors(prev => ({ ...prev, title: ['Title required'] }))
+      return
+    }
+
     if (courseType === 'scheduled') {
-        let hasError = false;
-        if (!startDate || !endDate) { 
-            setErrors(prev => ({...prev, dates: 'Start and End dates are required'})); 
-            hasError = true; 
-        }
-        if (!meetingTime) { 
-            setErrors(prev => ({...prev, time: 'Meeting time is required'})); 
-            hasError = true; 
-        }
-        if (!meetingLink) { 
-            setErrors(prev => ({...prev, link: 'Meeting link is required'})); 
-            hasError = true; 
-        }
-        if (hasError) return;
+      let hasError = false
+      if (!startDate || !endDate) {
+        setErrors(prev => ({ ...prev, dates: 'Start and End dates are required' }))
+        hasError = true
+      }
+      if (!meetingTime) {
+        setErrors(prev => ({ ...prev, time: 'Meeting time is required' }))
+        hasError = true
+      }
+      if (!meetingLink) {
+        setErrors(prev => ({ ...prev, link: 'Meeting link is required' }))
+        hasError = true
+      }
+      if (hasError) return
     }
 
     publish ? setPublishing(true) : setSaving(true)
@@ -341,8 +393,7 @@ export default function CreateCourse() {
       const token = localStorage.getItem('access')
       const params = new URLSearchParams(location.search)
       const courseId = params.get('courseId')
-      
-      // Use FormData for everything to handle file upload correctly
+
       const formData = new FormData()
       formData.append('title', title.trim())
       formData.append('description', description)
@@ -352,160 +403,166 @@ export default function CreateCourse() {
       formData.append('level', level)
       formData.append('outcome', outcome)
       formData.append('required_tools', requiredTools)
-      formData.append('course_type', courseCategory) // Add course type/badge 
+      formData.append('course_type', courseCategory)
 
-      // Handle Scheduled Fields
       if (courseType === 'scheduled') {
-          formData.append('start_date', startDate)
-          formData.append('end_date', endDate)
-          formData.append('meeting_time', meetingTime)
-          formData.append('meeting_place', meetingPlace)
-          formData.append('meeting_link', meetingLink)
-      } else {
-          // Explicitly clear or send empty strings for scheduled fields
-          // This allows the backend to receive them as empty (valid per allow_blank=True)
-          formData.append('start_date', '') 
-          formData.append('end_date', '')
-          formData.append('meeting_time', '')
-          formData.append('meeting_place', '')
-          formData.append('meeting_link', '')
+        formData.append('start_date', startDate)
+        formData.append('end_date', endDate)
+        formData.append('meeting_time', meetingTime)
+        formData.append('meeting_place', meetingPlace)
+        formData.append('meeting_link', meetingLink)
       }
 
-      // Handle Image
       if (courseImageFile) {
-          formData.append('image_upload', courseImageFile) // Use image_upload key
+        formData.append('image_upload', courseImageFile)
       }
 
       let createdCourseId = courseId
-      
+
       if (courseId) {
-        // UPDATE
-        await axios.patch(`${API_BASE}/courses/${courseId}/`, formData, { 
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } 
+        await axios.patch(`${API_BASE}/courses/${courseId}/`, formData, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
         })
       } else {
-        // CREATE
-        const res = await axios.post(`${API_BASE}/courses/`, formData, { 
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } 
+        const res = await axios.post(`${API_BASE}/courses/`, formData, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
         })
         createdCourseId = res.data.id
       }
 
-      // Handle Modules (Only for Normal Courses)
-      if (courseType === 'normal') {
-          await ensureAllVideosReady(token)
-          if (createdCourseId && modules.length > 0) {
-             for (let mi = 0; mi < modules.length; mi++) {
-                const mod = modules[mi]
-                let moduleId = mod.id
-                try {
-                  if (moduleId) {
-                    await axios.patch(`${API_BASE}/modules/${moduleId}/`, { title: mod.title, order: mi }, { headers: { Authorization: `Bearer ${token}` } })
-                  } else {
-                    const mres = await axios.post(`${API_BASE}/modules/`, { course: createdCourseId, title: mod.title, order: mi }, { headers: { Authorization: `Bearer ${token}` } })
-                    moduleId = mres.data.id
-                  }
-                } catch (err) { continue }
+      // Save modules (only for normal courses)
+      if (courseType === 'normal' && createdCourseId && modules.length > 0) {
+        for (let mi = 0; mi < modules.length; mi++) {
+          const mod = modules[mi]
+          let moduleId = mod.id
+          try {
+            if (moduleId) {
+              await axios.patch(`${API_BASE}/modules/${moduleId}/`, 
+                { title: mod.title, order: mi },
+                { headers: { Authorization: `Bearer ${token}` } }
+              )
+            } else {
+              const mres = await axios.post(`${API_BASE}/modules/`,
+                { course: createdCourseId, title: mod.title, order: mi },
+                { headers: { Authorization: `Bearer ${token}` } }
+              )
+              moduleId = mres.data.id
+            }
+          } catch (err) { continue }
 
-                for (let li = 0; li < (mod.lessons || []).length; li++) {
-                  const ls = mod.lessons![li]
-                  try {
-                    const lessonPayload: any = { 
-                      module: moduleId, 
-                      title: ls.title, 
-                      content: ls.content
-                    }
-                    if (ls.video_s3) lessonPayload.video_s3 = ls.video_s3
-                    if (ls.video_s3_url) lessonPayload.video_s3_url = ls.video_s3_url
-                    if (ls.youtube_url) lessonPayload.youtube_url = ls.youtube_url
-                    
-                    if (ls.id) {
-                      await axios.patch(`${API_BASE}/lessons/${ls.id}/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
-                    } else {
-                      await axios.post(`${API_BASE}/lessons/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
-                    }
-                  } catch (err) { console.error(err) }
-                }
+          // Save lessons
+          for (let li = 0; li < (mod.lessons || []).length; li++) {
+            const ls = mod.lessons![li]
+            try {
+              const lessonPayload: any = {
+                module: moduleId,
+                title: ls.title,
+                content: ls.content
+              }
+              if (ls.video_s3) lessonPayload.video_s3 = ls.video_s3
+              if (ls.video_s3_url) lessonPayload.video_s3_url = ls.video_s3_url
+              if (ls.youtube_url) lessonPayload.youtube_url = ls.youtube_url
 
-                // Handle Module Quiz
-                if (mod.quiz && mod.quiz.questions && mod.quiz.questions.length > 0) {
-                  try {
-                    // Create or update the module quiz
-                    const quizPayload = {
-                      module: moduleId,
-                      title: mod.quiz.title,
-                      description: mod.quiz.description || '',
-                      passing_score: mod.quiz.passing_score || 70,
-                      is_required: mod.quiz.is_required || false
-                    }
-
-                    let quizId: number
-                    if (mod.quiz.id) {
-                      // Update existing quiz
-                      await axios.patch(`${API_BASE}/module-quizzes/${mod.quiz.id}/`, quizPayload, { headers: { Authorization: `Bearer ${token}` } })
-                      quizId = mod.quiz.id
-                    } else {
-                      // Create new quiz
-                      const qres = await axios.post(`${API_BASE}/module-quizzes/`, quizPayload, { headers: { Authorization: `Bearer ${token}` } })
-                      quizId = qres.data.id
-                    }
-
-                    // Save quiz questions
-                    for (let qi = 0; qi < mod.quiz.questions.length; qi++) {
-                      const q = mod.quiz.questions[qi]
-                      try {
-                        const questionPayload = {
-                          quiz: quizId,
-                          text: q.text,
-                          points: q.points || 1,
-                          explanation: q.explanation || '',
-                          order: qi
-                        }
-
-                        let questionId: number
-                        if (q.id) {
-                          // Update existing question
-                          await axios.patch(`${API_BASE}/quiz-questions/${q.id}/`, questionPayload, { headers: { Authorization: `Bearer ${token}` } })
-                          questionId = q.id
-                        } else {
-                          // Create new question
-                          const qres = await axios.post(`${API_BASE}/quiz-questions/`, questionPayload, { headers: { Authorization: `Bearer ${token}` } })
-                          questionId = qres.data.id
-                        }
-
-                        // Save quiz options (answers)
-                        if (q.options && q.options.length > 0) {
-                          for (let oi = 0; oi < q.options.length; oi++) {
-                            const opt = q.options[oi]
-                            try {
-                              const optionPayload = {
-                                question: questionId,
-                                text: opt.text,
-                                is_correct: opt.is_correct || false,
-                                order: oi
-                              }
-
-                              if (opt.id) {
-                                // Update existing option
-                                await axios.patch(`${API_BASE}/quiz-options/${opt.id}/`, optionPayload, { headers: { Authorization: `Bearer ${token}` } })
-                              } else {
-                                // Create new option
-                                await axios.post(`${API_BASE}/quiz-options/`, optionPayload, { headers: { Authorization: `Bearer ${token}` } })
-                              }
-                            } catch (err) { console.error('Error saving quiz option:', err) }
-                          }
-                        }
-                      } catch (err) { console.error('Error saving quiz question:', err) }
-                    }
-                  } catch (err) { console.error('Error saving quiz:', err) }
-                }
-             }
+              if (ls.id) {
+                await axios.patch(`${API_BASE}/lessons/${ls.id}/`, lessonPayload,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                )
+              } else {
+                await axios.post(`${API_BASE}/lessons/`, lessonPayload,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                )
+              }
+            } catch (err) { console.error(err) }
           }
+
+          // Save module quiz
+          if (mod.quiz && mod.quiz.questions && mod.quiz.questions.length > 0) {
+            try {
+              const quizPayload = {
+                module: moduleId,
+                title: mod.quiz.title,
+                description: mod.quiz.description || '',
+                passing_score: mod.quiz.passing_score || 70,
+                is_required: mod.quiz.is_required || false
+              }
+
+              let quizId: number | string
+              if (mod.quiz.id) {
+                // Update existing quiz
+                await axios.patch(`${API_BASE}/module-quizzes/${mod.quiz.id}/`, quizPayload, 
+                  { headers: { Authorization: `Bearer ${token}` } }
+                )
+                quizId = mod.quiz.id
+              } else {
+                // Create new quiz
+                const qres = await axios.post(`${API_BASE}/module-quizzes/`, quizPayload,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                )
+                quizId = qres.data.id
+              }
+
+              // Save quiz questions
+              for (let qi = 0; qi < mod.quiz.questions.length; qi++) {
+                const q = mod.quiz.questions[qi]
+                try {
+                  const questionPayload = {
+                    quiz: quizId,
+                    text: q.text,
+                    points: q.points || 1,
+                    explanation: q.explanation || '',
+                    order: qi
+                  }
+
+                  let questionId: number | string
+                  if (q.id) {
+                    // Update existing question
+                    await axios.patch(`${API_BASE}/quiz-questions/${q.id}/`, questionPayload, 
+                      { headers: { Authorization: `Bearer ${token}` } }
+                    )
+                    questionId = q.id
+                  } else {
+                    // Create new question
+                    const qres = await axios.post(`${API_BASE}/quiz-questions/`, questionPayload,
+                      { headers: { Authorization: `Bearer ${token}` } }
+                    )
+                    questionId = qres.data.id
+                  }
+
+                  // Save quiz options (answers)
+                  if (q.options && q.options.length > 0) {
+                    for (let oi = 0; oi < q.options.length; oi++) {
+                      const opt = q.options[oi]
+                      try {
+                        const optionPayload = {
+                          question: questionId,
+                          text: opt.text,
+                          is_correct: opt.is_correct || false,
+                          order: oi
+                        }
+
+                        if (opt.id) {
+                          // Update existing option
+                          await axios.patch(`${API_BASE}/quiz-options/${opt.id}/`, optionPayload,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          )
+                        } else {
+                          // Create new option
+                          await axios.post(`${API_BASE}/quiz-options/`, optionPayload,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          )
+                        }
+                      } catch (err) { console.error('Error saving quiz option:', err) }
+                    }
+                  }
+                } catch (err) { console.error('Error saving quiz question:', err) }
+              }
+            } catch (err) { console.error('Error saving quiz:', err) }
+          }
+        }
       }
-      
+
       alert(publish ? 'Course Published!' : 'Draft Saved!')
       navigate('/tutor/manage')
-
     } catch (err: any) {
       console.error(err)
       if (err?.response?.data) setErrors(err.response.data)
@@ -515,816 +572,235 @@ export default function CreateCourse() {
     }
   }
 
-  // Wrappers for buttons
-  const publishCourse = () => handleCourseSubmit(true)
   const saveDraft = () => handleCourseSubmit(false)
-
-  // ... (Rest of helper functions: addModule, onCourseImageInput, etc. remain unchanged) ...
-  function addModule() {
-    if (!moduleTitleInput.trim()) return
-    const newModule: ModuleItem = { title: moduleTitleInput.trim(), order: modules.length, lessons: [] }
-    setModules((m) => [...m, newModule])
-    setModuleTitleInput('')
-    setCurrentModuleIndex(modules.length)
-  }
-
-  function startEditLesson(moduleIdx: number, lessonIdx: number) {
-    const ls = modules[moduleIdx].lessons?.[lessonIdx]
-    if (!ls) return
-    setEditingLessonIndex(lessonIdx)
-    setLessonTitle(ls.title || '')
-    setLessonContent(ls.content || '')
-    setCurrentModuleIndex(moduleIdx)
-  }
-
-  function cancelEditLesson() {
-    setEditingLessonIndex(null)
-    setLessonTitle('')
-    setLessonContent('')
-  }
-
-  function addOrUpdateLesson() {
-    if (currentModuleIndex === null) {
-      setErrors((e) => ({ ...e, lesson_module: ['Select or create a module first'] }))
+  const publishCourse = () => {
+    if (verificationStatus && !verificationStatus.is_verified && verificationStatus.verification_status !== 'not_applicable') {
+      alert(`You cannot publish courses until your account is verified.\n\n${verificationStatus.reason}`)
       return
     }
-    if (!lessonTitle.trim()) {
-      setErrors((e) => ({ ...e, lesson_title: ['Lesson title required'] }))
-      return
-    }
-    setErrors((e) => {
-      const copy = { ...e }; delete copy.lesson_title; delete copy.lesson_module; return copy
-    })
-
-    setModules((m) => {
-      const copy = [...m]
-      const mod = { ...(copy[currentModuleIndex] || { title: 'Module', lessons: [] }) }
-      const lessonObj: Lesson = { title: lessonTitle.trim(), content: lessonContent }
-      if (editingLessonIndex !== null) {
-        mod.lessons = [...(mod.lessons || [])]
-        mod.lessons[editingLessonIndex] = { ...(mod.lessons[editingLessonIndex] || {}), ...lessonObj }
-      } else {
-        mod.lessons = [...(mod.lessons || []), lessonObj]
-      }
-      copy[currentModuleIndex] = mod
-      return copy
-    })
-    setLessonTitle(''); setLessonContent(''); setEditingLessonIndex(null)
+    handleCourseSubmit(true)
   }
 
-  async function removeLesson(moduleIdx: number, lessonIdx: number) {
-    const mod = modules[moduleIdx]
-    const ls = mod?.lessons?.[lessonIdx]
-    if (ls?.id) {
-        const token = localStorage.getItem('access')
-        await axios.delete(`${API_BASE}/lessons/${ls.id}/`, { headers: { Authorization: `Bearer ${token}` } }).catch(console.error)
-    }
-    setModules((m) => {
-      const copy = [...m]
-      const mod = { ...copy[moduleIdx] }
-      mod.lessons = (mod.lessons || []).filter((_: any, i: number) => i !== lessonIdx)
-      copy[moduleIdx] = mod
-      return copy
-    })
-  }
-
-  async function confirmDelete() {
-    if (!pendingDelete) return
-    if (pendingDelete.type === 'lesson') removeLesson(pendingDelete.moduleIdx, pendingDelete.lessonIdx)
-    else if (pendingDelete.type === 'module') deleteModule(pendingDelete.moduleIdx)
-    setPendingDelete(null)
-  }
-
-  function cancelDelete() { setPendingDelete(null) }
-
-  async function deleteModule(moduleIdx: number) {
-    const mod = modules[moduleIdx]
-    if (mod?.id) {
-        const token = localStorage.getItem('access')
-        await axios.delete(`${API_BASE}/modules/${mod.id}/`, { headers: { Authorization: `Bearer ${token}` } }).catch(console.error)
-    }
-    setModules((m) => {
-      const copy = [...m]; copy.splice(moduleIdx, 1); return copy
-    })
-    setCurrentModuleIndex(null)
-  }
-
-  function onCourseImageInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0] || null
-    if (f) {
-        setCourseImageFile(f)
-        const reader = new FileReader()
-        reader.onload = () => setCourseImagePreview(String(reader.result))
-        reader.readAsDataURL(f)
+  const onCourseImageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    if (file) {
+      setCourseImageFile(file)
+      const reader = new FileReader()
+      reader.onload = () => setCourseImagePreview(String(reader.result))
+      reader.readAsDataURL(file)
     }
   }
 
-  function insertCodeSnippet(code: string, language = 'text') {
-    const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    const block = `<pre><code class="language-${language}">${escaped}</code></pre><p></p>`
-    setLessonContent((c) => (c || '') + block)
-  }
-
-  // ===== QUIZ HELPER FUNCTIONS (DISTINCT FROM CBT) =====
-  function startQuizEditor(moduleIdx: number) {
-    setQuizEditingModuleIndex(moduleIdx)
-    setQuizTitle('Module Quiz')
-    setQuizPassingScore('70')
-    setQuizIsRequired(true)
-    setQuizQuestions([])
-    setEditingQuestionIndex(null)
-    setQuestionText('')
-    setQuestionPoints('1')
-    setQuestionExplanation('')
-    setQuestionOptions([{ text: '', isCorrect: false }])
-  }
-
-  function cancelQuizEditor() {
-    setQuizEditingModuleIndex(null)
-  }
-
-  function addOrEditQuestion() {
-    if (!questionText.trim()) return
-    if (questionOptions.filter((opt) => opt.text.trim()).length === 0) return
-    if (questionOptions.filter((opt) => opt.isCorrect).length === 0) return
-
-    const newQuestion = {
-      text: questionText.trim(),
-      points: Number(questionPoints) || 1,
-      explanation: questionExplanation,
-      options: questionOptions.map((opt) => ({ text: opt.text.trim(), is_correct: opt.isCorrect })),
-    }
-
-    setQuizQuestions((qs) => {
-      if (editingQuestionIndex !== null) {
-        const copy = [...qs]
-        copy[editingQuestionIndex] = newQuestion
-        return copy
-      }
-      return [...qs, newQuestion]
-    })
-
-    setQuestionText('')
-    setQuestionPoints('1')
-    setQuestionExplanation('')
-    setQuestionOptions([{ text: '', isCorrect: false }])
-    setEditingQuestionIndex(null)
-  }
-
-  function removeQuestion(idx: number) {
-    setQuizQuestions((qs) => qs.filter((_, i) => i !== idx))
-  }
-
-  function saveQuizToModule() {
-    if (quizEditingModuleIndex === null || quizQuestions.length === 0) return
-    // Store quiz data in module state (will be saved when course is submitted)
-    setModules((mods) => {
-      const copy = [...mods]
-      const mod = { ...copy[quizEditingModuleIndex] }
-      mod.quiz = {
-        title: quizTitle,
-        passing_score: Number(quizPassingScore),
-        is_required: quizIsRequired,
-        questions: quizQuestions,
-      }
-      copy[quizEditingModuleIndex] = mod
-      return copy
-    })
-    setQuizEditingModuleIndex(null)
-  }
-
-  const quillModules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['blockquote', 'code-block', 'link'],
-      ['clean']
-    ]
-  }
-  const quillFormats = ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'bullet', 'blockquote', 'code-block', 'link']
-
-  // --- RENDER ---
+  // ==================== RENDER WIZARD ====================
+  const canPublish = verificationStatus?.is_verified !== false || verificationStatus?.verification_status === 'not_applicable'
 
   return (
-    <div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
-            <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-bold">Create Course</h2>
-              <button onClick={() => setGuideOpen(true)} className="px-3 py-1 bg-brand-600 text-white rounded text-sm">How to use this panel — Watch Guide</button>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
-              {courseType === 'normal' && <button onClick={() => setPreviewOpen(true)} className="px-3 py-2 bg-gray-100 rounded text-sm">Preview</button>}
-              <button onClick={saveDraft} disabled={saving} className="px-3 py-2 bg-brand-500 text-white rounded text-sm">{saving ? 'Saving...' : 'Save Draft'}</button>
-              <button onClick={publishCourse} disabled={publishing} className="px-5 py-2 bg-brand-600 text-white rounded-lg font-semibold text-sm">{publishing ? 'Publishing...' : 'Publish Course'}</button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Create a Course</h1>
+          <p className="text-gray-600 mt-2">Complete the steps below to create and publish your course</p>
+        </div>
 
-      <div className="bg-white p-6 rounded-lg">
-        {/* Dynamic Grid Layout: 2 Cols for Normal, 1 Centered Col for Scheduled */}
-        <div className={`grid gap-6 ${courseType === 'normal' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 max-w-3xl mx-auto'}`}>
-          
-          {/* Left Column (or Main Column for Scheduled) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Course Type</label>
-            <select value={courseType} onChange={(e) => setCourseType(e.target.value as any)} className="mt-2 w-full border rounded p-2 mb-6 bg-gray-50 border-gray-300">
-              <option value="normal">Normal Content & Tutorial Course</option>
-              <option value="scheduled">Scheduled Live Lessons Course</option>
-            </select>
+        {/* Verification Banner */}
+        {!verificationLoading && verificationStatus && (
+          <VerificationBanner
+            isVerified={verificationStatus.is_verified}
+            verificationStatus={verificationStatus.verification_status}
+            reason={verificationStatus.reason}
+          />
+        )}
 
-            {/* NORMAL COURSE FIELDS */}
-            {courseType === 'normal' && (
-              <>
-                <label className="block text-sm font-medium text-gray-700 mt-4">Title</label>
-                <input className="mt-2 w-full border rounded p-2" value={title} onChange={(e) => setTitle(e.target.value)} />
-                {errors.title && <div className="text-sm text-red-600 mt-1">{Array.isArray(errors.title) ? errors.title[0] : errors.title}</div>}
+        {/* Main Wizard Card */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          {/* Step Progress */}
+          <StepProgress
+            currentStep={currentStep}
+            totalSteps={STEP_LABELS.length}
+            stepLabels={STEP_LABELS}
+            onStepClick={handleStepClick}
+          />
 
-                <label className="block text-sm font-medium text-gray-700 mt-4">Price</label>
-                <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                  <input className="flex-1 border rounded p-2" value={price} onChange={(e) => setPrice(e.target.value)} />
-                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full sm:w-40 border rounded p-2">
-                    {SUPPORTED_CURRENCIES.map((c) => (
-                      <option key={c.code} value={c.code}>{c.code}</option>
-                    ))}
-                  </select>
-                </div>
-                {errors.price && <div className="text-sm text-red-600 mt-1">{Array.isArray(errors.price) ? errors.price[0] : errors.price}</div>}
-
-                <label className="block text-sm font-medium text-gray-700 mt-4">Course Description</label>
-                <textarea className="mt-2 w-full border rounded p-2 h-28" value={description} onChange={(e) => setDescription(e.target.value)} />
-
-                <label className="block text-sm font-medium text-gray-700 mt-4">Required Tools (optional)</label>
-                <input className="mt-2 w-full border rounded p-2" value={requiredTools} onChange={(e) => setRequiredTools(e.target.value)} />
-
-                <label className="block text-sm font-medium text-gray-700 mt-4">Number of Lessons</label>
-                <input type="number" className="mt-2 w-full sm:w-32 border rounded p-2" value={numLessons} onChange={(e) => setNumLessons(Number(e.target.value))} />
-
-                <label className="block text-sm font-medium text-gray-700 mt-4">Level</label>
-                <select value={level} onChange={(e) => setLevel(e.target.value as Level)} className="mt-2 w-full border rounded p-2">
-                  {levels.map((l) => <option key={l} value={l}>{l}</option>)}
-                </select>
-
-                <label className="block text-sm font-medium text-gray-700 mt-4">Course Type/Badge</label>
-                <select value={courseCategory} onChange={(e) => setCourseCategory(e.target.value)} className="mt-2 w-full border rounded p-2">
-                  <option value="beginner">Beginner Course</option>
-                  <option value="intermediate">Intermediate Course</option>
-                  <option value="advanced">Advanced Course</option>
-                  <option value="master">Master Course</option>
-                  <option value="specialized">Specialized Course</option>
-                  <option value="certification">Certification Program</option>
-                  <option value="bootcamp">Bootcamp</option>
-                  <option value="workshop">Workshop</option>
-                  <option value="other">Other</option>
-                </select>
-
-                <label className="block text-sm font-medium text-gray-700 mt-4">Course Outcome</label>
-                <textarea className="mt-2 w-full border rounded p-2 h-20" value={outcome} onChange={(e) => setOutcome(e.target.value)} />
-                {errors.outcome && <div className="text-sm text-red-600 mt-1">{Array.isArray(errors.outcome) ? errors.outcome[0] : errors.outcome}</div>}
-
-                <label className="block text-sm font-medium text-gray-700 mt-4">Course Image (thumbnail)</label>
-                <div className="mt-2 flex items-center gap-3">
-                  <input type="file" accept="image/*" onChange={onCourseImageInput} />
-                  {courseImagePreview && <img src={courseImagePreview} alt="Course image preview" className="w-24 h-16 object-cover rounded" width={192} height={128} loading="lazy" decoding="async" />}
-                </div>
-
-                <label className="block text-sm font-medium text-gray-700 mt-4">Linked Course (optional)</label>
-                <input className="mt-2 w-full border rounded p-2" placeholder="Search your previous courses" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                {searchResults.length > 0 && (
-                  <div className="mt-2 border rounded max-h-40 overflow-auto bg-white">
-                    {searchResults.map((s) => (
-                      <div key={s.id} onClick={() => { setLinkedCourse(s); setSearchResults([]); setSearchQuery('') }} className="p-2 hover:bg-gray-50 cursor-pointer">
-                        <div className="font-medium">{s.title}</div>
-                        <div className="text-xs text-gray-500">{s.description?.slice(0,60)}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {linkedCourse && (
-                  <div className="mt-2 p-2 bg-gray-50 rounded flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Linked: {linkedCourse.title}</div>
-                      <div className="text-xs text-gray-500">{linkedCourse.description?.slice(0,80)}</div>
-                    </div>
-                    <button onClick={() => setLinkedCourse(null)} className="text-sm text-red-600">Remove</button>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* SCHEDULED COURSE FIELDS */}
-            {courseType === 'scheduled' && (
-              <div className="mt-4 space-y-6">
-                {/* Info Box */}
-                <div className="bg-brand-50 p-4 rounded-lg border border-brand-200">
-                  <h3 className="font-semibold text-brand-800 flex items-center gap-2">
-                        <Calendar className="w-5 h-5"/> Scheduled Live Course
-                    </h3>
-                    <p className="text-sm text-brand-700 mt-1">
-                        Students who enroll will be directed to a schedule page with a countdown. 
-                        The "Join Class" button will only activate at the meeting time.
-                    </p>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Course Title</label>
-                    <input className="mt-2 w-full border rounded p-2" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Live React Bootcamp" />
-                    {errors.title && <div className="text-sm text-red-600 mt-1">{errors.title}</div>}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-2 w-full border rounded p-2" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">End Date</label>
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-2 w-full border rounded p-2" />
-                  </div>
-                </div>
-                {errors.dates && <div className="text-sm text-red-600">{errors.dates}</div>}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Meeting Time (Daily/Weekly)</label>
-                    <div className="relative mt-2">
-                        <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                        <input type="time" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} className="w-full border rounded p-2 pl-10" />
-                    </div>
-                    {errors.time && <div className="text-sm text-red-600 mt-1">{errors.time}</div>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Meeting Platform</label>
-                    <div className="relative mt-2">
-                        <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                        <select value={meetingPlace} onChange={(e) => setMeetingPlace(e.target.value)} className="w-full border rounded p-2 pl-10">
-                        <option value="zoom">Zoom</option>
-                        <option value="google_meet">Google Meet</option>
-                        <option value="team">Microsoft Teams</option>
-                        <option value="other">Other</option>
-                        </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Meeting Link (Hidden until class time)</label>
-                    <div className="relative mt-2">
-                        <LinkIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                        <input className="w-full border rounded p-2 pl-10" value={meetingLink} onChange={(e) => setMeetingLink(e.target.value)} placeholder="https://zoom.us/j/..." />
-                    </div>
-                    {errors.link && <div className="text-sm text-red-600 mt-1">{errors.link}</div>}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Price (₦)</label>
-                    <input className="mt-2 w-full border rounded p-2" value={price} onChange={(e) => setPrice(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Level</label>
-                    <select value={level} onChange={(e) => setLevel(e.target.value as Level)} className="mt-2 w-full border rounded p-2">
-                      {levels.map((l) => <option key={l} value={l}>{l}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Short Description</label>
-                    <textarea className="mt-2 w-full border rounded p-2 h-24" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What will be covered in these live sessions?" />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Learning Outcome</label>
-                    <textarea className="mt-2 w-full border rounded p-2 h-20" value={outcome} onChange={(e) => setOutcome(e.target.value)} placeholder="What will students achieve?" />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Required Tools</label>
-                    <input className="mt-2 w-full border rounded p-2" value={requiredTools} onChange={(e) => setRequiredTools(e.target.value)} placeholder="e.g. Laptop, Zoom installed" />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Cover Image</label>
-                    <div className="flex items-center gap-4 p-4 border rounded bg-gray-50">
-                        <div className="w-24 h-16 bg-gray-200 rounded overflow-hidden flex items-center justify-center">
-                            {courseImagePreview ? (
-                                <img src={courseImagePreview} alt="Course image preview" className="w-full h-full object-cover" width={800} height={450} loading="lazy" decoding="async" />
-                            ) : (
-                                <ImageIcon className="w-6 h-6 text-gray-400" />
-                            )}
-                        </div>
-                        <input type="file" accept="image/*" onChange={onCourseImageInput} className="text-sm" />
-                    </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right Column - Lessons (Only for Normal) */}
-          {courseType === 'normal' && (
-            <div>
-              <h3 className="font-semibold">Lessons</h3>
-              <p className="text-sm text-gray-600">Add lessons for this course.</p>
-              {/* ... Lesson Management UI remains exactly as provided previously ... */}
-               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700">Modules</label>
-                <div className="mt-2 flex items-center gap-2">
-                  <input placeholder="Module title" value={moduleTitleInput} onChange={(e) => setModuleTitleInput(e.target.value)} className="w-full border rounded p-2" />
-                  <button onClick={addModule} className="px-4 py-2 bg-brand-600 text-white rounded">Add Module</button>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  {modules.map((m, idx) => (
-                    <div key={idx} className={`p-2 border rounded flex items-center justify-between ${currentModuleIndex === idx ? 'bg-brand-50' : ''}`}>
-                      <div className="cursor-pointer" onClick={() => setCurrentModuleIndex(idx)}>
-                        <div className="font-medium">{m.title}</div>
-                        <div className="text-xs text-gray-500">{(m.lessons || []).length} lessons</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setCurrentModuleIndex(idx)} className="text-sm text-brand-600">Edit</button>
-                        <button onClick={() => setPendingDelete({ type: 'module', moduleIdx: idx })} className="text-sm text-red-600">Delete</button>
-                      </div>
-                    </div>
-                  ))}
-                  {modules.length === 0 && <div className="text-sm text-gray-500">No modules yet. Add one to start adding lessons.</div>}
-                </div>
-
-                <div className="mt-4 bg-gray-50 p-4 rounded">
-                  <label className="block text-sm font-medium text-gray-700">Lesson Title</label>
-                  <input className="mt-2 w-full border rounded p-2" value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} />
-                  {errors.lesson_title && <div className="text-sm text-red-600 mt-1">{Array.isArray(errors.lesson_title) ? errors.lesson_title[0] : errors.lesson_title}</div>}
-
-                  <label className="block text-sm font-medium text-gray-700 mt-3">Lesson Content (rich editor)</label>
-                  <div className="mt-2">
-                    <ReactQuill value={lessonContent} onChange={setLessonContent} modules={quillModules} formats={quillFormats} />
-                  </div>
-
-                  <div className="mt-4 flex flex-col sm:flex-row gap-2 items-center">
-                    <label className="block text-sm font-medium text-gray-700">Insert code snippet</label>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <CodeSnippetInserter onInsert={(code, lang) => insertCodeSnippet(code, lang)} />
-                  </div>
-
-                  <label className="block text-sm font-medium text-gray-700 mt-3">Video (YouTube link OR upload below)</label>
-                  {/* ... Video Upload Widget ... */}
-                  {currentModuleIndex !== null && editingLessonIndex !== null && (
-                    <div className="mt-4 border rounded p-3 bg-white">
-                      <VideoUploadWidget 
-                        onUploadComplete={(videoData) => {
-                          setModules(prev => {
-                            const cp = [...prev]
-                            const moduleIdx = currentModuleIndex
-                            const lessonIdx = editingLessonIndex
-                            if (cp[moduleIdx] && cp[moduleIdx].lessons) {
-                              cp[moduleIdx].lessons![lessonIdx] = {
-                                ...cp[moduleIdx].lessons![lessonIdx],
-                                video_s3: videoData.video_id,
-                                video_s3_url: videoData.cloudfront_url || undefined,
-                                video_s3_status: videoData.status || 'processing'
-                              }
-                            }
-                            return cp
-                          })
-                          if (currentModuleIndex !== null && editingLessonIndex !== null && videoData.video_id) {
-                            startPollingForVideo(videoData.video_id, currentModuleIndex, editingLessonIndex)
-                          }
-                          alert('Video uploaded successfully! Encoding queued.')
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  {currentModuleIndex === null && (
-                    <div className="mt-4 p-3 bg-brand-50 border border-brand-200 rounded text-sm text-brand-800">
-                      Select a module first to upload a video
-                    </div>
-                  )}
-                  
-                  {editingLessonIndex === null && currentModuleIndex !== null && (
-                    <div className="mt-4 p-3 bg-brand-50 border border-brand-200 rounded text-sm text-brand-800">
-                      Select or create a lesson to upload a video
-                    </div>
-                  )}
-
-                      <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                    <button onClick={addOrUpdateLesson} className="px-4 py-2 bg-brand-600 text-white rounded w-full sm:w-auto">{editingLessonIndex !== null ? 'Save Lesson' : 'Add Lesson'}</button>
-                    <button onClick={() => { cancelEditLesson(); setLessonTitle(''); setLessonContent('') }} className="px-4 py-2 bg-gray-100 rounded w-full sm:w-auto">Reset</button>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <h4 className="font-medium">Added Lessons</h4>
-                  <div className="space-y-2 mt-2">
-                    {currentModuleIndex === null && <div className="text-sm text-gray-500">Select a module to see its lessons.</div>}
-                    {currentModuleIndex !== null && (modules[currentModuleIndex]?.lessons || []).map((l: Lesson, li: number) => (
-                      <div key={li} className="p-3 border rounded flex justify-between items-start">
-                        <div>
-                          <div className="font-semibold">{l.title}</div>
-                          <div className="text-sm text-gray-600" dangerouslySetInnerHTML={{ __html: String(l.content || '').slice(0, 200) }} />
-                          {(l.video || l.video_s3 || l.youtube_url) && (
-                            <div className="mt-2 text-xs text-brand-600 font-medium">
-                                {l.youtube_url ? 'YouTube Video Attached' : l.video_s3 ? 'S3 Video Attached' : 'Video Attached'}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <button onClick={() => startEditLesson(currentModuleIndex, li)} className="text-sm text-brand-600">Edit</button>
-                          <button onClick={() => setPendingDelete({ type: 'lesson', moduleIdx: currentModuleIndex, lessonIdx: li })} className="text-sm text-red-600">Remove</button>
-                        </div>
-                      </div>
-                    ))}
-                    {currentModuleIndex !== null && (modules[currentModuleIndex]?.lessons || []).length === 0 && <div className="text-sm text-gray-500">No lessons yet in this module</div>}
-                  </div>
-
-                  {/* QUIZ BUILDER UI - separate from lessons */}
-                  {currentModuleIndex !== null && (
-                    <div className="mt-6 border-t pt-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-gray-900">Module Quiz</h4>
-                        {!quizEditingModuleIndex && (modules[currentModuleIndex]?.quiz ? (
-                          <button onClick={() => startQuizEditor(currentModuleIndex)} className="px-3 py-1 text-sm bg-yellow-500 text-white rounded">Edit Quiz</button>
-                        ) : (
-                          <button onClick={() => startQuizEditor(currentModuleIndex)} className="px-3 py-1 text-sm bg-blue-500 text-white rounded">Add Quiz</button>
-                        ))}
-                      </div>
-
-                      {quizEditingModuleIndex === currentModuleIndex && (
-                        <div className="bg-blue-50 border border-blue-200 rounded p-4">
-                          <label className="block text-sm font-medium mb-2">Quiz Title</label>
-                          <input value={quizTitle} onChange={(e) => setQuizTitle(e.target.value)} className="w-full border rounded p-2 text-sm mb-3" />
-                          
-                          <label className="block text-sm font-medium mb-2">Passing Score (%)</label>
-                          <input type="number" min="0" max="100" value={quizPassingScore} onChange={(e) => setQuizPassingScore(e.target.value)} className="w-20 border rounded p-2 text-sm mb-3" />
-                          
-                          <label className="flex items-center gap-2 mb-3 text-sm">
-                            <input type="checkbox" checked={quizIsRequired} onChange={(e) => setQuizIsRequired(e.target.checked)} />
-                            <span>Students must pass this quiz to proceed</span>
-                          </label>
-
-                          {/* Add Question Section */}
-                          <div className="border-t pt-3 mt-3">
-                            <h5 className="font-medium text-sm mb-2">Questions ({quizQuestions.length})</h5>
-                            
-                            <label className="block text-xs font-medium mb-1">Question Text</label>
-                            <input value={questionText} onChange={(e) => setQuestionText(e.target.value)} className="w-full border rounded p-2 text-sm mb-2" placeholder="e.g., What is the capital of France?" />
-
-                            <label className="block text-xs font-medium mb-1">Points</label>
-                            <input type="number" min="1" value={questionPoints} onChange={(e) => setQuestionPoints(e.target.value)} className="w-20 border rounded p-2 text-sm mb-2" />
-
-                            <label className="block text-xs font-medium mb-1">Explanation (optional)</label>
-                            <textarea value={questionExplanation} onChange={(e) => setQuestionExplanation(e.target.value)} className="w-full border rounded p-2 text-sm h-16 mb-2" placeholder="Explanation shown after answering" />
-
-                            <label className="block text-xs font-medium mb-2">Answer Options</label>
-                            <div className="space-y-2 mb-2">
-                              {questionOptions.map((opt, i) => (
-                                <div key={i} className="flex gap-2 items-center">
-                                  <input type="text" value={opt.text} onChange={(e) => {
-                                    const copy = [...questionOptions]
-                                    copy[i].text = e.target.value
-                                    setQuestionOptions(copy)
-                                  }} className="flex-1 border rounded p-2 text-sm" placeholder={`Option ${i + 1}`} />
-                                  <label className="flex items-center gap-1 text-xs">
-                                    <input type="radio" name={`correct-${editingQuestionIndex}`} checked={opt.isCorrect} onChange={() => {
-                                      const copy = [...questionOptions]
-                                      copy.forEach((o, idx) => o.isCorrect = idx === i)
-                                      setQuestionOptions(copy)
-                                    }} />
-                                    <span>Correct</span>
-                                  </label>
-                                  {questionOptions.length > 1 && (
-                                    <button onClick={() => setQuestionOptions((opts) => opts.filter((_, idx) => idx !== i))} className="text-xs text-red-600">Remove</button>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                            <button onClick={() => setQuestionOptions((opts) => [...opts, { text: '', isCorrect: false }])} className="text-xs text-blue-600 mb-2">+ Add Option</button>
-
-                            <div className="flex gap-2">
-                              <button onClick={addOrEditQuestion} className="px-3 py-1 text-sm bg-green-600 text-white rounded">{editingQuestionIndex !== null ? 'Save Question' : 'Add Question'}</button>
-                              {editingQuestionIndex !== null && (
-                                <button onClick={() => {
-                                  setEditingQuestionIndex(null)
-                                  setQuestionText('')
-                                  setQuestionPoints('1')
-                                  setQuestionExplanation('')
-                                  setQuestionOptions([{ text: '', isCorrect: false }])
-                                }} className="px-3 py-1 text-sm bg-gray-400 text-white rounded">Cancel</button>
-                              )}
-                            </div>
-
-                            {/* List Questions */}
-                            {quizQuestions.length > 0 && (
-                              <div className="mt-3 border-t pt-2">
-                                {quizQuestions.map((q, idx) => (
-                                  <div key={idx} className="text-xs p-2 bg-white border rounded mb-1 flex justify-between">
-                                    <span><strong>Q{idx + 1}:</strong> {q.text} ({q.points}pts)</span>
-                                    <div className="flex gap-1">
-                                      <button onClick={() => {
-                                        setEditingQuestionIndex(idx)
-                                        setQuestionText(q.text)
-                                        setQuestionPoints(String(q.points))
-                                        setQuestionExplanation(q.explanation)
-                                        setQuestionOptions(q.options.map((o: any) => ({ text: o.text, isCorrect: o.is_correct })))
-                                      }} className="text-blue-600">Edit</button>
-                                      <button onClick={() => removeQuestion(idx)} className="text-red-600">Delete</button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex gap-2 mt-3">
-                            <button onClick={saveQuizToModule} className="px-4 py-2 bg-green-600 text-white rounded text-sm">Save Quiz</button>
-                            <button onClick={cancelQuizEditor} className="px-4 py-2 bg-gray-400 text-white rounded text-sm">Cancel</button>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {modules[currentModuleIndex]?.quiz && !quizEditingModuleIndex && (
-                        <div className="text-xs p-2 bg-green-50 border border-green-200 rounded">
-                          ✓ Quiz configured ({quizQuestions.length} questions)
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Error Messages */}
+          {generalError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              {generalError}
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Preview Modal (Only relevant for Normal Courses usually, but can adapt) */}
-      {previewOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg w-[90%] md:w-3/4 max-h-[90%] overflow-auto p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">Course Preview</h3>
-              <button onClick={() => setPreviewOpen(false)} className="px-3 py-1 bg-gray-100 rounded">Close</button>
+          {/* Step Content */}
+          <div className="mb-8 min-h-[400px]">
+            {currentStep === 1 && (
+              <CourseStep1_BasicInfo
+                title={title}
+                description={description}
+                level={level}
+                price={price}
+                currency={currency}
+                requiredTools={requiredTools}
+                outcome={outcome}
+                courseCategory={courseCategory}
+                errors={errors}
+                onTitleChange={setTitle}
+                onDescriptionChange={setDescription}
+                onLevelChange={setLevel}
+                onPriceChange={setPrice}
+                onCurrencyChange={setCurrency}
+                onRequiredToolsChange={setRequiredTools}
+                onOutcomeChange={setOutcome}
+                onCourseCategoryChange={setCourseCategory}
+              />
+            )}
+
+            {currentStep === 2 && (
+              <CourseStep2_Structure
+                courseType={courseType}
+                startDate={startDate}
+                endDate={endDate}
+                meetingTime={meetingTime}
+                meetingPlace={meetingPlace}
+                meetingLink={meetingLink}
+                errors={errors}
+                onCourseTypeChange={setCourseType}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onMeetingTimeChange={setMeetingTime}
+                onMeetingPlaceChange={setMeetingPlace}
+                onMeetingLinkChange={setMeetingLink}
+              />
+            )}
+
+            {currentStep === 3 && (
+              <CourseStep3_Content
+                courseType={courseType}
+                modules={modules}
+                currentModuleIndex={currentModuleIndex}
+                moduleTitleInput={moduleTitleInput}
+                lessonTitle={lessonTitle}
+                lessonContent={lessonContent}
+                editingLessonIndex={editingLessonIndex}
+                errors={errors}
+                onModulesChange={setModules}
+                onCurrentModuleIndexChange={setCurrentModuleIndex}
+                onModuleTitleInputChange={setModuleTitleInput}
+                onLessonTitleChange={setLessonTitle}
+                onLessonContentChange={setLessonContent}
+                onEditingLessonIndexChange={setEditingLessonIndex}
+                onVideoUploadComplete={startPollingForVideo}
+              />
+            )}
+
+            {currentStep === 4 && (
+              <CourseStep4_Quiz
+                courseType={courseType}
+                modules={modules}
+                onModulesChange={setModules}
+              />
+            )}
+
+            {currentStep === 5 && (
+              <CourseStep5_Preview
+                title={title}
+                description={description}
+                price={price}
+                currency={currency}
+                level={level}
+                courseType={courseType}
+                modulesCount={modules.length}
+                courseImagePreview={courseImagePreview}
+                onCourseImageInput={onCourseImageInput}
+                isSaving={saving}
+                isPublishing={publishing}
+                isVerified={canPublish}
+                verificationMessage={verificationStatus?.reason}
+                onSaveDraft={saveDraft}
+                onPublish={publishCourse}
+              />
+            )}
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-8 border-t border-gray-200">
+            <button
+              onClick={handlePrevStep}
+              disabled={currentStep === 1}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </button>
+
+            <div className="text-sm text-gray-600">
+              Step {currentStep} of {STEP_LABELS.length}
             </div>
-            <div>
-              <h2 className="text-2xl font-bold">{title || 'Untitled Course'}</h2>
-              {courseImagePreview && <img src={courseImagePreview} alt="Course image preview" className="w-48 mt-2 mb-4 object-cover rounded" width={320} height={200} loading="lazy" decoding="async" />}
-              <p className="text-sm text-gray-600">{description}</p>
-              <div className="mt-4"><strong>Price:</strong> ₦{price}</div>
-              
-              {courseType === 'normal' && (
-                  <div className="mt-4">
-                    <h4 className="font-semibold">Lessons ({modules.flatMap(m => m.lessons || []).length})</h4>
-                    <div className="mt-2 space-y-3">
-                        {modules.flatMap(m => m.lessons || []).map((l: Lesson, i: number) => (
-                        <div key={i} className="p-3 border rounded">
-                            <div className="font-semibold">{l.title}</div>
-                        </div>
-                        ))}
-                    </div>
-                  </div>
-              )}
-            </div>
+
+            <button
+              onClick={handleNextStep}
+              disabled={currentStep === STEP_LABELS.length}
+              className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Guide Modal - embedded YouTube video */}
-      {guideOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setGuideOpen(false)} />
-
-          <div className="relative z-10 bg-white rounded-lg w-[95%] md:w-3/4 lg:w-2/3 max-h-[90%] overflow-hidden shadow-xl">
-            <div className="flex items-center justify-between p-3 border-b">
-              <h3 className="text-lg font-semibold">How to use this panel — Guide</h3>
-              <button onClick={() => setGuideOpen(false)} className="px-3 py-1 bg-gray-100 rounded">Close</button>
-            </div>
-            <div className="p-4">
-              <div className="w-full" style={{ position: 'relative', paddingTop: '56.25%' }}>
-                <iframe
-                  src="https://www.youtube.com/embed/9RAz35sJM7Q"
-                  title="Create Course Panel Guide"
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+        {/* Video Encoding Feedback Overlay */}
+        {isEncodingVideo && encodingVideoId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-auto">
+            {/* Blur background */}
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-md z-40" />
+            
+            {/* Content */}
+            <div className="relative z-50 flex flex-col items-center justify-center gap-6 bg-white rounded-lg p-8 w-[90%] md:w-1/3 shadow-2xl">
+              {/* Loader Animation */}
+              <div className="flex items-center justify-center">
+                <div className="relative w-16 h-16">
+                  <div className="absolute inset-0 border-4 border-gray-200 rounded-full" />
+                  <div className="absolute inset-0 border-4 border-brand-600 rounded-full animate-spin border-r-transparent border-t-transparent" />
+                </div>
               </div>
-              <p className="text-sm text-gray-600 mt-3">This short walkthrough shows how tutors and institutions can use the Create Course panel.</p>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Delete Confirmation Modal */}
-      {pendingDelete && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg w-[90%] md:w-1/3 p-6">
-            <h3 className="text-lg font-semibold">Confirm Deletion</h3>
-            <p className="mt-3 text-sm text-gray-700">Are you sure you want to delete this {pendingDelete.type === 'module' ? 'module' : 'lesson'}? This action cannot be undone.</p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={cancelDelete} className="px-4 py-2 bg-gray-100 rounded">Cancel</button>
-              <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded">Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
+              {/* Text */}
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Encoding Video</h3>
+                <p className="text-sm text-gray-600">Your video is being processed and optimized for playback. This may take a few minutes.</p>
+              </div>
 
-      {/* Video Encoding Feedback Overlay */}
-      {isEncodingVideo && encodingVideoId && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center">
-          {/* Blur background */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-md" />
-          
-          {/* Content */}
-          <div className="relative z-71 flex flex-col items-center justify-center gap-6 bg-white rounded-lg p-8 w-[90%] md:w-1/3 shadow-2xl">
-            {/* Loader Animation */}
-            <div className="flex items-center justify-center">
-              <div className="relative w-16 h-16">
-                <div className="absolute inset-0 border-4 border-gray-200 rounded-full" />
-                <div className="absolute inset-0 border-4 border-brand-600 rounded-full animate-spin border-r-transparent border-t-transparent" />
+              {/* Buttons */}
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => {
+                    setIsEncodingVideo(false)
+                    setEncodingVideoId(null)
+                    if (encodingVideoId && videoPollingRefs.current[encodingVideoId]) {
+                      window.clearInterval(videoPollingRefs.current[encodingVideoId])
+                      delete videoPollingRefs.current[encodingVideoId]
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition"
+                >
+                  Minimise
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEncodingVideo(false)
+                    setEncodingVideoId(null)
+                    if (encodingVideoId && videoPollingRefs.current[encodingVideoId]) {
+                      window.clearInterval(videoPollingRefs.current[encodingVideoId])
+                      delete videoPollingRefs.current[encodingVideoId]
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
-
-            {/* Text */}
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Encoding Video</h3>
-              <p className="text-sm text-gray-600">Your video is being processed and optimized for playback. This may take a few minutes.</p>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-3 w-full">
-              <button
-                onClick={() => {
-                  setIsEncodingVideo(false)
-                  setEncodingVideoId(null)
-                  if (encodingVideoId && videoPollingRefs.current[encodingVideoId]) {
-                    window.clearInterval(videoPollingRefs.current[encodingVideoId])
-                    delete videoPollingRefs.current[encodingVideoId]
-                  }
-                }}
-                className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition"
-              >
-                Quiet
-              </button>
-              <button
-                onClick={() => {
-                  setIsEncodingVideo(false)
-                  setEncodingVideoId(null)
-                  if (encodingVideoId && videoPollingRefs.current[encodingVideoId]) {
-                    window.clearInterval(videoPollingRefs.current[encodingVideoId])
-                    delete videoPollingRefs.current[encodingVideoId]
-                  }
-                }}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function CodeSnippetInserter({ onInsert }: { onInsert: (code: string, lang: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const [code, setCode] = useState('')
-  const [lang, setLang] = useState('javascript')
-
-  function handleInsert() {
-    if (!code.trim()) return
-    onInsert(code, lang)
-    setCode('')
-    setOpen(false)
-  }
-
-  return (
-    <div>
-      <div className="flex items-center gap-2">
-        <button onClick={() => setOpen((o) => !o)} className="px-3 py-1 bg-gray-100 rounded">{open ? 'Close' : 'Add code'}</button>
+        )}
       </div>
-
-      {open && (
-        <div className="mt-2 border rounded p-3 bg-white">
-          <label className="block text-xs text-gray-600">Language</label>
-          <select value={lang} onChange={(e) => setLang(e.target.value)} className="mt-1 mb-2 w-full border rounded p-1">
-            <option value="javascript">JavaScript</option>
-            <option value="typescript">TypeScript</option>
-            <option value="html">HTML</option>
-            <option value="css">CSS</option>
-            <option value="python">Python</option>
-            <option value="text">Plain Text</option>
-          </select>
-
-          <label className="block text-xs text-gray-600">Code</label>
-          <textarea value={code} onChange={(e) => setCode(e.target.value)} className="w-full h-36 border rounded p-2 font-mono text-sm" />
-
-          <div className="mt-2 flex justify-end gap-2">
-            <button onClick={() => { setCode(''); setOpen(false) }} className="px-3 py-1 bg-gray-100 rounded">Cancel</button>
-            <button onClick={handleInsert} className="px-3 py-1 bg-brand-600 text-white rounded">Insert</button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

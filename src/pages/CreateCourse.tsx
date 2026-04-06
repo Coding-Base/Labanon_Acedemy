@@ -163,19 +163,15 @@ export default function CreateCourse() {
   }
 
   function startPollingForVideo(videoId: string, moduleIdx: number, lessonIdx: number) {
-    console.log('[CreateCourse] startPollingForVideo called:', { videoId, moduleIdx, lessonIdx })
     const token = localStorage.getItem('access')
     if (!videoId || !token) {
-      console.warn('[CreateCourse] Missing videoId or token:', { videoId: !!videoId, token: !!token })
       return
     }
     if (videoPollingRefs.current[videoId]) {
-      console.log('[CreateCourse] Already polling this video:', videoId)
       return
     }
     
     // Immediately update modules with initial video info (status: processing)
-    console.log('[CreateCourse] Initializing modules with video info')
     setModules((prev) => {
       const copy = JSON.parse(JSON.stringify(prev))
       if (copy[moduleIdx] && copy[moduleIdx].lessons && copy[moduleIdx].lessons[lessonIdx]) {
@@ -189,47 +185,33 @@ export default function CreateCourse() {
     })
     
     // Start encoding feedback
-    console.log('[CreateCourse] Setting encoding state: true')
     setIsEncodingVideo(true)
     setEncodingVideoId(videoId)
     
     const interval = window.setInterval(async () => {
       try {
-        console.log('[CreateCourse] Polling video:', videoId)
         const res = await axios.get(`${API_BASE}/videos/${videoId}/`, { 
           headers: { Authorization: `Bearer ${token}` } 
         })
         const data = res.data
-        console.log('[CreateCourse] Full video response:', data)
-        console.log('[CreateCourse] Video status poll:', { videoId, status: data?.status, cloudfront_url: data?.cloudfront_url })
         if (data && data.status === 'ready') {
-          console.log('[CreateCourse] 🎉 Video READY! Attaching to lesson:', { videoId, moduleIdx, lessonIdx, cloudfront_url: data.cloudfront_url })
           setModules((prev) => {
             const copy = JSON.parse(JSON.stringify(prev))  // Deep copy
-            console.log('[CreateCourse] Before update:', { 
-              moduleIdx, 
-              lessonIdx,
-              lesson: copy[moduleIdx]?.lessons?.[lessonIdx]
-            })
             
             if (copy[moduleIdx] && copy[moduleIdx].lessons) {
               const lesson = copy[moduleIdx].lessons![lessonIdx]
-              console.log('[CreateCourse] Updating lesson with video URL:', data.cloudfront_url)
               copy[moduleIdx].lessons![lessonIdx] = { 
                 ...lesson, 
                 video_s3_url: data.cloudfront_url, 
                 video_s3_status: data.status 
               }
-              console.log('[CreateCourse] After update:', copy[moduleIdx].lessons![lessonIdx])
             }
-            console.log('[CreateCourse] Setting new modules state')
             return copy
           })
           window.clearInterval(videoPollingRefs.current[videoId])
           delete videoPollingRefs.current[videoId]
           
           // Stop encoding feedback
-          console.log('[CreateCourse] Encoding complete, hiding loader')
           setIsEncodingVideo(false)
           setEncodingVideoId(null)
           
@@ -243,17 +225,9 @@ export default function CreateCourse() {
     videoPollingRefs.current[videoId] = interval as unknown as number
   }
 
-  // Log whenever modules changes in parent
+  // Module state tracking
   useEffect(() => {
-    console.log('[CreateCourse Parent] modules state changed:', modules)
-    modules.forEach((mod, mIdx) => {
-      mod.lessons?.forEach((lesson, lIdx) => {
-        console.log(`[CreateCourse Parent] Module ${mIdx}, Lesson ${lIdx}:`, {
-          title: lesson.title,
-          video_s3_url: lesson.video_s3_url ? '✓ PRESENT' : lesson.video_s3_url ? lesson.video_s3_url : '✗ MISSING'
-        })
-      })
-    })
+    // Modules updated
   }, [modules])
 
   // Load course for editing

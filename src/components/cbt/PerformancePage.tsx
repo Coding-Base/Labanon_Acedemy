@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useNavigate, useParams } from 'react-router-dom'
 import showToast from '../../utils/toast'
+import { MathText } from '../../utils/mathRenderer'
 import {
   PieChart,
   Pie,
@@ -372,7 +373,9 @@ export default function PerformancePage() {
                     className="w-full text-left flex items-center justify-between group"
                   >
                     <div className="flex-1">
-                      <p className="font-bold text-gray-900 group-hover:text-red-600 transition">{answer.question_text}</p>
+                      <div className="font-bold text-gray-900 group-hover:text-red-600 transition">
+                        <MathText text={answer.question_text} />
+                      </div>
                       <div className="mt-3 flex gap-4">
                         <div className="flex items-center gap-2">
                           <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
@@ -397,9 +400,16 @@ export default function PerformancePage() {
                     <div className="mt-4 pt-4 border-t border-red-200 bg-white p-4 rounded">
                       <div className="flex items-start gap-2">
                         <span className="text-lg">💡</span>
-                        <p className="text-sm text-gray-700">
-                          <strong>Explanation:</strong> {answer.explanation || 'No explanation available'}
-                        </p>
+                        <div className="text-sm text-gray-700 flex-1">
+                          <strong>Explanation:</strong>
+                          <div className="mt-2">
+                            {answer.explanation ? (
+                              <div dangerouslySetInnerHTML={{ __html: answer.explanation }} />
+                            ) : (
+                              <p>No explanation available</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -459,7 +469,9 @@ export default function PerformancePage() {
                       >
                         {answer.is_correct ? '✓' : '✗'}
                       </span>
-                      <p className="font-semibold text-gray-900">{answer.question_text}</p>
+                      <div className="font-semibold text-gray-900">
+                        <MathText text={answer.question_text} />
+                      </div>
                     </div>
                       <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-green-700' : 'text-red-700'}`}>
                       Your answer: <strong>{answer.selected_choice_text ?? (typeof answer.selected_choice === 'number' ? 'Choice #' + answer.selected_choice : answer.selected_choice)}</strong>

@@ -74,8 +74,7 @@ import TutorsManagement from './TutorsManagement'
 import InstitutionsManagement from './InstitutionsManagement'
 import AdminsManagement from './AdminsManagement'
 import VerificationDashboard from '../../components/VerificationDashboard'
-// If PaymentHistory is needed, import it, otherwise referencing internal table
-// import PaymentHistory from '../../components/PaymentHistory'
+import QuestionManagementPage from '../questions/QuestionManagementPage'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -608,6 +607,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [examMessage, setExamMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const [editingExam, setEditingExam] = useState<any | null>(null)
   const [editingSubject, setEditingSubject] = useState<any | null>(null)
+
+  // Question Management State
+  const [selectedSubjectForQuestions, setSelectedSubjectForQuestions] = useState<any | null>(null)
+  const [showQuestionManagement, setShowQuestionManagement] = useState(false)
 
   // Gospel Video State
   const [gospelVideos, setGospelVideos] = useState<any[]>([])
@@ -3133,18 +3136,29 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                 {tab === 'exams' && (
                   <div>
-                    {examMessage && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`mb-4 p-4 rounded-lg ${examMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
-                      >
-                        {examMessage.text}
-                      </motion.div>
-                    )}
+                    {/* Show Question Management Page if selected */}
+                    {showQuestionManagement && selectedSubjectForQuestions ? (
+                      <QuestionManagementPage
+                        subject={selectedSubjectForQuestions}
+                        onBack={() => {
+                          setShowQuestionManagement(false)
+                          setSelectedSubjectForQuestions(null)
+                        }}
+                      />
+                    ) : (
+                      <div>
+                        {examMessage && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`mb-4 p-4 rounded-lg ${examMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
+                          >
+                            {examMessage.text}
+                          </motion.div>
+                        )}
 
-                    {examManagementLoading ? (
-                      <div className="flex items-center justify-center py-12">
+                        {examManagementLoading ? (
+                          <div className="flex items-center justify-center py-12">
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
                         <span className="text-gray-600">Loading exams...</span>
                       </div>
@@ -3457,9 +3471,20 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     </div>
                                     <p className="text-sm text-gray-600 line-clamp-2">{subject.description || 'No description'}</p>
                                     <div className="mt-4 pt-4 border-t border-gray-200">
-                                      <p className="text-xs text-gray-500">
+                                      <p className="text-xs text-gray-500 mb-3">
                                         Questions: <span className="font-semibold text-gray-900">{subject.question_count ?? 0}</span>
                                       </p>
+                                      <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => {
+                                          setSelectedSubjectForQuestions(subject)
+                                          setShowQuestionManagement(true)
+                                        }}
+                                        className="w-full px-3 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition-all border border-blue-200 text-sm"
+                                      >
+                                        View & Manage Questions
+                                      </motion.button>
                                     </div>
                                   </motion.div>
                                 ))}
@@ -3648,6 +3673,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           </div>
                         </div>
                       </div>
+                    )}
+                    </div>
                     )}
                   </div>
                 )}
@@ -4272,7 +4299,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             ))}
                           </div>
                         )}
-                      </div>
+                    </div>
                     )}
                   </div>
                 )}

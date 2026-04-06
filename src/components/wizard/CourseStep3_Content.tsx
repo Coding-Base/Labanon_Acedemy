@@ -62,17 +62,7 @@ export function CourseStep3_Content({
 }: CourseStep3Props) {
   const [expandedModuleIndex, setExpandedModuleIndex] = useState<number | null>(0)
   useEffect(() => {
-    console.log('[CourseStep3] Modules updated:', modules)
-    modules.forEach((mod, mIdx) => {
-      console.log(`[CourseStep3] Module ${mIdx}:`, mod.title)
-      mod.lessons?.forEach((lesson, lIdx) => {
-        console.log(`  [CourseStep3] Lesson ${lIdx}:`, {
-          title: lesson.title,
-          video_s3_url: lesson.video_s3_url ? '✓ PRESENT' : '✗ MISSING',
-          video_s3_status: lesson.video_s3_status
-        })
-      })
-    })
+    // Track module changes silently
   }, [modules])
   if (courseType === 'scheduled') {
     return (
@@ -212,11 +202,6 @@ export function CourseStep3_Content({
                       <h4 className="text-sm font-semibold text-gray-700">Lessons</h4>
                       {(module.lessons || []).map((lesson, lIdx) => {
                         const hasVideo = !!(lesson.video_s3_url || lesson.youtube_url);
-                        console.log('[CourseStep3] Rendering lesson:', { 
-                          title: lesson.title, 
-                          video_s3_url: lesson.video_s3_url, 
-                          hasVideo 
-                        });
                         return (
                         <div
                           key={`${mIdx}-${lIdx}-${lesson.title}`}
@@ -301,12 +286,6 @@ export function CourseStep3_Content({
                         <h5 className="font-semibold text-gray-900 mb-3">Add Video to Lesson</h5>
                         <VideoUploadWidget
                           onUploadComplete={(videoData) => {
-                            console.log('[CourseStep3] onUploadComplete triggered:', { 
-                              currentModuleIndex, 
-                              editingLessonIndex, 
-                              videoData 
-                            })
-                            
                             // Immediately trigger polling in parent with indices
                             // Parent will handle state updates
                             const videoId = videoData.video_id || videoData.video_s3
@@ -315,22 +294,10 @@ export function CourseStep3_Content({
                               const lessonIdx = editingLessonIndex !== null 
                                 ? editingLessonIndex 
                                 : Math.max(0, (modules[currentModuleIndex]?.lessons?.length ?? 1) - 1)
-                              console.log('[CourseStep3] Calling parent callback to start polling:', { 
-                                videoId, 
-                                currentModuleIndex, 
-                                lessonIdx,
-                                editingLessonIndex,
-                                calculatedFrom: editingLessonIndex !== null ? 'editingLessonIndex' : 'lessonCount'
-                              })
                               onVideoUploadComplete(videoId, currentModuleIndex, lessonIdx)
                             } else if (videoId && currentModuleIndex !== null) {
                               // Fallback if no callback
                               const lessonIdx = editingLessonIndex ?? (modules[currentModuleIndex]?.lessons?.length ?? 0) - 1
-                              console.log('[CourseStep3] No callback, updating locally:', { 
-                                videoId, 
-                                currentModuleIndex, 
-                                lessonIdx
-                              })
                               const newModules = modules.map((mod, idx) => {
                                 if (idx === currentModuleIndex) {
                                   const updatedLessons = (mod.lessons || []).map((ls, lIdx) => {

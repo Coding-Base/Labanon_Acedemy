@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // 1. USE SECURE API INSTANCE
 import api from '../../utils/axiosInterceptor';
 import useTokenRefresher from '../../utils/useTokenRefresher';
+import useNotifications from '../../utils/useNotifications';
 import {
   Home,
   BookOpen,
@@ -103,6 +104,7 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
+  const { unreadCount } = useNotifications(false);
 
   const handleLogout = () => {
     localStorage.removeItem('access');
@@ -678,7 +680,14 @@ export default function TutorDashboard(props: TutorDashboardProps) {
             </div>
             <div className="flex items-center space-x-4">
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowMessageModal(true)} className="relative p-2 rounded-lg hover:bg-gray-100"><Bell className="w-5 h-5 text-gray-600" /><span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span></motion.button>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowInbox(true)} className="relative p-2 rounded-lg hover:bg-gray-100"><Mail className="w-5 h-5 text-gray-600" /></motion.button>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowInbox(true)} className="relative p-2 rounded-lg hover:bg-gray-100">
+                <Mail className="w-5 h-5 text-gray-600" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </motion.button>
               <div className="hidden md:flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold">{summary?.username?.charAt(0).toUpperCase() || 'T'}</div>
                 <div><p className="text-sm font-semibold text-gray-900">{summary?.username || 'Tutor'}</p><p className="text-xs text-gray-500">Certified Tutor</p></div>

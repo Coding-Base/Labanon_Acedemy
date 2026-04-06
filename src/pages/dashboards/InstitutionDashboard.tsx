@@ -407,10 +407,6 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
               <button onClick={() => setShowInbox(true)} className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-full transition-all" title="Inbox">
                 <Mail className="w-5 h-5" />
               </button>
-              <div className="h-6 w-px bg-gray-300 mx-1"></div>
-              <button onClick={doLogout} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all" title="Logout">
-                <LogOut className="w-5 h-5" />
-              </button>
             </div>
           </div>
         </div>
@@ -453,6 +449,12 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   <button onClick={() => setContactAdminOpen(true)} className="w-full text-xs bg-white text-yellow-700 px-3 py-2 rounded-lg border border-yellow-200 font-medium hover:shadow-sm transition-shadow">Contact Support</button>
                 </div>
               </div>
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <button onClick={doLogout} className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200 group">
+                  <div className="text-gray-400 group-hover:text-red-600 transition-colors"><LogOut className="w-5 h-5" /></div>
+                  <span className="font-medium">Logout</span>
+                </button>
+              </div>
             </div>
           </motion.aside>
 
@@ -474,6 +476,12 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         </Link>
                     ))}
                     </nav>
+                    <div className="border-t border-gray-200 pt-4 mt-4">
+                      <button onClick={doLogout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-red-50 text-gray-700 hover:text-red-600 transition-all font-medium">
+                        <LogOut className="w-5 h-5" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
                 </motion.aside>
                 </>
             )}

@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react'
 import ComplianceForm from '../../components/ComplianceForm'
 import axios from 'axios'
 import { FileText, Download } from 'lucide-react'
+import useNotifications from '../../utils/useNotifications'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
 export default function TutorCompliancePage() {
   const [legalDocs, setLegalDocs] = useState<any[]>([])
   const [showForm, setShowForm] = useState(true)
+  // Show notification with delay when this component mounts (user opens compliance page)
+  useNotifications(true)
 
   useEffect(() => {
     loadLegalDocs()

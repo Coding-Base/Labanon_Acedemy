@@ -31,6 +31,53 @@ interface QuestionManagementPageProps {
 
 const DEBOUNCE_DELAY = 500
 
+/**
+ * Generate smart pagination with ellipsis for large page counts
+ * Shows: [1, 2, ..., current-1, current, current+1, ..., lastPage-1, lastPage]
+ * Responsive - different max items for mobile vs desktop
+ */
+function generatePaginationItems(
+  currentPage: number,
+  totalPages: number
+): (number | string)[] {
+  const maxVisible = window.innerWidth < 768 ? 5 : 7; // Mobile: 5 buttons, Desktop: 7 buttons
+  
+  if (totalPages <= maxVisible) {
+    // If total pages fit, show all
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const items: (number | string)[] = [];
+  const halfVisible = Math.floor((maxVisible - 3) / 2); // Reserve 1 for current, 2 for edges
+
+  // Always show first page
+  items.push(1);
+
+  // Determine the range around current page
+  const startRange = Math.max(2, currentPage - halfVisible);
+  const endRange = Math.min(totalPages - 1, currentPage + halfVisible);
+
+  // Add ellipsis if there's a gap after first page
+  if (startRange > 2) {
+    items.push('...');
+  }
+
+  // Add middle range
+  for (let i = startRange; i <= endRange; i++) {
+    items.push(i);
+  }
+
+  // Add ellipsis if there's a gap before last page
+  if (endRange < totalPages - 1) {
+    items.push('...');
+  }
+
+  // Always show last page
+  items.push(totalPages);
+
+  return items;
+}
+
 export default function QuestionManagementPage({
   subject,
   onBack
@@ -311,45 +358,88 @@ export default function QuestionManagementPage({
 
       {/* Pagination */}
       {!loading && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 py-6">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => loadQuestions(currentPage - 1, searchQuery)}
-            disabled={currentPage === 1 || loading}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
-          </motion.button>
+        <div className="flex flex-col items-center justify-center gap-4 py-6">
+          {/* Pagination info */}
+          <p className="text-sm text-gray-600">
+            Page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
+          </p>
 
-          <div className="flex items-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <motion.button
-                key={page}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => loadQuestions(page, searchQuery)}
-                disabled={loading}
-                className={`w-8 h-8 rounded-lg font-medium transition-all ${
-                  currentPage === page
-                    ? 'bg-blue-600 text-white'
-                    : 'hover:bg-gray-100 text-gray-700'
-                }`}
-              >
-                {page}
-              </motion.button>
-            ))}
+          {/* Pagination buttons */}
+          <div className="flex items-center justify-center gap-1.5 flex-wrap px-2">
+            {/* Previous button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => loadQuestions(currentPage - 1, searchQuery)}
+              disabled={currentPage === 1 || loading}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </motion.button>
+
+            {/* Dynamic pagination buttons */}
+            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              {generatePaginationItems(currentPage, totalPages).map((item, idx) =>
+                item === '...' ? (
+                  <span key={`ellipsis-${idx}`} className="px-2 py-1 text-gray-400">
+                    ...
+                  </span>
+                ) : (
+                  <motion.button
+                    key={item}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => loadQuestions(item as number, searchQuery)}
+                    disabled={loading}
+                    className={`w-8 h-8 rounded-lg font-medium transition-all text-sm ${
+                      currentPage === item
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'hover:bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {item}
+                  </motion.button>
+                )
+              )}
+            </div>
+
+            {/* Next button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => loadQuestions(currentPage + 1, searchQuery)}
+              disabled={currentPage === totalPages || loading}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </motion.button>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => loadQuestions(currentPage + 1, searchQuery)}
-            disabled={currentPage === totalPages || loading}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronRight className="w-5 h-5 text-gray-600" />
-          </motion.button>
+          {/* Go to page input - visible on desktop or when needed */}
+          <div className="mt-2 flex items-center gap-2 justify-center">
+            <label htmlFor="go-to-page" className="text-sm text-gray-600">
+              Go to page:
+            </label>
+            <input
+              id="go-to-page"
+              type="number"
+              min="1"
+              max={totalPages}
+              defaultValue={currentPage}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  const page = parseInt((e.target as HTMLInputElement).value)
+                  if (page >= 1 && page <= totalPages) {
+                    loadQuestions(page, searchQuery)
+                  }
+                }
+              }}
+              className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="1"
+            />
+          </div>
         </div>
       )}
 

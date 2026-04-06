@@ -154,6 +154,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [payments, setPayments] = useState<any[]>([])
   const [paymentStats, setPaymentStats] = useState<any>(null)
   const [paymentsLoading, setPaymentsLoading] = useState(false)
+  const [institutionsCount, setInstitutionsCount] = useState(0)
+  const [administratorsCount, setAdministratorsCount] = useState(0)
   const [adminLoading, setAdminLoading] = useState(false)
   const [gaSummary, setGaSummary] = useState<any | null>(null)
   const [utmSources, setUtmSources] = useState<any[] | null>(null)
@@ -323,6 +325,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       try { await loadCourses() } catch (e) { /* ignore */ }
       try { await loadPayments(1) } catch (e) { /* ignore */ }
       try { await loadUsers(1) } catch (e) { /* ignore */ }
+      try { await loadInstitutions() } catch (e) { /* ignore */ }
+      try { await loadAdministrators() } catch (e) { /* ignore */ }
     } catch (err) {
       console.warn('Failed to load overview stats', err)
     }
@@ -788,6 +792,32 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       console.error(err)
     }
     setLoading(false)
+  }
+
+  async function loadInstitutions() {
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/users/?role=institution`, { headers: { Authorization: `Bearer ${token}` } })
+      const data = res.data
+      const count = data.count || (Array.isArray(data.results) ? data.results.length : 0)
+      setInstitutionsCount(count)
+    } catch (err) {
+      console.error('Failed to load institutions count', err)
+      setInstitutionsCount(0)
+    }
+  }
+
+  async function loadAdministrators() {
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/users/?role=admin`, { headers: { Authorization: `Bearer ${token}` } })
+      const data = res.data
+      const count = data.count || (Array.isArray(data.results) ? data.results.length : 0)
+      setAdministratorsCount(count)
+    } catch (err) {
+      console.error('Failed to load administrators count', err)
+      setAdministratorsCount(0)
+    }
   }
 
   async function loadExams() {
@@ -1821,7 +1851,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
                     >
                       <div className="text-sm">Institutions</div>
-                      <div className="text-2xl font-bold">-</div>
+                      <div className="text-2xl font-bold">{institutionsCount.toLocaleString() || 0}</div>
                     </div>
 
                     <div

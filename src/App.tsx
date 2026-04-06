@@ -8,6 +8,8 @@ import { initGA, sendPageView } from './utils/googleAnalytics'
 
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
+const VerifyEmailSent = lazy(() => import('./pages/VerifyEmailSent'))
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const Marketplace = lazy(() => import('./pages/Marketplace'))
 const CourseDetail = lazy(() => import('./pages/CourseDetail'))
 const DiplomaDetail = lazy(() => import('./pages/DiplomaDetail'))
@@ -25,6 +27,7 @@ const About = lazy(() => import('./pages/About'))
 const StudentDashboard = lazy(() => import('./pages/dashboards/StudentDashboard'))
 const TutorDashboard = lazy(() => import('./pages/dashboards/TutorDashboard'))
 const InstitutionDashboard = lazy(() => import('./pages/dashboards/InstitutionDashboard'))
+const InstitutionDetail = lazy(() => import('./pages/dashboards/InstitutionDetail'))
 const MasterAdminDashboard = lazy(() => import('./pages/dashboards/MasterAdminDashboard'))
 const AdminCourseDetail = lazy(() => import('./pages/AdminCourseDetail'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
@@ -91,6 +94,8 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
 
             {/* Admin auth */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -100,6 +105,7 @@ export default function App() {
             <Route path="/student/*" element={<StudentDashboard />} />
             <Route path="/tutor/*" element={<TutorDashboard />} />
             <Route path="/institution/*" element={<InstitutionDashboard />} />
+            <Route path="/admin/institutions/:userId" element={<InstitutionDetail />} />
             <Route path="/admin/course/:id" element={<AdminCourseDetail />} />
             <Route path="/admin/*" element={<MasterAdminDashboard />} />
 

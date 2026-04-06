@@ -12,6 +12,14 @@ import {
   Filter,
   Plus,
   AlertCircle,
+  ArrowLeft,
+  Calendar,
+  Mail,
+  Globe,
+  Users,
+  TrendingUp,
+  Award,
+  Building,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -56,6 +64,9 @@ export default function InstitutionsManagement() {
   const [showSettings, setShowSettings] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteInstitutionId, setDeleteInstitutionId] = useState<number | null>(null)
+  const [showDetailView, setShowDetailView] = useState(false)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState('')
 
   // Settings form state
   const [newSharePercentage, setNewSharePercentage] = useState<number | null>(null)
@@ -91,6 +102,49 @@ export default function InstitutionsManagement() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function loadInstitutionDetail(userId: number, originalInstitution?: any) {
+    setDetailLoading(true)
+    setDetailError('')
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/users/institution-profile/${userId}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = res.data
+      // Map response to InstitutionDetails format
+      const detail: InstitutionDetails = {
+        id: data.user || userId,
+        name: data.institution_name || 'Institution',
+        owner: {
+          id: userId,
+          first_name: data.full_name?.split(' ')[0] || '',
+          last_name: data.full_name?.split(' ').slice(1).join(' ') || '',
+          email: data.work_email || ''
+        },
+        email: data.work_email || '',
+        phone: '',
+        verification_status: originalInstitution?.verification_status || 'pending',
+        courses_count: 0,
+        is_active: true,
+        description: `Institution Type: ${data.institution_type}`,
+        created_at: data.created_at || new Date().toISOString()
+      }
+      setSelectedInstitution(detail)
+      setShowDetailView(true)
+    } catch (err: any) {
+      setDetailError(err.response?.data?.detail || 'Failed to load institution details. Please try again.')
+      console.error(err)
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
+  function closeDetailView() {
+    setShowDetailView(false)
+    setSelectedInstitution(null)
+    setDetailError('')
   }
 
   function filterInstitutions() {
@@ -229,6 +283,128 @@ export default function InstitutionsManagement() {
     )
   }
 
+  // Detail View
+  if (showDetailView && selectedInstitution) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-6">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={closeDetailView}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{selectedInstitution.name}</h1>
+                <p className="text-gray-600 mt-1">Institution Management</p>
+              </div>
+            </div>
+            {getStatusBadge(selectedInstitution.verification_status)}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-w-7xl mx-auto p-6">
+          {detailError ? (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 mb-6">
+              <p className="font-medium">Error Loading Details</p>
+              <p className="text-sm mt-1">{detailError}</p>
+            </div>
+          ) : detailLoading ? (
+            <div className="text-center py-12">
+              <div className="text-gray-600">Loading institution details...</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Info */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Contact Information */}
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-600" />
+                    Contact Information
+                  </h2>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Contact Person</p>
+                      <p className="font-medium text-gray-900">{selectedInstitution.owner?.first_name} {selectedInstitution.owner?.last_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Email Address</p>
+                      <p className="font-medium text-gray-900 flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        {selectedInstitution.owner?.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Institution Details */}
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Building className="w-5 h-5 text-blue-600" />
+                    Institution Details
+                  </h2>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Institution Type</p>
+                      <p className="font-medium text-gray-900">{selectedInstitution.description?.replace('Institution Type: ', '')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Account Status</p>
+                      <p className="font-medium text-gray-900">{selectedInstitution.is_active ? 'Active' : 'Inactive'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Account Stats */}
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="font-bold text-gray-900 mb-4">Account Statistics</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-green-600" />
+                        <span className="text-sm text-gray-600">Courses</span>
+                      </div>
+                      <span className="font-bold text-gray-900">{selectedInstitution.courses_count}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-gray-600">Verification</span>
+                      </div>
+                      <span className="text-sm font-medium">{selectedInstitution.verification_status}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Created */}
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="font-bold text-gray-900 mb-3">Account Information</h3>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-gray-600" />
+                    <div>
+                      <p className="text-gray-600">Created on</p>
+                      <p className="font-medium text-gray-900">
+                        {new Date(selectedInstitution.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -331,14 +507,18 @@ export default function InstitutionsManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredInstitutions.map(inst => (
+                  {filteredInstitutions.map(inst => {
+                    const user = inst as any
+                    return (
                     <tr key={inst.id} className="border-b border-gray-200 hover:bg-gray-50">
                       <td className="py-4 px-6">
                         <div>
                           <p className="font-medium text-gray-900">
-                            { (inst as any).institution_name || inst.name || 'Institution' }
+                            { user.institution_name || user.name || 'Institution' }
                           </p>
-                          <p className="text-xs text-gray-500">Owner: {((inst as any).owner?.first_name ? `${(inst as any).owner.first_name} ${(inst as any).owner.last_name}` : ((inst as any).owner?.username || 'Unknown'))} ({inst.email})</p>
+                          <p className="text-xs text-gray-500">
+                            Owner: {(user.first_name || user.last_name) ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : (user.username || 'Unknown')} ({user.email})
+                          </p>
                         </div>
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-600">{inst.email}</td>
@@ -348,7 +528,7 @@ export default function InstitutionsManagement() {
                       <td className="py-4 px-6 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => navigate(`/admin/institutions/${inst.id}`)}
+                            onClick={() => loadInstitutionDetail(inst.owner?.id || inst.id, inst)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
                             title="View Details"
                           >
@@ -371,7 +551,8 @@ export default function InstitutionsManagement() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

@@ -14,6 +14,13 @@ import {
   AlertCircle,
   BarChart3,
   TrendingUp,
+  ArrowLeft,
+  Calendar,
+  Mail,
+  Award,
+  Users,
+  DollarSign,
+  Star,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -47,6 +54,7 @@ export default function TutorsManagement() {
   const [showSettings, setShowSettings] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTutorId, setDeleteTutorId] = useState<number | null>(null)
+  const [showDetailView, setShowDetailView] = useState(false)
 
   const [newSharePercentage, setNewSharePercentage] = useState<number | null>(null)
   const [newStatus, setNewStatus] = useState<'pending' | 'approved' | 'rejected'>('pending')
@@ -207,6 +215,143 @@ export default function TutorsManagement() {
     )
   }
 
+  // Detail View
+  if (showDetailView && selectedTutor) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-6">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  setShowDetailView(false)
+                  setSelectedTutor(null)
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {selectedTutor.first_name} {selectedTutor.last_name}
+                </h1>
+                <p className="text-gray-600 mt-1">Tutor Profile</p>
+              </div>
+            </div>
+            {getStatusBadge(selectedTutor.verification_status)}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Info */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Personal Information */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  Personal Information
+                </h2>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-600">Email Address</p>
+                    <p className="font-medium text-gray-900 flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      {selectedTutor.email}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Account Status</p>
+                    <p className="font-medium text-gray-900">{selectedTutor.is_active ? 'Active' : 'Inactive'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Teaching Analytics */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  Teaching Analytics
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-gray-600">Courses</p>
+                    <p className="text-2xl font-bold text-blue-600">{selectedTutor.courses_count}</p>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <p className="text-sm text-gray-600">Students Taught</p>
+                    <p className="text-2xl font-bold text-green-600">{selectedTutor.students_taught}</p>
+                  </div>
+                  <div className="p-4 bg-yellow-50 rounded-lg">
+                    <p className="text-sm text-gray-600">Average Rating</p>
+                    <p className="text-2xl font-bold text-yellow-600 flex items-center gap-1">
+                      <Star className="w-5 h-5" />
+                      {(selectedTutor.average_rating || 0).toFixed(1)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Earnings Information */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-green-600" />
+                  Earnings
+                </h3>
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm text-gray-600">Total Revenue</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ₦{(selectedTutor.total_revenue || 0).toLocaleString()}
+                    </p>
+                  </div>
+                  {selectedTutor.custom_share_percentage && (
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Custom Share</p>
+                      <p className="text-lg font-medium text-gray-900">{selectedTutor.custom_share_percentage}%</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Account Information */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-blue-600" />
+                  Account Information
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-gray-600" />
+                    <div>
+                      <p className="text-gray-600">Joined</p>
+                      <p className="font-medium text-gray-900">
+                        {new Date(selectedTutor.date_joined).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">Verification Status</p>
+                    <p className="font-medium text-gray-900 mt-2">
+                      {selectedTutor.verification_status === 'approved' && 'Verified & Approved'}
+                      {selectedTutor.verification_status === 'pending' && 'Pending Review'}
+                      {selectedTutor.verification_status === 'rejected' && 'Rejected'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -358,7 +503,10 @@ export default function TutorsManagement() {
                       <td className="py-4 px-6 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => navigate(`/admin/tutors/${tutor.id}`)}
+                            onClick={() => {
+                              setSelectedTutor(tutor)
+                              setShowDetailView(true)
+                            }}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
                             title="View Details"
                           >

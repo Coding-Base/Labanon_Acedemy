@@ -62,6 +62,17 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
 
+  // Institution-specific fields (Step 1.5)
+  const [institutionType, setInstitutionType] = useState('');
+  const [institutionName, setInstitutionName] = useState('');
+  const [contactFullName, setContactFullName] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [workEmail, setWorkEmail] = useState('');
+  const [position, setPosition] = useState('');
+  const [department, setDepartment] = useState('');
+  const [country, setCountry] = useState('');
+  const [purpose, setPurpose] = useState<string[]>([]);
+
   const roles = [
     { 
       id: 'student', 
@@ -102,6 +113,62 @@ export default function Register() {
     }
   ];
 
+  const institutionTypes = [
+    { value: 'university', label: 'University' },
+    { value: 'polytechnic', label: 'Polytechnic' },
+    { value: 'secondary_school', label: 'Secondary School' },
+    { value: 'training_org', label: 'Training Organization' },
+    { value: 'professional_institute', label: 'Professional Institute' },
+    { value: 'tutorial_center', label: 'Tutorial Center' },
+  ];
+
+  const purposeOptions = [
+    { value: 'host_courses', label: 'Host courses' },
+    { value: 'recruitment_exams', label: 'Organise recruitment exams or online exams' },
+    { value: 'certificates', label: 'Launch certificate programs' },
+    { value: 'partnerships', label: 'Explore partnership opportunities' },
+  ];
+
+  const positionOptions = [
+    { value: 'president', label: 'President/Rector' },
+    { value: 'vice_chancellor', label: 'Vice Chancellor/Principal' },
+    { value: 'provost', label: 'Provost' },
+    { value: 'dean', label: 'Dean' },
+    { value: 'hod', label: 'Head of Department (HOD)' },
+    { value: 'teaching_staff', label: 'Teaching Staff' },
+    { value: 'it_admin', label: 'IT/Admin Staff' },
+    { value: 'others', label: 'Others' },
+  ];
+
+  const countries = [
+    'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Argentina', 'Armenia', 'Australia', 
+    'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 
+    'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 
+    'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cambodia', 'Cameroon', 'Canada', 'Cape Verde', 
+    'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica',
+    'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Côte d\'Ivoire', 'Denmark', 'Djibouti', 'Dominica',
+    'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia',
+    'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana',
+    'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras',
+    'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy',
+    'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kosovo', 'Kuwait', 'Kyrgyzstan',
+    'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania',
+    'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands',
+    'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro',
+    'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand',
+    'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan',
+    'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland',
+    'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia',
+    'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia',
+    'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia',
+    'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka',
+    'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 'Tanzania',
+    'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey',
+    'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom',
+    'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam',
+    'Yemen', 'Zambia', 'Zimbabwe'
+  ];
+
   const passwordRequirements = [
     { label: 'At least 8 characters', met: password.length >= 8 },
     { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
@@ -110,15 +177,31 @@ export default function Register() {
     { label: 'Contains special character', met: /[!@#$%^&*]/.test(password) },
   ];
 
+  const togglePurpose = (purposeValue: string) => {
+    setPurpose(prev => 
+      prev.includes(purposeValue) 
+        ? prev.filter(p => p !== purposeValue)
+        : [...prev, purposeValue]
+    );
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setFieldErrors({});
     
-    // Validation
-    if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
-      setError('All fields are required');
-      return;
+    // Validation for Step 2
+    // For institutions, don't require firstName/lastName
+    if (role === 'institution') {
+      if (!email || !password || !confirmPassword) {
+        setError('Email and password are required');
+        return;
+      }
+    } else {
+      if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
+        setError('All fields are required');
+        return;
+      }
     }
 
     if (password !== confirmPassword) {
@@ -131,15 +214,51 @@ export default function Register() {
       return;
     }
 
+    // Additional validation for institution role
+    if (role === 'institution') {
+      if (!institutionName || !institutionType || !position || !department || !country) {
+        setError('Please fill in all institution details');
+        return;
+      }
+      if (purpose.length === 0) {
+        setError('Please select at least one purpose');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
-      await register({ username, email, password, role, first_name: firstName, last_name: lastName });
-      // After successful registration, redirect to login preserving `next` if present
-      const qs = nextParam ? `?next=${encodeURIComponent(nextParam)}` : '';
-      // small success delay for UX
+      const registrationData: any = {
+        username: role === 'institution' ? institutionName : username,
+        email,
+        password,
+        role,
+        first_name: role === 'institution' ? contactFullName || institutionName : firstName,
+        last_name: role === 'institution' ? '' : lastName,
+      };
+
+      // Add institution-specific data if role is institution
+      if (role === 'institution') {
+        registrationData.institution_name = institutionName;
+        registrationData.full_name = contactFullName;
+        registrationData.job_title = jobTitle;
+        registrationData.work_email = workEmail;
+        registrationData.institution_type = institutionType;
+        registrationData.position = position;
+        registrationData.department = department;
+        registrationData.country = country;
+        registrationData.purpose = purpose.join(',');
+      }
+
+      await register(registrationData);
+      
+      // Show verification email message and redirect
       setTimeout(() => {
-        navigate(`/login${qs}`, { replace: true });
+        navigate('/verify-email-sent', { 
+          state: { email, role },
+          replace: true 
+        });
       }, 800);
     } catch (err: any) {
       // DRF/Djoser typically returns field errors as an object: { username: [..], email:[..] }
@@ -171,7 +290,41 @@ export default function Register() {
     }
   }
 
+  const handleRoleSelection = (selectedRole: string) => {
+    setRole(selectedRole);
+    // Move to Step 1.5 if institution, otherwise to Step 2
+    if (selectedRole === 'institution') {
+      setStep(1.5);
+    } else {
+      setStep(2);
+    }
+  };
+
+  const handleBackFromInstitution = () => {
+    setStep(1);
+    setRole('student');
+  };
+
+  const handleContinueFromInstitution = () => {
+    // Validate institution fields
+    if (!institutionName || !institutionType || !position || !department || !country || purpose.length === 0) {
+      setError('Please fill in all institution details');
+      return;
+    }
+    setError(null);
+    setStep(2);
+  };
+
   const isFormValid = () => {
+    // For institutions: only check email, password, and password requirements
+    // (username is auto-generated from institutionName)
+    if (role === 'institution') {
+      return email && password && confirmPassword && 
+             password === confirmPassword &&
+             passwordRequirements.every(req => req.met);
+    }
+    
+    // For other roles: check all fields
     return firstName && lastName && username && email && password && confirmPassword && 
            password === confirmPassword &&
            passwordRequirements.every(req => req.met);
@@ -213,15 +366,36 @@ export default function Register() {
             {/* Progress Steps */}
             <div className="flex items-center justify-center mb-8">
               <div className="flex items-center space-x-2">
-                {[1, 2].map((stepNumber) => (
-                  <React.Fragment key={stepNumber}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                      step >= stepNumber 
-                        ? 'bg-gradient-to-r from-brand-600 to-brand-600 text-white' 
-                        : 'bg-gray-200 text-gray-500'
-                    }`}>
-                      {stepNumber}
-                    </div>
+                {role === 'institution' ? (
+                  // Institution: 3 steps
+                  [1, 1.5, 2].map((stepNumber, idx) => (
+                    <React.Fragment key={idx}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                        step >= stepNumber 
+                          ? 'bg-gradient-to-r from-brand-600 to-brand-600 text-white' 
+                          : 'bg-gray-200 text-gray-500'
+                      }`}>
+                        {stepNumber === 1.5 ? '1.5' : stepNumber}
+                      </div>
+                      {stepNumber !== 2 && (
+                        <div className={`w-12 h-1 ${
+                          step > stepNumber ? 'bg-gradient-to-r from-brand-600 to-brand-600' : 'bg-gray-200'
+                        }`} />
+                      )}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  // Other roles: 2 steps
+                  <>
+                  {[1, 2].map((stepNumber) => (
+                    <React.Fragment key={stepNumber}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                        step >= stepNumber 
+                          ? 'bg-gradient-to-r from-brand-600 to-brand-600 text-white' 
+                          : 'bg-gray-200 text-gray-500'
+                      }`}>
+                        {stepNumber}
+                      </div>
                     {stepNumber < 2 && (
                       <div className={`w-16 h-1 ${
                         step > stepNumber ? 'bg-gradient-to-r from-brand-600 to-brand-600' : 'bg-gray-200'
@@ -229,6 +403,8 @@ export default function Register() {
                     )}
                   </React.Fragment>
                 ))}
+                  </>
+                )}
               </div>
             </div>
 
@@ -291,12 +467,204 @@ export default function Register() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setStep(2)}
+                  onClick={() => handleRoleSelection(role)}
                   className="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-600 text-white rounded-xl font-semibold hover:shadow-lg"
                 >
                   Continue
                   <ChevronRight className="w-5 h-5 inline ml-2" />
                 </motion.button>
+              </motion.div>
+            )}
+
+            {/* Step 1.5: Institution Details (Only for Institution Role) */}
+            {step === 1.5 && (
+              <motion.div
+                variants={fadeInUp}
+                initial="hidden"
+                animate="visible"
+                className="space-y-6"
+              >
+                <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">
+                  Institution Details
+                </h3>
+
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+
+                {/* Institution Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Institution Type *
+                  </label>
+                  <select
+                    value={institutionType}
+                    onChange={(e) => setInstitutionType(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                  >
+                    <option value="">Select institution type</option>
+                    {institutionTypes.map(type => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Institution Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Institution Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={institutionName}
+                    onChange={(e) => setInstitutionName(e.target.value)}
+                    placeholder="Your institution name"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+
+                {/* Contact Information */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 text-sm">Contact Person Information</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={contactFullName}
+                      onChange={(e) => setContactFullName(e.target.value)}
+                      placeholder="Your full name"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Job Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={jobTitle}
+                      onChange={(e) => setJobTitle(e.target.value)}
+                      placeholder="e.g., Vice Chancellor, Dean, Director"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Work Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={workEmail}
+                      onChange={(e) => setWorkEmail(e.target.value)}
+                      placeholder="your.work@institution.edu"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Organization Details */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 text-sm">Organization Details</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Position *
+                    </label>
+                    <select
+                      value={position}
+                      onChange={(e) => setPosition(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    >
+                      <option value="">Select position</option>
+                      {positionOptions.map(pos => (
+                        <option key={pos.value} value={pos.value}>{pos.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Department *
+                    </label>
+                    <input
+                      type="text"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      placeholder="e.g., Academics, Administration"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Country *
+                    </label>
+                    <select
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                    >
+                      <option value="">Select country</option>
+                      {countries.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Purpose Selection */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 text-sm">Purpose of Account Creation *</h4>
+                  <p className="text-xs text-gray-600">Select all that apply</p>
+                  
+                  <div className="space-y-3">
+                    {purposeOptions.map(option => (
+                      <label key={option.value} className="flex items-start cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={purpose.includes(option.value)}
+                          onChange={() => togglePurpose(option.value)}
+                          className="mt-1 w-4 h-4 text-brand-600 rounded"
+                        />
+                        <span className="ml-3 text-sm text-gray-700">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleBackFromInstitution}
+                    className="flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition"
+                  >
+                    Back
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleContinueFromInstitution}
+                    className="flex-1 py-3 bg-gradient-to-r from-brand-600 to-brand-600 text-white rounded-xl font-semibold hover:shadow-lg transition"
+                  >
+                    Continue
+                    <ChevronRight className="w-5 h-5 inline ml-2" />
+                  </motion.button>
+                </div>
               </motion.div>
             )}
 
@@ -312,11 +680,11 @@ export default function Register() {
                 {/* Back button */}
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={() => role === 'institution' ? setStep(1.5) : setStep(1)}
                   className="flex items-center text-brand-700 hover:text-brand-800 font-medium mb-4"
                 >
                   <ChevronRight className="w-5 h-5 rotate-180 mr-1" />
-                  Back to account type
+                  Back to {role === 'institution' ? 'institution details' : 'account type'}
                 </button>
 
                 {/* Selected Role Display */}
@@ -340,58 +708,75 @@ export default function Register() {
 
                 {/* Form Fields */}
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        First name
-                      </label>
-                      <input
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="First name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                        required
-                      />
-                      {fieldErrors.first_name && (
-                        <p className="mt-2 text-sm text-red-600">{fieldErrors.first_name.join(' ')}</p>
-                      )}
+                  {/* First and Last Name - Only for non-institution roles */}
+                  {role !== 'institution' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          First name
+                        </label>
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="First name"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                          required
+                        />
+                        {fieldErrors.first_name && (
+                          <p className="mt-2 text-sm text-red-600">{fieldErrors.first_name.join(' ')}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Last name
+                        </label>
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Last name"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+                          required
+                        />
+                        {fieldErrors.last_name && (
+                          <p className="mt-2 text-sm text-red-600">{fieldErrors.last_name.join(' ')}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Last name
-                      </label>
-                      <input
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Last name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
-                        required
-                      />
-                      {fieldErrors.last_name && (
-                        <p className="mt-2 text-sm text-red-600">{fieldErrors.last_name.join(' ')}</p>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <User className="w-4 h-4 inline mr-2" />
-                      Username
-                    </label>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Choose a username"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
-                      required
-                    />
-                    {fieldErrors.username && (
-                      <p className="mt-2 text-sm text-red-600">{fieldErrors.username.join(' ')}</p>
-                    )}
-                  </div>
+                  {/* Username - Read-only for institutions */}
+                  {role === 'institution' ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <User className="w-4 h-4 inline mr-2" />
+                        Institution Username
+                      </label>
+                      <div className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 flex items-center text-gray-700">
+                        {institutionName || 'Institution name required'}
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500">Auto-generated from institution name</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <User className="w-4 h-4 inline mr-2" />
+                        Username
+                      </label>
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Choose a username"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
+                        required
+                      />
+                      {fieldErrors.username && (
+                        <p className="mt-2 text-sm text-red-600">{fieldErrors.username.join(' ')}</p>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -402,7 +787,7 @@ export default function Register() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
+                      placeholder="Enter your personal email"
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
                       required
                     />

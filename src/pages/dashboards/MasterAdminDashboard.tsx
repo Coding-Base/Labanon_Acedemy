@@ -146,9 +146,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [creatingCourse, setCreatingCourse] = useState(false)
   const [showSubAdminForm, setShowSubAdminForm] = useState(false)
-  const [institutions, setInstitutions] = useState<any[]>([])
-  const [selectedInstitution, setSelectedInstitution] = useState<any | null>(null)
-  const [institutionLoading, setInstitutionLoading] = useState(false)
+
   const [courses, setCourses] = useState<any[]>([])
   const [coursesLoading, setCoursesLoading] = useState(false)
   const [cbtAnalytics, setCbtAnalytics] = useState<any>(null)
@@ -322,7 +320,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       }
 
       // populate institutions, courses and users lists for accurate counts
-      try { await loadInstitutions() } catch (e) { /* ignore */ }
       try { await loadCourses() } catch (e) { /* ignore */ }
       try { await loadPayments(1) } catch (e) { /* ignore */ }
       try { await loadUsers(1) } catch (e) { /* ignore */ }
@@ -683,7 +680,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   useEffect(() => {
     if (tab === 'users') loadUsers()
     if (tab === 'bulk') loadExams()
-    if (tab === 'institutions') loadInstitutions()
     if (tab === 'courses') loadCourses()
     if (tab === 'cbt') loadCbtAnalytics()
     if (tab === 'analytics') {
@@ -816,21 +812,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           console.error('Failed to load subjects', err)
           setSubjects([])
       }
-  }
-
-  async function loadInstitutions() {
-    setInstitutionLoading(true)
-    try {
-      const token = localStorage.getItem('access')
-      const res = await axios.get(`${API_BASE}/institutions/`, { headers: { Authorization: `Bearer ${token}` } })
-      const data = res.data.results || res.data
-      setInstitutions(Array.isArray(data) ? data : [])
-    } catch (err) { 
-      console.error(err)
-      setInstitutions([])
-    } finally {
-      setInstitutionLoading(false)
-    }
   }
 
   async function loadCourses() {
@@ -1840,7 +1821,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
                     >
                       <div className="text-sm">Institutions</div>
-                      <div className="text-2xl font-bold">{institutions.length}</div>
+                      <div className="text-2xl font-bold">-</div>
                     </div>
 
                     <div
@@ -2723,111 +2704,6 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     )}
                   </div>
                 )}
-                {tab === 'institutions' && (
-                  <div>
-                    {institutionLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
-                        <span className="text-gray-600">Loading institutions...</span>
-                      </div>
-                    ) : (
-                      <div className="grid lg:grid-cols-2 gap-6">
-                        {/* Institutions List */}
-                        <div>
-                          {institutions.length === 0 ? (
-                            <div className="text-center py-12">
-                              <Building className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                              <p className="text-gray-500">No institutions found</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              {institutions.map((institution) => (
-                                <motion.div
-                                  key={institution.id}
-                                  whileHover={{ x: 5 }}
-                                  onClick={() => setSelectedInstitution(institution)}
-                                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                                    selectedInstitution?.id === institution.id
-                                      ? 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-yellow-50'
-                                      : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-4">
-                                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold">
-                                        {institution.name?.charAt(0).toUpperCase()}
-                                      </div>
-                                      <div>
-                                        <h4 className="font-semibold text-gray-900">{institution.name}</h4>
-                                        <div className="flex items-center mt-1 space-x-3">
-                                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${institution.is_active ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
-                                            {institution.is_active ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
-                                            {institution.is_active ? 'Active' : 'Inactive'}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Institution Details */}
-                        <div className="lg:border-l lg:pl-6">
-                          {selectedInstitution ? (
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900 mb-4">Institution Details</h3>
-                              <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-2xl p-6">
-                                <div className="flex items-center space-x-4 mb-6">
-                                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
-                                    {selectedInstitution.name?.charAt(0).toUpperCase()}
-                                  </div>
-                                  <div>
-                                    <h4 className="text-xl font-bold text-gray-900">{selectedInstitution.name}</h4>
-                                    <div className="flex items-center mt-2">
-                                      <span className={`inline-flex items-center px-4 py-2 rounded-full font-medium ${selectedInstitution.is_active ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
-                                        {selectedInstitution.is_active ? 'Active' : 'Inactive'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                    <div className="p-3 bg-white rounded-lg">
-                                      <p className="text-gray-900">{selectedInstitution.description || 'No description provided'}</p>
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Owner</label>
-                                    <div className="p-3 bg-white rounded-lg">
-                                      <span className="text-gray-900">{selectedInstitution.owner_username || 'N/A'}</span>
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Courses</label>
-                                    <div className="p-3 bg-white rounded-lg">
-                                      <span className="text-gray-900 font-semibold">{selectedInstitution.courses_count || 0}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-center py-12">
-                              <Building className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                              <p className="text-gray-500">Select an institution to view details</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {tab === 'signature' && (
                   <div>
                     {/* Master signature management for platform CEO */}

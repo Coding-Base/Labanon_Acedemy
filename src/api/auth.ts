@@ -22,3 +22,13 @@ export async function me(token: string) {
   const res = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } })
   return res.data
 }
+
+export async function verifyEmail(token: string) {
+  const res = await axios.post(`${API_BASE}/users/verify-email/`, { token })
+  return res.data
+}
+
+export async function resendVerificationEmail(email: string) {
+  const res = await axios.post(`${API_BASE}/users/resend-verification-email/`, { email })
+  return res.data
+}

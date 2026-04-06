@@ -14,7 +14,7 @@ export async function refresh(token: string) {
 }
 
 export async function register(data: any) {
-  const res = await axios.post(`${API_BASE}/auth/users/`, data)
+  const res = await axios.post(`${API_BASE}/users/register/`, data)
   return res.data
 }
 

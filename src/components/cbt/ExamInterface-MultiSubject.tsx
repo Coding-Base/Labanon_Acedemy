@@ -56,7 +56,7 @@ export default function ExamInterface({
 
   const currentSubjectConfig = subjectConfigs[currentSubjectIndex]
   const totalQuestionsAcross = subjectConfigs.reduce((sum, cfg) => sum + cfg.num_questions, 0)
-  const totalAnsweredAcross = Object.values(selectedAnswers).filter(answer => answer !== null).length
+  const totalAnsweredAcross = subjectProgress.reduce((sum, sp) => sum + sp.answered_count, 0)
 
   useEffect(() => {
     fetchQuestionsForSubject()

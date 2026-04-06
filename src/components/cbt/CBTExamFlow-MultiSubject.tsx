@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
+import { useRef, useEffect } from 'react'
 import axios from 'axios'
 import ExamTypeModal from './ExamTypeModal'
 import SubjectSelectionModal from './SubjectSelectionModal'
 import QuestionConfigurationModal from './QuestionConfigurationModal'
 import TestNamingAndTimeModal from './TestNamingAndTimeModal'
-import ExamInterface from './ExamInterface'
+import ExamInterfaceMultiSubject from './ExamInterface-MultiSubject'
 import { useNavigate } from 'react-router-dom'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
@@ -167,7 +168,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
   // Render exam interface when ready
   if (flowStep === 'exam-interface' && examAttemptId && selectedExam && subjectConfigs.length > 0) {
     return (
-      <ExamInterface
+      <ExamInterfaceMultiSubject
         examAttemptId={examAttemptId}
         testName={testName}
         subjectConfigs={subjectConfigs.map(cfg => ({

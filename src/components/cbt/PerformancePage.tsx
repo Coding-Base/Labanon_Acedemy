@@ -74,7 +74,14 @@ interface Performance {
   id: number
   user_name: string
   exam_title: string
-  subject_name: string
+  test_name?: string
+  subject_name?: string
+  subjects?: Array<{
+    subject_id: number
+    subject_name: string
+    num_questions: number
+    correct_count: number
+  }>
   num_questions: number
   time_limit_minutes: number
   time_taken_seconds: number
@@ -94,7 +101,7 @@ export default function PerformancePage() {
   const [performance, setPerformance] = useState<Performance | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [expandedWrongAnswer, setExpandedWrongAnswer] = useState<number | null>(null)
+  const [expandedWrongAnswer, setExpandedWrongAnswer] = useState<number | string | null>(null)
 
   useEffect(() => {
     fetchPerformance()
@@ -208,8 +215,21 @@ export default function PerformancePage() {
         {/* Header */}
         <div className={`bg-gradient-to-br ${scoreBgColor} rounded-2xl shadow-2xl p-8 mb-8 border border-opacity-20`}>
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-2 text-gray-900">{performance.exam_title}</h1>
-            <p className="text-gray-700 mb-6 text-lg">{performance.subject_name}</p>
+            <h1 className="text-4xl font-bold mb-2 text-gray-900">
+              {performance.test_name || performance.exam_title}
+            </h1>
+            {performance.subjects && performance.subjects.length > 0 ? (
+              <div>
+                <p className="text-gray-700 mb-2 text-base font-medium">
+                  Multi-Subject Exam • {performance.subjects.length} subject{performance.subjects.length !== 1 ? 's' : ''}
+                </p>
+                <p className="text-gray-600 text-sm mb-6">
+                  {performance.subjects.map(s => s.subject_name).join(' • ')}
+                </p>
+              </div>
+            ) : (
+              <p className="text-gray-700 mb-6 text-lg">{performance.subject_name}</p>
+            )}
 
             <div className={`text-6xl font-bold ${scoreColor} mb-4 drop-shadow-lg`}>
               {performance.percentage_score.toFixed(1)}%
@@ -243,6 +263,35 @@ export default function PerformancePage() {
             )
           })}
         </div>
+
+        {/* Multi-Subject Breakdown */}
+        {performance.subjects && performance.subjects.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">📊 Subject-Wise Performance</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {performance.subjects.map((subject, idx) => {
+                const subjectPercentage = (subject.correct_count / subject.num_questions) * 100
+                const subjectColor = subjectPercentage >= 70 ? 'text-yellow-700' : subjectPercentage >= 50 ? 'text-yellow-600' : 'text-red-600'
+                const subjectBgColor = subjectPercentage >= 70 ? 'bg-yellow-50' : subjectPercentage >= 50 ? 'bg-yellow-50' : 'bg-red-50'
+                return (
+                  <div key={idx} className={`border-2 border-gray-200 rounded-lg p-5 ${subjectBgColor}`}>
+                    <h3 className="font-semibold text-gray-900 mb-3">{subject.subject_name}</h3>
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <p className={`text-3xl font-bold ${subjectColor}`}>{subjectPercentage.toFixed(1)}%</p>
+                      <p className="text-gray-600 text-sm">({subject.correct_count}/{subject.num_questions})</p>
+                    </div>
+                    <div className="w-full bg-gray-300 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${subjectPercentage >= 70 ? 'bg-yellow-600' : subjectPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        style={{ width: `${subjectPercentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -363,59 +412,131 @@ export default function PerformancePage() {
               Questions You Got Wrong ({performance.wrong_answers.length})
             </h2>
 
-            <div className="space-y-4">
-              {performance.wrong_answers.map((answer, idx) => (
-                <div key={idx} className="border-l-4 border-red-500 bg-red-50 rounded-lg p-6 hover:shadow-md transition">
-                  <button
-                    onClick={() =>
-                      setExpandedWrongAnswer(expandedWrongAnswer === idx ? null : idx)
-                    }
-                    className="w-full text-left flex items-center justify-between group"
-                  >
-                    <div className="flex-1">
-                      <div className="font-bold text-gray-900 group-hover:text-red-600 transition">
-                        <MathText text={answer.question_text} />
-                      </div>
-                      <div className="mt-3 flex gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
-                          <p className="text-sm text-red-600">
-                            Your answer: <strong>{answer.user_answer}</strong>
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
-                          <p className="text-sm text-yellow-700">
-                            Correct: <strong>{answer.correct_answer}</strong>
-                          </p>
-                        </div>
+            {/* Organize by subject if multi-subject exam */}
+            {performance.subjects && performance.subjects.length > 1 ? (
+              <div className="space-y-8">
+                {performance.subjects.map((subject) => {
+                  const subjectWrongAnswers = performance.wrong_answers?.filter((answer: any) => answer.subject === subject.subject_name) || []
+                  if (subjectWrongAnswers.length === 0) return null
+                  
+                  return (
+                    <div key={subject.subject_id} className="border-l-4 border-yellow-500 pl-6">
+                      <h3 className="font-bold text-lg text-gray-900 mb-4">{subject.subject_name}</h3>
+                      <div className="space-y-4">
+                        {subjectWrongAnswers.map((answer: any, idx: number) => {
+                          const answerKey = `${subject.subject_id}-${idx}`
+                          return (
+                            <div key={idx} className="border-l-4 border-red-500 bg-red-50 rounded-lg p-6 hover:shadow-md transition">
+                              <button
+                                onClick={() =>
+                                  setExpandedWrongAnswer(expandedWrongAnswer === answerKey ? null : answerKey)
+                                }
+                                className="w-full text-left flex items-center justify-between group"
+                              >
+                                <div className="flex-1">
+                                  <div className="font-bold text-gray-900 group-hover:text-red-600 transition">
+                                    <MathText text={answer.question_text} />
+                                  </div>
+                                  <div className="mt-3 flex gap-4">
+                                    <div className="flex items-center gap-2">
+                                      <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                                      <p className="text-sm text-red-600">
+                                        Your answer: <strong><MathText text={answer.user_answer} /></strong>
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                      <p className="text-sm text-yellow-700">
+                                        Correct: <strong><MathText text={answer.correct_answer} /></strong>
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                <span className={`ml-4 text-gray-600 transition transform ${expandedWrongAnswer === answerKey ? 'rotate-180' : ''}`}>
+                                  ▼
+                                </span>
+                              </button>
+
+                              {expandedWrongAnswer === answerKey && (
+                                <div className="mt-4 pt-4 border-t border-red-200 bg-white p-4 rounded">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-lg">💡</span>
+                                    <div className="text-sm text-gray-700 flex-1">
+                                      <strong>Explanation:</strong>
+                                      <div className="mt-2">
+                                        {answer.explanation ? (
+                                          <div dangerouslySetInnerHTML={{ __html: answer.explanation }} />
+                                        ) : (
+                                          <p>No explanation available</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
-                    <span className={`ml-4 text-gray-600 transition transform ${expandedWrongAnswer === idx ? 'rotate-180' : ''}`}>
-                      ▼
-                    </span>
-                  </button>
-
-                  {expandedWrongAnswer === idx && (
-                    <div className="mt-4 pt-4 border-t border-red-200 bg-white p-4 rounded">
-                      <div className="flex items-start gap-2">
-                        <span className="text-lg">💡</span>
-                        <div className="text-sm text-gray-700 flex-1">
-                          <strong>Explanation:</strong>
-                          <div className="mt-2">
-                            {answer.explanation ? (
-                              <div dangerouslySetInnerHTML={{ __html: answer.explanation }} />
-                            ) : (
-                              <p>No explanation available</p>
-                            )}
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {performance.wrong_answers.map((answer, idx) => (
+                  <div key={idx} className="border-l-4 border-red-500 bg-red-50 rounded-lg p-6 hover:shadow-md transition">
+                    <button
+                      onClick={() =>
+                        setExpandedWrongAnswer(expandedWrongAnswer === idx ? null : idx)
+                      }
+                      className="w-full text-left flex items-center justify-between group"
+                    >
+                      <div className="flex-1">
+                        <div className="font-bold text-gray-900 group-hover:text-red-600 transition">
+                          <MathText text={answer.question_text} />
+                        </div>
+                        <div className="mt-3 flex gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                            <p className="text-sm text-red-600">
+                              Your answer: <strong><MathText text={answer.user_answer} /></strong>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
+                            <p className="text-sm text-yellow-700">
+                              Correct: <strong><MathText text={answer.correct_answer} /></strong>
+                            </p>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                      <span className={`ml-4 text-gray-600 transition transform ${expandedWrongAnswer === idx ? 'rotate-180' : ''}`}>
+                        ▼
+                      </span>
+                    </button>
+
+                    {expandedWrongAnswer === idx && (
+                      <div className="mt-4 pt-4 border-t border-red-200 bg-white p-4 rounded">
+                        <div className="flex items-start gap-2">
+                          <span className="text-lg">💡</span>
+                          <div className="text-sm text-gray-700 flex-1">
+                            <strong>Explanation:</strong>
+                            <div className="mt-2">
+                              {answer.explanation ? (
+                                <div dangerouslySetInnerHTML={{ __html: answer.explanation }} />
+                              ) : (
+                                <p>No explanation available</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -449,38 +570,85 @@ export default function PerformancePage() {
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <h2 className="text-xl font-bold mb-6 text-gray-900">📝 All Answers Review</h2>
 
-          <div className="space-y-3">
-            {performance.student_answers?.map((answer, idx) => (
-              <div
-                key={idx}
-                className={`border-l-4 rounded-lg p-4 transition transform hover:scale-102 ${
-                  answer.is_correct
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-red-500 bg-red-50'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm ${
-                          answer.is_correct ? 'bg-green-600' : 'bg-red-600'
-                        }`}
-                      >
-                        {answer.is_correct ? '✓' : '✗'}
-                      </span>
-                      <div className="font-semibold text-gray-900">
-                        <MathText text={answer.question_text} />
-                      </div>
+          {performance.subjects && performance.subjects.length > 1 ? (
+            <div className="space-y-8">
+              {performance.subjects.map((subject) => {
+                const subjectAnswers = performance.student_answers?.filter((answer: any) => answer.subject === subject.subject_name) || []
+                if (subjectAnswers.length === 0) return null
+                
+                return (
+                  <div key={subject.subject_id} className="border-l-4 border-yellow-400 pl-6">
+                    <h3 className="font-bold text-lg text-gray-900 mb-4">{subject.subject_name}</h3>
+                    <div className="space-y-3">
+                      {subjectAnswers.map((answer: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className={`border-l-4 rounded-lg p-4 transition transform hover:scale-102 ${
+                            answer.is_correct
+                              ? 'border-green-500 bg-green-50'
+                              : 'border-red-500 bg-red-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className={`flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm ${
+                                    answer.is_correct ? 'bg-green-600' : 'bg-red-600'
+                                  }`}
+                                >
+                                  {answer.is_correct ? '✓' : '✗'}
+                                </span>
+                                <div className="font-semibold text-gray-900">
+                                  <MathText text={answer.question_text} />
+                                </div>
+                              </div>
+                              <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-green-700' : 'text-red-700'}`}>
+                                Your answer: <strong><MathText text={answer.selected_choice_text ?? (typeof answer.selected_choice === 'number' ? 'Choice #' + answer.selected_choice : answer.selected_choice)} /></strong>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {performance.student_answers?.map((answer, idx) => (
+                <div
+                  key={idx}
+                  className={`border-l-4 rounded-lg p-4 transition transform hover:scale-102 ${
+                    answer.is_correct
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-red-500 bg-red-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm ${
+                            answer.is_correct ? 'bg-green-600' : 'bg-red-600'
+                          }`}
+                        >
+                          {answer.is_correct ? '✓' : '✗'}
+                        </span>
+                        <div className="font-semibold text-gray-900">
+                          <MathText text={answer.question_text} />
+                        </div>
+                      </div>
                       <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-green-700' : 'text-red-700'}`}>
-                      Your answer: <strong>{answer.selected_choice_text ?? (typeof answer.selected_choice === 'number' ? 'Choice #' + answer.selected_choice : answer.selected_choice)}</strong>
-                    </p>
+                        Your answer: <strong><MathText text={answer.selected_choice_text ?? (typeof answer.selected_choice === 'number' ? 'Choice #' + answer.selected_choice : answer.selected_choice)} /></strong>
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Actions */}

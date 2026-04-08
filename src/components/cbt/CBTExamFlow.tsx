@@ -42,6 +42,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
 
   // Multi-subject selection state
   const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([])
+  const [allowedSubjects, setAllowedSubjects] = useState<Subject[]>([])  // NEW: subjects the student has unlocked
 
   // Question configuration state
   const [subjectConfigs, setSubjectConfigs] = useState<SubjectConfig[]>([])
@@ -73,6 +74,10 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         const data = await res.json()
 
         if (res.ok && data.unlocked) {
+          // NEW: Load the allowed subjects for this exam
+          if (data.allowed_subjects && Array.isArray(data.allowed_subjects)) {
+            setAllowedSubjects(data.allowed_subjects)
+          }
           setFlowStep('subjects')
         } else {
           // Redirect to activation/checkout page
@@ -158,6 +163,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     setFlowStep('exam')
     setSelectedExam(null)
     setSelectedSubjects([])
+    setAllowedSubjects([])
     setSubjectConfigs([])
     setTestName('')
     setExamAttemptId(null)
@@ -190,16 +196,18 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         onSelectExam={handleSelectExam}
       />
 
-      {/* Step 2: Select Multiple Subjects */}
+      {/* Step 2: Select Multiple Subjects (filtered to allowed subjects) */}
       <SubjectSelectionModal
         isOpen={flowStep === 'subjects'}
         onClose={() => {
           setFlowStep('exam')
           setSelectedExam(null)
           setSelectedSubjects([])
+          setAllowedSubjects([])
         }}
         exam={selectedExam}
         onSelectSubjects={handleSelectSubjects}
+        allowedSubjectIds={allowedSubjects.length > 0 ? allowedSubjects.map(s => s.id) : undefined}
       />
 
       {/* Step 3: Configure Questions per Subject */}

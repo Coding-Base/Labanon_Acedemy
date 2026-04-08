@@ -221,12 +221,42 @@ export default function ExamInterface({
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden relative w-full">
-        {/* Desktop Side Navigation Bar - Subjects */}
-        <div className="hidden sm:flex sm:flex-col sm:w-32 lg:w-48 bg-white border-r border-gray-200 p-3 sm:p-4 flex-shrink-0 overflow-y-auto">
-          <h3 className="font-bold text-xs sm:text-sm mb-4 text-gray-800">Subjects</h3>
-          <div className="space-y-2 flex-1 overflow-y-auto">
+      {/* Mobile Subject Selection Strip - Only visible on mobile */}
+      <div className="sm:hidden bg-white border-b border-gray-200 px-3 py-3 overflow-x-auto flex-shrink-0">
+        <div className="flex gap-2 min-w-min">
+          {subjectConfigs.map((config, idx) => {
+            const progress = getSubjectProgress(config.subject_id)
+            const isActive = idx === currentSubjectIndex
+            return (
+              <button
+                key={config.subject_id}
+                onClick={() => {
+                  handleJumpToSubject(idx)
+                  setShowQuestionMenu(false)
+                }}
+                className={`py-2 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition flex-shrink-0 ${
+                  isActive
+                    ? 'bg-yellow-100 text-yellow-900 border-2 border-yellow-600'
+                    : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:bg-gray-200'
+                }`}
+              >
+                <div className="text-xs leading-tight">
+                  <div>{config.subject_name}</div>
+                  <div className="text-gray-600 mt-0.5">
+                    {progress.answered_count}/{config.num_questions}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Desktop Subject Selection Strip - Only visible on desktop */}
+      <div className="hidden sm:block bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <h3 className="text-sm font-bold text-gray-700 flex-shrink-0">Selected Subjects:</h3>
+          <div className="flex gap-3 flex-wrap">
             {subjectConfigs.map((config, idx) => {
               const progress = getSubjectProgress(config.subject_id)
               const isActive = idx === currentSubjectIndex
@@ -234,32 +264,31 @@ export default function ExamInterface({
                 <button
                   key={config.subject_id}
                   onClick={() => handleJumpToSubject(idx)}
-                  className={`w-full py-2 px-3 rounded-lg text-left text-xs font-semibold transition ${
+                  className={`py-2 px-4 rounded-lg text-sm font-semibold transition ${
                     isActive
-                      ? 'bg-yellow-100 text-yellow-900 border-l-4 border-yellow-600'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-yellow-100 text-yellow-900 border-2 border-yellow-600 shadow-md'
+                      : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:bg-gray-200'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate">{config.subject_name}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{config.subject_name}</span>
+                    <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-700">
+                      {progress.answered_count}/{config.num_questions}
+                    </span>
                     {progress.answered_count === progress.total_questions && (
                       <span className="text-green-600 font-bold">✓</span>
                     )}
-                  </div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    {progress.answered_count}/{config.num_questions}
                   </div>
                 </button>
               )
             })}
           </div>
-          <div className="mt-4 pt-3 border-t text-xs sticky bottom-0 bg-white">
-            <p className="text-gray-600">
-              Overall: <strong>{totalAnsweredAcross}</strong> / {totalQuestionsAcross}
-            </p>
-          </div>
         </div>
+      </div>
 
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden relative w-full">
+        {/* Desktop side navigation removed - subjects now visible in top strip */}
         {/* Mobile Question Menu - Modal/Drawer */}
         {showQuestionMenu && (
           <div className="fixed inset-0 z-40 sm:hidden">

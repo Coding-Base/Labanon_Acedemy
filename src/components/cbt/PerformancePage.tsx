@@ -465,7 +465,7 @@ export default function PerformancePage() {
                                       <strong>Explanation:</strong>
                                       <div className="mt-2">
                                         {answer.explanation ? (
-                                          <div dangerouslySetInnerHTML={{ __html: answer.explanation }} />
+                                          <MathText text={answer.explanation} />
                                         ) : (
                                           <p>No explanation available</p>
                                         )}
@@ -524,7 +524,7 @@ export default function PerformancePage() {
                             <strong>Explanation:</strong>
                             <div className="mt-2">
                               {answer.explanation ? (
-                                <div dangerouslySetInnerHTML={{ __html: answer.explanation }} />
+                                <MathText text={answer.explanation} />
                               ) : (
                                 <p>No explanation available</p>
                               )}

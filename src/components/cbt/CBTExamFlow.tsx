@@ -55,6 +55,15 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
   const [examAttemptId, setExamAttemptId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Error state for better error handling and user feedback
+  const [error, setError] = useState<{
+    title: string
+    message: string
+    available_subjects?: string[]
+    action?: string
+    nextStep?: string
+  } | null>(null)
+
   // Handle exam selection with activation check
   const handleSelectExam = (exam: Exam) => {
     setSelectedExam(exam)
@@ -119,6 +128,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     setTestName(name)
     setTimeLimitMinutes(timeLimit)
     setIsLoading(true)
+    setError(null)
 
     try {
       const token = localStorage.getItem('access')
@@ -145,7 +155,42 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
       setFlowStep('exam-interface')
     } catch (err: any) {
       console.error('Failed to start exam', err)
-      alert(err.response?.data?.detail || 'Failed to start exam. Please try again.')
+      const errorData = err.response?.data
+      
+      // PHASE 3: Display improved error messages with helpful context
+      if (errorData) {
+        if (errorData.available_subjects && errorData.available_subjects.length > 0) {
+          // User tried to access subjects they don't have access to
+          setError({
+            title: 'Subject Access Restricted',
+            message: errorData.message || 'You cannot access all the subjects you selected.',
+            available_subjects: errorData.available_subjects,
+            action: errorData.action || 'Please go back and reselect your subjects.',
+            nextStep: 'Back'
+          })
+        } else if (errorData.detail === 'You have not unlocked this exam yet.') {
+          // User hasn't unlocked the exam
+          setError({
+            title: 'Exam Not Unlocked',
+            message: errorData.detail,
+            action: errorData.action || 'Complete the activation payment to unlock this exam.',
+            nextStep: errorData.next_step || 'Unlock Exam'
+          })
+        } else {
+          // Generic error
+          setError({
+            title: 'Error Starting Exam',
+            message: errorData.detail || 'Could not start exam. Please try again.',
+            action: 'If the problem persists, contact support.'
+          })
+        }
+      } else {
+        setError({
+          title: 'Error Starting Exam',
+          message: 'Could not start exam. Please try again.',
+          action: 'If the problem persists, contact support.'
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -189,6 +234,61 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
 
   return (
     <>
+      {/* Error Dialog */}
+      {error && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-red-600 mb-2">{error.title}</h3>
+              <p className="text-gray-700 mb-4">{error.message}</p>
+              
+              {error.available_subjects && error.available_subjects.length > 0 && (
+                <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">Your Unlocked Subjects:</p>
+                  <ul className="text-sm text-blue-800">
+                    {error.available_subjects.map((subject, i) => (
+                      <li key={i}>• {subject}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {error.action && (
+                <p className="text-sm text-gray-600 mb-4 p-2 bg-gray-50 rounded">
+                  {error.action}
+                </p>
+              )}
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setError(null)
+                    if (error.nextStep === 'Back') {
+                      setFlowStep('questions-config')
+                      setSelectedSubjects([])
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-900 rounded font-semibold hover:bg-gray-400"
+                >
+                  {error.nextStep === 'Back' ? 'Go Back' : 'Dismiss'}
+                </button>
+                {error.nextStep === 'Unlock Exam' && (
+                  <button
+                    onClick={() => {
+                      setError(null)
+                      window.location.href = `/activate?type=exam&exam_id=${selectedExam?.id}&exam_title=${selectedExam?.title}`
+                    }}
+                    className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded font-semibold hover:bg-yellow-700"
+                  >
+                    Unlock Exam
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Step 1: Select Exam */}
       <ExamTypeModal
         isOpen={flowStep === 'exam'}

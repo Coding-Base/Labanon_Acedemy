@@ -41,7 +41,8 @@ import {
   Menu,
   X,
   RefreshCw,
-  Zap
+  Zap,
+  File
 } from 'lucide-react'
 // Recharts for analytics charts
 import {
@@ -77,6 +78,7 @@ import AdminsManagement from './AdminsManagement'
 import VerificationDashboard from '../../components/VerificationDashboard'
 import QuestionManagementPage from '../questions/QuestionManagementPage'
 import MasterAdminMockPanel from '../MasterAdminMockPanel'
+import { CreateMaterialForm, MaterialsList, MaterialsActivitySection } from '../../components/Materials'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -123,6 +125,7 @@ type PermissionKey =
   | 'can_view_messages'
   | 'can_manage_subadmins'
   | 'can_manage_promos'
+  | 'can_manage_materials'
 
 export default function MasterAdminDashboard({ summary: propSummary }: MasterProps) {
   const location = useLocation()
@@ -623,6 +626,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [editingGospel, setEditingGospel] = useState<any | null>(null)
   const [gospelMessage, setGospelMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
 
+  // Materials Management State
+  const [materialsRefreshKey, setMaterialsRefreshKey] = useState(0)
+
   // Define tabs
   const allTabs = [
     { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-5 h-5" />, permission: undefined as any },
@@ -632,6 +638,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'admins', label: 'Admins', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
     { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
+    { id: 'materials', label: 'Materials', icon: <File className="w-5 h-5" />, permission: 'can_manage_materials' as PermissionKey },
     { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     { id: 'mock-exams', label: 'Mock Exams', icon: <Zap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     { id: 'signature', label: 'Signature', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
@@ -2416,6 +2423,31 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 {tab === 'admins' && (
                   <AdminsManagement />
                 )}
+
+                {tab === 'materials' && (
+                  <div className="space-y-8">
+                    {/* Create Material Form */}
+                    <div>
+                      <CreateMaterialForm onSuccess={() => setMaterialsRefreshKey(prev => prev + 1)} />
+                    </div>
+
+                    {/* Materials Activity Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div className="lg:col-span-2">
+                        <MaterialsActivitySection />
+                      </div>
+                      <div>
+                        {/* Stats would go here if needed */}
+                      </div>
+                    </div>
+
+                    {/* Materials List */}
+                    <div>
+                      <MaterialsList key={materialsRefreshKey} onRefresh={() => setMaterialsRefreshKey(prev => prev + 1)} />
+                    </div>
+                  </div>
+                )}
+
                 {tab === 'courseDetail' && selectedCourseId && (
                   <div>
                     <AdminCourseDetail idParam={String(selectedCourseId)} onClose={() => { setSelectedCourseId(null); setTab('courses') }} />

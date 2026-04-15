@@ -51,6 +51,7 @@ import GospelVideoModal from '../../components/GospelVideoModal';
 import StudentMockExamsPage from '../StudentMockExamsPage';
 import MockExamInterface from '../MockExamInterface';
 import MockExamResultsPage from '../MockExamResultsPage';
+import { DownloadsCard } from '../../components/Materials';
 
 // --- Types ---
 interface DashboardSummary {
@@ -562,6 +563,11 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                               </div>
                             </div>
                           ))}
+                        </div>
+
+                        {/* Downloads Card */}
+                        <div className="mb-8">
+                          <DownloadsCard />
                         </div>
                         {/* Review card linking to reviews page */}
                         <div className="mb-6">

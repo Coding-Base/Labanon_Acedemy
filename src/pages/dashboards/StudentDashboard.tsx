@@ -31,7 +31,8 @@ import {
   Loader2,
   Crown,
   Menu,
-  X 
+  X,
+  Zap
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import MyCourses from '../MyCourses';
@@ -47,6 +48,9 @@ import MessageModal from '../../components/MessageModal';
 import CertificatesPage from '../CertificatesPage';
 import SchedulePage from '../../components/SchedulePage';
 import GospelVideoModal from '../../components/GospelVideoModal';
+import StudentMockExamsPage from '../StudentMockExamsPage';
+import MockExamInterface from '../MockExamInterface';
+import MockExamResultsPage from '../MockExamResultsPage';
 
 // --- Types ---
 interface DashboardSummary {
@@ -270,6 +274,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     { path: 'overview', label: 'Overview', icon: <Home className="w-5 h-5" /> },
     { path: 'courses', label: 'My Courses', icon: <BookOpen className="w-5 h-5" /> },
     { path: 'cbt', label: 'CBT & Exams', icon: <FileText className="w-5 h-5" /> },
+    { path: 'mock-exams', label: 'Mock Exams', icon: <Zap className="w-5 h-5" /> },
     { path: 'cart', label: 'Shopping Cart', icon: <ShoppingCart className="w-5 h-5" /> },
     { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> }, 
     { path: 'payments', label: 'Payments', icon: <CreditCard className="w-5 h-5" /> },
@@ -470,15 +475,21 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 <div className="space-y-1">
                   {navItems.map((item) => {
                     const active = isActivePath(item.path);
-                    return (
+                    const renderItem = () => (
                       <motion.div key={item.path} whileHover={{ x: 5 }} transition={{ type: "spring", stiffness: 300 }}>
-                        <Link to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-700 border-l-4 border-yellow-500 shadow-sm' : 'text-gray-700 hover:bg-gray-50 hover:text-yellow-600'}`}>
+                        <button
+                          onClick={() => {
+                            navigate(item.path);
+                          }}
+                          className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? 'bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-700 border-l-4 border-yellow-500 shadow-sm' : 'text-gray-700 hover:bg-gray-50 hover:text-yellow-600'}`}
+                        >
                           <div className={`${active ? 'text-yellow-700' : 'text-gray-500 group-hover:text-yellow-500'}`}>{item.icon}</div>
                           <span className="font-medium">{item.label}</span>
                           {active && <ChevronRight className="w-4 h-4 ml-auto text-yellow-600" />}
-                        </Link>
+                        </button>
                       </motion.div>
                     );
+                    return renderItem();
                   })}
                 </div>
               </nav>
@@ -497,9 +508,16 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   <div className="flex items-center justify-between mb-8"><h2 className="text-lg font-bold text-gray-900">Menu</h2><button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100"><X className="w-6 h-6" /></button></div>
                   <nav className="space-y-2">
                     {navItems.map((item) => (
-                      <Link key={item.path} to={item.path} className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 hover:text-yellow-600" onClick={() => setSidebarOpen(false)}>
+                      <button
+                        key={item.path}
+                        onClick={() => {
+                          navigate(`${base}/${item.path}`);
+                          setSidebarOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 hover:text-yellow-600 text-left"
+                      >
                         <div className="text-gray-500">{item.icon}</div><span>{item.label}</span>
-                      </Link>
+                      </button>
                     ))}
                     <div className="mt-6 pt-6 border-t border-gray-200">
                       <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md">Logout</button>
@@ -603,6 +621,9 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     <Route path="courses/:id" element={<div className="w-full"><CoursePlayer /></div>} />
                     <Route path="courses/:id/details" element={<div className="h-full"><CourseDetail /></div>} />
                     <Route path="cbt" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><CBTPage /></div>} />
+                    <Route path="mock-exams" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><StudentMockExamsPage /></div>} />
+                    <Route path="mock-exams/attempt/:attemptId" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><MockExamInterface /></div>} />
+                    <Route path="mock-exams/results/:attemptId" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><MockExamResultsPage /></div>} />
                     <Route path="cart" element={<Cart />} />
                     <Route path="payments" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><PaymentsPage /></div>} />
                     <Route path="profile" element={<div className="h-full overflow-y-auto pr-2 -mr-2"><Profile /></div>} />

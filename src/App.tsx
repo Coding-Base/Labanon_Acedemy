@@ -41,6 +41,10 @@ const BulkUploadPage = lazy(() => import('./pages/BulkUploadPage'))
 const PaymentVerify = lazy(() => import('./pages/PaymentVerify'))
 const ActivateCheckout = lazy(() => import('./pages/ActivateCheckout'))
 
+// Mock Exams pages (lazy)
+const MockExamInterface = lazy(() => import('./pages/MockExamInterface'))
+const MockExamResultsPage = lazy(() => import('./pages/MockExamResultsPage'))
+
 export default function App() {
   const [isInitialLoading, setIsInitialLoading] = useState(true)
 
@@ -121,6 +125,10 @@ export default function App() {
 
             {/* Activation / Checkout for exam / subject unlocks */}
             <Route path="/activate" element={<ActivateCheckout />} />
+
+            {/* Mock Exams Routes */}
+            <Route path="/mock-exams/attempt/:attemptId" element={<MockExamInterface />} />
+            <Route path="/mock-exams/results/:attemptId" element={<MockExamResultsPage />} />
 
             {/* other app routes */}
             <Route path="/marketplace" element={<Marketplace />} />

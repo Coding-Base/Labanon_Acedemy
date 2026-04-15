@@ -1,6 +1,11 @@
 type ToastType = 'info' | 'success' | 'error' | 'warn'
 
-export function showToast(message: string, type: ToastType = 'info', timeout = 4000) {
+export function showToast(type: ToastType | string, message: string = 'info', timeout = 4000) {
+  // Handle overload: if type is a full message, swap parameters
+  if (typeof type === 'string' && !(['info', 'success', 'error', 'warn'] as const).includes(type as ToastType)) {
+    [type, message] = [message as ToastType, type]
+  }
+  const toastType = type as ToastType
   try {
     const containerId = 'lighthouse-toast-container'
     let container = document.getElementById(containerId)
@@ -29,7 +34,7 @@ export function showToast(message: string, type: ToastType = 'info', timeout = 4
     el.style.transition = 'opacity 200ms ease, transform 200ms ease'
     el.style.transform = 'translateY(-6px)'
 
-    switch (type) {
+    switch (toastType) {
       case 'success':
         el.style.background = '#ecfdf5'
         el.style.border = '1px solid #bbf7d0'

@@ -40,7 +40,8 @@ import {
   Clock,
   Menu,
   X,
-  RefreshCw
+  RefreshCw,
+  Zap
 } from 'lucide-react'
 // Recharts for analytics charts
 import {
@@ -75,6 +76,7 @@ import InstitutionsManagement from './InstitutionsManagement'
 import AdminsManagement from './AdminsManagement'
 import VerificationDashboard from '../../components/VerificationDashboard'
 import QuestionManagementPage from '../questions/QuestionManagementPage'
+import MasterAdminMockPanel from '../MasterAdminMockPanel'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -631,6 +633,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'admins', label: 'Admins', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
     { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
+    { id: 'mock-exams', label: 'Mock Exams', icon: <Zap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     { id: 'signature', label: 'Signature', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
@@ -3038,6 +3041,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       </div>
                     )}
                   </div>
+                )}
+
+                {tab === 'mock-exams' && (
+                  <MasterAdminMockPanel darkMode={darkMode} />
                 )}
 
                 {tab === 'exams' && (

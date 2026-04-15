@@ -6,6 +6,20 @@ import { generateReceipt, downloadReceipt } from '../utils/receiptGenerator'
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
+// Trigger material download and email after successful purchase
+async function triggerMaterialDownload(materialId: string, token: string) {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/materials/materials/${materialId}/download/`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    console.log('✓ Download email triggered:', response.data)
+  } catch (error: any) {
+    console.error('Error triggering material download:', error.response?.data || error.message)
+  }
+}
+
 export default function PaymentVerify() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -87,6 +101,13 @@ export default function PaymentVerify() {
                   } else if (itemType === 'activation') {
                     if (returnTo) navigate(returnTo)
                     else navigate('/student/cbt')
+                  } else if (itemType === 'material' && itemId) {
+                    // Material purchase: redirect to marketplace and trigger download
+                    navigate('/marketplace')
+                    // Schedule download trigger after small delay to ensure navigation completes
+                    setTimeout(() => {
+                      triggerMaterialDownload(itemId, token)
+                    }, 500)
                   } else if (itemType && itemId) {
                     navigate('/student/courses')
                   } else {
@@ -207,6 +228,14 @@ export default function PaymentVerify() {
                     } else if (itemType === 'activation') {
                       if (returnTo) navigate(returnTo)
                       else navigate('/student/cbt')
+                    } else if (itemType === 'material' && itemId) {
+                      // Material purchase: redirect to marketplace and trigger download
+                      navigate('/marketplace')
+                      // Schedule download trigger after navigation completes
+                      setTimeout(() => {
+                        const token = localStorage.getItem('access')
+                        if (token) triggerMaterialDownload(itemId, token)
+                      }, 500)
                     } else if (itemType && itemId) {
                       navigate('/student/courses')
                     } else {

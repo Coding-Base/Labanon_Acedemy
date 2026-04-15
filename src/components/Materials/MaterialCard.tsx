@@ -1,7 +1,7 @@
 // frontend/src/components/Materials/MaterialCard.tsx
 
 import React from 'react'
-import { FileText, Download, ShoppingCart, Lock } from 'lucide-react'
+import { FileText, Download, ShoppingCart, Lock, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../utils/axiosInterceptor'
 
@@ -46,19 +46,88 @@ export default function MaterialCard({
     setLoading(true)
     try {
       const response = await api.post(`/materials/materials/${material.id}/download/`)
-      // Download link sent to email, show toast
-      alert('Download link sent to your email!')
+      
+      if (response.data.email_sent) {
+        alert('✓ Download link sent to your email!')
+      } else if (response.data.email_error) {
+        alert(`⚠ Download link generated but email failed to send.\nError: ${response.data.email_error}\nDirect URL: ${response.data.download_url}`)
+      }
       onDownload?.()
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Download failed')
+      // Check if error is 401 Unauthorized (user not authenticated)
+      if (error.response?.status === 401) {
+        const currentPath = window.location.pathname + window.location.search
+        // Preserve current URL and material id so we can trigger download after sign-in
+        navigate(`/login?next=${encodeURIComponent(currentPath)}&pendingDownload=${material.id}`, {
+          state: { message: 'Please sign in to download materials' }
+        })
+        return
+      }
+      
+      const errorMessage = error.response?.data?.error || error.message || 'Download failed'
+      alert(`❌ ${errorMessage}`)
+      console.error('Download error:', error)
     } finally {
       setLoading(false)
     }
   }
 
   const handleAddToCart = () => {
-    // Add to cart logic here
-    onPurchase?.()
+    // Redirect unauthenticated users to sign-in before checkout
+    const currentPath = window.location.pathname + window.location.search
+    const token = localStorage.getItem('access')
+    if (!token) {
+      navigate(`/login?next=${encodeURIComponent(currentPath)}&pendingPurchase=${material.id}`, {
+        state: { message: 'Please sign in to purchase materials' }
+      })
+      return
+    }
+
+    // Initiate single-item payment for this material
+    ;(async () => {
+      setLoading(true)
+      try {
+        // Compute amount with platform fee (5%) to match cart logic
+        const rawPrice = Number(material.price) || 0
+        const platformFee = rawPrice * 0.05
+        const finalAmount = +(rawPrice + platformFee).toFixed(2)
+
+        const res = await api.post('/payments/initiate/', {
+          item_type: 'material',
+          item_id: material.id,
+          amount: finalAmount,
+          currency: 'NGN'
+        })
+
+        // Store payment metadata for verification flow
+        sessionStorage.setItem('paymentReference', res.data.reference || '')
+        sessionStorage.setItem('paymentItemType', 'material')
+        sessionStorage.setItem('paymentItemId', material.id)
+        sessionStorage.setItem('paymentMethod', 'paystack')
+
+        // Redirect to payment provider if provided
+        if (res.data.authorization_url) {
+          window.location.href = res.data.authorization_url
+        } else if (res.data.link) {
+          window.location.href = res.data.link
+        } else if (res.data.reference) {
+          navigate(`/payment?reference=${res.data.reference}&method=paystack`)
+        } else {
+          alert('Failed to initiate payment. Please try again.')
+        }
+      } catch (err: any) {
+        console.error('Payment initiation failed:', err)
+        if (err.response?.status === 401) {
+          // Token invalid — force login
+          localStorage.removeItem('access')
+          navigate(`/login?next=${encodeURIComponent(currentPath)}&pendingPurchase=${material.id}`)
+        } else {
+          alert(err.response?.data?.detail || 'Failed to start checkout')
+        }
+      } finally {
+        setLoading(false)
+      }
+    })()
   }
 
   const areaColors: Record<string, string> = {
@@ -162,16 +231,25 @@ export default function MaterialCard({
                 disabled={loading}
                 className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Download className="w-4 h-4" />
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
                 {loading ? 'Preparing...' : 'Download Now'}
               </button>
             ) : (
               <button
                 onClick={handleAddToCart}
-                className="w-full px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                disabled={loading}
+                className="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <ShoppingCart className="w-4 h-4" />
-                Add to Cart
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShoppingCart className="w-4 h-4" />
+                )}
+                {loading ? 'Processing...' : 'Buy Now'}
               </button>
             )}
           </>

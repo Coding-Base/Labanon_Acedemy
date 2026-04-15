@@ -20,6 +20,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { register } from '../api/auth';
+import api from '../utils/axiosInterceptor'
 import labanonLogo from './labanonlogo.png';
 
 const fadeInUp = {
@@ -47,6 +48,7 @@ export default function Register() {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const nextParam = params.get('next') || '';
+  const pendingDownload = params.get('pendingDownload') || '';
 
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -252,7 +254,17 @@ export default function Register() {
       }
 
       await register(registrationData);
-      
+
+      // If user just registered and there was a pending download, request the public endpoint
+      if (pendingDownload) {
+        try {
+          await api.post(`/materials/materials/${pendingDownload}/request_download_email/`, { email })
+          // ignore response; verification email is primary
+        } catch (err) {
+          console.warn('Failed to request download email after registration', err)
+        }
+      }
+
       // Show verification email message and redirect
       setTimeout(() => {
         navigate('/verify-email-sent', { 

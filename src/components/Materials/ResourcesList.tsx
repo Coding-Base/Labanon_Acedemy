@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Search, Loader, AlertCircle } from 'lucide-react'
 import api from '../../utils/axiosInterceptor'
 import MaterialCard from './MaterialCard'
+import { useNavigate } from 'react-router-dom'
 
 interface Material {
   id: string
@@ -45,6 +46,8 @@ export default function ResourcesList() {
   
   // Debounce timeout
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null)
+  const navigate = useNavigate()
+  const [addingIds, setAddingIds] = useState<string[]>([])
 
   // Fetch materials with filters and search
   const fetchMaterials = useCallback(async (search: string, area: string) => {
@@ -173,9 +176,33 @@ export default function ResourcesList() {
               <MaterialCard
                 key={material.id}
                 material={material}
-                onPurchase={() => {
-                  // Add to cart logic
-                  console.log('Add', material.id, 'to cart')
+                onPurchase={async () => {
+                  // Add to cart logic for materials
+                  try {
+                    const token = localStorage.getItem('access')
+                    if (!token) {
+                      // Redirect unauthenticated users to login/registration
+                      window.location.href = `/register?next=/marketplace/${material.id}`
+                      return
+                    }
+
+                    if (addingIds.includes(material.id)) return
+                    setAddingIds(cur => [...cur, material.id])
+
+                    const res = await api.post('/cart/', { material_id: material.id })
+                    if (res.status >= 200 && res.status < 300) {
+                      alert('Added to cart')
+                      // Optionally navigate to cart
+                      // navigate('/student/cart')
+                    } else {
+                      throw new Error('Failed to add to cart')
+                    }
+                  } catch (err: any) {
+                    console.error('Failed to add material to cart:', err)
+                    alert(err?.response?.data?.detail || 'Failed to add to cart')
+                  } finally {
+                    setAddingIds(cur => cur.filter(id => id !== material.id))
+                  }
                 }}
               />
             ))}

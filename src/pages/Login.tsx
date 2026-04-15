@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { login } from '../api/auth'
 import axios from 'axios'
+import api from '../utils/axiosInterceptor'
 import { Eye, EyeOff, KeyRound } from 'lucide-react'
 import labanonLogo from './labanonlogo.png'
 
@@ -19,6 +20,8 @@ export default function Login() {
 
   const params = new URLSearchParams(location.search)
   const nextParam = params.get('next')
+  const pendingDownload = params.get('pendingDownload')
+  const registerLink = `/register${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}${pendingDownload ? (nextParam ? '&' : '?') + `pendingDownload=${encodeURIComponent(pendingDownload)}` : ''}`
 
   function mapRoleToRoute(role: string | undefined, isSubAdmin: boolean = false) {
     if (isSubAdmin) return '/admin'
@@ -47,6 +50,20 @@ export default function Login() {
       if (nextParam) {
         navigate(nextParam, { replace: true })
         return
+      }
+
+      // If there was a pending download request, trigger it now (user is authenticated)
+      if (pendingDownload) {
+        try {
+          const resp = await api.post(`/materials/materials/${pendingDownload}/download/`)
+          if (resp.data?.email_sent) {
+            alert('✓ Download link sent to your email')
+          } else if (resp.data?.email_error) {
+            alert(`Download link prepared but email failed: ${resp.data.email_error}`)
+          }
+        } catch (err) {
+          console.warn('Failed to request pending download after login', err)
+        }
       }
 
       let role: string | undefined = (data.role as string) || (data.user && (data.user.role as string))
@@ -128,7 +145,7 @@ export default function Login() {
 
         <div className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link to={`/register${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-yellow-600 font-medium hover:underline">Create account</Link>
+          <Link to={registerLink} className="text-yellow-600 font-medium hover:underline">Create account</Link>
         </div>
       </div>
       

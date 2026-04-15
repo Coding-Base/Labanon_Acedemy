@@ -60,14 +60,16 @@ interface TabPanelProps {
 
 const TabPanel = (props: TabPanelProps) => {
   const { children, value, index, ...other } = props
+  // Keep children mounted to avoid remounting heavy tab contents when switching tabs.
+  // We simply hide the inactive panels visually but keep them in the DOM.
   return (
     <div
       role="tabpanel"
-      hidden={value !== index}
       id={`mock-exams-tabpanel-${index}`}
+      style={{ display: value === index ? 'block' : 'none' }}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      <Box sx={{ p: 3 }}>{children}</Box>
     </div>
   )
 }
@@ -90,7 +92,6 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
     total_duration_minutes: 120,
     total_marks: 100,
     passing_marks: 50,
-    instructions: '',
   })
 
   // Fetch exams
@@ -132,7 +133,6 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
         total_duration_minutes: 120,
         total_marks: 100,
         passing_marks: 50,
-        instructions: '',
       })
       fetchExams()
     } catch (error) {
@@ -175,7 +175,6 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
         total_duration_minutes: exam.total_duration_minutes,
         total_marks: exam.total_marks,
         passing_marks: exam.passing_marks,
-        instructions: exam.instructions || '',
       })
     } else {
       setSelectedExam(null)
@@ -187,7 +186,6 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
         total_duration_minutes: 120,
         total_marks: 100,
         passing_marks: 50,
-        instructions: '',
       })
     }
     setOpenDialog(true)
@@ -437,7 +435,7 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
             <MenuItem value="mixed">Mixed</MenuItem>
           </TextField>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 type="number"
@@ -449,7 +447,7 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
                 variant="outlined"
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 type="number"
@@ -470,15 +468,6 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
             onChange={(e) =>
               setFormData({ ...formData, passing_marks: parseInt(e.target.value) })
             }
-            variant="outlined"
-          />
-          <TextField
-            fullWidth
-            label="Instructions"
-            value={formData.instructions}
-            onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-            multiline
-            rows={3}
             variant="outlined"
           />
         </DialogContent>
@@ -570,7 +559,8 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
     try {
       setIsLoading(true)
       console.log('Fetching exam structure for exam ID:', examId)
-      const examData = await adminMockExamsAPI.getExamWithStructure(examId)
+      const resp = await adminMockExamsAPI.getExamWithStructure(examId)
+      const examData = resp?.data || resp
       console.log('Exam structure fetched:', examData)
       setSubjects(examData.subjects || [])
 
@@ -634,15 +624,21 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
     }
     try {
       console.log('Adding question:', questionForm)
-      await adminMockExamsAPI.addQuestion(selectedSubject.id, {
-        question_text: questionForm.question_text,
-        question_image_file: questionForm.question_image_file,
-        question_type: questionForm.question_type,
-        marks: questionForm.marks,
-        difficulty: questionForm.difficulty,
-        explanation: questionForm.explanation,
-        explanation_image_file: questionForm.explanation_image_file,
-      })
+      // Build FormData to support file uploads
+      const payload = new FormData()
+      payload.append('question_text', questionForm.question_text)
+      payload.append('question_type', questionForm.question_type)
+      payload.append('marks', String(questionForm.marks))
+      payload.append('difficulty', String(questionForm.difficulty))
+      payload.append('explanation', questionForm.explanation || '')
+      if (questionForm.question_image_file) {
+        payload.append('question_image_file', questionForm.question_image_file)
+      }
+      if (questionForm.explanation_image_file) {
+        payload.append('explanation_image_file', questionForm.explanation_image_file)
+      }
+
+      await adminMockExamsAPI.addQuestion(selectedSubject.id, payload)
       showToast('success', 'Question added successfully')
       setOpenQuestionDialog(false)
       setQuestionForm({
@@ -1285,7 +1281,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
             )}
           </Box>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 type="number"
@@ -1297,7 +1293,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                 inputProps={{ min: 1 }}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 select
@@ -1365,7 +1361,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
     <div className="space-y-6">
       {/* Stats Cards */}
       <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-amber-500">{overview.total_exams}</div>
@@ -1378,7 +1374,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-green-500">
@@ -1390,11 +1386,11 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-amber-500">
-                {overview.average_completion_rate.toFixed(1)}%
+                {(overview.average_completion_rate ?? 0).toFixed(1)}%
               </div>
               <p className={`text-sm mt-2 ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                 Avg Completion Rate
@@ -1402,11 +1398,11 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-violet-500">
-                {overview.average_score.toFixed(1)}%
+                {(overview.average_score ?? 0).toFixed(1)}%
               </div>
               <p className={`text-sm mt-2 ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                 Avg Score

@@ -4,7 +4,7 @@ import axios from 'axios'
 import { Trash2, ShoppingCart, ArrowLeft, CreditCard, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import PaymentMethodSelector from '../components/PaymentMethodSelector'
-import Footer from '../components/Footer'
+
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -344,7 +344,7 @@ export default function Cart() {
           )}
         </div>
       </div>
-      <Footer />
+   
     </div>
   )
 }

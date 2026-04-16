@@ -46,11 +46,19 @@ export default function MaterialCard({
     setLoading(true)
     try {
       const response = await api.post(`/materials/materials/${material.id}/download/`)
-      
+      // If backend returned a download URL, open it immediately for the user.
+      const downloadUrl = response.data?.download_url
+      if (downloadUrl) {
+        // Open in a new tab/window so user gets immediate access (for GDrive links or direct files)
+        window.open(downloadUrl, '_blank')
+      }
+
       if (response.data.email_sent) {
-        alert('✓ Download link sent to your email!')
+        // Email already sent, but user gets immediate link too
+        // Use a small non-blocking notification
+        alert('✓ Download link sent to your email and opened in a new tab.')
       } else if (response.data.email_error) {
-        alert(`⚠ Download link generated but email failed to send.\nError: ${response.data.email_error}\nDirect URL: ${response.data.download_url}`)
+        alert(`⚠ Download link generated but email failed to send.\nError: ${response.data.email_error}\nDirect URL: ${downloadUrl || 'N/A'}`)
       }
       onDownload?.()
     } catch (error: any) {

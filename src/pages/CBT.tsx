@@ -68,19 +68,19 @@ export default function CBTPage() {
   }
 
   return (
-    <div>
+    <div className="custom-scrollbar min-h-screen p-6 bg-white dark:bg-slate-900">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2">
             <FileText className="w-6 h-6 text-yellow-600" />
             CBT & Exams
           </h2>
-          <p className="text-gray-600 mt-1">Take practice exams and track your progress</p>
+          <p className="text-gray-600 dark:text-slate-300 mt-1">Take practice exams and track your progress</p>
         </div>
         <button
           onClick={() => setShowCBTFlow(true)}
-          className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow--600 text-white rounded-lg hover:shadow-lg font-semibold transition"
+          className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg hover:shadow-lg font-semibold transition"
         >
           Take CBT Test
         </button>
@@ -90,13 +90,13 @@ export default function CBTPage() {
       {loading ? (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
-          <p className="mt-4 text-gray-600">Loading your exams...</p>
+          <p className="mt-4 text-gray-600 dark:text-slate-300">Loading your exams...</p>
         </div>
       ) : attempts.length === 0 ? (
-        <div className="bg-gradient-to-br from-yellow-50 to-yellow--50 rounded-lg p-12 text-center">
-          <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Exams Taken Yet</h3>
-          <p className="text-gray-600 mb-6">Start your first CBT exam to see your results here</p>
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-12 text-center shadow-sm border border-gray-200 dark:border-slate-700">
+          <FileText className="w-16 h-16 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">No Exams Taken Yet</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-6">Start your first CBT exam to see your results here</p>
           <button
             onClick={() => setShowCBTFlow(true)}
             className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-semibold"
@@ -111,12 +111,12 @@ export default function CBTPage() {
               <a
                 key={attempt.id}
                 href={`/performance/${attempt.id}`}
-                className="block bg-white rounded-lg shadow hover:shadow-lg transition p-6 border border-gray-200"
+                className="block bg-white dark:bg-slate-800 rounded-lg shadow hover:shadow-lg transition p-6 border border-gray-200 dark:border-slate-700"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">{attempt.exam_title}</h3>
-                    <p className="text-gray-600">{attempt.subject_name}</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">{attempt.exam_title}</h3>
+                    <p className="text-gray-600 dark:text-slate-300">{attempt.subject_name}</p>
                   </div>
                   <div className={`px-4 py-2 rounded-lg font-semibold text-sm ${getScoreColor(attempt.score, attempt.num_questions)}`}>
                     {attempt.score}/{attempt.num_questions} ({((attempt.score / attempt.num_questions) * 100).toFixed(1)}%)
@@ -125,20 +125,20 @@ export default function CBTPage() {
 
                 <div className="grid grid-cols-4 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600">Questions</p>
-                    <p className="font-semibold text-gray-900">{attempt.num_questions}</p>
+                    <p className="text-gray-600 dark:text-slate-300">Questions</p>
+                    <p className="font-semibold text-gray-900 dark:text-slate-100">{attempt.num_questions}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Correct</p>
+                    <p className="text-gray-600 dark:text-slate-300">Correct</p>
                     <p className="font-semibold text-green-600">{attempt.correct_answers}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Time Taken</p>
-                    <p className="font-semibold text-gray-900">{formatTime(attempt.time_taken_seconds)}</p>
+                    <p className="text-gray-600 dark:text-slate-300">Time Taken</p>
+                    <p className="font-semibold text-gray-900 dark:text-slate-100">{formatTime(attempt.time_taken_seconds)}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Date</p>
-                    <p className="font-semibold text-gray-900">
+                    <p className="text-gray-600 dark:text-slate-300">Date</p>
+                    <p className="font-semibold text-gray-900 dark:text-slate-100">
                       {new Date(attempt.submitted_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -150,21 +150,21 @@ export default function CBTPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-8">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 dark:text-slate-400">
                 Page {page} of {totalPages}
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page <= 1}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-gray-300 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-400 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page >= totalPages}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-gray-300 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-400 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

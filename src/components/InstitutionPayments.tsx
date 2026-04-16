@@ -6,7 +6,7 @@ import api from '../utils/axiosInterceptor';
 import PaystackSubAccountForm from './PaystackSubAccountForm';
 import FlutterwaveSubAccountSetup from './FlutterwaveSubAccountSetup';
 
-export default function InstitutionPayments() {
+export default function InstitutionPayments({ darkMode }: { darkMode?: boolean }) {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

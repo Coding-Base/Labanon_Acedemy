@@ -45,7 +45,7 @@ interface DiplomaFormData {
   currency?: string
 }
 
-export default function InstitutionDiplomas() {
+export default function InstitutionDiplomas({ darkMode }: { darkMode?: boolean }) {
   const [diplomas, setDiplomas] = useState<Diploma[]>([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -54,6 +54,8 @@ export default function InstitutionDiplomas() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [institutionId, setInstitutionId] = useState<number | null>(null)
+  const [institutionName, setInstitutionName] = useState<string | null>(null)
+  const [institutionEmail, setInstitutionEmail] = useState<string | null>(null)
   const [creatorId, setCreatorId] = useState<number | null>(null)
   
   // Image handling
@@ -126,6 +128,8 @@ export default function InstitutionDiplomas() {
           })
           if (mounted) {
             setInstitutionId(instRes.data.id)
+            setInstitutionName(instRes.data.name)
+            setInstitutionEmail(instRes.data.email)
           }
         } catch (instError: any) {
           if (!mounted) return
@@ -349,6 +353,15 @@ export default function InstitutionDiplomas() {
           <h3 className="text-lg font-bold text-gray-900 mb-4">
             {editingId ? 'Edit Diploma' : 'Create New Diploma'}
           </h3>
+          
+          {institutionName && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-yellow-50 rounded-lg border border-green-200">
+              <p className="text-sm text-gray-600 mb-1">Institution</p>
+              <p className="font-bold text-gray-900">{institutionName}</p>
+              {institutionEmail && <p className="text-xs text-gray-500 mt-2">{institutionEmail}</p>}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

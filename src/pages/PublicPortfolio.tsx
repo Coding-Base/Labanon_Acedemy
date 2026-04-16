@@ -1,9 +1,69 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useParams } from 'react-router-dom'
+import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+
+// Add rich text content styling
+const richTextStyles = `
+  .rich-text-content h1, .rich-text-content h2, .rich-text-content h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  .rich-text-content h1 { font-size: 1.8rem; }
+  .rich-text-content h2 { font-size: 1.5rem; }
+  .rich-text-content h3 { font-size: 1.2rem; }
+  .rich-text-content p { margin-bottom: 1rem; line-height: 1.6; }
+  .rich-text-content ul, .rich-text-content ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .rich-text-content li { margin-bottom: 0.5rem; }
+  .rich-text-content strong { font-weight: 600; }
+  .rich-text-content em { font-style: italic; }
+  .rich-text-content blockquote {
+    border-left: 4px solid #d1d5db;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #6b7280;
+  }
+  .rich-text-content code {
+    background-color: #f3f4f6;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-family: monospace;
+  }
+  .rich-text-content pre {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  .rich-text-content pre code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+  }
+  .rich-text-content a {
+    color: #4f46e5;
+    text-decoration: underline;
+  }
+  .rich-text-content a:hover {
+    color: #4338ca;
+  }
+`
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style')
+  style.textContent = richTextStyles
+  document.head.appendChild(style)
+}
 
 export default function PublicPortfolio() {
   const { token } = useParams()
@@ -16,7 +76,9 @@ export default function PublicPortfolio() {
     if (!token) return
     ;(async () => {
       try {
-        const res = await axios.get(`${API_BASE}/portfolios/by_token/`, { params: { token } })
+        // Create a public axios instance without interceptors for public endpoints
+        const publicApi = axios.create({ baseURL: API_BASE })
+        const res = await publicApi.get(`/portfolios/by_token/`, { params: { token } })
         setPortfolio(res.data)
       } catch (err: any) {
         setError(err?.response?.data?.detail || 'Portfolio not found')
@@ -53,7 +115,7 @@ export default function PublicPortfolio() {
             <div className="flex-1">
               <h1 className="text-2xl md:text-3xl font-extrabold">{portfolio.title}</h1>
               <p className="text-sm text-gray-600 mt-1">{portfolio.institution_name}</p>
-              <p className="mt-3 text-gray-700 leading-relaxed">{portfolio.overview || portfolio.description}</p>
+              <div className="mt-3 text-gray-700 leading-relaxed rich-text-content" dangerouslySetInnerHTML={{ __html: portfolio.overview || portfolio.description || '' }} />
               <div className="mt-4 flex flex-wrap gap-3">
                 {portfolio.website && (
                   <a href={portfolio.website} target="_blank" rel="noreferrer" className="text-sm bg-indigo-600 text-white px-3 py-2 rounded shadow">Visit website</a>
@@ -85,7 +147,7 @@ export default function PublicPortfolio() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-3">About</h2>
-          <p className="text-gray-700 leading-relaxed">{portfolio.description}</p>
+          <div className="text-gray-700 leading-relaxed rich-text-content" dangerouslySetInnerHTML={{ __html: portfolio.description || '' }} />
         </section>
 
         {portfolio.gallery_items && portfolio.gallery_items.length > 0 && (

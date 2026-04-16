@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
+import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 type Step = {
@@ -99,25 +100,10 @@ const Documentation: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      {/* Top Navigation */}
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} aria-label="Go back" className="px-3 py-2 rounded-md hover:bg-slate-100">← Back</button>
-            <nav className="hidden sm:flex items-center gap-3">
-              <Link to="/" className="text-slate-700 hover:text-yellow-600">Home</Link>
-              <Link to="/about" className="text-slate-700 hover:text-yellow-600">About</Link>
-              <Link to="/privacy" className="text-slate-700 hover:text-yellow-600">Privacy</Link>
-            </nav>
-          </div>
-          <div>
-            <Link to="/register" className="bg-yellow-600 text-white px-3 py-2 rounded-md shadow-sm hover:opacity-90">Sign up</Link>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 text-white py-16 px-4">
+      <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 text-white py-16 px-4 mt-16 md:mt-20">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="flex items-center gap-3 mb-4">

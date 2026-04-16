@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../utils/axiosInterceptor';
 import { Save, Loader2, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 
-export default function InstitutionLogo() {
+export default function InstitutionLogo({ darkMode }: { darkMode?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [institutionId, setInstitutionId] = useState<number | null>(null);

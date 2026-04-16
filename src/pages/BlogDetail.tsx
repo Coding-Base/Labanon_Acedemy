@@ -3,6 +3,7 @@ import axios from 'axios'
 import { motion } from 'framer-motion'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Calendar, User, Loader2, Heart, MessageCircle, Share2, BookOpen, Globe } from 'lucide-react'
+import Navbar from '../components/Navbar'
 import CommentSection from '../components/blog/CommentSection'
 import DOMPurify from 'dompurify'
 
@@ -96,10 +97,9 @@ export default function BlogDetailPage() {
   async function loadBlog() {
     setLoading(true)
     try {
-      const token = localStorage.getItem('access')
-      const response = await axios.get(`${API_BASE}/blog/?slug=${slug}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      })
+      // Use public axios instance for blog fetch (public endpoint)
+      const publicApi = axios.create({ baseURL: API_BASE })
+      const response = await publicApi.get(`/blog/?slug=${slug}`)
       const blogs = response.data.results || response.data
       if (Array.isArray(blogs) && blogs.length > 0) {
         const blogData = blogs[0]

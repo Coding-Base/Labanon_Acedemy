@@ -159,20 +159,20 @@ const StudentMockExamsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
+    <div className="min-h-screen bg-transparent py-8 custom-scrollbar">
       <Container maxWidth="lg">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Mock Exams</h1>
-          <p className="text-gray-600">Practice tests to prepare for your exams</p>
+          <h1 className="text-4xl font-bold text-gray-800 dark:text-slate-100 mb-2">Mock Exams</h1>
+          <p className="text-gray-600 dark:text-slate-300">Practice tests to prepare for your exams</p>
         </div>
 
         {/* Search & Filters */}
-        <Card className="mb-6">
+        <Card className="mb-6 bg-white dark:bg-slate-800">
           <CardContent className="p-6">
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={4}>
-                <TextField
+                  <TextField
                   fullWidth
                   placeholder="Search exams..."
                   variant="outlined"
@@ -183,7 +183,7 @@ const StudentMockExamsPage: React.FC = () => {
                     setPage(1);
                   }}
                   InputProps={{
-                    startAdornment: <Search size={18} className="mr-2 text-gray-400" />,
+                    startAdornment: <Search size={18} className="mr-2 text-gray-400 dark:text-slate-400" />,
                   }}
                 />
               </Grid>
@@ -228,7 +228,7 @@ const StudentMockExamsPage: React.FC = () => {
               initial={{ opacity: 0, x: 300 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 300 }}
-              className="fixed right-0 top-0 w-80 h-screen bg-white shadow-2xl z-40 flex flex-col"
+              className="fixed right-0 top-0 w-80 h-screen bg-white dark:bg-slate-900 shadow-2xl z-40 flex flex-col"
             >
               <div className="p-4 border-b flex justify-between items-center">
                 <h2 className="text-lg font-bold">Attempt History</h2>
@@ -238,21 +238,21 @@ const StudentMockExamsPage: React.FC = () => {
               </div>
               <div className="flex-1 overflow-auto p-4">
                 {attempts.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No attempts yet</p>
+                  <p className="text-gray-500 dark:text-slate-300 text-center py-8">No attempts yet</p>
                 ) : (
                   <div className="space-y-2">
                     {attempts.map((attempt) => (
                       <div
                         key={attempt.id}
-                        className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                        className="p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer border-gray-100 dark:border-slate-700"
                       >
-                        <p className="font-semibold text-sm text-gray-800">
+                        <p className="font-semibold text-sm text-gray-800 dark:text-slate-100">
                           {attempt.custom_mock_exam?.title}
                         </p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 dark:text-slate-300">
                           Score: {attempt.total_marks_obtained}/{attempt.custom_mock_exam?.total_marks}
                         </p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 dark:text-slate-300">
                           {new Date(attempt.created_at).toLocaleDateString()}
                         </p>
                       </div>
@@ -266,12 +266,12 @@ const StudentMockExamsPage: React.FC = () => {
 
         {/* Exams Grid */}
         <AnimatePresence mode="wait">
-          {isLoading ? (
+            {isLoading ? (
             <div className="flex justify-center py-12">
               <CircularProgress />
             </div>
           ) : exams.length === 0 ? (
-            <Alert severity="info">No exams found. Try adjusting your filters.</Alert>
+            <Alert severity="info" className="bg-white dark:bg-slate-800">No exams found. Try adjusting your filters.</Alert>
           ) : (
             <>
               <Grid container spacing={3}>
@@ -287,10 +287,10 @@ const StudentMockExamsPage: React.FC = () => {
                     sm={6}
                     md={4}
                   >
-                    <Card className="h-full hover:shadow-xl transition-shadow">
+                    <Card className="h-full hover:shadow-xl transition-shadow bg-white dark:bg-slate-800">
                       <CardContent className="pb-2">
                         <div className="flex justify-between items-start mb-3">
-                          <h3 className="font-bold text-gray-800 line-clamp-2">
+                          <h3 className="font-bold text-gray-800 dark:text-slate-100 line-clamp-2">
                             {exam.title}
                           </h3>
                           {exam.is_published && (
@@ -303,11 +303,11 @@ const StudentMockExamsPage: React.FC = () => {
                           )}
                         </div>
 
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        <p className="text-sm text-gray-600 dark:text-slate-300 mb-3 line-clamp-2">
                           {exam.description}
                         </p>
 
-                        <div className="space-y-2 text-sm text-gray-700">
+                        <div className="space-y-2 text-sm text-gray-700 dark:text-slate-300">
                           <div className="flex items-center gap-2">
                             <Clock size={16} />
                             <span>{exam.total_duration_minutes} mins</span>
@@ -326,7 +326,7 @@ const StudentMockExamsPage: React.FC = () => {
                                 exam.difficulty_level.slice(1)}
                             </span>
                           </div>
-                          {exam.fee && exam.fee.fee_amount > 0 && (
+                            {exam.fee && exam.fee.fee_amount > 0 && (
                             <div className="flex items-center gap-2">
                               <Lock size={16} />
                               <span>{exam.fee.currency} {exam.fee.fee_amount}</span>
@@ -435,16 +435,16 @@ const MockExamUnlockModal: React.FC<UnlockModalProps> = ({
         exit={{ opacity: 0, scale: 0.95 }}
         className="fixed inset-0 flex items-center justify-center p-4"
       >
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6">
+        <Card className="w-full max-w-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
+          <CardContent className="p-6 text-gray-900 dark:text-slate-100">
             <h2 className="text-2xl font-bold mb-4">✨ Unlock Exam</h2>
-            <p className="text-gray-600 mb-2 font-semibold">{exam.title}</p>
+            <p className="text-gray-600 dark:text-slate-300 mb-2 font-semibold">{exam.title}</p>
             
             {/* Unlock reason/message */}
             {unlockStatus && (
               <Alert 
                 severity={unlockStatus.unlocked ? 'success' : 'info'} 
-                className="mb-4"
+                className="mb-4 bg-white dark:bg-slate-800"
               >
                 {unlockStatus.message}
               </Alert>
@@ -459,7 +459,7 @@ const MockExamUnlockModal: React.FC<UnlockModalProps> = ({
                 <Alert severity="info" className="mb-4">
                   💡 <strong>Did you know?</strong> If you've unlocked any CBT exam before, you get FREE access to all mock exams!
                 </Alert>
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-6 space-y-3">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 p-4 rounded-lg mb-6 space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-700">Base Price:</span>
                     <span className="font-semibold">
@@ -492,7 +492,7 @@ const MockExamUnlockModal: React.FC<UnlockModalProps> = ({
               </>
             )}
 
-            <div className="flex gap-3">
+              <div className="flex gap-3">
               <Button fullWidth variant="outlined" onClick={onClose} disabled={isProcessing}>
                 Cancel
               </Button>

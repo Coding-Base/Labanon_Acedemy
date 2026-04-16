@@ -498,7 +498,52 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   );
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-gradient-to-br from-gray-50 to-yellow-50'} overflow-hidden`}>
+    <div className={`student-dashboard ${darkMode ? 'dark-mode' : ''} min-h-screen ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-gradient-to-br from-gray-50 to-yellow-50'} overflow-hidden`}>
+      <style>{`
+        /* Student dashboard custom scrollbar */
+        .student-dashboard .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(250,204,21,0.9) rgba(15,23,42,0.18);
+        }
+        .student-dashboard .custom-scrollbar::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+        .student-dashboard .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(15,23,42,0.06);
+          border-radius: 999px;
+        }
+        .student-dashboard .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, rgba(250,204,21,0.95), rgba(249,115,22,0.95));
+          border-radius: 999px;
+          border: 2px solid rgba(255,255,255,0.06);
+        }
+        .student-dashboard .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          filter: brightness(0.95);
+        }
+        /* Reduce visual noise on small devices */
+        @media (max-width: 1024px) {
+          .student-dashboard .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+        }
+
+        /* Dark-mode overrides for common utility classes inside this dashboard scope */
+        .student-dashboard.dark-mode .bg-white { background-color: #0f1724 !important; }
+        .student-dashboard.dark-mode .bg-white/90 { background-color: rgba(15,23,36,0.9) !important; }
+        .student-dashboard.dark-mode .bg-white\\/10 { background-color: rgba(255,255,255,0.04) !important; }
+        .student-dashboard.dark-mode .bg-gray-50 { background-color: #0b1220 !important; }
+        .student-dashboard.dark-mode .text-gray-900 { color: #e6eef8 !important; }
+        .student-dashboard.dark-mode .text-gray-800 { color: #cbd5e1 !important; }
+        .student-dashboard.dark-mode .text-gray-700 { color: #94a3b8 !important; }
+        .student-dashboard.dark-mode .text-gray-600 { color: #8b98a8 !important; }
+        .student-dashboard.dark-mode .text-gray-500 { color: #64748b !important; }
+        .student-dashboard.dark-mode .border-gray-200 { border-color: #1f2937 !important; }
+        .student-dashboard.dark-mode .border-gray-100 { border-color: #111827 !important; }
+        .student-dashboard.dark-mode .bg-gray-100 { background-color: #0b1220 !important; }
+        .student-dashboard.dark-mode .bg-gray-50 { background-color: #071023 !important; }
+        .student-dashboard.dark-mode input, .student-dashboard.dark-mode textarea, .student-dashboard.dark-mode select {
+          background-color: #0b1220 !important; color: #e6eef8 !important; border-color: #1f2937 !important;
+        }
+      `}</style>
       <GospelVideoModal />
       <motion.header 
         initial={{ y: -20, opacity: 0 }} 
@@ -581,7 +626,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 </div>
               </div>
 
-              <nav className="flex-1 overflow-y-auto pr-2 -mr-2">
+              <nav className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar">
                 <div className="space-y-1">
                   {navItems.map((item) => {
                     const active = isActivePath(item.path);
@@ -656,9 +701,9 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
             )}
           </AnimatePresence>
 
-          <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-2xl shadow-lg h-full flex flex-col overflow-hidden border`}>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <div className="min-h-full p-6">
                   <Routes>
                     <Route path="overview" element={

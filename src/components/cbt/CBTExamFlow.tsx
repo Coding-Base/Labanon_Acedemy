@@ -83,10 +83,29 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         const data = await res.json()
 
         if (res.ok && data.unlocked) {
-          // NEW: Load the allowed subjects for this exam
-          if (data.allowed_subjects && Array.isArray(data.allowed_subjects)) {
-            setAllowedSubjects(data.allowed_subjects)
+          // Determine if this is a JAMB exam (exam title or slug)
+          const isJamb = String(exam.title || '').toLowerCase().includes('jamb') || String(exam.slug || '').toLowerCase() === 'jamb'
+
+          if (isJamb) {
+            // For JAMB: backend should return allowed_subjects (the selected subjects)
+            if (data.allowed_subjects && Array.isArray(data.allowed_subjects)) {
+              setAllowedSubjects(data.allowed_subjects)
+            } else {
+              // If backend didn't return allowed_subjects, fallback to empty array
+              setAllowedSubjects([])
+            }
+          } else {
+            // For non-JAMB exams, an unlocked activation grants access to all subjects.
+            // Fetch the exam subjects and mark them as allowed.
+            try {
+              const subjectsRes = await axios.get(`${API_BASE}/cbt/exams/${exam.id}/subjects/`)
+              setAllowedSubjects(subjectsRes.data || [])
+            } catch (err) {
+              console.error('Failed to load exam subjects for non-JAMB unlock:', err)
+              setAllowedSubjects([])
+            }
           }
+
           setFlowStep('subjects')
         } else {
           // Redirect to activation/checkout page

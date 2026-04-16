@@ -74,20 +74,20 @@ export default function MyCourses() {
     return (
       <div className="h-full">
         <div className="flex items-center justify-between mb-6">
-          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-10 w-40 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-8 w-48 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div>
+          <div className="h-10 w-40 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
-              <div className="h-40 bg-gray-200"></div>
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden animate-pulse">
+              <div className="h-40 bg-gray-200 dark:bg-slate-700"></div>
               <div className="p-5">
-                <div className="h-5 bg-gray-200 rounded mb-3"></div>
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                <div className="h-5 bg-gray-200 dark:bg-slate-700 rounded mb-3"></div>
+                <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded mb-4"></div>
                 <div className="flex justify-between">
-                  <div className="h-6 w-20 bg-gray-200 rounded"></div>
-                  <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                  <div className="h-6 w-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
+                  <div className="h-6 w-16 bg-gray-200 dark:bg-slate-700 rounded"></div>
                 </div>
               </div>
             </div>
@@ -98,12 +98,12 @@ export default function MyCourses() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col custom-scrollbar">
       {/* Header */}
       <div className="flex-shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">My Learning</h1>
-          <p className="text-gray-600 text-sm">Continue your learning journey with your enrolled courses</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1">My Learning</h1>
+          <p className="text-gray-600 dark:text-slate-300 text-sm">Continue your learning journey with your enrolled courses</p>
         </div>
         <button 
           className="px-5 py-2.5 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors duration-200 flex items-center gap-2 text-sm"
@@ -116,10 +116,10 @@ export default function MyCourses() {
 
       {/* Course count and pagination info */}
       <div className="flex-shrink-0 mb-6 flex items-center justify-between">
-        <p className="text-gray-700 text-sm">
+        <p className="text-gray-700 dark:text-slate-300 text-sm">
           <span className="font-semibold">{enrollments.length}</span> of <span className="font-semibold">{count}</span> courses
         </p>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-slate-400">
           Page <span className="font-semibold">{page}</span> of <span className="font-semibold">{totalPages}</span>
         </div>
       </div>
@@ -128,12 +128,12 @@ export default function MyCourses() {
       <div className="flex-1 overflow-y-auto pr-2 -mr-2">
         {/* Empty State */}
         {enrollments.length === 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-8 text-center">
             <div className="w-20 h-20 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
               <BookOpen size={32} className="text-yellow-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses yet</h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">No courses yet</h3>
+            <p className="text-gray-600 dark:text-slate-300 mb-6 max-w-md mx-auto">
               You haven't enrolled in any courses yet. Start your learning journey by exploring our marketplace.
             </p>
             <button 
@@ -165,7 +165,7 @@ export default function MyCourses() {
               return (
                 <div 
                   key={enrollment.id}
-                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 border border-gray-100 cursor-pointer group"
+                  className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 border border-gray-100 dark:border-slate-700 cursor-pointer group"
                   onClick={() => {
                     if (isScheduled) {
                         navigate('/student/schedule');
@@ -194,7 +194,7 @@ export default function MyCourses() {
                       </div>
                     </div>
                     <div className="absolute top-3 right-3">
-                      <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800">
+                      <span className="px-2 py-1 bg-white/90 dark:bg-slate-700/80 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 dark:text-slate-100">
                         Enrolled
                       </span>
                     </div>
@@ -211,17 +211,17 @@ export default function MyCourses() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 h-12">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 mb-2 line-clamp-2 h-12">
                       {course?.title}
                     </h3>
 
                     {/* Description */}
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2 h-10">
+                    <p className="text-gray-600 dark:text-slate-300 text-sm mb-3 line-clamp-2 h-10">
                       {course?.description || 'No description available'}
                     </p>
 
                     {/* Course Stats */}
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400 mb-3">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
                           <Star size={14} className="text-yellow-500 fill-current" />
@@ -241,10 +241,10 @@ export default function MyCourses() {
                     </div>
 
                     {/* Price & CTA */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-700">
                       <div>
-                        <span className="text-xl font-bold text-gray-900">₦{course?.price || '0'}</span>
-                        <span className="text-gray-500 text-sm ml-2 line-through">₦{((course?.price || 0) * 1.5).toFixed(0)}</span>
+                        <span className="text-xl font-bold text-gray-900 dark:text-slate-100">₦{course?.price || '0'}</span>
+                        <span className="text-gray-500 dark:text-slate-400 text-sm ml-2 line-through">₦{((course?.price || 0) * 1.5).toFixed(0)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-yellow-600">
@@ -263,13 +263,13 @@ export default function MyCourses() {
 
       {/* Fixed Pagination at bottom */}
       {totalPages > 1 && (
-        <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-200">
-          <div className="text-sm text-gray-600">
+        <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-slate-700">
+          <div className="text-sm text-gray-600 dark:text-slate-400">
             Showing {((page - 1) * pageSize) + 1} to {Math.min(page * pageSize, count)} of {count} courses
           </div>
           <div className="flex items-center gap-2">
             <button 
-              className={`px-3 py-2 rounded-lg flex items-center gap-1 font-medium text-sm transition-colors ${page <= 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
+              className={`px-3 py-2 rounded-lg flex items-center gap-1 font-medium text-sm transition-colors ${page <= 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700'}`}
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
@@ -294,7 +294,7 @@ export default function MyCourses() {
                 return (
                   <button
                     key={pageNum}
-                    className={`w-9 h-9 rounded-lg font-medium text-sm transition-colors ${page === pageNum ? 'bg-yellow-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
+                    className={`w-9 h-9 rounded-lg font-medium text-sm transition-colors ${page === pageNum ? 'bg-yellow-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700'}`}
                     onClick={() => setPage(pageNum)}
                   >
                     {pageNum}
@@ -305,7 +305,7 @@ export default function MyCourses() {
                 <>
                   <span className="px-1">...</span>
                   <button
-                    className="w-9 h-9 rounded-lg bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 font-medium text-sm"
+                    className="w-9 h-9 rounded-lg bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 font-medium text-sm dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700"
                     onClick={() => setPage(totalPages)}
                   >
                     {totalPages}
@@ -315,7 +315,7 @@ export default function MyCourses() {
             </div>
             
             <button 
-              className={`px-3 py-2 rounded-lg flex items-center gap-1 font-medium text-sm transition-colors ${page >= totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
+              className={`px-3 py-2 rounded-lg flex items-center gap-1 font-medium text-sm transition-colors ${page >= totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700'}`}
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >

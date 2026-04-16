@@ -5,12 +5,14 @@ interface PayoutScheduleInfoProps {
   title?: string;
   variant?: 'card' | 'banner' | 'compact';
   userRole?: 'tutor' | 'institution';
+  darkMode?: boolean;
 }
 
 const PayoutScheduleInfo: React.FC<PayoutScheduleInfoProps> = ({
   title = 'Payout Schedule',
   variant = 'card',
   userRole = 'tutor'
+  , darkMode = false
 }) => {
   const timelineSteps = [
     {

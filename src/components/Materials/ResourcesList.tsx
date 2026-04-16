@@ -45,7 +45,7 @@ export default function ResourcesList() {
   const [areaFilter, setAreaFilter] = useState('')
   
   // Debounce timeout
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null)
+  const [debounceTimer, setDebounceTimer] = useState<number | null>(null)
   const navigate = useNavigate()
   const [addingIds, setAddingIds] = useState<string[]>([])
 

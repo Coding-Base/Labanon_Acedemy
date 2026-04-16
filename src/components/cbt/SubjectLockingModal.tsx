@@ -24,7 +24,7 @@ interface SubjectLockingModalProps {
   onClose: () => void
 }
 
-const MAX_SUBJECTS = 4
+const MAX_SUBJECTS = 5
 
 export default function SubjectLockingModal({
   isOpen,
@@ -81,7 +81,7 @@ export default function SubjectLockingModal({
     onSubjectsSelected(selectedSubjects, subjectIds)
   }
 
-  const isExactlyFourSelected = selectedSubjects.length === MAX_SUBJECTS
+  const isExactlyMaxSelected = selectedSubjects.length === MAX_SUBJECTS
   const isMaxSelected = selectedSubjects.length >= MAX_SUBJECTS
 
   return (
@@ -141,7 +141,7 @@ export default function SubjectLockingModal({
                   <div>
                     <p className="font-semibold text-blue-900">Selected Subjects</p>
                     <p className="text-sm text-blue-700">
-                      {selectedSubjects.length === 0 && 'Pick exactly 4 subjects'}
+                      {selectedSubjects.length === 0 && `Pick exactly ${MAX_SUBJECTS} subjects`}
                       {selectedSubjects.length === MAX_SUBJECTS && 'Perfect! Ready to continue'}
                       {selectedSubjects.length > 0 && selectedSubjects.length < MAX_SUBJECTS && `${MAX_SUBJECTS - selectedSubjects.length} more to go`}
                     </p>
@@ -149,11 +149,11 @@ export default function SubjectLockingModal({
                 </div>
                 <motion.div
                   animate={{
-                    scale: isExactlyFourSelected ? [1, 1.1, 1] : 1,
+                    scale: isExactlyMaxSelected ? [1, 1.1, 1] : 1,
                   }}
-                  transition={{ duration: 0.5, repeat: isExactlyFourSelected ? Infinity : 0 }}
+                  transition={{ duration: 0.5, repeat: isExactlyMaxSelected ? Infinity : 0 }}
                 >
-                  {isExactlyFourSelected ? (
+                  {isExactlyMaxSelected ? (
                     <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
                       <Check className="w-6 h-6 text-white" />
                     </div>
@@ -274,12 +274,12 @@ export default function SubjectLockingModal({
                 Cancel
               </button>
               <motion.button
-                whileHover={isExactlyFourSelected ? { scale: 1.05 } : {}}
-                whileTap={isExactlyFourSelected ? { scale: 0.95 } : {}}
+                whileHover={isExactlyMaxSelected ? { scale: 1.05 } : {}}
+                whileTap={isExactlyMaxSelected ? { scale: 0.95 } : {}}
                 onClick={handleConfirm}
-                disabled={!isExactlyFourSelected}
+                disabled={!isExactlyMaxSelected}
                 className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                  isExactlyFourSelected
+                  isExactlyMaxSelected
                     ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white hover:shadow-lg'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}

@@ -5,7 +5,7 @@ import labanonLogo from '../pages/labanonlogo.png';
 
 export default function Loader() {
   // Floating animation for the logo
-  const floatAnimation = {
+  const floatAnimation: any = {
     y: [0, -20, 0],
     transition: {
       duration: 3,
@@ -15,7 +15,7 @@ export default function Loader() {
   };
 
   // Rotating circle animation
-  const rotateAnimation = {
+  const rotateAnimation: any = {
     rotate: 360,
     transition: {
       duration: 4,
@@ -25,7 +25,7 @@ export default function Loader() {
   };
 
   // Pulse animation
-  const pulseAnimation = {
+  const pulseAnimation: any = {
     scale: [1, 1.1, 1],
     opacity: [0.6, 1, 0.6],
     transition: {
@@ -36,7 +36,7 @@ export default function Loader() {
   };
 
   // Text animation
-  const textAnimation = {
+  const textAnimation: any = {
     opacity: [0.5, 1, 0.5],
     transition: {
       duration: 2.5,
@@ -46,7 +46,7 @@ export default function Loader() {
   };
 
   // Particle animation
-  const particleAnimation = {
+  const particleAnimation: any = {
     y: [0, -100],
     x: [0, Math.random() * 60 - 30],
     opacity: [1, 0],
@@ -70,8 +70,8 @@ export default function Loader() {
           transition={{
             duration: 6,
             repeat: Infinity,
-            ease: "easeInOut"
-          }}
+            ease: ("easeInOut" as unknown) as any
+          } as any}
         />
         <motion.div
           className="absolute bottom-20 right-20 w-48 h-48 bg-teal-300 rounded-full filter blur-3xl opacity-20"
@@ -82,8 +82,8 @@ export default function Loader() {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: "easeInOut"
-          }}
+            ease: ("easeInOut" as unknown) as any
+          } as any}
         />
       </div>
 
@@ -119,8 +119,8 @@ export default function Loader() {
             transition={{
               duration: 2,
               repeat: Infinity,
-              ease: "easeInOut"
-            }}
+              ease: ("easeInOut" as unknown) as any
+            } as any}
           >
             <img
               src={labanonLogo}
@@ -140,9 +140,9 @@ export default function Loader() {
               }}
               animate={particleAnimation}
               transition={{
-                ...particleAnimation.transition,
+                ...(particleAnimation.transition as any),
                 delay: i * 0.4,
-              }}
+              } as any}
             />
           ))}
         </motion.div>
@@ -177,7 +177,7 @@ export default function Loader() {
                   duration: 0.6,
                   repeat: Infinity,
                   delay: i * 0.15,
-                }}
+                } as any}
               />
             ))}
           </div>
@@ -199,8 +199,8 @@ export default function Loader() {
             transition={{
               duration: 1.5,
               repeat: Infinity,
-              ease: "easeInOut",
-            }}
+              ease: ("easeInOut" as unknown) as any,
+            } as any}
             style={{ width: "40%" }}
           />
         </motion.div>
@@ -243,8 +243,8 @@ export default function Loader() {
         transition={{
           duration: 4,
           repeat: Infinity,
-          ease: "linear"
-        }}
+          ease: ("linear" as unknown) as any
+        } as any}
       />
       <motion.div
         className="absolute bottom-8 left-8 w-16 h-16 border-2 border-teal-400 rounded-full"
@@ -255,8 +255,8 @@ export default function Loader() {
         transition={{
           duration: 3,
           repeat: Infinity,
-          ease: "easeInOut"
-        }}
+          ease: ("easeInOut" as unknown) as any
+        } as any}
       />
     </div>
   );

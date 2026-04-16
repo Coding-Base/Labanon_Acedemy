@@ -29,7 +29,9 @@ import {
   Calendar,
   Activity,
   TrendingUp,
-  PenTool
+  PenTool,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { FileText } from 'lucide-react';
 
@@ -89,6 +91,10 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   const [creatingCourse, setCreatingCourse] = useState(false);
   const [contactAdminOpen, setContactAdminOpen] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('institutionDashboardDarkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   // --- Data States ---
   const initialFromState = (location.state as any)?.summary;
@@ -118,6 +124,11 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   const [trialDaysTotal, setTrialDaysTotal] = useState<number | null>(null);
 
   const base = '/institution';
+
+  // Save dark mode preference
+  useEffect(() => {
+    localStorage.setItem('institutionDashboardDarkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
 
   // Logout Function
   const doLogout = () => {
@@ -329,9 +340,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   }, [navigate, props.summary]);
 
   if (loadingSummary) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 animate-spin text-yellow-600" />
-        <span className="ml-3 text-gray-600">Loading Dashboard...</span>
+    <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
+        <Loader2 className={`w-10 h-10 animate-spin ${darkMode ? 'text-yellow-500' : 'text-yellow-600'}`} />
+        <span className={`ml-3 ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>Loading Dashboard...</span>
     </div>
   );
 
@@ -354,8 +365,8 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans relative">
-      <GospelVideoModal />
+    <div className={`institution-dashboard min-h-screen font-sans relative ${darkMode ? 'dark-mode bg-slate-950 text-slate-100' : 'bg-gray-50'}`}>
+      <GospelVideoModal darkMode={darkMode} />
       {accountLocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black opacity-40"></div>
@@ -372,39 +383,33 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm"
+        className={`sticky top-0 z-40 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'} border-b shadow-sm`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100 mr-3 transition-colors">
-                {sidebarOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className={`lg:hidden p-2 rounded-lg ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'} mr-3 transition-colors`}>
+                {sidebarOpen ? <X className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`} /> : <Menu className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`} />}
               </button>
               <Link to={base} className="flex items-center space-x-3 group">
-                <div className="bg-yellow-50 p-1.5 rounded-lg group-hover:bg-yellow-100 transition-colors">
+                <div className={`${darkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'} p-1.5 rounded-lg group-hover:${darkMode ? 'bg-yellow-800/50' : 'bg-yellow-100'} transition-colors`}>
                     <img src={labanonLogo} alt="LightHub Academy logo" width={32} height={32} className="w-8 h-8 object-contain" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900 tracking-tight">Institution Portal</h1>
+                  <h1 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'} tracking-tight`}>Institution Portal</h1>
                 </div>
               </Link>
             </div>
 
             <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-3 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
-                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                  {summary?.username?.charAt(0).toUpperCase()}
-                </div>
-                <div className="pr-2">
-                  <p className="text-sm font-semibold text-gray-900 leading-none">{institutionName || summary?.username}</p>
-                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mt-0.5">Admin</p>
-                </div>
-              </div>
-              <button onClick={() => setContactAdminOpen(true)} className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-full transition-all relative" title="Contact Admin">
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-100 text-gray-600'}`} title={darkMode ? 'Light mode' : 'Dark mode'}>
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </motion.button>
+              <button onClick={() => setContactAdminOpen(true)} className={`p-2 ${darkMode ? 'text-slate-400 hover:text-yellow-500 hover:bg-yellow-900/20' : 'text-gray-500 hover:text-yellow-600 hover:bg-yellow-50'} rounded-full transition-all relative`} title="Contact Admin">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
               </button>
-              <button onClick={() => setShowInbox(true)} className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-full transition-all" title="Inbox">
+              <button onClick={() => setShowInbox(true)} className={`p-2 ${darkMode ? 'text-slate-400 hover:text-yellow-500 hover:bg-yellow-900/20' : 'text-gray-500 hover:text-yellow-600 hover:bg-yellow-50'} rounded-full transition-all`} title="Inbox">
                 <Mail className="w-5 h-5" />
               </button>
             </div>
@@ -417,9 +422,9 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
           
           {/* Sidebar - Desktop */}
           <motion.aside initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="hidden lg:block w-64 flex-shrink-0">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sticky top-24">
+            <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl shadow-sm border p-4 sticky top-24`}>
               <div className="mb-6 px-2">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Main Menu</h3>
+                <h3 className={`text-xs font-bold ${darkMode ? 'text-slate-400' : 'text-gray-400'} uppercase tracking-wider`}>Main Menu</h3>
               </div>
               <nav className="space-y-1">
                 {navItems.map((item) => {
@@ -430,11 +435,11 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                       to={item.path}
                       className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                         active
-                          ? 'bg-yellow-50 text-yellow-700 font-medium shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? `${darkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-50 text-yellow-700'} font-medium shadow-sm`
+                          : `${darkMode ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`
                       }`}
                     >
-                      <div className={`${active ? 'text-yellow-600' : 'text-gray-400 group-hover:text-gray-600'} transition-colors`}>{item.icon}</div>
+                      <div className={`${active ? (darkMode ? 'text-yellow-500' : 'text-yellow-600') : (darkMode ? 'text-slate-500 group-hover:text-slate-400' : 'text-gray-400 group-hover:text-gray-600')} transition-colors`}>{item.icon}</div>
                       <span>{item.label}</span>
                       {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-yellow-500"></div>}
                     </Link>
@@ -442,16 +447,16 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                 })}
               </nav>
 
-              <div className="mt-8 pt-6 border-t border-gray-100 px-2">
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-xl p-4 border border-yellow-100">
-                  <h4 className="font-semibold text-yellow-800 mb-1 text-sm">Need Help?</h4>
-                  <p className="text-xs text-yellow-600 mb-3 leading-relaxed">Contact our support team for assistance with your account.</p>
-                  <button onClick={() => setContactAdminOpen(true)} className="w-full text-xs bg-white text-yellow-700 px-3 py-2 rounded-lg border border-yellow-200 font-medium hover:shadow-sm transition-shadow">Contact Support</button>
+              <div className={`mt-8 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-100'} px-2`}>
+                <div className={`${darkMode ? 'bg-yellow-900/20 border-yellow-800' : 'bg-gradient-to-br from-yellow-50 to-yellow-50 border-yellow-100'} rounded-xl p-4 border`}>
+                  <h4 className={`font-semibold ${darkMode ? 'text-yellow-400' : 'text-yellow-800'} mb-1 text-sm`}>Need Help?</h4>
+                  <p className={`text-xs ${darkMode ? 'text-yellow-400/70' : 'text-yellow-600'} mb-3 leading-relaxed`}>Contact our support team for assistance with your account.</p>
+                  <button onClick={() => setContactAdminOpen(true)} className={`w-full text-xs ${darkMode ? 'bg-slate-700 text-yellow-400 border-yellow-800' : 'bg-white text-yellow-700 border-yellow-200'} px-3 py-2 rounded-lg border font-medium hover:shadow-sm transition-shadow`}>Contact Support</button>
                 </div>
               </div>
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <button onClick={doLogout} className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200 group">
-                  <div className="text-gray-400 group-hover:text-red-600 transition-colors"><LogOut className="w-5 h-5" /></div>
+              <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-100'}`}>
+                <button onClick={doLogout} className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg ${darkMode ? 'text-slate-400 hover:bg-red-900/20 hover:text-red-400' : 'text-gray-600 hover:bg-red-50 hover:text-red-600'} transition-all duration-200 group`}>
+                  <div className={`${darkMode ? 'text-slate-500 group-hover:text-red-400' : 'text-gray-400 group-hover:text-red-600'} transition-colors`}><LogOut className="w-5 h-5" /></div>
                   <span className="font-medium">Logout</span>
                 </button>
               </div>
@@ -463,21 +468,21 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
             {sidebarOpen && (
                 <>
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} className="lg:hidden fixed inset-0 z-50 bg-black" onClick={() => setSidebarOpen(false)} />
-                <motion.aside initial={{ x: -300 }} animate={{ x: 0 }} exit={{ x: -300 }} className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl p-6 flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <motion.aside initial={{ x: -300 }} animate={{ x: 0 }} exit={{ x: -300 }} className={`fixed inset-y-0 left-0 z-50 w-72 ${darkMode ? 'bg-slate-800 shadow-2xl' : 'bg-white shadow-2xl'} p-6 flex flex-col`} onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-xl font-bold text-gray-900">Menu</h2>
-                    <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6 text-gray-500" /></button>
+                    <h2 className={`text-xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Menu</h2>
+                    <button onClick={() => setSidebarOpen(false)} className={`p-2 ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} rounded-full`}><X className={`w-6 h-6 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`} /></button>
                     </div>
                     <nav className="space-y-2 flex-1">
                     {navItems.map((item) => (
-                        <Link key={item.path} to={item.path} className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700" onClick={() => setSidebarOpen(false)}>
+                        <Link key={item.path} to={item.path} className={`flex items-center space-x-3 px-4 py-3 rounded-xl hover:${darkMode ? 'bg-slate-700' : 'bg-gray-50'} ${darkMode ? 'text-slate-200' : 'text-gray-700'}`} onClick={() => setSidebarOpen(false)}>
                         {item.icon}
                         <span className="font-medium">{item.label}</span>
                         </Link>
                     ))}
                     </nav>
-                    <div className="border-t border-gray-200 pt-4 mt-4">
-                      <button onClick={doLogout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-red-50 text-gray-700 hover:text-red-600 transition-all font-medium">
+                    <div className={`border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'} pt-4 mt-4`}>
+                      <button onClick={doLogout} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl ${darkMode ? 'hover:bg-red-900/20 text-slate-200 hover:text-red-400' : 'hover:bg-red-50 text-gray-700 hover:text-red-600'} transition-all font-medium`}>
                         <LogOut className="w-5 h-5" />
                         <span>Logout</span>
                       </button>
@@ -498,16 +503,19 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         verificationStatus={summary?.verification_status || null}
                         dashboardType="institution"
                         rejectionReason={summary?.rejection_reason}
+                        darkMode={darkMode}
                       />
                       {/* Welcome Banner */}
-                      <div className="bg-gradient-to-r from-yellow-700 to-yellow-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+                      <div className={`${darkMode ? 'bg-gradient-to-r from-yellow-900 to-yellow-800' : 'bg-gradient-to-r from-yellow-700 to-yellow-600'} rounded-2xl p-8 text-white shadow-lg relative overflow-hidden`}>
                         <div className="relative z-10">
                             <h1 className="text-3xl font-bold mb-2">Dashboard Overview</h1>
-                            <p className="text-yellow-100 text-lg">Welcome back, {institutionName || summary?.username}!</p>
-                            <div className="mt-6 flex items-center gap-3">
-                                <span className="bg-white/20 backdrop-blur-sm text-white text-sm font-medium px-4 py-1.5 rounded-full flex items-center border border-white/30">
-                                    <CheckCircle className="w-4 h-4 mr-2" /> Verified Institution
-                                </span>
+                            <p className={`${darkMode ? 'text-yellow-200' : 'text-yellow-100'} text-lg`}>Welcome back, {institutionName || summary?.username}!</p>
+                            <div className="mt-6 flex items-center gap-3 flex-wrap">
+                                {summary?.verification_status === 'approved' && (
+                                    <span className="bg-white/20 backdrop-blur-sm text-white text-sm font-medium px-4 py-1.5 rounded-full flex items-center border border-white/30">
+                                        <CheckCircle className="w-4 h-4 mr-2" /> Verified Institution
+                                    </span>
+                                )}
                                 <span className="bg-white/20 backdrop-blur-sm text-white text-sm font-medium px-4 py-1.5 rounded-full flex items-center border border-white/30">
                                     <Activity className="w-4 h-4 mr-2" /> System Active
                                 </span>
@@ -520,27 +528,27 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         {/* Trial card - show during active trial period (days remaining > 0) */}
                         <div className="mb-6 flex flex-col sm:flex-row sm:justify-end gap-4">
                           {trialDaysRemaining !== null && (summary?.role === 'institution') && !isUnlocked && trialDaysRemaining > 0 && (
-                            <div className="bg-white rounded-xl shadow-sm border border-yellow-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full sm:w-1/2">
+                            <div className={`${darkMode ? 'bg-slate-800 border-yellow-700' : 'bg-white border-yellow-100'} rounded-xl shadow-sm border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full sm:w-1/2`}>
                               <div className="flex-1">
-                                <div className="text-sm text-yellow-700 font-medium">Free Trial</div>
-                                <div className="text-2xl font-bold text-gray-900 mt-1">{trialDaysRemaining} day{trialDaysRemaining !== 1 ? 's' : ''} remaining</div>
-                                <div className="text-xs text-gray-500 mt-1">Your account is on a free trial for institution features.</div>
-                                <div className="text-sm text-gray-600 mt-2">During the trial you can access the dashboard. After the trial ends your account will be locked until you complete activation.</div>
+                                <div className={`text-sm ${darkMode ? 'text-yellow-400' : 'text-yellow-700'} font-medium`}>Free Trial</div>
+                                <div className={`text-2xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'} mt-1`}>{trialDaysRemaining} day{trialDaysRemaining !== 1 ? 's' : ''} remaining</div>
+                                <div className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Your account is on a free trial for institution features.</div>
+                                <div className={`text-sm mt-2 ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>During the trial you can access the dashboard. After the trial ends your account will be locked until you complete activation.</div>
                               </div>
                               <div className="text-right w-full sm:w-auto">
-                                <Link to={`/activate?type=account&return_to=${encodeURIComponent('/institution/overview')}`} className="px-4 py-2 bg-yellow-600 text-white rounded whitespace-nowrap">Unlock Account</Link>
+                                <Link to={`/activate?type=account&return_to=${encodeURIComponent('/institution/overview')}`} className="px-4 py-2 bg-yellow-600 text-white rounded whitespace-nowrap hover:bg-yellow-700">Unlock Account</Link>
                               </div>
                             </div>
                           )}
 
-                          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between gap-4 w-full sm:w-1/2">
+                          <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-xl shadow-sm border p-4 flex items-center justify-between gap-4 w-full sm:w-1/2`}>
                             <div>
-                              <div className="text-sm text-gray-700 font-medium">Share Feedback</div>
-                              <div className="text-lg font-bold text-gray-900">Tell us about your experience</div>
-                              <div className="text-xs text-gray-500 mt-1">Leave a review about the platform or your recent exam.</div>
+                              <div className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Share Feedback</div>
+                              <div className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Tell us about your experience</div>
+                              <div className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Leave a review about the platform or your recent exam.</div>
                             </div>
                             <div className="text-right">
-                              <Link to="/reviews?role=institution" className="px-4 py-2 bg-yellow-600 text-white rounded">Write a Review</Link>
+                              <Link to="/reviews?role=institution" className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700">Write a Review</Link>
                             </div>
                           </div>
                         </div>
@@ -580,18 +588,18 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                           <motion.div 
                             key={index}
                             whileHover={{ y: -5 }}
-                            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group"
+                            className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} p-6 rounded-2xl shadow-sm border relative overflow-hidden group`}
                           >
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <p className="text-gray-500 text-sm font-medium">{stat.title}</p>
-                                    <h3 className="text-3xl font-bold text-gray-900 mt-1 group-hover:text-yellow-700 transition-colors">{stat.value}</h3>
+                                    <p className={`${darkMode ? 'text-slate-400' : 'text-gray-500'} text-sm font-medium`}>{stat.title}</p>
+                                    <h3 className={`text-3xl font-bold ${darkMode ? 'text-slate-100 group-hover:text-yellow-400' : 'text-gray-900 group-hover:text-yellow-700'} mt-1 transition-colors`}>{stat.value}</h3>
                                 </div>
                                 <div className={`${stat.bg} p-3 rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                                     {stat.icon}
                                 </div>
                             </div>
-                            <div className="flex items-center text-xs text-gray-400 font-medium">
+                            <div className={`flex items-center text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-gray-400'}`}>
                                 <TrendingUp className="w-3 h-3 mr-1 text-yellow-500" />
                                 {stat.trend}
                             </div>
@@ -599,113 +607,119 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                         ))}
                       </div>
 
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Revenue Chart */}
-                        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-bold text-gray-900">Revenue Analytics</h3>
-                                <select className="text-sm border-gray-200 border rounded-lg px-2 py-1 text-gray-600 outline-none focus:border-yellow-500">
-                                    <option>Last 6 Months</option>
-                                    <option>This Year</option>
-                                </select>
-                            </div>
-                            <div className="h-80 w-full">
-                            {loadingAnalytics ? (
-                                <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                                    <Loader2 className="w-8 h-8 animate-spin mb-2 text-yellow-600" />
-                                    <span>Gathering financial data...</span>
-                                </div>
-                            ) : revenueData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={revenueData}>
-                                    <defs>
-                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                    </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9ca3af'}} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `₦${val/1000}k`} tick={{fontSize: 12, fill: '#9ca3af'}} />
-                                    <Tooltip 
-                                        contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'}}
-                                        formatter={(val: number) => [`₦${val.toLocaleString()}`, 'Revenue']} 
-                                    />
-                                    <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-                                </AreaChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                                    <DollarSign className="w-10 h-10 text-gray-300 mb-2" />
-                                    <p className="text-gray-500 font-medium">No revenue data available yet.</p>
-                                    <p className="text-sm text-gray-400">Start selling courses to see analytics.</p>
-                                </div>
-                            )}
-                            </div>
-                        </div>
+                      {/* Quick Actions - Horizontal Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <motion.button 
+                          whileHover={{ y: -3 }}
+                          onClick={() => setCreatingCourse(true)} 
+                          className={`${darkMode ? 'bg-slate-800 border-slate-700 hover:border-yellow-600/50 hover:bg-slate-700/50' : 'bg-white border-gray-100 hover:border-yellow-200 hover:bg-yellow-50/30'} rounded-xl border p-6 transition-all group text-left`}
+                        >
+                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${darkMode ? 'bg-yellow-900/30 text-yellow-500' : 'bg-yellow-100 text-yellow-600'} group-hover:scale-110 transition-transform`}>
+                            <PlusCircle className="w-6 h-6" />
+                          </div>
+                          <h4 className={`font-bold mb-1 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Create Course</h4>
+                          <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>Launch a new online course</p>
+                        </motion.button>
 
-                        {/* Recent Activity / Quick Actions */}
-                        <div className="space-y-6">
-                            {/* Quick Actions */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                                <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
-                                
-                                <div className="space-y-3">
-                                   <Link to="/institution/courses" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
-                                    <button onClick={() => setCreatingCourse(true)} className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
-                                        <div className="flex items-center">
-                                            <div className="bg-yellow-100 p-2 rounded-lg text-yellow-600 mr-3 group-hover:bg-yellow-200">
-                                                <PlusCircle className="w-5 h-5" />
-                                            </div>
-                                            <span className="font-medium text-gray-700 group-hover:text-yellow-800">Create New Course</span>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-yellow-600" />
-                                    </button>
-                                    </Link>
-                                    <Link to="/institution/diploma" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
-                                        <div className="flex items-center">
-                                            <div className="bg-yellow-100 p-2 rounded-lg text-yellow-600 mr-3 group-hover:bg-yellow-200">
-                                                <GraduationCap className="w-5 h-5" />
-                                            </div>
-                                            <span className="font-medium text-gray-700 group-hover:text-yellow-800">Manage Diplomas</span>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-yellow-600" />
-                                    </Link>
-                                    <Link to="/institution/portfolio" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-yellow-200 hover:bg-yellow-50 transition-all group">
-                                        <div className="flex items-center">
-                                            <div className="bg-yellow-100 p-2 rounded-lg text-yellow-600 mr-3 group-hover:bg-yellow-200">
-                                                <Briefcase className="w-5 h-5" />
-                                            </div>
-                                            <span className="font-medium text-gray-700 group-hover:text-yellow-800">Update Portfolio</span>
-                                        </div>
-                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-yellow-600" />
-                                    </Link>
-                                </div>
-                            </div>
+                        <Link 
+                          to="/institution/diploma"
+                          className={`${darkMode ? 'bg-slate-800 border-slate-700 hover:border-yellow-600/50 hover:bg-slate-700/50' : 'bg-white border-gray-100 hover:border-yellow-200 hover:bg-yellow-50/30'} rounded-xl border p-6 transition-all group text-left block no-underline group-hover:no-underline`}
+                        >
+                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${darkMode ? 'bg-yellow-900/30 text-yellow-500' : 'bg-yellow-100 text-yellow-600'} group-hover:scale-110 transition-transform`}>
+                            <GraduationCap className="w-6 h-6" />
+                          </div>
+                          <h4 className={`font-bold mb-1 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Manage Diplomas</h4>
+                          <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>Create and sell diplomas</p>
+                        </Link>
 
-                            {/* Recent Activity Feed */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                                <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Sales</h3>
-                                <div className="space-y-4">
-                                    {recentActivity.length > 0 ? recentActivity.map((activity, idx) => (
-                                        <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                                            <div className="flex items-center">
-                                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 mr-3">
-                                                    {activity.user?.name?.[0] || 'U'}
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900 truncate w-32">{activity.course_title || activity.diploma_title || 'Item'}</p>
-                                                    <p className="text-xs text-gray-500">{new Date(activity.created_at).toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-                                            <span className="text-sm font-bold text-yellow-600">+₦{Number(activity.creator_amount).toLocaleString()}</span>
-                                        </div>
-                                    )) : (
-                                        <p className="text-sm text-gray-500 text-center py-4">No recent activity.</p>
-                                    )}
-                                </div>
-                            </div>
+                        <Link 
+                          to="/institution/portfolio"
+                          className={`${darkMode ? 'bg-slate-800 border-slate-700 hover:border-yellow-600/50 hover:bg-slate-700/50' : 'bg-white border-gray-100 hover:border-yellow-200 hover:bg-yellow-50/30'} rounded-xl border p-6 transition-all group text-left block no-underline group-hover:no-underline`}
+                        >
+                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${darkMode ? 'bg-yellow-900/30 text-yellow-500' : 'bg-yellow-100 text-yellow-600'} group-hover:scale-110 transition-transform`}>
+                            <Briefcase className="w-6 h-6" />
+                          </div>
+                          <h4 className={`font-bold mb-1 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Portfolio</h4>
+                          <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>Showcase your expertise</p>
+                        </Link>
+                      </div>
+
+                      {/* Revenue Analytics - Improved Design */}
+                      <div className={`${darkMode ? 'bg-gradient-to-br from-slate-800 to-slate-800/50 border-slate-700' : 'bg-gradient-to-br from-white to-gray-50 border-gray-100'} rounded-2xl shadow-sm border p-8`}>
+                        <div className="flex items-center justify-between mb-8">
+                          <div>
+                            <h3 className={`text-2xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Revenue Analytics</h3>
+                            <p className={`text-sm mt-1 ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>Your earnings over time</p>
+                          </div>
+                          <select className={`text-sm border rounded-lg px-3 py-2 outline-none focus:border-yellow-500 font-medium ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-white border-gray-200 text-gray-600'}`}>
+                              <option>Last 6 Months</option>
+                              <option>This Year</option>
+                              <option>All Time</option>
+                          </select>
                         </div>
+                        <div className="h-96 w-full">
+                          {loadingAnalytics ? (
+                              <div className={`h-full flex flex-col items-center justify-center ${darkMode ? 'text-slate-400' : 'text-gray-400'}`}>
+                                  <Loader2 className={`w-8 h-8 animate-spin mb-2 ${darkMode ? 'text-yellow-500' : 'text-yellow-600'}`} />
+                                  <span>Gathering financial data...</span>
+                              </div>
+                          ) : revenueData.length > 0 ? (
+                              <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={revenueData}>
+                                  <defs>
+                                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor="#eab308" stopOpacity={0.3}/>
+                                      <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
+                                  </linearGradient>
+                                  </defs>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? '#334155' : '#f3f4f6'} />
+                                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: darkMode ? '#94a3b8' : '#9ca3af'}} dy={10} />
+                                  <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `₦${val/1000}k`} tick={{fontSize: 12, fill: darkMode ? '#94a3b8' : '#9ca3af'}} />
+                                  <Tooltip 
+                                      contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)', backgroundColor: darkMode ? '#1e293b' : '#fff', color: darkMode ? '#f1f5f9' : '#000'}}
+                                      formatter={(val: number) => [`₦${val.toLocaleString()}`, 'Revenue']}
+                                      labelStyle={{color: darkMode ? '#cbd5e1' : '#000'}}
+                                  />
+                                  <Area type="monotone" dataKey="revenue" stroke="#eab308" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                              </AreaChart>
+                              </ResponsiveContainer>
+                          ) : (
+                              <div className={`h-full flex flex-col items-center justify-center rounded-xl border-2 border-dashed ${darkMode ? 'bg-slate-900/50 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                                  <DollarSign className={`w-12 h-12 mb-3 ${darkMode ? 'text-slate-600' : 'text-gray-300'}`} />
+                                  <p className={`font-semibold ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>No revenue data available yet</p>
+                                  <p className={`text-sm ${darkMode ? 'text-slate-500' : 'text-gray-500'}`}>Start selling courses to see your analytics</p>
+                              </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Recent Sales Feed */}
+                      <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-2xl shadow-sm border p-6`}>
+                          <h3 className={`text-lg font-bold mb-6 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Recent Sales</h3>
+                          <div className="space-y-3">
+                              {recentActivity.length > 0 ? recentActivity.slice(0, 8).map((activity, idx) => (
+                                  <motion.div 
+                                    key={idx} 
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    className={`flex items-center justify-between p-4 rounded-lg ${darkMode ? 'hover:bg-slate-700/50 border border-slate-700/50' : 'hover:bg-gray-50 border border-gray-50'} transition-all`}
+                                  >
+                                      <div className="flex items-center flex-1">
+                                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold mr-4 ${darkMode ? 'bg-gradient-to-br from-yellow-900 to-yellow-800 text-yellow-100' : 'bg-gradient-to-br from-yellow-100 to-yellow-50 text-yellow-700'}`}>
+                                              {activity.user?.name?.[0] || 'U'}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                              <p className={`text-sm font-semibold truncate ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{activity.course_title || activity.diploma_title || 'Item'}</p>
+                                              <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-500'}`}>{new Date(activity.created_at).toLocaleDateString()}</p>
+                                          </div>
+                                      </div>
+                                      <span className={`text-sm font-bold whitespace-nowrap ml-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>+₦{Number(activity.creator_amount).toLocaleString()}</span>
+                                  </motion.div>
+                              )) : (
+                                  <p className={`text-sm text-center py-8 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>No recent sales yet.</p>
+                              )}
+                          </div>
                       </div>
                     </div>
                   } />
@@ -721,7 +735,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                           >
                             ← Back to Courses
                           </button>
-                          <CreateCourse />
+                          <CreateCourse darkMode={darkMode} />
                         </div>
                       ) : (
                         <div>
@@ -738,21 +752,22 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                             uploadCourseImageHandler={async () => { alert("Image upload handled in detail view"); }}
                             uploadLessonMediaHandler={async () => {}}
                             isInstitution={true}
+                            darkMode={darkMode}
                           />
                         </div>
                       )}
                     </div>
                   } />
-                  <Route path="courses/create" element={<CreateCourse />} />
-                  <Route path="courses/manage" element={<CreateCourse />} />
+                  <Route path="courses/create" element={<CreateCourse darkMode={darkMode} />} />
+                  <Route path="courses/manage" element={<CreateCourse darkMode={darkMode} />} />
 
                   {/* Diploma Management */}
-                  <Route path="diploma" element={<InstitutionDiplomas />} />
+                  <Route path="diploma" element={<InstitutionDiplomas darkMode={darkMode} />} />
 
                   {/* Portfolio Management */}
                   <Route path="portfolio" element={
                     institutionId ? (
-                      <InstitutionPortfolio institutionId={institutionId} />
+                      <InstitutionPortfolio institutionId={institutionId} darkMode={darkMode} />
                     ) : (
                       <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                         <Loader2 className="w-8 h-8 animate-spin mb-2" />
@@ -762,20 +777,20 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                   } />
 
                   {/* Schedule Page */}
-                  <Route path="schedule" element={<div className="p-4"><SchedulePage userRole="institution" /></div>} />
+                  <Route path="schedule" element={<div className="p-4"><SchedulePage userRole="institution" darkMode={darkMode} /></div>} />
 
                   {/* Signature Page */}
-                  <Route path="logo" element={<InstitutionLogo />} />
-                  <Route path="signature" element={<InstitutionSignature />} />
-                  <Route path="compliance" element={<InstitutionCompliancePage />} />
+                  <Route path="logo" element={<InstitutionLogo darkMode={darkMode} />} />
+                  <Route path="signature" element={<InstitutionSignature darkMode={darkMode} />} />
+                  <Route path="compliance" element={<InstitutionCompliancePage darkMode={darkMode} />} />
 
                   {/* Payments & Flutterwave */}
                   <Route path="payments" element={
                     <div>
-                        <PayoutScheduleInfo variant="banner" userRole="institution" />
+                        <PayoutScheduleInfo variant="banner" userRole="institution" darkMode={darkMode} />
                         
                         <div className="mt-6">
-                            <InstitutionPayments />
+                            <InstitutionPayments darkMode={darkMode} />
                         </div>
                         
                         {/* Flutterwave Section */}
@@ -834,8 +849,8 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
         </div>
       </div>
 
-      <ContactAdminForm isOpen={contactAdminOpen} onClose={() => setContactAdminOpen(false)} />
-      <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
+      <ContactAdminForm isOpen={contactAdminOpen} onClose={() => setContactAdminOpen(false)} darkMode={darkMode} />
+      <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} darkMode={darkMode} />
     </div>
   );
 }

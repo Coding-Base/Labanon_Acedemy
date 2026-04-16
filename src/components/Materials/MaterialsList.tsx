@@ -15,6 +15,7 @@ interface Material {
   price: number
   currency: string
   is_free: boolean
+  user_has_access: boolean
   total_downloads: number
   created_at: string
 }

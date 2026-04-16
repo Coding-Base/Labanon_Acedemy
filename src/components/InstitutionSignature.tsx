@@ -11,7 +11,7 @@ const getAbsoluteUrl = (url: string | null | undefined): string => {
   return `${baseUrl}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
 };
 
-export default function InstitutionSignature() {
+export default function InstitutionSignature({ darkMode }: { darkMode?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [institutionId, setInstitutionId] = useState<number | null>(null);

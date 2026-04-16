@@ -73,7 +73,12 @@ export default function ActivateCheckout() {
               try {
                 const examRes = await axios.get(`${API_BASE}/cbt/exams/${exam_id}/`)
                 setExam(examRes.data)
-                setShowSubjectSelection(true)
+                // Only show subject selection for JAMB exams — other exams unlock all subjects
+                const title = String(examRes.data?.title || '').toLowerCase()
+                const slug = String(examRes.data?.slug || '').toLowerCase()
+                if (title.includes('jamb') || slug === 'jamb') {
+                  setShowSubjectSelection(true)
+                }
               } catch (err) {
                 console.error('Failed to load exam data:', err)
               }

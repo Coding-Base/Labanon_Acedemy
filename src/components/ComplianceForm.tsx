@@ -20,6 +20,7 @@ interface UploadedFile {
 interface ComplianceFormProps {
   entityType: 'institution' | 'tutor'
   entityId?: number
+  darkMode?: boolean
 }
 
 interface DocumentLink {
@@ -38,9 +39,9 @@ const DOCUMENT_TYPES = [
   { value: 'other', label: 'Other Supporting Document', icon: '📄' }
 ]
 
-export default function ComplianceForm({ entityType, entityId }: ComplianceFormProps) {
+export default function ComplianceForm({ entityType, entityId, darkMode = false }: ComplianceFormProps) {
   const [userLoading, setUserLoading] = useState(true)
-  const [documentLinks, setDocumentLinks] = useState<DocumentLink[]>([]) // Changed from files
+  const [documentLinks, setDocumentLinks] = useState<DocumentLink[]>([])
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedFile[]>([])
   const [contactName, setContactName] = useState('')
   const [contactPhone, setContactPhone] = useState('')
@@ -51,7 +52,6 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
   const [rejectionReason, setRejectionReason] = useState('')
   const [comments, setComments] = useState('')
   const [hasSubmitted, setHasSubmitted] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
     prefillUserInfo()
@@ -59,7 +59,6 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
     loadLegalDocs()
   }, [entityId, entityType])
 
-  // Auto-refresh when user returns to the page
   React.useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -68,10 +67,8 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    
-    // Also refresh periodically every 30 seconds to catch status updates
     const refreshInterval = setInterval(loadUploadedDocuments, 30000)
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       clearInterval(refreshInterval)
@@ -98,13 +95,11 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
   const loadLegalDocs = async () => {
     try {
       const res = await axios.get(`${API_BASE}/legal-documents/`)
-      // Handle both paginated response (with results property) and direct array response
       const payload = res.data
       const items = Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload) ? payload : [])
       setLegalDocs(items)
     } catch (err) {
       console.error('Failed to load legal documents:', err)
-      setLegalDocs([])
     }
   }
 
@@ -113,74 +108,58 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
       const token = localStorage.getItem('access')
       if (!token) return
 
-      const endpoint = entityType === 'institution'
-        ? `/institutions/compliance/form/`
-        : `/tutors/compliance/form/`
+      const endpoint = entityType === 'institution' 
+        ? `${API_BASE}/compliance/my-institution-submissions/`
+        : `${API_BASE}/compliance/my-submissions/`
 
-      const res = await axios.get(`${API_BASE}${endpoint}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const res = await axios.get(endpoint, { headers: { Authorization: `Bearer ${token}` } })
+      const docs = res.data.results || res.data || []
+      setUploadedDocuments(docs)
 
-      // Backend returns different shapes for institution vs tutor
-      if (entityType === 'institution') {
-        // institution endpoint returns a list of institution entries
-        if (Array.isArray(res.data)) {
-          // flatten documents from all institutions (usually one)
-          const docs = res.data.flatMap((entry: any) => entry.documents || [])
-          setUploadedDocuments(docs)
-          // prefer institution-level status if present
-          const first = res.data[0]
-          setVerificationStatus(first?.verification_status || 'pending')
-          setRejectionReason(first?.rejection_reason || '')
-        } else {
-          setUploadedDocuments(res.data.documents || [])
-          setVerificationStatus(res.data.status || 'pending')
-          setRejectionReason(res.data.rejection_reason || '')
-        }
-      } else {
-        setUploadedDocuments(res.data.documents || [])
-        setVerificationStatus(res.data.status || 'pending')
-        setRejectionReason(res.data.rejection_reason || '')
+      if (docs.length > 0) {
+        const latest = docs[docs.length - 1]
+        setVerificationStatus(latest.status || 'pending')
+        setRejectionReason(latest.rejection_reason || '')
       }
     } catch (err) {
-      console.error('Failed to load documents:', err)
+      console.error('Failed to load uploaded documents:', err)
     }
+  }
+
+  const isValidGoogleDriveLink = (url: string): boolean => {
+    if (!url) return false
+    const patterns = [
+      /^https:\/\/drive\.google\.com\/file\/d\/[a-zA-Z0-9_-]+/,
+      /^https:\/\/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/[a-zA-Z0-9_-]+/,
+    ]
+    return patterns.some(p => p.test(url))
   }
 
   const addDocumentLink = () => {
-    // Add a new empty document link entry
-    setDocumentLinks(prev => [...prev, { document_name: '', document_type: '', document_link: '' }])
+    setDocumentLinks([...documentLinks, { document_name: '', document_type: '', document_link: '' }])
   }
 
-  const removeDocumentLink = (index: number) => {
-    setDocumentLinks(prev => prev.filter((_, i) => i !== index))
+  const removeDocumentLink = (idx: number) => {
+    setDocumentLinks(documentLinks.filter((_, i) => i !== idx))
   }
 
-  const updateDocumentLink = (index: number, field: keyof DocumentLink, value: string) => {
-    setDocumentLinks(prev => {
-      const next = [...prev]
-      next[index] = { ...next[index], [field]: value }
-      return next
-    })
+  const updateDocumentLink = (idx: number, field: keyof DocumentLink, value: string) => {
+    const updated = [...documentLinks]
+    updated[idx][field] = value
+    setDocumentLinks(updated)
   }
 
-  const isValidGoogleDriveLink = (link: string): boolean => {
-    if (!link.trim()) return false
-    // Check if it's a valid Google Drive link format
-    return link.includes('drive.google.com') || link.includes('docs.google.com')
-  }
-
-  const validateForm = () => {
+  const validateForm = (): boolean => {
     if (!contactName.trim()) {
-      showToast('Please provide your full name or business name', 'error')
-      return false
-    }
-    if (!contactPhone.trim() || !/^[\d\s\-\+\(\)]+$/.test(contactPhone)) {
-      showToast('Please provide a valid phone number', 'error')
+      showToast('Please provide your name', 'error')
       return false
     }
     if (!contactEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-      showToast('Please provide a valid email address', 'error')
+      showToast('Please provide a valid email', 'error')
+      return false
+    }
+    if (!contactPhone.trim()) {
+      showToast('Please provide your phone number', 'error')
       return false
     }
     if (documentLinks.length === 0) {
@@ -220,14 +199,12 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
         return
       }
 
-      // Build documents array for batch submission
       const documents = documentLinks.map(doc => ({
         document_type: doc.document_type,
         document_name: doc.document_name,
         document_link: doc.document_link
       }))
 
-      // Get institution ID if institution
       let entity_id = null
       if (entityType === 'institution') {
         if (entityId) {
@@ -243,7 +220,6 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
         }
       }
 
-      // Submit as a batch using the new compliance batch endpoint
       const payload = {
         entity_type: entityType,
         entity_id: entity_id,
@@ -274,11 +250,11 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return { icon: <CheckCircle className="w-5 h-5" />, color: 'bg-green-50 text-green-700 border-green-200', badge: 'Approved ✓' }
+        return { icon: <CheckCircle className="w-5 h-5" />, color: darkMode ? 'bg-green-900/30 text-green-300 border-green-800' : 'bg-green-50 text-green-700 border-green-200', badge: 'Approved ✓' }
       case 'rejected':
-        return { icon: <AlertCircle className="w-5 h-5" />, color: 'bg-red-50 text-red-700 border-red-200', badge: 'Rejected' }
+        return { icon: <AlertCircle className="w-5 h-5" />, color: darkMode ? 'bg-red-900/30 text-red-300 border-red-800' : 'bg-red-50 text-red-700 border-red-200', badge: 'Rejected' }
       default:
-        return { icon: <Clock className="w-5 h-5 animate-pulse" />, color: 'bg-yellow-50 text-yellow-700 border-yellow-200', badge: 'Pending Review' }
+        return { icon: <Clock className="w-5 h-5 animate-pulse" />, color: darkMode ? 'bg-yellow-900/30 text-yellow-300 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200', badge: 'Pending Review' }
     }
   }
 
@@ -287,7 +263,7 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
   }
 
   return (
-    <div className="space-y-6 bg-gradient-to-br from-gray-50 to-yellow-50 rounded-2xl p-6 md:p-8">
+    <div className={`${darkMode ? 'space-y-6 bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100' : 'space-y-6 bg-gradient-to-br from-gray-50 to-yellow-50'} rounded-2xl p-6 md:p-8`}>
       {/* Status Banner */}
       {verificationStatus && (
         <div className={`rounded-xl border-2 p-5 ${getStatusBadge(verificationStatus).color} backdrop-blur-sm`}>
@@ -322,7 +298,7 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
       )}
 
       {/* Main Form Card */}
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+      <div className={`${darkMode ? 'bg-slate-800 rounded-2xl shadow-lg overflow-hidden border border-slate-700' : 'bg-white rounded-2xl shadow-lg overflow-hidden'}`}>
         {/* Header */}
         <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 px-6 md:px-8 py-8 text-white">
           <div className="flex items-center gap-3 mb-4">
@@ -333,52 +309,52 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="px-6 md:px-8 py-8 space-y-8">
+        <form onSubmit={handleSubmit} className={`px-6 md:px-8 py-8 space-y-8 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
           {/* Step 1: Contact Information */}
           <div>
             <div className="flex items-center gap-3 mb-6">
               <div className="flex-shrink-0 w-8 h-8 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
-              <h3 className="text-lg font-bold text-gray-900">Contact Information</h3>
+              <h3 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Contact Information</h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className={`block text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-gray-700'} mb-2 flex items-center gap-2`}>
                   <User className="w-4 h-4 text-yellow-600" /> Full Name / Business Name
                 </label>
                 <input
                   type="text"
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-yellow-500 focus:outline-none focus:bg-white transition"
+                  className={`w-full px-4 py-3 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none transition ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400 focus:bg-slate-700' : 'bg-gray-100 border-2 border-gray-300 text-gray-900 focus:bg-white'}`}
                   placeholder="Your name or company"
                   required
                 />
               </div>
 
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className={`block text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-gray-700'} mb-2 flex items-center gap-2`}>
                   <Phone className="w-4 h-4 text-yellow-600" /> Phone Number
                 </label>
                 <input
                   type="tel"
                   value={contactPhone}
                   onChange={(e) => setContactPhone(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-yellow-500 focus:outline-none focus:bg-white transition"
+                  className={`w-full px-4 py-3 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none transition ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400 focus:bg-slate-700' : 'bg-gray-100 border-2 border-gray-300 text-gray-900 focus:bg-white'}`}
                   placeholder="+234 800 000 0000"
                   required
                 />
               </div>
 
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className={`block text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-gray-700'} mb-2 flex items-center gap-2`}>
                   <Mail className="w-4 h-4 text-yellow-600" /> Email Address
                 </label>
                 <input
                   type="email"
                   value={contactEmail}
                   onChange={(e) => setContactEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-yellow-500 focus:outline-none focus:bg-white transition"
+                  className={`w-full px-4 py-3 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none transition ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400 focus:bg-slate-700' : 'bg-gray-100 border-2 border-gray-300 text-gray-900 focus:bg-white'}`}
                   placeholder="you@example.com"
                   required
                 />
@@ -388,20 +364,20 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
 
           {/* Legal Documents Section */}
           {legalDocs.length > 0 && (
-            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
-              <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <div className={`${darkMode ? 'bg-yellow-900/20 border-yellow-800' : 'bg-yellow-50 border-yellow-200'} border-2 rounded-xl p-6`}>
+              <h4 className={`font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-yellow-300' : 'text-gray-900'}`}>
                 <Download className="w-5 h-5 text-yellow-600" />
                 📥 Legal Documents to Download & Sign
               </h4>
-              <p className="text-sm text-gray-700 mb-4 bg-white rounded-lg p-3 border-l-4 border-yellow-500">
+              <p className={`text-sm mb-4 rounded-lg p-3 border-l-4 ${darkMode ? 'bg-slate-800 border-yellow-600 text-slate-200' : 'bg-white text-gray-700 border-yellow-500'}`}>
                 ✍️ <strong>Important:</strong> Download the document below, print it, sign it physically or digitally, then re-upload the signed copy in Step 2. This is required for verification.
               </p>
               <div className="space-y-3">
                 {legalDocs.map(doc => (
-                  <div key={doc.id} className="bg-white rounded-lg p-4 border-2 border-yellow-100 flex items-center justify-between hover:border-yellow-300 transition">
+                  <div key={doc.id} className={`${darkMode ? 'bg-slate-700 border-yellow-800 hover:border-yellow-700' : 'bg-white border-yellow-100 hover:border-yellow-300'} rounded-lg p-4 border-2 flex items-center justify-between transition`}>
                     <div>
-                      <p className="font-semibold text-gray-900">{doc.title}</p>
-                      <p className="text-xs text-gray-600 mt-1">v{doc.version}</p>
+                      <p className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{doc.title}</p>
+                      <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>v{doc.version}</p>
                     </div>
                     <a href={doc.document_file} target="_blank" rel="noreferrer" className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-semibold flex items-center gap-2 transition">
                       <Download className="w-4 h-4" /> Download
@@ -416,12 +392,12 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
           <div>
             <div className="flex items-center gap-3 mb-6">
               <div className="flex-shrink-0 w-8 h-8 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
-              <h3 className="text-lg font-bold text-gray-900">Submit Document Links</h3>
+              <h3 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Submit Document Links</h3>
             </div>
 
             {/* Info Banner */}
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
-              <p className="text-sm text-blue-900">
+            <div className={`${darkMode ? 'bg-blue-900/20 border-blue-800 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-900'} border-2 rounded-xl p-4 mb-6`}>
+              <p className="text-sm">
                 📎 <strong>Share via Google Drive:</strong> Instead of uploading files, please share Google Drive links to your documents. This allows you to easily update documents if needed and admins can view them directly.
               </p>
             </div>
@@ -430,17 +406,17 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
             {documentLinks.length > 0 && (
               <div className="space-y-4 mb-6">
                 {documentLinks.map((doc, idx) => (
-                  <div key={idx} className="bg-white border-2 border-gray-300 rounded-xl overflow-hidden shadow-sm">
+                  <div key={idx} className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-300'} rounded-xl overflow-hidden shadow-sm border-2`}>
                     {/* Header */}
-                    <div className="p-4 flex items-center justify-between bg-gray-50 border-b-2 border-gray-200">
+                    <div className={`p-4 flex items-center justify-between ${darkMode ? 'bg-slate-900/30 border-b border-slate-700' : 'bg-gray-50 border-b-2 border-gray-200'}`}>
                       <div className="flex items-center gap-3 flex-1">
                         <span className="px-3 py-1 bg-yellow-600 text-white rounded-lg font-bold text-sm">#{idx + 1}</span>
-                        <p className="font-semibold text-gray-900">{doc.document_name || 'Untitled'}</p>
+                        <p className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{doc.document_name || 'Untitled'}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeDocumentLink(idx)}
-                        className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition"
+                        className={`p-2 rounded-lg transition ${darkMode ? 'hover:bg-red-800/20 text-red-300' : 'hover:bg-red-100 text-red-600'}`}
                         title="Remove this document"
                       >
                         <X className="w-5 h-5" />
@@ -450,27 +426,27 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
                     {/* Input Fields */}
                     <div className="p-4 space-y-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-slate-200' : 'text-gray-900'}`}>
                           📝 Document Name *
                         </label>
                         <input
                           type="text"
                           value={doc.document_name}
                           onChange={(e) => updateDocumentLink(idx, 'document_name', e.target.value)}
-                          className="w-full px-4 py-2 bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-yellow-500 focus:outline-none focus:bg-white transition"
+                          className={`w-full px-4 py-2 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none transition ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400' : 'bg-gray-100 border-2 border-gray-300 text-gray-900'}`}
                           placeholder="e.g., Tax Certificate, Business License"
                           required
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-slate-200' : 'text-gray-900'}`}>
                           📂 Document Type *
                         </label>
                         <select
                           value={doc.document_type}
                           onChange={(e) => updateDocumentLink(idx, 'document_type', e.target.value)}
-                          className="w-full px-4 py-2 bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-900 focus:border-yellow-500 focus:outline-none focus:bg-white transition"
+                          className={`w-full px-4 py-2 rounded-lg focus:border-yellow-500 focus:outline-none transition ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-gray-100 border-2 border-gray-300 text-gray-900'}`}
                           required
                         >
                           <option value="">-- Select Document Type --</option>
@@ -481,7 +457,7 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-slate-200' : 'text-gray-900'}`}>
                           🔗 Google Drive Link *
                         </label>
                         <div className="relative">
@@ -489,8 +465,10 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
                             type="url"
                             value={doc.document_link}
                             onChange={(e) => updateDocumentLink(idx, 'document_link', e.target.value)}
-                            className={`w-full px-4 py-2 bg-gray-100 border-2 rounded-lg text-gray-900 placeholder-gray-500 focus:border-yellow-500 focus:outline-none focus:bg-white transition ${
-                              doc.document_link && !isValidGoogleDriveLink(doc.document_link) ? 'border-red-400' : 'border-gray-300'
+                            className={`w-full px-4 py-2 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none transition ${
+                              doc.document_link && !isValidGoogleDriveLink(doc.document_link)
+                                ? 'border-red-400'
+                                : darkMode ? 'border-slate-600 bg-slate-700 text-slate-200 placeholder-slate-400' : 'border-gray-300 bg-gray-100 text-gray-900'
                             }`}
                             placeholder="https://drive.google.com/file/d/..."
                             required
@@ -503,7 +481,7 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
                           )}
                         </div>
                         {doc.document_link && !isValidGoogleDriveLink(doc.document_link) && (
-                          <p className="text-xs text-red-600 mt-1">⚠️ Please provide a valid Google Drive or Docs link</p>
+                          <p className={`text-xs mt-1 ${darkMode ? 'text-red-400' : 'text-red-600'}`}>⚠️ Please provide a valid Google Drive or Docs link</p>
                         )}
                       </div>
                     </div>
@@ -516,7 +494,11 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
             <button
               type="button"
               onClick={addDocumentLink}
-              className="w-full px-4 py-3 border-2 border-dashed border-yellow-400 hover:border-yellow-600 rounded-lg font-semibold text-yellow-700 hover:text-yellow-800 hover:bg-yellow-50 transition flex items-center justify-center gap-2"
+              className={`w-full px-4 py-3 border-2 border-dashed rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
+                darkMode
+                  ? 'border-yellow-700 text-yellow-300 hover:border-yellow-600 hover:bg-yellow-900/10'
+                  : 'border-yellow-400 text-yellow-700 hover:border-yellow-600 hover:bg-yellow-50'
+              }`}
             >
               <Upload className="w-5 h-5" />
               + Add Document Link
@@ -527,14 +509,14 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
           <div>
             <div className="flex items-center gap-3 mb-6">
               <div className="flex-shrink-0 w-8 h-8 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
-              <h3 className="text-lg font-bold text-gray-900">Additional Information (Optional)</h3>
+              <h3 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Additional Information (Optional)</h3>
             </div>
 
             <textarea
               value={comments}
               onChange={(e) => setComments(e.target.value)}
               placeholder="Any additional details the admin should know about your application..."
-              className="w-full px-4 py-3 bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-yellow-500 focus:outline-none focus:bg-white transition resize-none"
+              className={`w-full px-4 py-3 rounded-lg placeholder-gray-500 focus:border-yellow-500 focus:outline-none transition resize-none ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400' : 'bg-gray-100 border-2 border-gray-300 text-gray-900'}`}
               rows={4}
             />
           </div>
@@ -564,15 +546,15 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
 
       {/* History Section */}
       {uploadedDocuments.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        <div className={`${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white'} rounded-2xl shadow-lg p-6 md:p-8`}>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-              <File className="w-6 h-6 text-yellow-600" />
+            <h3 className={`text-xl font-bold flex items-center gap-3 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+              <File className={`w-6 h-6 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
               Submission History
             </h3>
             <button
               onClick={loadUploadedDocuments}
-              className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-semibold hover:bg-yellow-200 transition flex items-center gap-2"
+              className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition ${darkMode ? 'bg-yellow-900/30 text-yellow-300 hover:bg-yellow-900/40' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}`}
               title="Refresh to check for admin updates"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -590,25 +572,21 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
                     <div className="flex items-start gap-3 flex-1">
                       <div className="flex-shrink-0 mt-1">{badge.icon}</div>
                       <div className="flex-1">
-                        <p className="font-bold text-gray-900">{doc.filename}</p>
-                        <p className="text-xs opacity-75 mt-1">📅 {(() => {
-                          const dateStr = doc.submitted_at || doc.uploaded_at || (doc as any).submittedAt || doc.created_at || doc.reviewed_at
-                          const d = dateStr ? new Date(dateStr) : null
-                          return d && !isNaN(d.getTime())
-                            ? d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                            : '—'
-                        })()}</p>
+                        <p className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{doc.filename}</p>
+                        <p className={`text-xs opacity-75 mt-1 ${darkMode ? 'text-slate-300' : ''}`}>
+                          📅 {(() => {
+                            const dateStr = doc.submitted_at || doc.uploaded_at || (doc as any).submittedAt || doc.created_at || doc.reviewed_at
+                            const d = dateStr ? new Date(dateStr) : null
+                            return d && !isNaN(d.getTime())
+                              ? d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                              : '—'
+                          })()}
+                        </p>
                         {doc.rejection_reason && (
-                          <div className="mt-2 p-2 bg-white bg-opacity-60 rounded text-sm">
-                            <p className="font-semibold">Feedback:</p>
-                            <p>{doc.rejection_reason}</p>
-                          </div>
+                          <p className={`text-xs mt-2 ${darkMode ? 'text-red-300' : 'text-red-600'}`}>❌ {doc.rejection_reason}</p>
                         )}
                       </div>
                     </div>
-                    <span className="px-3 py-1 bg-white bg-opacity-60 text-gray-900 rounded-lg text-xs font-bold whitespace-nowrap ml-3">
-                      {badge.badge}
-                    </span>
                   </div>
                 </div>
               )
@@ -616,38 +594,6 @@ export default function ComplianceForm({ entityType, entityId }: ComplianceFormP
           </div>
         </div>
       )}
-
-      {/* Requirements Card */}
-      <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 border-2 border-yellow-200 rounded-2xl p-6 md:p-8">
-        <h4 className="font-bold text-gray-900 mb-4 text-lg flex items-center gap-2">
-          <CheckCircle className="w-6 h-6 text-green-600" />
-          What We Require
-        </h4>
-        <ul className="space-y-3">
-          {[
-            '📎 Government-issued ID (Passport, Driver License, or National ID) - share Google Drive link',
-            '📎 Business registration certificate or proof of incorporation - share Google Drive link',
-            '📎 Signed copy of our legal document (download above) - share Google Drive link',
-            '📎 Proof of business address (utility bill, lease, or official letter) - share Google Drive link',
-            '📎 Tax ID or company business license number - share Google Drive link',
-            entityType === 'tutor' && '📎 Professional certifications or academic qualifications - share Google Drive link'
-          ].filter(Boolean).map((req, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <span className="text-yellow-600 font-bold text-lg flex-shrink-0">•</span>
-              <span className="text-gray-700">{req}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-6 p-4 bg-white rounded-lg border-l-4 border-yellow-600">
-          <p className="text-sm text-gray-800">
-            <strong>💡 How to share Google Drive links:</strong>
-            <br />1. Open each document in Google Drive
-            <br />2. Click "Share" → Select "Anyone with the link" (or "Viewer" access for admins)
-            <br />3. Copy the link and paste it below
-            <br />4. Make sure the link is accessible (not requiring permission)
-          </p>
-        </div>
-      </div>
     </div>
   )
 }

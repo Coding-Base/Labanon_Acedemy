@@ -19,6 +19,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Blog = lazy(() => import('./pages/Blog'))
 const BlogDetail = lazy(() => import('./pages/BlogDetail'))
 const PublicPortfolio = lazy(() => import('./pages/PublicPortfolio'))
+const InstitutionPortfolios = lazy(() => import('./pages/InstitutionPortfolios'))
 const TutorApplication = lazy(() => import('./components/TutorApplicationForm'))
 const Documentation = lazy(() => import('./pages/Documentation'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
@@ -137,6 +138,7 @@ export default function App() {
             <Route path="/blog/:slug" element={<BlogDetail />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/portfolio/:token" element={<PublicPortfolio />} />
+            <Route path="/institutions" element={<InstitutionPortfolios />} />
             <Route path="/online-tutorial-for-student-application" element={<TutorApplication />} />
             <Route path="/documentation" element={<Documentation />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />

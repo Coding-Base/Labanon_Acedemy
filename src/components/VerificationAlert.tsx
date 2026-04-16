@@ -6,9 +6,9 @@ interface VerificationAlertProps {
   verificationStatus: 'pending' | 'approved' | 'rejected' | null
   dashboardType: 'tutor' | 'institution'
   rejectionReason?: string
+  darkMode?: boolean
 }
-
-export default function VerificationAlert({ verificationStatus, dashboardType, rejectionReason }: VerificationAlertProps) {
+export default function VerificationAlert({ verificationStatus, dashboardType, rejectionReason, darkMode }: VerificationAlertProps) {
   const navigate = useNavigate()
 
   // Only show if not verified

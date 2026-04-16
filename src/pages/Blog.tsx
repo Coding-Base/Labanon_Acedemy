@@ -4,6 +4,7 @@ import axios from 'axios'
 import { motion } from 'framer-motion'
 import { Search, Loader2, Calendar, User, ChevronRight, Heart, MessageCircle, Share2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import useDebounce from '../utils/useDebounce'
 
@@ -114,7 +115,9 @@ export default function BlogPage() {
   async function loadBlogs(page = 1) {
     setLoading(true)
     try {
-      const response = await axios.get(`${API_BASE}/blog/published/?page=${page}`)
+      // Create a public axios instance without interceptors for public endpoints
+      const publicApi = axios.create({ baseURL: API_BASE })
+      const response = await publicApi.get(`/blog/published/?page=${page}`)
       
       const rawBlogs = Array.isArray(response.data.results) ? response.data.results : Array.isArray(response.data) ? response.data : []
       // Convert any relative image src in content to absolute backend origin so cards display images correctly
@@ -159,7 +162,8 @@ export default function BlogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pt-20 md:pt-24">
+      <Navbar />
       {/* Header */}
       <motion.div
         initial={{ opacity: 0 }}

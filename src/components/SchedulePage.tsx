@@ -23,9 +23,10 @@ interface ScheduleItem {
 
 interface SchedulePageProps {
   userRole: 'student' | 'tutor' | 'institution'
+  darkMode?: boolean
 }
 
-export default function SchedulePage({ userRole }: SchedulePageProps) {
+export default function SchedulePage({ userRole, darkMode }: SchedulePageProps) {
   const [items, setItems] = useState<ScheduleItem[]>([])
   const [loading, setLoading] = useState(true)
 

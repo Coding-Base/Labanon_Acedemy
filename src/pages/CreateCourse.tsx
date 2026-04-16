@@ -63,7 +63,7 @@ const STEP_LABELS = [
   'Review'
 ]
 
-export default function CreateCourse() {
+export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { status: verificationStatus, loading: verificationLoading } = useVerificationStatus()

@@ -9,9 +9,9 @@ interface ManageCoursesProps {
   uploadCourseImageHandler?: (courseId: number) => Promise<void>
   uploadLessonMediaHandler?: (lessonId: number) => Promise<void>
   isInstitution?: boolean  // Flag to determine routing context
+  darkMode?: boolean
 }
-
-export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMediaHandler, isInstitution = false }: ManageCoursesProps) {
+export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMediaHandler, isInstitution = false, darkMode }: ManageCoursesProps) {
   const [courses, setCourses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)

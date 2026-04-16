@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Youtube, Facebook } from 'lucide-react'
 import whitelogo from '../pages/labanonlogo.png'
+import seunSponsor from './SeunP Media.png'
 
 const navItems = [
   { label: 'Home', path: '/' },
@@ -64,6 +65,7 @@ export default function Footer() {
           <div>
             <h4 className="font-bold mb-4 text-sm sm:text-base">Resources</h4>
             <ul className="space-y-2 text-gray-400 text-sm">
+              <li><Link to="/institutions" className="hover:text-white transition-colors">Institutions</Link></li>
               <li><Link to="/reviews" className="hover:text-white transition-colors">Reviews</Link></li>
               <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
               <li><Link to="/documentation" className="hover:text-white transition-colors">Documentation</Link></li>
@@ -80,6 +82,16 @@ export default function Footer() {
               <li><a href="tel:+2347063899747" className="hover:text-white transition-colors">07063899747</a></li>
               <li>Lagos, Nigeria</li>
             </ul>
+          </div>
+
+          {/* Sponsors */}
+          <div>
+            <h4 className="font-bold mb-4 text-sm sm:text-base">Sponsors</h4>
+            <div className="flex items-center">
+              <a href="#" className="block">
+                <img src={seunSponsor} alt="SeunP Media" className="w-32 h-auto object-contain" />
+              </a>
+            </div>
           </div>
         </div>
 

@@ -47,35 +47,35 @@ export default function PaymentsPage() {
   const totalPages = Math.max(1, Math.ceil(count / pageSize))
 
   return (
-    <div>
+    <div className="custom-scrollbar">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">Payments</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Payments</h2>
         <Link to="/student/cart" className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition">
           <ShoppingCart className="w-4 h-4" />
           Go to Cart
         </Link>
       </div>
 
-      {loading ? <div>Loading payments...</div> : (
+      {loading ? <div className="text-gray-600 dark:text-slate-300">Loading payments...</div> : (
         <div>
-          {payments.length === 0 && <div className="text-gray-600">No payments yet.</div>}
+          {payments.length === 0 && <div className="text-gray-600 dark:text-slate-300">No payments yet.</div>}
           <div className="space-y-3">
             {payments.map((p) => (
-              <div key={p.id} className="p-3 border rounded flex justify-between">
+              <div key={p.id} className="p-3 border rounded flex justify-between bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                 <div>
-                  <div className="font-semibold">{p.course ? p.course : 'Unlock/Other'}</div>
-                  <div className="text-sm text-gray-600">{new Date(p.created_at).toLocaleString()}</div>
+                  <div className="font-semibold text-gray-900 dark:text-slate-100">{p.course ? p.course : 'Unlock/Other'}</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-400">{new Date(p.created_at).toLocaleString()}</div>
                 </div>
-                <div className="text-right">₦{p.amount} — {p.status}</div>
+                <div className="text-right text-gray-900 dark:text-slate-100">₦{p.amount} — {p.status}</div>
               </div>
             ))}
           </div>
 
           <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-600">Page {page} of {totalPages}</div>
+            <div className="text-sm text-gray-600 dark:text-slate-400">Page {page} of {totalPages}</div>
             <div className="flex items-center gap-2">
-              <button className="px-3 py-1 bg-gray-200 rounded" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</button>
-              <button className="px-3 py-1 bg-gray-200 rounded" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+              <button className="px-3 py-1 bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</button>
+              <button className="px-3 py-1 bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</button>
             </div>
           </div>
         </div>

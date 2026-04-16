@@ -49,6 +49,7 @@ export default function Register() {
   const params = new URLSearchParams(location.search);
   const nextParam = params.get('next') || '';
   const pendingDownload = params.get('pendingDownload') || '';
+  const fromInstitutions = params.get('from') === 'institutions'; // Check if coming from institutions page
 
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -114,6 +115,11 @@ export default function Register() {
       features: ['Access to Interview Questions','Advanced courses', 'Research materials', 'Professional network', 'Learning analytics']
     }
   ];
+
+  // Filter roles based on referrer: only show student & researcher by default, all if from institutions
+  const visibleRoles = fromInstitutions 
+    ? roles 
+    : roles.filter(r => r.id === 'student' || r.id === 'researcher');
 
   const institutionTypes = [
     { value: 'university', label: 'University' },
@@ -432,7 +438,7 @@ export default function Register() {
                 </h3>
                 
                 <div className="grid md:grid-cols-2 gap-6 mb-8">
-                  {roles.map((roleOption) => (
+                  {visibleRoles.map((roleOption) => (
                     <motion.div
                       key={roleOption.id}
                       whileHover={{ y: -5, scale: 1.02 }}

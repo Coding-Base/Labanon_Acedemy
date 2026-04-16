@@ -8,6 +8,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 interface ContactAdminFormProps {
   isOpen: boolean
   onClose: () => void
+  darkMode?: boolean
 }
 
 const MESSAGE_TYPES = [
@@ -17,7 +18,7 @@ const MESSAGE_TYPES = [
   { value: 'feedback', label: 'Feedback' },
 ]
 
-export default function ContactAdminForm({ isOpen, onClose }: ContactAdminFormProps) {
+export default function ContactAdminForm({ isOpen, onClose, darkMode = false }: ContactAdminFormProps) {
   const [formData, setFormData] = useState({
     subject: '',
     message: '',
@@ -84,40 +85,40 @@ export default function ContactAdminForm({ isOpen, onClose }: ContactAdminFormPr
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl shadow-lg max-w-md w-full mx-4 p-6"
+          className={`${darkMode ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-white text-gray-900'} rounded-2xl shadow-lg max-w-md w-full mx-4 p-6`}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Contact Administrator</h2>
+            <h2 className={`text-xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Contact Administrator</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              className={`p-1 rounded-lg transition-colors ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
+          {error && (
+            <div className={`${darkMode ? 'mb-4 p-3 bg-red-900/20 border border-red-800 text-red-200' : 'mb-4 p-3 bg-red-50 border border-red-200 text-red-600'} rounded-lg flex items-start gap-2`}>
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
 
-        {success && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-green-600">Message sent successfully!</p>
-          </div>
-        )}
+          {success && (
+            <div className={`${darkMode ? 'mb-4 p-3 bg-yellow-900/20 border border-yellow-800 text-yellow-200' : 'mb-4 p-3 bg-yellow-50 border border-yellow-200 text-green-600'} rounded-lg flex items-start gap-2`}>
+              <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <p className="text-sm">Message sent successfully!</p>
+            </div>
+          )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Message Type</label>
+            <label className={`block text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-gray-700'} mb-1`}>Message Type</label>
             <select
               name="message_type"
               value={formData.message_type}
               onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200' : 'border border-gray-300 bg-white text-gray-900'}`}
             >
               {MESSAGE_TYPES.map(type => (
                 <option key={type.value} value={type.value}>
@@ -128,27 +129,27 @@ export default function ContactAdminForm({ isOpen, onClose }: ContactAdminFormPr
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <label className={`block text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-gray-700'} mb-1`}>Subject</label>
             <input
               type="text"
               name="subject"
               value={formData.subject}
               onChange={handleChange}
               placeholder="What is this about?"
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400' : 'border border-gray-300 bg-white text-gray-900 placeholder-gray-500'}`}
               disabled={loading}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+            <label className={`block text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-gray-700'} mb-1`}>Message</label>
             <textarea
               name="message"
               value={formData.message}
               onChange={handleChange}
               placeholder="Describe your message..."
               rows={4}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
+              className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400' : 'border border-gray-300 bg-white text-gray-900 placeholder-gray-500'}`}
               disabled={loading}
             />
           </div>

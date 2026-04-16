@@ -3,6 +3,44 @@ import React, { useState, useEffect } from 'react';
 import api from '../utils/axiosInterceptor'; 
 import { Save, Loader2, AlertCircle, CheckCircle, Copy, Globe, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
+// Add rich text editor styling
+const richTextEditorStyles = `
+  .ql-container {
+    font-size: 1rem;
+  }
+  .ql-editor {
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0.75rem;
+  }
+  .ql-editor.ql-blank::before {
+    color: #d1d5db;
+    font-style: italic;
+  }
+  .ql-toolbar {
+    border-top: 1px solid #e5e7eb;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-radius: 0.5rem 0.5rem 0 0;
+  }
+  .ql-container {
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    border-radius: 0 0 0.5rem 0.5rem;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = richTextEditorStyles;
+  document.head.appendChild(style);
+}
 
 interface Portfolio {
   id: number;
@@ -20,7 +58,7 @@ interface Portfolio {
 }
 
 // Accept props from the Dashboard
-export default function InstitutionPortfolio({ institutionId }: { institutionId?: number }) {
+export default function InstitutionPortfolio({ institutionId, darkMode }: { institutionId?: number, darkMode?: boolean }) {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -371,28 +409,50 @@ export default function InstitutionPortfolio({ institutionId }: { institutionId?
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Overview</label>
-            <textarea
-              name="overview"
-              value={formData.overview || ''}
-              onChange={handleChange}
-              placeholder="Short overview of your institution..."
-              rows={3}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
-              disabled={saving}
-            />
+            <div className="border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-yellow-500">
+              <ReactQuill
+                value={formData.overview || ''}
+                onChange={(value) => setFormData({ ...formData, overview: value })}
+                placeholder="Short overview of your institution..."
+                readOnly={saving}
+                modules={{
+                  toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['blockquote', 'code-block'],
+                    [{ color: [] }, { background: [] }],
+                    [{ align: [] }],
+                    ['link']
+                  ]
+                }}
+                theme="snow"
+              />
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
-            <textarea
-              name="description"
-              value={formData.description || ''}
-              onChange={handleChange}
-              placeholder="Tell your story... history, values, achievements..."
-              rows={4}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
-              disabled={saving}
-            />
+            <div className="border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-yellow-500">
+              <ReactQuill
+                value={formData.description || ''}
+                onChange={(value) => setFormData({ ...formData, description: value })}
+                placeholder="Tell your story... history, values, achievements..."
+                readOnly={saving}
+                modules={{
+                  toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['blockquote', 'code-block'],
+                    [{ color: [] }, { background: [] }],
+                    [{ align: [] }],
+                    ['link']
+                  ]
+                }}
+                theme="snow"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

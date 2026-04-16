@@ -123,10 +123,10 @@ export default function CourseDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading course details...</p>
+          <p className="text-gray-600 dark:text-slate-300">Loading course details...</p>
         </div>
       </div>
     );
@@ -134,11 +134,11 @@ export default function CourseDetail() {
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Course Not Found</h2>
-          <p className="text-gray-600 mb-6">The course you're looking for doesn't exist or has been removed.</p>
+          <BookOpen className="w-16 h-16 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-2">Course Not Found</h2>
+          <p className="text-gray-600 dark:text-slate-300 mb-6">The course you're looking for doesn't exist or has been removed.</p>
           <button
             onClick={() => navigate(-1)}
             className="px-6 py-3 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors"
@@ -153,13 +153,13 @@ export default function CourseDetail() {
   const courseImage = getCourseImage();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 custom-scrollbar">
       {/* Back Navigation */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-yellow-700 transition-colors"
+            className="flex items-center gap-2 text-gray-600 dark:text-slate-300 hover:text-yellow-700 dark:hover:text-yellow-500 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">Back to Courses</span>
@@ -168,7 +168,7 @@ export default function CourseDetail() {
       </div>
 
       {/* Course Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Course Info */}
@@ -183,19 +183,19 @@ export default function CourseDetail() {
                 <span className={`px-3 py-1 text-sm font-semibold rounded-full ${isScheduled ? 'bg-yellow-100 text-yellow-700' : 'bg-yellow-100 text-green-700'}`}>
                   {isScheduled ? 'Live Scheduled Course' : 'Self-Paced'}
                 </span>
-                <span className="text-sm text-gray-600 flex items-center gap-1">
+                <span className="text-sm text-gray-600 dark:text-slate-300 flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-500 fill-current" />
                   Bestseller
                 </span>
               </div>
 
               {/* Course Title */}
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-slate-100 mb-4 leading-tight">
                 {course.title}
               </h1>
 
               {/* Course Description */}
-              <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+              <p className="text-lg text-gray-700 dark:text-slate-300 mb-6 leading-relaxed">
                 {course.description}
               </p>
 
@@ -210,7 +210,7 @@ export default function CourseDetail() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-green-600" />
-                  <span className="text-gray-700">
+                  <span className="text-gray-700 dark:text-slate-300">
                      {stats.students === 0 
                         ? 'Be the first to join!' 
                         : `${stats.students.toLocaleString()} students`}
@@ -231,13 +231,13 @@ export default function CourseDetail() {
               </div>
 
               {/* Instructor Info */}
-              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+              <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm">
                   {course.creator?.charAt(0)?.toUpperCase() || 'I'}
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide">Created by</p>
-                  <p className="font-bold text-gray-900">{course.creator || 'Instructor'}</p>
+                  <p className="font-bold text-gray-900 dark:text-slate-100">{course.creator || 'Instructor'}</p>
                 </div>
               </div>
             </div>
@@ -254,7 +254,7 @@ export default function CourseDetail() {
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4">
-                  <div className="bg-white/90 backdrop-blur-md text-green-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                  <div className="bg-white/90 dark:bg-slate-700/80 backdrop-blur-md text-green-800 dark:text-green-200 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
                     Course Preview
                   </div>
                 </div>

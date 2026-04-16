@@ -12,7 +12,7 @@ interface Gospel {
   is_active: boolean
 }
 
-export default function GospelVideoModal() {
+export default function GospelVideoModal({ darkMode }: { darkMode?: boolean }) {
   const [gospel, setGospel] = useState<Gospel | null>(null)
   const [showModal, setShowModal] = useState(false)
   const timeoutRef = useRef<number | null>(null)

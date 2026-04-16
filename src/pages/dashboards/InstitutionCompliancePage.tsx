@@ -6,15 +6,16 @@ import useNotifications from '../../utils/useNotifications'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
-export default function InstitutionCompliancePage() {
+export default function InstitutionCompliancePage({ darkMode: darkModeProp }: { darkMode?: boolean }) {
   const [legalDocs, setLegalDocs] = useState<any[]>([])
   const [showForm, setShowForm] = useState(true)
   // Show notification with delay when this component mounts (user opens compliance page)
   useNotifications(true)
-
   useEffect(() => {
     loadLegalDocs()
   }, [])
+
+  const darkMode = typeof window !== 'undefined' && (darkModeProp ?? (localStorage.getItem('institutionDashboardDarkMode') === 'true'))
 
   async function loadLegalDocs() {
     try {
@@ -30,7 +31,7 @@ export default function InstitutionCompliancePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`${darkMode ? 'space-y-6 text-slate-100' : 'space-y-6'}`}>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Compliance & Verification</h1>
         <button onClick={() => setShowForm(s => !s)} className="px-4 py-2 bg-yellow-600 text-white rounded">
@@ -41,25 +42,25 @@ export default function InstitutionCompliancePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {showForm && (
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <ComplianceForm entityType="institution" />
+            <div className={`${darkMode ? 'bg-slate-800 border-slate-700 p-6 rounded-lg' : 'bg-white p-6 rounded-lg border border-gray-200'}`}>
+              <ComplianceForm entityType="institution" darkMode={darkMode} />
             </div>
           )}
 
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className={`${darkMode ? 'bg-slate-800 border-slate-700 p-6 rounded-lg' : 'bg-white p-6 rounded-lg border border-gray-200'}`}>
             <h3 className="font-semibold mb-4">Available Legal Documents</h3>
             <div className="space-y-3">
               {legalDocs.length === 0 && <p className="text-sm text-gray-500">No documents available yet.</p>}
               {legalDocs.map(doc => (
-                <div key={doc.id} className="flex items-center justify-between p-3 border rounded">
+                <div key={doc.id} className={`${darkMode ? 'flex items-center justify-between p-3 border rounded border-slate-700' : 'flex items-center justify-between p-3 border rounded'}`}>
                   <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-gray-500" />
+                    <FileText className={`${darkMode ? 'w-5 h-5 text-slate-300' : 'w-5 h-5 text-gray-500'}`} />
                     <div>
-                      <div className="font-medium">{doc.title}</div>
-                      <div className="text-xs text-gray-500">v{doc.version} — {doc.document_type}</div>
+                      <div className={`${darkMode ? 'font-medium text-slate-100' : 'font-medium'}`}>{doc.title}</div>
+                      <div className={`${darkMode ? 'text-xs text-slate-400' : 'text-xs text-gray-500'}`}>v{doc.version} — {doc.document_type}</div>
                     </div>
                   </div>
-                  <a href={doc.document_file} target="_blank" rel="noreferrer" className="px-3 py-1 bg-gray-100 rounded flex items-center gap-2">
+                  <a href={doc.document_file} target="_blank" rel="noreferrer" className={`${darkMode ? 'px-3 py-1 bg-slate-700/40 rounded flex items-center gap-2' : 'px-3 py-1 bg-gray-100 rounded flex items-center gap-2'}`}>
                     <Download className="w-4 h-4" /> Download
                   </a>
                 </div>

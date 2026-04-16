@@ -177,7 +177,7 @@ export default function PaymentHistory({ userRole = 'student' }: PaymentHistoryP
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={loadTransactions}
+            onClick={() => loadTransactions()}
             disabled={loading}
             className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
             title="Refresh payment data"

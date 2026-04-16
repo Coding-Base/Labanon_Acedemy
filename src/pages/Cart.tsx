@@ -160,7 +160,7 @@ export default function Cart() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-green-600" />
       </div>
     )
@@ -176,7 +176,7 @@ export default function Cart() {
   const displayFinalTotal = promoData && promoData.valid ? Number(promoData.new_total) : finalTotal
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 py-8">
+    <div className="min-h-screen py-8 custom-scrollbar bg-white dark:bg-slate-900">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mb-8">
@@ -188,7 +188,7 @@ export default function Cart() {
           </button>
           <div className="flex items-center gap-3">
             <ShoppingCart className="w-8 h-8 text-green-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Shopping Cart</h1>
           </div>
         </motion.div>
 
@@ -196,7 +196,7 @@ export default function Cart() {
           <motion.div
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
+            className="mb-6 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg text-red-700 dark:text-red-200"
           >
             {error}
           </motion.div>
@@ -205,23 +205,23 @@ export default function Cart() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Cart Items */}
           <div className="lg:col-span-2">
-            {cartItems.length === 0 ? (
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="bg-white rounded-2xl shadow-sm p-12 text-center"
-              >
-                <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h3>
-                <p className="text-gray-600 mb-6">Add courses or diplomas to get started</p>
-                <button
-                  onClick={() => navigate('/student/courses')}
-                  className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
+              {cartItems.length === 0 ? (
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-12 text-center"
                 >
-                  Browse Courses
-                </button>
-              </motion.div>
-            ) : (
+                  <ShoppingCart className="w-16 h-16 text-gray-300 dark:text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">Your cart is empty</h3>
+                  <p className="text-gray-600 dark:text-slate-300 mb-6">Add courses or diplomas to get started</p>
+                  <button
+                    onClick={() => navigate('/student/courses')}
+                    className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
+                  >
+                    Browse Courses
+                  </button>
+                </motion.div>
+              ) : (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -233,7 +233,7 @@ export default function Cart() {
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: idx * 0.1 }}
-                    className="bg-white rounded-xl shadow-sm p-6 flex items-center justify-between hover:shadow-md transition"
+                    className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 flex items-center justify-between hover:shadow-md transition border border-gray-100 dark:border-slate-700"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
@@ -241,8 +241,8 @@ export default function Cart() {
                           {item.course ? 'Course' : item.diploma ? 'Diploma' : 'Item'}
                         </span>
                       </div>
-                      <h3 className="font-semibold text-gray-900">{item.course?.title || item.diploma?.title || item.title || 'Unknown'}</h3>
-                      <p className="text-sm text-gray-600">Added on {new Date(item.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      <h3 className="font-semibold text-gray-900 dark:text-slate-100">{item.course?.title || item.diploma?.title || item.title || 'Unknown'}</h3>
+                      <p className="text-sm text-gray-600 dark:text-slate-300">Added on {new Date(item.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     </div>
 
                     <div className="flex items-center gap-6">
@@ -251,7 +251,7 @@ export default function Cart() {
                       </div>
                       <button
                         onClick={() => removeItem(item.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition"
                         title="Remove from cart"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -270,22 +270,22 @@ export default function Cart() {
               animate={{ x: 0, opacity: 1 }}
               className="lg:col-span-1"
             >
-              <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
-                <h3 className="text-lg font-bold text-gray-900 mb-6">Order Summary</h3>
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 sticky top-24 border border-gray-100 dark:border-slate-700">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 mb-6">Order Summary</h3>
 
-                <div className="space-y-4 border-b border-gray-200 pb-6 mb-6">
+                <div className="space-y-4 border-b border-gray-200 dark:border-slate-700 pb-6 mb-6">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal ({cartItems.length} item{cartItems.length !== 1 ? 's' : ''})</span>
-                    <span className="font-medium text-gray-900">₦{total.toLocaleString()}</span>
+                    <span className="text-gray-600 dark:text-slate-300">Subtotal ({cartItems.length} item{cartItems.length !== 1 ? 's' : ''})</span>
+                    <span className="font-medium text-gray-900 dark:text-slate-100">₦{total.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Platform Fee (5%)</span>
-                    <span className="font-medium text-gray-900">₦{platformFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                    <span className="text-gray-600 dark:text-slate-300">Platform Fee (5%)</span>
+                    <span className="font-medium text-gray-900 dark:text-slate-100">₦{platformFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
 
                 <div className="flex justify-between mb-6">
-                  <span className="font-bold text-gray-900">Total</span>
+                  <span className="font-bold text-gray-900 dark:text-slate-100">Total</span>
                   <span className="text-2xl font-bold text-green-600">₦{displayFinalTotal.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                 </div>
 
@@ -298,7 +298,7 @@ export default function Cart() {
                   />
                   {/* Promo code input */}
                   <div className="mt-4 flex gap-2">
-                    <input value={promoInput} onChange={(e) => setPromoInput(e.target.value)} placeholder="Promo code" className="flex-1 px-3 py-2 border rounded" />
+                    <input value={promoInput} onChange={(e) => setPromoInput(e.target.value)} placeholder="Promo code" className="flex-1 px-3 py-2 border rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100" />
                     {!promoData ? (
                       <button disabled={applyingPromo} onClick={async () => {
                         setApplyingPromo(true); setPromoError('')
@@ -311,7 +311,7 @@ export default function Cart() {
                         } finally { setApplyingPromo(false) }
                       }} className="px-4 py-2 bg-yellow-600 text-white rounded">Apply</button>
                     ) : (
-                      <button onClick={() => { setPromoData(null); setPromoInput(''); setPromoError('') }} className="px-4 py-2 bg-gray-100 rounded">Remove</button>
+                      <button onClick={() => { setPromoData(null); setPromoInput(''); setPromoError('') }} className="px-4 py-2 bg-gray-100 dark:bg-slate-700 rounded">Remove</button>
                     )}
                   </div>
                   {promoError && <div className="text-sm text-red-600 mt-2">{promoError}</div>}

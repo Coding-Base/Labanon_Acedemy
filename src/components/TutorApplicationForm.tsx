@@ -503,7 +503,7 @@ export default function TutorApplicationForm() {
           </section>
 
           <p className="text-center text-gray-400 mt-8 text-sm">
-            <span className="font-medium text-gray-600">Need help?</span> Contact us at <a href="mailto:support@lighthubacademy.org" className="text-yellow-700 hover:underline">support@lighthubacademy.org</a> or WhatsApp 07063899747.
+            <span className="font-medium text-gray-600">Need help?</span> Contact us at <a href="mailto:support@lighthubacademy.org" className="text-yellow-700 hover:underline">support@lighthubacademy.org</a> or WhatsApp 08159749816.
           </p>
         </div>
       </div>

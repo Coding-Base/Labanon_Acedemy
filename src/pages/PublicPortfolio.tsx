@@ -78,7 +78,8 @@ export default function PublicPortfolio() {
       try {
         // Create a public axios instance without interceptors for public endpoints
         const publicApi = axios.create({ baseURL: API_BASE })
-        const res = await publicApi.get(`/portfolios/by_token/`, { params: { token } })
+        // Add cache-busting query parameter to force fresh data
+        const res = await publicApi.get(`/portfolios/by_token/`, { params: { token, _t: Date.now() } })
         setPortfolio(res.data)
       } catch (err: any) {
         setError(err?.response?.data?.detail || 'Portfolio not found')

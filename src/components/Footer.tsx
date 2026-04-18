@@ -79,7 +79,7 @@ export default function Footer() {
             <h4 className="font-bold mb-4 text-sm sm:text-base">Contact</h4>
             <ul className="space-y-2 text-gray-400 text-sm">
               <li><a href="mailto:support@lighthubacademy.org" className="hover:text-white transition-colors">support@lighthubacademy.org</a></li>
-              <li><a href="tel:+2347063899747" className="hover:text-white transition-colors">07063899747</a></li>
+              <li><a href="tel:+2347063899747" className="hover:text-white transition-colors">08159749816</a></li>
               <li>Lagos, Nigeria</li>
             </ul>
           </div>

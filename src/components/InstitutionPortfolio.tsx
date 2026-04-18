@@ -228,8 +228,20 @@ export default function InstitutionPortfolio({ institutionId, darkMode }: { inst
         institution: institutionId,
       };
 
+      // Log the payload to ensure HTML is being sent
+      console.log('Portfolio Save Payload:', {
+        description_preview: formData.description?.substring(0, 100),
+        overview_preview: formData.overview?.substring(0, 100),
+        description_html: formData.description,
+        overview_html: formData.overview,
+      });
+
       if (portfolio?.id) {
-        await api.put(`/portfolios/${portfolio.id}/`, payload);
+        const response = await api.put(`/portfolios/${portfolio.id}/`, payload);
+        console.log('Backend Response:', {
+          description_from_backend: response.data.description?.substring(0, 100),
+          overview_from_backend: response.data.overview?.substring(0, 100),
+        });
         setSuccess('Portfolio updated successfully!');
       } else {
         const res = await api.post('/portfolios/', payload);
@@ -342,6 +354,13 @@ export default function InstitutionPortfolio({ institutionId, darkMode }: { inst
               title="Copy to clipboard"
             >
               <Copy className={`w-4 h-4 ${copied ? 'text-green-600' : 'text-gray-600'}`} />
+            </button>
+            <button
+              onClick={() => window.open(`${publicUrl}?_t=${Date.now()}`, '_blank')}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors ml-1"
+              title="View public portfolio (fresh)"
+            >
+              <Globe className="w-4 h-4 text-yellow-600" />
             </button>
           </div>
           {copied && <p className="text-xs text-green-600 mt-2">✓ Copied!</p>}

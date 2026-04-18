@@ -644,7 +644,7 @@ export default function Home() {
               <h4 className="font-bold mb-4">Contact</h4>
               <ul className="space-y-2 text-gray-400">
                 <li>support@lighthubacademy.org</li>
-                <li>07063899747</li>
+                <li>08159749816</li>
                 <li>Lagos, Nigeria</li>
               </ul>
             </div>

@@ -11,7 +11,8 @@ import {
   CheckCircle,
   Loader2,
   ArrowLeft,
-  GraduationCap
+  GraduationCap,
+  MessageCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -503,7 +504,7 @@ export default function TutorApplicationForm() {
           </section>
 
           <p className="text-center text-gray-400 mt-8 text-sm">
-            <span className="font-medium text-gray-600">Need help?</span> Contact us at <a href="mailto:support@lighthubacademy.org" className="text-yellow-700 hover:underline">support@lighthubacademy.org</a> or WhatsApp 08159749816.
+            <span className="font-medium text-gray-600">Need help?</span> Contact us at <a href="mailto:support@lighthubacademy.org" className="text-yellow-700 hover:underline">support@lighthubacademy.org</a> or <a href="https://wa.me/2348159749816" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-yellow-700 hover:underline"><MessageCircle className="w-3 h-3" /> WhatsApp</a>.
           </p>
         </div>
       </div>

@@ -22,6 +22,7 @@ import {
   Tooltip,
   IconButton,
 } from '@mui/material';
+
 import {
   Search,
   Clock,
@@ -281,13 +282,9 @@ const StudentMockExamsPage: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    component={Grid}
-                    item
-                    xs={12}
-                    sm={6}
-                    md={4}
                   >
-                    <Card className="h-full hover:shadow-xl transition-shadow bg-white dark:bg-slate-800">
+                    <Grid item xs={12} sm={6} md={4} sx={{ height: '100%' }}>
+                      <Card className="h-full hover:shadow-xl transition-shadow bg-white dark:bg-slate-800">
                       <CardContent className="pb-2">
                         <div className="flex justify-between items-start mb-3">
                           <h3 className="font-bold text-gray-800 dark:text-slate-100 line-clamp-2">
@@ -347,6 +344,7 @@ const StudentMockExamsPage: React.FC = () => {
                         </Button>
                       </CardActions>
                     </Card>
+                    </Grid>
                   </motion.div>
                 ))}
               </Grid>

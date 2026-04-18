@@ -19,7 +19,8 @@ import {
   Brain,
   ArrowRight,
   Youtube,
-  Facebook
+  Facebook,
+  MessageCircle
 } from 'lucide-react';
 
 import ContactForm from '../components/ContactForm';
@@ -672,7 +673,18 @@ export default function Home() {
               <h4 className="font-bold mb-4">Contact</h4>
               <ul className="space-y-2 text-gray-400">
                 <li>support@lighthubacademy.org</li>
-                <li>08159749816</li>
+                <li>
+                  <a 
+                    href="https://wa.me/2348159749816" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="inline-flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors"
+                    aria-label="Contact us on WhatsApp"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>WhatsApp</span>
+                  </a>
+                </li>
                 <li>Lagos, Nigeria</li>
               </ul>
             </div>

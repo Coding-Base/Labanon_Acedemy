@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpen, FileText } from 'lucide-react'
 import CoursesList from '../shared/CoursesList'
 import ResourcesList from '../components/Materials/ResourcesList'
 import Footer from '../components/Footer'
+import { setSEOTags, setCanonicalURL, addStructuredData, getEducationalOrganizationSchema } from '../utils/seoUtils'
 
 type TabType = 'courses' | 'resources'
 
@@ -31,6 +32,33 @@ export default function Marketplace() {
       setActiveTab(state.activeTab)
     }
   }, [location])
+
+  // SEO Optimization
+  useEffect(() => {
+    setSEOTags({
+      title: 'Marketplace - Courses & Resources',
+      description: 'Discover and purchase premium courses and learning resources. Browse our extensive collection of educational materials for all skill levels.',
+      keywords: 'courses, resources, marketplace, online learning, educational materials, premium content',
+      type: 'website',
+      url: window.location.href
+    })
+    setCanonicalURL(window.location.href)
+    
+    // Add structured data for rich snippets
+    addStructuredData({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'LightHub Academy Marketplace',
+      description: 'Browse premium courses and learning resources',
+      url: window.location.href,
+      publisher: getEducationalOrganizationSchema()
+    })
+  }, [])
+
+  // Update canonical URL when activeTab changes
+  useEffect(() => {
+    setCanonicalURL(window.location.href)
+  }, [activeTab])
 
   return (
     <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-brand-50">

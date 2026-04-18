@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Loader2, ArrowRight, Building2, Star } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { setSEOTags, setCanonicalURL, addStructuredData, getEducationalOrganizationSchema } from '../utils/seoUtils'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -30,6 +31,28 @@ export default function InstitutionPortfolios() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+
+  // SEO Optimization
+  useEffect(() => {
+    setSEOTags({
+      title: 'Student Institutions & Portfolios',
+      description: 'Explore verified educational institutions and student portfolios. Discover verified tutors and institutions offering quality education.',
+      keywords: 'institutions, portfolios, tutors, educational organizations, student portfolios, verified institutions',
+      type: 'website',
+      url: window.location.href
+    })
+    setCanonicalURL(window.location.href)
+    
+    // Add structured data for rich snippets
+    addStructuredData({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'Educational Institutions',
+      description: 'Verified educational institutions and portfolios',
+      url: window.location.href,
+      publisher: getEducationalOrganizationSchema()
+    })
+  }, [])
 
   // Fetch all published portfolios (public endpoint - no auth required)
   useEffect(() => {

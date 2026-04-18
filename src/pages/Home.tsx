@@ -24,6 +24,7 @@ import {
 
 import ContactForm from '../components/ContactForm';
 import Navbar from '../components/Navbar';
+import { setSEOTags, setCanonicalURL, addStructuredData, getOrganizationSchema, getEducationalOrganizationSchema } from '../utils/seoUtils';
 
 import labanonLogo from './labanonlogo.png';
 import learningImage from './learningup.jpeg'; 
@@ -101,6 +102,23 @@ export default function Home() {
 
   // Handle outside click to close Explore menu
   // Moved to Navbar component
+
+  useEffect(() => {
+    // SEO Optimization for home page
+    setSEOTags({
+      title: 'LightHub Academy - Africa\'s Premier Digital Learning Platform',
+      description: 'Master digital skills with premium courses, live classes, CBT practice, and expert tutors. Affordable learning platform offering certifications and career transformation.',
+      keywords: 'online courses, CBT practice, JAMB, WAEC, digital learning, online tutors, certifications, coding courses, exam preparation',
+      image: `${window.location.origin}/src/pages/labanonlogo.png`,
+      type: 'website',
+      url: window.location.href
+    })
+    setCanonicalURL(window.location.href)
+    
+    // Add structured data for rich snippets
+    addStructuredData(getOrganizationSchema())
+    addStructuredData(getEducationalOrganizationSchema())
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -526,47 +544,54 @@ export default function Home() {
       <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted by <span className="text-yellow-600">Thousands</span></h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted by <span className="text-yellow-500">Thousands</span></h2>
             <p className="text-gray-400 text-lg">Join our community of successful learners and educators</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white/10 backdrop-blur border border-white/10 p-8 rounded-2xl">
-                 <div className="flex gap-1 mb-4">{[1,2,3,4,5].map(i=><Star key={i} className="w-4 h-4 text-yellow-400 fill-current"/>)}</div>
-                 <p className="text-gray-200 italic mb-6">"{testimonial.text}"</p>
-                 <div className="flex items-center gap-4">
-                    <img src={testimonial.avatar} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover" width={48} height={48} loading="lazy" decoding="async" />
-                    <div>
-                       <div className="font-bold">{testimonial.name}</div>
-                       <div className="text-sm text-gray-400">{testimonial.role}</div>
-                    </div>
+              <motion.div key={index} whileHover={{ y: -5 }} className="group relative bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-yellow-600/50 hover:border-yellow-500 p-8 rounded-2xl transition-all duration-300 overflow-hidden">
+                 <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/0 to-yellow-600/0 group-hover:from-yellow-600/10 group-hover:to-yellow-600/5 rounded-2xl transition-all" />
+                 <div className="relative z-10">
+                   <div className="flex gap-1 mb-4">{[1,2,3,4,5].map(i=><Star key={i} className="w-4 h-4 text-yellow-400 fill-current"/>)}</div>
+                   <p className="text-gray-200 italic mb-6">"{testimonial.text}"</p>
+                   <div className="flex items-center gap-4">
+                      <img src={testimonial.avatar} alt={testimonial.name} className="w-14 h-14 rounded-full object-cover ring-2 ring-yellow-500/50" width={56} height={56} loading="lazy" decoding="async" />
+                      <div>
+                         <div className="font-bold text-white">{testimonial.name}</div>
+                         <div className="text-sm text-gray-400">{testimonial.role}</div>
+                      </div>
+                   </div>
                  </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </motion.section>
 
       {/* Reviews Showcase Card */}
-      <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-gradient-to-r from-yellow-50 to-orange-50">
+      <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-3xl p-8 sm:p-12 text-white shadow-2xl">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div className="bg-gradient-to-br from-yellow-600 to-orange-600 rounded-3xl p-8 sm:p-12 text-white shadow-2xl overflow-hidden relative">
+            {/* Background decoration */}
+            <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+            <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+            
+            <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center">
               {/* Left: Content */}
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Users Say</h2>
-                <p className="text-lg text-white/90 mb-6">Join thousands of students, tutors, and educators who have shared their experiences on our platform. Read verified reviews and share your own journey.</p>
+                <p className="text-lg text-white/90 mb-8">Join thousands of students, tutors, and educators who have shared their experiences on our platform. Read verified reviews and share your own journey.</p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link 
                     to="/reviews" 
-                    className="px-8 py-3 bg-white text-yellow-600 font-bold rounded-lg hover:bg-gray-100 transition-colors inline-flex items-center justify-center gap-2"
+                    className="px-8 py-3 bg-white text-yellow-600 font-bold rounded-xl hover:bg-gray-100 hover:shadow-lg transition-all inline-flex items-center justify-center gap-2 transform hover:-translate-y-1"
                   >
                     <span>Read Reviews</span>
                     <ChevronRight className="w-5 h-5" />
                   </Link>
                   <Link 
                     to="/reviews" 
-                    className="px-8 py-3 bg-white/20 text-white font-bold rounded-lg hover:bg-white/30 transition-colors inline-flex items-center justify-center gap-2 border border-white/50"
+                    className="px-8 py-3 bg-white/20 text-white font-bold rounded-xl hover:bg-white/30 transition-all inline-flex items-center justify-center gap-2 border-2 border-white/50 hover:border-white/80 transform hover:-translate-y-1"
                   >
                     <span>Leave a Review</span>
                     <Star className="w-5 h-5" />
@@ -576,16 +601,16 @@ export default function Home() {
               
               {/* Right: Stats/Visual */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/20 backdrop-blur rounded-2xl p-6 border border-white/30">
-                  <div className="text-4xl font-bold mb-2">4.8★</div>
-                  <p className="text-sm text-white/80">Average Rating</p>
+                <div className="bg-white/15 backdrop-blur rounded-2xl p-6 border border-white/30 hover:bg-white/25 transition-all">
+                  <div className="text-4xl font-bold mb-2">4.8<Star className="w-6 h-6 inline ml-1 text-yellow-300 fill-current" /></div>
+                  <p className="text-sm text-white/80 font-medium">Average Rating</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur rounded-2xl p-6 border border-white/30">
+                <div className="bg-white/15 backdrop-blur rounded-2xl p-6 border border-white/30 hover:bg-white/25 transition-all">
                   <div className="text-4xl font-bold mb-2">500+</div>
-                  <p className="text-sm text-white/80">Verified Reviews</p>
+                  <p className="text-sm text-white/80 font-medium">Verified Reviews</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur rounded-2xl p-6 border border-white/30 col-span-2">
-                  <p className="text-center text-sm text-white/80">Help shape our community by sharing your feedback and experiences with LightHub Academy.</p>
+                <div className="bg-white/15 backdrop-blur rounded-2xl p-6 border border-white/30 col-span-2 hover:bg-white/25 transition-all">
+                  <p className="text-center text-sm text-white/90 font-medium">Help shape our community by sharing your feedback and experiences with LightHub Academy.</p>
                 </div>
               </div>
             </div>
@@ -594,9 +619,12 @@ export default function Home() {
       </motion.section>
 
       {/* Contact form section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ContactForm />
+      <section className="py-16 md:py-20 bg-gray-900 text-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="border-2 border-yellow-600/50 rounded-2xl p-8 sm:p-12 bg-gradient-to-br from-gray-800 to-gray-900">
+            <h2 className="text-3xl md:text-4xl font-bold mb-2">Contact Us</h2>
+            <p className="text-gray-400 mb-8">Send an enquiry, partnership request, complaint or other message.</p>
+            <ContactForm className="space-y-6" />          </motion.div>
         </div>
       </section>
 

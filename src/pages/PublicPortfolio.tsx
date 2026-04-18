@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { setSEOTags, setCanonicalURL, addStructuredData, getInstitutionSchema } from '../utils/seoUtils'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -81,6 +82,24 @@ export default function PublicPortfolio() {
         // Add cache-busting query parameter to force fresh data
         const res = await publicApi.get(`/portfolios/by_token/`, { params: { token, _t: Date.now() } })
         setPortfolio(res.data)
+
+        // SEO Optimization - update after portfolio is loaded
+        setSEOTags({
+          title: res.data.title || res.data.institution_name,
+          description: res.data.overview || res.data.description || `Explore ${res.data.institution_name} portfolio and services`,
+          keywords: `${res.data.institution_name}, portfolio, institution, education, ${res.data.location || ''}`,
+          image: res.data.image,
+          type: 'profile',
+          url: window.location.href
+        })
+        setCanonicalURL(window.location.href)
+        
+        // Add structured data for rich snippets
+        addStructuredData(getInstitutionSchema({
+          name: res.data.institution_name,
+          image: res.data.image,
+          description: res.data.overview || res.data.description
+        }))
       } catch (err: any) {
         setError(err?.response?.data?.detail || 'Portfolio not found')
       } finally {

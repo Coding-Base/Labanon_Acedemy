@@ -13,6 +13,10 @@ import {
   AlertCircle,
   CheckCircle,
   Building2,
+  BookOpen,
+  ClipboardList,
+  Users,
+  Briefcase,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import PaymentCheckout from '../components/PaymentCheckout'
@@ -219,6 +223,12 @@ interface DiplomaData {
   meeting_place: string
   image: string
   portfolio_token?: string
+  overview?: string
+  admissions?: string
+  academics?: string
+  tuition_financing?: string
+  careers?: string
+  student_experience?: string
   institution?: {
     id: number
     name: string
@@ -240,6 +250,7 @@ export default function DiplomaDetail() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [imageError, setImageError] = useState(false)
+  const [activeTab, setActiveTab] = useState<'overview' | 'admissions' | 'academics' | 'tuition' | 'careers' | 'experience'>('overview')
 
   useEffect(() => {
     if (!id) return
@@ -535,6 +546,95 @@ export default function DiplomaDetail() {
                 </ul>
               </div>
             </div>
+
+            {/* Program Details Tabs */}
+            {(diploma.overview || diploma.admissions || diploma.academics || diploma.tuition_financing || diploma.careers || diploma.student_experience) && (
+              <div className="mb-8 border-t pt-8">
+                <div className="mb-6 overflow-x-auto flex gap-1 border-b">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className={`px-4 py-3 font-medium whitespace-nowrap flex items-center gap-2 border-b-2 transition-all ${
+                      activeTab === 'overview'
+                        ? 'border-yellow-600 text-green-600'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4" /> Overview
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('admissions')}
+                    className={`px-4 py-3 font-medium whitespace-nowrap flex items-center gap-2 border-b-2 transition-all ${
+                      activeTab === 'admissions'
+                        ? 'border-yellow-600 text-green-600'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <ClipboardList className="w-4 h-4" /> Admissions
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('academics')}
+                    className={`px-4 py-3 font-medium whitespace-nowrap flex items-center gap-2 border-b-2 transition-all ${
+                      activeTab === 'academics'
+                        ? 'border-yellow-600 text-green-600'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Award className="w-4 h-4" /> Academics
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('tuition')}
+                    className={`px-4 py-3 font-medium whitespace-nowrap flex items-center gap-2 border-b-2 transition-all ${
+                      activeTab === 'tuition'
+                        ? 'border-yellow-600 text-green-600'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4" /> Tuition
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('careers')}
+                    className={`px-4 py-3 font-medium whitespace-nowrap flex items-center gap-2 border-b-2 transition-all ${
+                      activeTab === 'careers'
+                        ? 'border-yellow-600 text-green-600'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Briefcase className="w-4 h-4" /> Careers
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('experience')}
+                    className={`px-4 py-3 font-medium whitespace-nowrap flex items-center gap-2 border-b-2 transition-all ${
+                      activeTab === 'experience'
+                        ? 'border-yellow-600 text-green-600'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" /> Experience
+                  </button>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 prose prose-sm max-w-none">
+                  {activeTab === 'overview' && diploma.overview && (
+                    <div dangerouslySetInnerHTML={{ __html: diploma.overview }} />
+                  )}
+                  {activeTab === 'admissions' && diploma.admissions && (
+                    <div dangerouslySetInnerHTML={{ __html: diploma.admissions }} />
+                  )}
+                  {activeTab === 'academics' && diploma.academics && (
+                    <div dangerouslySetInnerHTML={{ __html: diploma.academics }} />
+                  )}
+                  {activeTab === 'tuition' && diploma.tuition_financing && (
+                    <div dangerouslySetInnerHTML={{ __html: diploma.tuition_financing }} />
+                  )}
+                  {activeTab === 'careers' && diploma.careers && (
+                    <div dangerouslySetInnerHTML={{ __html: diploma.careers }} />
+                  )}
+                  {activeTab === 'experience' && diploma.student_experience && (
+                    <div dangerouslySetInnerHTML={{ __html: diploma.student_experience }} />
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Show Enrollment Form or Checkout */}
             {showEnrollmentForm ? (

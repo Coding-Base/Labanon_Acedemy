@@ -38,7 +38,7 @@ import { FileText } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import ManageCourses from '../ManageCourses';
 import CreateCourse from '../CreateCourse';
-import InstitutionDiplomas from '../../components/InstitutionDiplomas';
+import InstitutionDiplomas  from '../../components/InstitutionDiplomas';
 import InstitutionPortfolio from '../../components/InstitutionPortfolio';
 import InstitutionPayments from '../../components/InstitutionPayments';
 import PayoutScheduleInfo from '../../components/PayoutScheduleInfo';

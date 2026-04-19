@@ -133,7 +133,7 @@ export default function App() {
 
             {/* other app routes */}
             <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/marketplace/:id" element={<CourseDetail />} />
+            <Route path="/marketplace/:id" element={<CourseDetail />} /> 
             <Route path="/diploma/:id" element={<DiplomaDetail />} />
             <Route path="/blog/:slug" element={<BlogDetail />} />
             <Route path="/blog" element={<Blog />} />

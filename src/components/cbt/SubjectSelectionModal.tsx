@@ -22,6 +22,11 @@ interface SubjectSelectionModalProps {
   exam: Exam | null
   onSelectSubjects: (subjects: Subject[]) => void
   allowedSubjectIds?: number[]
+  trialInfo?: {
+    trial_attempts_used: number
+    trial_attempts_remaining: number
+    trial_available: boolean
+  }
 }
 
 export default function SubjectSelectionModal({
@@ -29,7 +34,8 @@ export default function SubjectSelectionModal({
   onClose,
   exam,
   onSelectSubjects,
-  allowedSubjectIds
+  allowedSubjectIds,
+  trialInfo
 }: SubjectSelectionModalProps): JSX.Element | null {
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([])
@@ -160,6 +166,22 @@ export default function SubjectSelectionModal({
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
               {error}
+            </div>
+          )}
+
+          {trialInfo && trialInfo.trial_available && !isPreLocked && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">🎁</span>
+                <div className="flex-1">
+                  <p className="font-bold text-amber-900">Free Trial</p>
+                  <p className="text-sm text-amber-800 mt-1">
+                    {trialInfo.trial_attempts_remaining === 5 
+                      ? 'You have 5 free attempts to explore this exam. No payment required!' 
+                      : `${trialInfo.trial_attempts_remaining} attempt${trialInfo.trial_attempts_remaining !== 1 ? 's' : ''} remaining of your free trial`}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

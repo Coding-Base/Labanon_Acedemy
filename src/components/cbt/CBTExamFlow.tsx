@@ -54,6 +54,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
   // Exam attempt state
   const [examAttemptId, setExamAttemptId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isTrialAttempt, setIsTrialAttempt] = useState(false)
+  const [trialMessage, setTrialMessage] = useState<string | null>(null)
 
   // Error state for better error handling and user feedback
   const [error, setError] = useState<{
@@ -62,6 +64,13 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     available_subjects?: string[]
     action?: string
     nextStep?: string
+  } | null>(null)
+
+  // Trial attempt state
+  const [trialInfo, setTrialInfo] = useState<{
+    trial_attempts_used: number
+    trial_attempts_remaining: number
+    trial_available: boolean
   } | null>(null)
 
   // Handle exam selection with activation check
@@ -81,6 +90,15 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
           headers: { Authorization: `Bearer ${token}` }
         })
         const data = await res.json()
+
+        // Check trial attempt info
+        if (data.trial_attempts_used !== undefined) {
+          setTrialInfo({
+            trial_attempts_used: data.trial_attempts_used,
+            trial_attempts_remaining: data.trial_attempts_remaining,
+            trial_available: data.trial_available
+          })
+        }
 
         if (res.ok && data.unlocked) {
           // Determine if this is a JAMB exam (exam title or slug)
@@ -108,13 +126,19 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
 
           setFlowStep('subjects')
         } else {
-          // Redirect to activation/checkout page
-          const qs = new URLSearchParams({
-            type: 'exam',
-            exam_id: String(exam.id),
-            exam_title: exam.title
-          })
-          navigate(`/activate?${qs.toString()}`)
+          // Check if trial is available
+          if (data.trial_available) {
+            setAllowedSubjects([])
+            setFlowStep('subjects')
+          } else {
+            // Redirect to activation/checkout page
+            const qs = new URLSearchParams({
+              type: 'exam',
+              exam_id: String(exam.id),
+              exam_title: exam.title
+            })
+            navigate(`/activate?${qs.toString()}`)
+          }
         }
       } catch (err) {
         console.error('Activation check failed', err)
@@ -171,13 +195,24 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
       })
 
       setExamAttemptId(response.data.exam_attempt_id)
+      setIsTrialAttempt(response.data.is_trial_attempt || false)
+      setTrialMessage(response.data.trial_message || null)
       setFlowStep('exam-interface')
     } catch (err: any) {
       console.error('Failed to start exam', err)
       const errorData = err.response?.data
       
+      // Handle trial exhausted error
+      if (errorData?.detail === 'You have exhausted your free trial attempts for this exam.') {
+        setError({
+          title: '🎁 Free Trial Exhausted',
+          message: `You've used all ${errorData.trial_attempts_limit || 5} free attempts. Unlock this exam to continue practicing.`,
+          action: 'Upgrade now to unlock unlimited attempts',
+          nextStep: 'Unlock Exam'
+        })
+      }
       // PHASE 3: Display improved error messages with helpful context
-      if (errorData) {
+      else if (errorData) {
         if (errorData.available_subjects && errorData.available_subjects.length > 0) {
           // User tried to access subjects they don't have access to
           setError({
@@ -231,6 +266,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     setSubjectConfigs([])
     setTestName('')
     setExamAttemptId(null)
+    setIsTrialAttempt(false)
+    setTrialMessage(null)
     onClose()
   }
 
@@ -247,6 +284,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         }))}
         timeLimitMinutes={timeLimitMinutes}
         onSubmitComplete={handleExamComplete}
+        isTrialAttempt={isTrialAttempt}
+        trialMessage={trialMessage}
       />
     )
   }
@@ -315,6 +354,23 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         onSelectExam={handleSelectExam}
       />
 
+      {/* Trial Info Banner */}
+      {trialInfo && flowStep === 'subjects' && trialInfo.trial_available && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 max-w-md w-full mx-4 z-40 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-4 shadow-lg">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">🎁</span>
+            <div className="flex-1">
+              <p className="font-bold text-amber-900">Free Trial Available</p>
+              <p className="text-sm text-amber-800 mt-1">
+                {trialInfo.trial_attempts_remaining === 5 
+                  ? 'Start with 5 free attempts' 
+                  : `${trialInfo.trial_attempts_remaining} attempt${trialInfo.trial_attempts_remaining !== 1 ? 's' : ''} remaining`}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Step 2: Select Multiple Subjects (filtered to allowed subjects) */}
       <SubjectSelectionModal
         isOpen={flowStep === 'subjects'}
@@ -323,10 +379,12 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
           setSelectedExam(null)
           setSelectedSubjects([])
           setAllowedSubjects([])
+          setTrialInfo(null)
         }}
         exam={selectedExam}
         onSelectSubjects={handleSelectSubjects}
         allowedSubjectIds={allowedSubjects.length > 0 ? allowedSubjects.map(s => s.id) : undefined}
+        trialInfo={trialInfo}
       />
 
       {/* Step 3: Configure Questions per Subject */}

@@ -33,6 +33,8 @@ interface ExamInterfaceProps {
   }>
   timeLimitMinutes: number
   onSubmitComplete: () => void
+  isTrialAttempt?: boolean
+  trialMessage?: string | null
 }
 
 export default function ExamInterface({
@@ -40,7 +42,9 @@ export default function ExamInterface({
   testName,
   subjectConfigs,
   timeLimitMinutes,
-  onSubmitComplete
+  onSubmitComplete,
+  isTrialAttempt = false,
+  trialMessage = null
 }: ExamInterfaceProps) {
   const navigate = useNavigate()
   const [currentSubjectIndex, setCurrentSubjectIndex] = useState(0)
@@ -193,6 +197,18 @@ export default function ExamInterface({
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+      {/* Trial Banner */}
+      {isTrialAttempt && (
+        <div className="bg-amber-100 border-b-2 border-amber-300 px-3 sm:px-6 py-2 flex items-center gap-3">
+          <span className="text-xl">🎁</span>
+          <div className="flex-1">
+            <p className="font-semibold text-amber-900 text-sm">
+              {trialMessage || 'Free Trial Attempt'}
+            </p>
+          </div>
+        </div>
+      )}
+      
       {/* Header with Timer */}
       <div className="bg-yellow-600 text-white px-3 sm:px-6 py-3 flex-shrink-0 z-10 border-b-2 border-yellow-700">
         <div className="max-w-full">

@@ -60,19 +60,19 @@ export default function MathDisplay({ content, inline = true, className = '' }: 
           }
         }
 
-        // Inline math: $...$ or \(...\)
-        if ((part.startsWith('$') && part.endsWith('$') && !part.startsWith('$$')) || part.length > 2) {
-          // Handle inline $ ... $
-          if (part.startsWith('$') && part.endsWith('$') && !part.startsWith('$$')) {
-            const formula = part.slice(1, -1).trim()
+        // Inline math: $...$
+        if (part.startsWith('$') && part.endsWith('$') && !part.startsWith('$$')) {
+          const formula = part.slice(1, -1).trim()
+          if (formula) { // Only render if formula is not empty
             try {
               return (
                 <span key={index} className="inline-block max-w-full overflow-x-auto">
                   <InlineMath math={formula} />
                 </span>
               )
-            } catch {
-              return <span key={index} className="break-words">{part}</span>
+            } catch (e) {
+              console.error('Failed to render inline math:', formula, e)
+              return <span key={index} className="break-words text-red-600 bg-red-50 px-1 rounded">Math Error: {part}</span>
             }
           }
         }

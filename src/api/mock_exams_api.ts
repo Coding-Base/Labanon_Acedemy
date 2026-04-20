@@ -523,12 +523,32 @@ export const adminMockExamsAPI = {
     return api.get(`/mock-exams/admin/platforms/`);
   },
 
+  getMockExamPlatforms: async () => {
+    return api.get(`/mock-exams/admin/platforms/`);
+  },
+
   createPlatform: async (data: any) => {
+    return api.post(`/mock-exams/admin/platforms/`, data);
+  },
+
+  createMockExamPlatform: async (data: any) => {
     return api.post(`/mock-exams/admin/platforms/`, data);
   },
 
   updatePlatform: async (platformId: number, data: any) => {
     return api.put(`/mock-exams/admin/platforms/${platformId}/`, data);
+  },
+
+  updateMockExamPlatform: async (platformId: number, data: any) => {
+    return api.put(`/mock-exams/admin/platforms/${platformId}/`, data);
+  },
+
+  deletePlatform: async (platformId: number) => {
+    return api.delete(`/mock-exams/admin/platforms/${platformId}/`);
+  },
+
+  deleteMockExamPlatform: async (platformId: number) => {
+    return api.delete(`/mock-exams/admin/platforms/${platformId}/`);
   },
 
   testPlatformConnection: async (platformId: number) => {

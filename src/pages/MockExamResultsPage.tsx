@@ -23,14 +23,15 @@ import {
 import {
   Download,
   Share2,
+  ArrowLeft,
   BarChart3,
   TrendingUp,
   CheckCircle,
   XCircle,
-  ArrowLeft,
 } from 'lucide-react';
 import { studentMockExamsAPI, MockExamResult } from '../api/mock_exams_api';
 import showToast from '../utils/toast';
+import { MathText } from '../utils/mathRenderer';
 
 interface ResultData {
   id: number;

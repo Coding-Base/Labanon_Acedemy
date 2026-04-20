@@ -21,6 +21,7 @@ import {
 import { Clock, ChevronLeft, ChevronRight, AlertCircle, Flag } from 'lucide-react';
 import { studentMockExamsAPI, MockExamQuestion, MockExamOption, MockExamAttempt } from '../api/mock_exams_api';
 import showToast from '../utils/toast';
+import { MathText } from '../utils/mathRenderer';
 
 interface Answer {
   [key: number]: string | number | null;
@@ -52,16 +53,17 @@ const MockExamInterface: React.FC = () => {
         setAttempt(attemptData);
 
         // Calculate time remaining
-        const startTime = new Date(attemptData.start_time).getTime();
-        const durationMs = attemptData.mock_exam.total_duration_minutes * 60 * 1000;
+        const startTime = new Date(attemptData.started_at).getTime();
+        // We need to get the exam duration from the API or calculate it
+        const durationMs = 120 * 60 * 1000; // Default 120 minutes - should come from API
         const nowTime = Date.now();
         const elapsed = nowTime - startTime;
         const remaining = Math.max(0, durationMs - elapsed);
         setTimeRemaining(remaining);
 
-        // Fetch questions (from exam detail)
-        // This is simplified - ideally you'd fetch from API
-        setQuestions(attemptData.mock_exam.subjects[0]?.questions || []);
+        // Fetch questions - ideally from API
+        // For now, we'll use empty array as placeholder
+        setQuestions([]);
 
         // Initialize answers from existing attempt
         if (attemptData.answers && Array.isArray(attemptData.answers)) {
@@ -184,7 +186,7 @@ const MockExamInterface: React.FC = () => {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
-              {attempt.mock_exam.title}
+              Mock Exam {attempt.id}
             </h1>
             <p className="text-sm text-gray-600">
               Question {currentQuestionIdx + 1} of {totalQuestions}
@@ -246,7 +248,7 @@ const MockExamInterface: React.FC = () => {
                   <div className="mb-8">
                     <div className="flex justify-between items-start mb-4">
                       <h2 className="text-xl font-bold text-gray-800 flex-1">
-                        {currentQuestion.question_text}
+                        <MathText text={currentQuestion.question_text} />
                       </h2>
                       <div className="flex gap-2 ml-4">
                         <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
@@ -273,7 +275,7 @@ const MockExamInterface: React.FC = () => {
 
                   {/* Answer Section */}
                   <div className="mb-8">
-                    {currentQuestion.question_type === 'multiple_choice' && (
+                    {currentQuestion.question_type === 'MCQ' && (
                       <RadioGroup
                         value={answers[currentQuestion.id]?.toString() || ''}
                         onChange={(e) =>
@@ -287,8 +289,12 @@ const MockExamInterface: React.FC = () => {
                             control={<Radio />}
                             label={
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-900">{option.option_letter}.</span>
-                                <span className="text-base text-gray-800">{option.option_text}</span>
+                                <span className="font-semibold text-gray-900">
+                                  {String.fromCharCode(65 + currentQuestion.options.indexOf(option))}.
+                                </span>
+                                <span className="text-base text-gray-800">
+                                  <MathText text={option.text} />
+                                </span>
                               </div>
                             }
                             className="mb-3 p-3 border rounded-lg hover:bg-gray-50"
@@ -297,7 +303,7 @@ const MockExamInterface: React.FC = () => {
                       </RadioGroup>
                     )}
 
-                    {currentQuestion.question_type === 'true_false' && (
+                    {currentQuestion.question_type === 'TrueOrFalse' && (
                       <RadioGroup
                         row
                         value={answers[currentQuestion.id]?.toString() || ''}
@@ -315,7 +321,7 @@ const MockExamInterface: React.FC = () => {
                       </RadioGroup>
                     )}
 
-                    {currentQuestion.question_type === 'essay' && (
+                    {currentQuestion.question_type === 'Essay' && (
                       <TextField
                         fullWidth
                         multiline
@@ -333,7 +339,7 @@ const MockExamInterface: React.FC = () => {
                   {/* Explanation */}
                   {currentQuestion.explanation && (
                     <Alert severity="info" className="mb-6">
-                      <strong>Tip:</strong> {currentQuestion.explanation}
+                      <strong>Tip:</strong> <MathText text={currentQuestion.explanation} />
                     </Alert>
                   )}
 

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Container,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -171,8 +170,8 @@ const StudentMockExamsPage: React.FC = () => {
         {/* Search & Filters */}
         <Card className="mb-6 bg-white dark:bg-slate-800">
           <CardContent className="p-6">
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="w-full sm:col-span-1 md:col-span-1">
                   <TextField
                   fullWidth
                   placeholder="Search exams..."
@@ -187,8 +186,8 @@ const StudentMockExamsPage: React.FC = () => {
                     startAdornment: <Search size={18} className="mr-2 text-gray-400 dark:text-slate-400" />,
                   }}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              </div>
+              <div className="w-full sm:col-span-1 md:col-span-1">
                 <TextField
                   fullWidth
                   select
@@ -205,8 +204,8 @@ const StudentMockExamsPage: React.FC = () => {
                   <MenuItem value="medium">Medium</MenuItem>
                   <MenuItem value="hard">Hard</MenuItem>
                 </TextField>
-              </Grid>
-              <Grid item xs={12} sm={12} md={4} className="flex justify-end gap-2">
+              </div>
+              <div className="col-span-1 sm:col-span-2 md:col-span-2 flex justify-end gap-2">
                 <Tooltip title="View attempt history">
                   <IconButton
                     onClick={() => setShowHistory(!showHistory)}
@@ -217,8 +216,8 @@ const StudentMockExamsPage: React.FC = () => {
                     </Badge>
                   </IconButton>
                 </Tooltip>
-              </Grid>
-            </Grid>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -275,7 +274,7 @@ const StudentMockExamsPage: React.FC = () => {
             <Alert severity="info" className="bg-white dark:bg-slate-800">No exams found. Try adjusting your filters.</Alert>
           ) : (
             <>
-              <Grid container spacing={3}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {exams.map((exam, idx) => (
                   <motion.div
                     key={exam.id}
@@ -283,7 +282,7 @@ const StudentMockExamsPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
                   >
-                    <Grid item xs={12} sm={6} md={4} sx={{ height: '100%' }}>
+                    <div className="w-full sm:w-1/2 md:w-1/3 h-full">
                       <Card className="h-full hover:shadow-xl transition-shadow bg-white dark:bg-slate-800">
                       <CardContent className="pb-2">
                         <div className="flex justify-between items-start mb-3">
@@ -344,10 +343,10 @@ const StudentMockExamsPage: React.FC = () => {
                         </Button>
                       </CardActions>
                     </Card>
-                    </Grid>
+                    </div>
                   </motion.div>
                 ))}
-              </Grid>
+              </div>
 
               {/* Pagination */}
               <div className="flex justify-center mt-8">

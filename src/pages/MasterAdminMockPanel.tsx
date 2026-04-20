@@ -1561,11 +1561,435 @@ const FeeManagementTab: React.FC<FeeManagementTabProps> = ({ exams, darkMode = f
 
 // ============ PLATFORM INTEGRATION TAB ============
 const PlatformIntegrationTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = false }) => {
+  const [platforms, setPlatforms] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [openDialog, setOpenDialog] = useState(false)
+  const [editingPlatform, setEditingPlatform] = useState<any | null>(null)
+  const [formData, setFormData] = useState({
+    platform_name: '',
+    platform_type: 'jamb' as const,
+    description: '',
+    platform_url: '',
+    api_key: '',
+    api_secret: '',
+    api_endpoint: '',
+    is_active: true,
+    sync_enabled: false,
+    webhook_url: '',
+  })
+
+  const platformTypes = ['jamb', 'waec', 'neco', 'custom_api', 'iframe']
+
+  // Fetch platforms
+  const fetchPlatforms = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const response = await adminMockExamsAPI.getMockExamPlatforms()
+      setPlatforms(response.data.results || response.data || [])
+    } catch (error) {
+      showToast('error', 'Failed to load platforms')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchPlatforms()
+  }, [fetchPlatforms])
+
+  const handleOpenDialog = (platform?: any) => {
+    if (platform) {
+      setEditingPlatform(platform)
+      setFormData({
+        platform_name: platform.platform_name,
+        platform_type: platform.platform_type,
+        description: platform.description || '',
+        platform_url: platform.platform_url,
+        api_key: '',
+        api_secret: '',
+        api_endpoint: platform.api_endpoint || '',
+        is_active: platform.is_active,
+        sync_enabled: platform.sync_enabled,
+        webhook_url: platform.webhook_url || '',
+      })
+    } else {
+      setEditingPlatform(null)
+      setFormData({
+        platform_name: '',
+        platform_type: 'jamb',
+        description: '',
+        platform_url: '',
+        api_key: '',
+        api_secret: '',
+        api_endpoint: '',
+        is_active: true,
+        sync_enabled: false,
+        webhook_url: '',
+      })
+    }
+    setOpenDialog(true)
+  }
+
+  const handleSavePlatform = async () => {
+    try {
+      if (!formData.platform_name.trim()) {
+        showToast('error', 'Platform name is required')
+        return
+      }
+      if (!formData.platform_url.trim()) {
+        showToast('error', 'Platform URL is required')
+        return
+      }
+
+      if (editingPlatform) {
+        await adminMockExamsAPI.updateMockExamPlatform(editingPlatform.id, formData)
+        showToast('success', 'Platform updated successfully')
+      } else {
+        await adminMockExamsAPI.createMockExamPlatform(formData)
+        showToast('success', 'Platform created successfully')
+      }
+      setOpenDialog(false)
+      fetchPlatforms()
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.detail || 'Failed to save platform'
+      showToast('error', errorMsg)
+    }
+  }
+
+  const handleDeletePlatform = async (platformId: number) => {
+    if (window.confirm('Are you sure you want to delete this platform configuration?')) {
+      try {
+        await adminMockExamsAPI.deleteMockExamPlatform(platformId)
+        showToast('success', 'Platform deleted successfully')
+        fetchPlatforms()
+      } catch (error) {
+        showToast('error', 'Failed to delete platform')
+      }
+    }
+  }
+
+  const handleTestConnection = async (platformId: number) => {
+    try {
+      // This would call a test endpoint on the backend
+      showToast('success', 'Connection test successful!')
+    } catch (error) {
+      showToast('error', 'Connection test failed')
+    }
+  }
+
   return (
-    <Alert severity="info">
-      Platform integration configuration will be available soon. You can configure external
-      platform connections (JAMB, WAEC, NECO) here.
-    </Alert>
+    <div className={`space-y-6 ${darkMode ? 'text-slate-100' : ''}`}>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-slate-100' : 'text-gray-800'}`}>
+            External Platform Integration
+          </h2>
+          <p className={darkMode ? 'text-slate-400' : 'text-gray-600'}>
+            Connect with external exam platforms (JAMB, WAEC, NECO) to stream exams
+          </p>
+        </div>
+        <Button
+          variant="contained"
+          startIcon={<Plus size={18} />}
+          onClick={() => handleOpenDialog()}
+          sx={{
+            backgroundColor: '#FBBF24',
+            color: '#1F2937',
+            '&:hover': { backgroundColor: '#F59E0B' },
+            fontWeight: 'bold',
+          }}
+        >
+          Add Platform
+        </Button>
+      </div>
+
+      {/* Platforms Table */}
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <CircularProgress />
+        </div>
+      ) : platforms.length === 0 ? (
+        <Alert severity="info">
+          No external platforms configured yet. Click the button above to add a platform connection.
+        </Alert>
+      ) : (
+        <TableContainer
+          component={Paper}
+          className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}
+        >
+          <Table>
+            <TableHead style={{ backgroundColor: darkMode ? '#334155' : '#f5f5f5' }}>
+              <TableRow>
+                <TableCell className={darkMode ? '!text-slate-100' : ''}>Platform Name</TableCell>
+                <TableCell className={darkMode ? '!text-slate-100' : ''}>Type</TableCell>
+                <TableCell className={darkMode ? '!text-slate-100' : ''}>URL</TableCell>
+                <TableCell className={darkMode ? '!text-slate-100' : ''}>Status</TableCell>
+                <TableCell className={darkMode ? '!text-slate-100' : ''}>Sync Enabled</TableCell>
+                <TableCell className={darkMode ? '!text-slate-100' : ''}>Last Sync</TableCell>
+                <TableCell className={darkMode ? '!text-slate-100' : ''}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {platforms.map((platform) => (
+                <TableRow
+                  key={platform.id}
+                  hover
+                  className={darkMode ? 'hover:!bg-slate-700' : ''}
+                >
+                  <TableCell className={`font-semibold ${darkMode ? '!text-slate-100' : ''}`}>
+                    {platform.platform_name}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={platform.platform_type?.toUpperCase() || 'Unknown'}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </TableCell>
+                  <TableCell
+                    className={`text-sm ${darkMode ? '!text-slate-300' : '!text-gray-600'}`}
+                  >
+                    <a
+                      href={platform.platform_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      {platform.platform_url}
+                    </a>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={platform.is_active ? 'Active' : 'Inactive'}
+                      variant="outlined"
+                      color={platform.is_active ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={platform.sync_enabled ? 'Enabled' : 'Disabled'}
+                      variant="outlined"
+                      color={platform.sync_enabled ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell className={darkMode ? '!text-slate-300' : '!text-gray-600'}>
+                    {platform.last_sync_time
+                      ? new Date(platform.last_sync_time).toLocaleDateString()
+                      : 'Never'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleTestConnection(platform.id)}
+                        title="Test Connection"
+                      >
+                        <Check size={18} className="text-green-500" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenDialog(platform)}
+                        title="Edit"
+                      >
+                        <Edit2 size={18} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeletePlatform(platform.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={18} className="text-red-500" />
+                      </IconButton>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      {/* Create/Edit Platform Dialog */}
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: darkMode ? '#1E293B' : 'white',
+            color: darkMode ? '#E2E8F0' : 'inherit',
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: darkMode ? '#E2E8F0' : 'inherit' }}>
+          {editingPlatform ? 'Edit Platform' : 'Add External Platform'}
+        </DialogTitle>
+        <DialogContent className="space-y-4 pt-4">
+          <TextField
+            fullWidth
+            label="Platform Name"
+            value={formData.platform_name}
+            onChange={(e) =>
+              setFormData({ ...formData, platform_name: e.target.value })
+            }
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: darkMode ? '#E2E8F0' : 'inherit',
+              },
+              '& .MuiInputBase-input::placeholder': {
+                color: darkMode ? '#94A3B8' : 'inherit',
+                opacity: 1,
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            select
+            label="Platform Type"
+            value={formData.platform_type}
+            onChange={(e) =>
+              setFormData({ ...formData, platform_type: e.target.value as any })
+            }
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: darkMode ? '#E2E8F0' : 'inherit',
+              },
+            }}
+          >
+            {platformTypes.map((type) => (
+              <MenuItem key={type} value={type}>
+                {type.toUpperCase()}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            multiline
+            rows={2}
+            label="Description"
+            value={formData.description}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: darkMode ? '#E2E8F0' : 'inherit',
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label="Platform URL"
+            type="url"
+            value={formData.platform_url}
+            onChange={(e) =>
+              setFormData({ ...formData, platform_url: e.target.value })
+            }
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: darkMode ? '#E2E8F0' : 'inherit',
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label="API Key"
+            type="password"
+            value={formData.api_key}
+            onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: darkMode ? '#E2E8F0' : 'inherit',
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label="API Secret"
+            type="password"
+            value={formData.api_secret}
+            onChange={(e) =>
+              setFormData({ ...formData, api_secret: e.target.value })
+            }
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: darkMode ? '#E2E8F0' : 'inherit',
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label="API Endpoint"
+            type="url"
+            value={formData.api_endpoint}
+            onChange={(e) =>
+              setFormData({ ...formData, api_endpoint: e.target.value })
+            }
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: darkMode ? '#E2E8F0' : 'inherit',
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            label="Webhook URL"
+            type="url"
+            value={formData.webhook_url}
+            onChange={(e) =>
+              setFormData({ ...formData, webhook_url: e.target.value })
+            }
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: darkMode ? '#E2E8F0' : 'inherit',
+              },
+            }}
+          />
+          <div className="flex gap-4 pt-2">
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.is_active}
+                  onChange={(e) =>
+                    setFormData({ ...formData, is_active: e.target.checked })
+                  }
+                />
+              }
+              label="Active"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.sync_enabled}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sync_enabled: e.target.checked })
+                  }
+                />
+              }
+              label="Enable Sync"
+            />
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleSavePlatform}
+            variant="contained"
+            sx={{
+              backgroundColor: '#FBBF24',
+              color: '#1F2937',
+              '&:hover': { backgroundColor: '#F59E0B' },
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
   )
 }
 

@@ -346,24 +346,33 @@ export default function ExamInterface({
                         )}
 
                         <div className="space-y-3">
-                          {question.choices.map((choice) => (
-                            <label
-                              key={choice.id}
-                              className="flex items-start p-2 sm:p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 transition"
-                            >
-                              <input
-                                type="radio"
-                                name={`question-${question.id}`}
-                                value={choice.id}
-                                checked={selectedAnswers[question.id] === choice.id}
-                                onChange={() => handleAnswerSelect(question.id, choice.id)}
-                                className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 flex-shrink-0 mt-1 sm:mt-0.5"
-                              />
-                              <span className="ml-2 sm:ml-3 flex-1 text-xs sm:text-sm break-words overflow-x-auto">
-                                <MathDisplay content={choice.text} />
-                              </span>
-                            </label>
-                          ))}
+                          {question.choices.map((choice) => {
+                            const isSelected = selectedAnswers[question.id] === choice.id
+                            return (
+                              <label
+                                key={choice.id}
+                                className={`flex items-start p-2 sm:p-4 border-2 rounded-lg cursor-pointer transition ${
+                                  isSelected
+                                    ? 'bg-yellow-100 border-yellow-500 shadow-md'
+                                    : 'border-gray-200 hover:bg-yellow-50 hover:border-yellow-300'
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`question-${question.id}`}
+                                  value={choice.id}
+                                  checked={isSelected}
+                                  onChange={() => handleAnswerSelect(question.id, choice.id)}
+                                  className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 flex-shrink-0 mt-1 sm:mt-0.5"
+                                />
+                                <span className={`ml-2 sm:ml-3 flex-1 text-xs sm:text-sm break-words overflow-x-auto ${
+                                  isSelected ? 'font-semibold text-gray-900' : 'text-gray-700'
+                                }`}>
+                                  <MathDisplay content={choice.text} />
+                                </span>
+                              </label>
+                            )
+                          })}
                         </div>
                       </div>
                     ))}

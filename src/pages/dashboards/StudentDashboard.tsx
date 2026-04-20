@@ -56,6 +56,7 @@ import StudentMockExamsPage from '../StudentMockExamsPage';
 import MockExamInterface from '../MockExamInterface';
 import MockExamResultsPage from '../MockExamResultsPage';
 import { DownloadsCard } from '../../components/Materials';
+import StudentLessonsPage from '../../components/StudentLessonsPage';
 
 // --- Types ---
 interface DashboardSummary {
@@ -321,42 +322,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     if (p === 'overview') return normalized === base || normalized === `${base}/overview`;
     return normalized === `${base}/${p}`;
   };
-
-  // --- Sub-Component: Lessons Page (LMS) ---
-  const LessonsPage = () => (
-    <div className="space-y-6">
-      <div className={`bg-gradient-to-r from-yellow-600 to-orange-600 rounded-2xl p-8 text-white relative overflow-hidden`}>
-        <div className="relative z-10">
-          <h2 className="text-3xl font-bold mb-2">Learn by Topics</h2>
-          <p className="opacity-90">Step-by-step lessons with explanations and examples</p>
-        </div>
-        <BookMarked className="absolute right-8 top-1/2 -translate-y-1/2 w-32 h-32 text-white opacity-20" />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {['English Language', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics'].map((subject) => (
-          <div key={subject} className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} rounded-2xl border p-6 hover:shadow-lg transition-shadow cursor-pointer`}>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{subject}</h3>
-                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'} mt-1`}>12 topics • 45 lessons</p>
-              </div>
-              <BookOpen className="w-6 h-6 text-yellow-500" />
-            </div>
-            <div className={`w-full bg-gray-200 rounded-full h-2 ${darkMode ? 'bg-slate-600' : ''}`}>
-              <div className="bg-gradient-to-r from-yellow-500 to-orange-500 h-2 rounded-full" style={{ width: `${Math.random() * 100}%` }}></div>
-            </div>
-            <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'} mt-2`}>Progress: {Math.round(Math.random() * 100)}%</p>
-          </div>
-        ))}
-      </div>
-
-      <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'} rounded-2xl border p-6 mt-8`}>
-        <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>📌 Coming Soon</h3>
-        <p className={`${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>Our comprehensive LMS with interactive lessons, videos, and step-by-step learning modules will be available soon. Get ready to learn differently!</p>
-      </div>
-    </div>
-  );
 
   // --- Sub-Component: Referrer Page ---
   const ReferrerPage = () => (
@@ -801,7 +766,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     <Route path="courses" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><MyCourses /></div>} />
                     <Route path="courses/:id" element={<div className={`w-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><CoursePlayer /></div>} />
                     <Route path="courses/:id/details" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><CourseDetail /></div>} />
-                    <Route path="lessons" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><LessonsPage /></div>} />
+                    <Route path="lessons" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><StudentLessonsPage darkMode={darkMode} /></div>} />
                     <Route path="cbt" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><CBTPage /></div>} />
                     <Route path="mock-exams" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><StudentMockExamsPage /></div>} />
                     <Route path="mock-exams/attempt/:attemptId" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><MockExamInterface /></div>} />

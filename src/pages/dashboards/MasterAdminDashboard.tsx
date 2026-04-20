@@ -42,7 +42,8 @@ import {
   X,
   RefreshCw,
   Zap,
-  File
+  File,
+  BookMarked
 } from 'lucide-react'
 // Recharts for analytics charts
 import {
@@ -79,6 +80,7 @@ import VerificationDashboard from '../../components/VerificationDashboard'
 import QuestionManagementPage from '../questions/QuestionManagementPage'
 import MasterAdminMockPanel from '../MasterAdminMockPanel'
 import { CreateMaterialForm, MaterialsList, MaterialsActivitySection } from '../../components/Materials'
+import LessonManager from '../../components/dashboards/LessonManager'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -639,6 +641,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'admins', label: 'Admins', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
     { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'materials', label: 'Materials', icon: <File className="w-5 h-5" />, permission: 'can_manage_materials' as PermissionKey },
+    { id: 'lessons', label: 'Lesson Panel', icon: <BookMarked className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     { id: 'mock-exams', label: 'Mock Exams', icon: <Zap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     { id: 'signature', label: 'Signature', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
@@ -2446,6 +2449,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       <MaterialsList key={materialsRefreshKey} onRefresh={() => setMaterialsRefreshKey(prev => prev + 1)} />
                     </div>
                   </div>
+                )}
+
+                {tab === 'lessons' && (
+                  <LessonManager />
                 )}
 
                 {tab === 'courseDetail' && selectedCourseId && (

@@ -36,7 +36,8 @@ import {
   Moon,
   Sun,
   BookMarked,
-  Gift
+  Gift,
+  MessageSquare
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import MyCourses from '../MyCourses';
@@ -45,6 +46,7 @@ import PaymentsPage from '../Payments';
 import Profile from '../Profile';
 import Cart from '../Cart';
 import UserMessages from '../../components/UserMessages';
+import DirectMessageInbox from '../../components/DirectMessageInbox';
 import ProgressPage from '../../components/cbt/ProgressPage';
 import CoursePlayer from '../CoursePlayer';
 import CourseDetail from '../CourseDetail';
@@ -88,6 +90,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
+  const [showDirectMessages, setShowDirectMessages] = useState(false);
+  const [directMessageUnreadCount, setDirectMessageUnreadCount] = useState(0);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('studentDashboardDarkMode');
     return saved ? JSON.parse(saved) : false;
@@ -107,6 +111,25 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
 
   const base = '/student';
   const loggedOutRef = useRef(false);
+
+  // Fetch unread direct message count
+  useEffect(() => {
+    const fetchDirectMessageUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem('access');
+        if (!token) return;
+        const response = await api.get('/messages/direct/unread_count/');
+        setDirectMessageUnreadCount(response.data.unread_count || 0);
+      } catch (err) {
+        console.warn('Failed to fetch unread message count:', err);
+      }
+    };
+
+    fetchDirectMessageUnreadCount();
+    // Refresh every 30 seconds to keep count up to date
+    const interval = setInterval(fetchDirectMessageUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Save dark mode preference
   useEffect(() => {
@@ -537,6 +560,14 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowInbox(true)} className={`relative p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`} title="Inbox">
                 <Mail className={`w-5 h-5 ${darkMode ? 'text-slate-400' : 'text-gray-600'}`} />
               </motion.button>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowDirectMessages(true)} className={`relative p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`} title="Direct Messages">
+                <MessageSquare className={`w-5 h-5 ${darkMode ? 'text-slate-400' : 'text-gray-600'}`} />
+                {directMessageUnreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-yellow-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {directMessageUnreadCount}
+                  </span>
+                )}
+              </motion.button>
               <div className={`hidden md:flex items-center space-x-3 pl-4 border-l ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
                 <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">{summary?.username?.charAt(0).toUpperCase()}</div>
                 <div>
@@ -816,6 +847,34 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
 
       <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} />
       <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
+      {/* Direct Messages Modal */}
+      {showDirectMessages && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-auto shadow-2xl"
+          >
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Direct Messages from Administrator</h2>
+              <button
+                onClick={() => setShowDirectMessages(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <DirectMessageInbox />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

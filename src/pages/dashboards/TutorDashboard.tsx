@@ -31,7 +31,8 @@ import {
   Award,
   CheckCircle,
   CreditCard,
-  Edit3
+  Edit3,
+  MessageSquare
 } from 'lucide-react';
 import { FileText } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
@@ -45,6 +46,7 @@ import PaystackSubAccountForm from '../../components/PaystackSubAccountForm';
 import FlutterwaveSubAccountSetup from '../../components/FlutterwaveSubAccountSetup';
 import MessageModal from '../../components/MessageModal';
 import UserMessages from '../../components/UserMessages';
+import DirectMessageInbox from '../../components/DirectMessageInbox';
 import SchedulePage from '../../components/SchedulePage';
 import GospelVideoModal from '../../components/GospelVideoModal';
 import TutorCompliancePage from './TutorCompliancePage';
@@ -104,6 +106,8 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
+  const [showDirectMessages, setShowDirectMessages] = useState(false);
+  const [directMessageUnreadCount, setDirectMessageUnreadCount] = useState(0);
   const { unreadCount } = useNotifications(false);
 
   const handleLogout = () => {
@@ -166,6 +170,25 @@ export default function TutorDashboard(props: TutorDashboardProps) {
   // --- 2. EFFECTS & ALGORITHMS ---
   // Start token refresher to extend access token while user is active on this dashboard
   useTokenRefresher(50) // refresh every 50 minutes
+
+  // Fetch unread direct message count
+  useEffect(() => {
+    const fetchDirectMessageUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem('access');
+        if (!token) return;
+        const response = await api.get('/messages/direct/unread_count/');
+        setDirectMessageUnreadCount(response.data.unread_count || 0);
+      } catch (err) {
+        console.warn('Failed to fetch unread message count:', err);
+      }
+    };
+
+    fetchDirectMessageUnreadCount();
+    // Refresh every 30 seconds to keep count up to date
+    const interval = setInterval(fetchDirectMessageUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -688,6 +711,14 @@ export default function TutorDashboard(props: TutorDashboardProps) {
                   </span>
                 )}
               </motion.button>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowDirectMessages(true)} className="relative p-2 rounded-lg hover:bg-gray-100">
+                <MessageSquare className="w-5 h-5 text-gray-600" />
+                {directMessageUnreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-yellow-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {directMessageUnreadCount}
+                  </span>
+                )}
+              </motion.button>
               <div className="hidden md:flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold">{summary?.username?.charAt(0).toUpperCase() || 'T'}</div>
                 <div><p className="text-sm font-semibold text-gray-900">{summary?.username || 'Tutor'}</p><p className="text-xs text-gray-500">Certified Tutor</p></div>
@@ -912,6 +943,34 @@ export default function TutorDashboard(props: TutorDashboardProps) {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 flex justify-around items-center h-16">{navItems.slice(0,4).map(item => (<Link key={item.path} to={item.path} className={`flex flex-col items-center ${isActivePath(item.path)?'text-yellow-600':'text-gray-600'}`}>{item.icon}<span className="text-xs">{item.label}</span></Link>))}</div>
       <MessageModal isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} />
       <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
+      {/* Direct Messages Modal */}
+      {showDirectMessages && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-auto shadow-2xl"
+          >
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Direct Messages from Administrator</h2>
+              <button
+                onClick={() => setShowDirectMessages(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <DirectMessageInbox />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

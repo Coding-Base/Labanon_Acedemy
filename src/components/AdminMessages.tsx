@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, CheckCircle, Clock, AlertCircle, Reply, Trash2, MessageSquare } from 'lucide-react';
+import { Mail, CheckCircle, Clock, AlertCircle, Reply, Trash2, MessageSquare, Send } from 'lucide-react';
 import axios from 'axios';
+import DirectMessages from './DirectMessages';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -17,6 +18,7 @@ interface Message {
 }
 
 export default function AdminMessages() {
+  const [tab, setTab] = useState<'support' | 'direct'>('support');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,8 +37,10 @@ export default function AdminMessages() {
   });
 
   useEffect(() => {
-    loadMessages();
-  }, []);
+    if (tab === 'support') {
+      loadMessages();
+    }
+  }, [tab]);
 
   async function loadMessages() {
     setLoading(true);
@@ -164,15 +168,46 @@ export default function AdminMessages() {
     <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Messages & Communications</h2>
 
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600" />
-          <span className="text-red-700">{error}</span>
+      {/* Tab Navigation */}
+      <div className="mb-6 border-b border-gray-200">
+        <div className="flex gap-4">
+          <button
+            onClick={() => setTab('support')}
+            className={`pb-3 px-1 font-semibold text-sm flex items-center gap-2 transition border-b-2 ${
+              tab === 'support'
+                ? 'text-yellow-600 border-yellow-600'
+                : 'text-gray-600 border-transparent hover:text-gray-900'
+            }`}
+          >
+            <Mail size={18} />
+            Support Tickets
+          </button>
+          <button
+            onClick={() => setTab('direct')}
+            className={`pb-3 px-1 font-semibold text-sm flex items-center gap-2 transition border-b-2 ${
+              tab === 'direct'
+                ? 'text-yellow-600 border-yellow-600'
+                : 'text-gray-600 border-transparent hover:text-gray-900'
+            }`}
+          >
+            <Send size={18} />
+            Direct Messages
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {/* Support Tickets Tab */}
+      {tab === 'support' && (
+        <>
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <span className="text-red-700">{error}</span>
+            </div>
+          )}
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl shadow p-4">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-600">Total Messages</div>
@@ -375,7 +410,14 @@ export default function AdminMessages() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </div>        </>
+      )}
+
+      {/* Direct Messages Tab */}
+      {tab === 'direct' && (
+        <div className="bg-white rounded-lg shadow overflow-hidden h-[600px]">
+          <DirectMessages />
+        </div>
+      )}    </div>
   );
 }

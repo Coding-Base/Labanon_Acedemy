@@ -42,7 +42,7 @@ import {
   X,
   RefreshCw,
   Zap,
-  File,
+  File as FileIcon,
   BookMarked
 } from 'lucide-react'
 // Recharts for analytics charts
@@ -68,6 +68,7 @@ import InstitutionSignature from './InstitutionSignature'
 import MasterSignature from './MasterSignature'
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies'
 import SubAdminForm from '../../components/dashboards/SubAdminForm'
+import PermissionManager from '../../components/dashboards/PermissionManager'
 import AdminMessages from '../../components/AdminMessages'
 import AnalyticsDrillModal from '../../components/AnalyticsDrillModal'
 import AdminCourseDetail from '../../pages/AdminCourseDetail'
@@ -220,6 +221,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [splitLoading, setSplitLoading] = useState(false)
   const [splitMessage, setSplitMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [showPermissionManager, setShowPermissionManager] = useState(false)
   const [blogs, setBlogs] = useState<any[]>([])
   const [blogsLoading, setBlogsLoading] = useState(false)
   const [showAllSignups, setShowAllSignups] = useState(false)
@@ -640,7 +642,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'admins', label: 'Admins', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
     { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
-    { id: 'materials', label: 'Materials', icon: <File className="w-5 h-5" />, permission: 'can_manage_materials' as PermissionKey },
+    { id: 'materials', label: 'Materials', icon: <FileIcon className="w-5 h-5" />, permission: 'can_manage_materials' as PermissionKey },
     { id: 'lessons', label: 'Lesson Panel', icon: <BookMarked className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     { id: 'mock-exams', label: 'Mock Exams', icon: <Zap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
@@ -5010,6 +5012,24 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 </div>
               </div>
               )}
+
+              {/* Permissions Management Section */}
+              {!subadminPermissions && (
+              <div className="border-t pt-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Permissions Management</h3>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowPermissionManager(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold"
+                  >
+                    🔐 Manage Permissions
+                  </motion.button>
+                </div>
+                <p className="text-gray-600 text-sm">Configure granular tab-based permissions for all sub-admins. Control access to 25+ dashboard features including Users, Courses, Exams, Payments, Blog, Messages, and more.</p>
+              </div>
+              )}
             </div>
 
             <div className="border-t p-6 flex gap-4 justify-end bg-gray-50">
@@ -5032,6 +5052,15 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         onClose={() => setShowSubAdminForm(false)}
         onSuccess={() => {
           setShowSubAdminForm(false)
+        }}
+      />
+
+      {/* Permission Manager Modal */}
+      <PermissionManager
+        isOpen={showPermissionManager}
+        onClose={() => setShowPermissionManager(false)}
+        onSuccess={() => {
+          setShowPermissionManager(false)
         }}
       />
       </>

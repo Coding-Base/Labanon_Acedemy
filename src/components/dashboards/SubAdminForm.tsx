@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { X, AlertCircle, CheckCircle, Trash2, Loader2, UserCog } from 'lucide-react'
+import { X, AlertCircle, CheckCircle, Trash2, Loader2, UserCog, Plus } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
@@ -51,7 +51,7 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([])
-  const [showForm, setShowForm] = useState(true)
+  const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -242,27 +242,38 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
           <div className="flex gap-2 mb-6 border-b border-gray-200">
             <button
               onClick={() => {
+                setShowForm(false)
+                setError('')
+              }}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                !showForm
+                  ? 'border-yellow-500 text-yellow-600 font-semibold'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📋 Sub-Admin List ({subAdmins.length})
+            </button>
+            <button
+              onClick={() => {
                 setShowForm(true)
                 if (!editingId) setError('')
               }}
               className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-                showForm
-                  ? 'border-yellow-500 text-green-600'
+                showForm && !editingId
+                  ? 'border-yellow-500 text-yellow-600 font-semibold'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              {editingId ? '🔐 Update Permissions' : '➕ Create New Sub-Admin'}
+              ➕ Create New
             </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-                !showForm
-                  ? 'border-yellow-500 text-green-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              All Sub-Admins ({subAdmins.length})
-            </button>
+            {editingId && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="px-4 py-2 font-medium border-b-2 border-yellow-500 text-yellow-600 font-semibold transition-colors cursor-default"
+              >
+                🔐 Update Permissions
+              </button>
+            )}
           </div>
 
           {/* Messages */}
@@ -407,8 +418,20 @@ export default function SubAdminForm({ isOpen, onClose, onSuccess }: SubAdminFor
                 </div>
               ) : subAdmins.length === 0 ? (
                 <div className="text-center py-12">
-                  <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-600">No sub-admins created yet</p>
+                  <UserCog className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-700 font-medium mb-2">No sub-admin accounts yet</p>
+                  <p className="text-gray-600 text-sm mb-6">Create one to delegate specific dashboard features</p>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setShowForm(true)
+                      setEditingId(null)
+                    }}
+                    className="px-6 py-2 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 transition-colors inline-flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" /> Create Sub-Admin
+                  </motion.button>
                 </div>
               ) : (
                 <div className="space-y-3">

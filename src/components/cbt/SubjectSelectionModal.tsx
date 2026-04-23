@@ -115,7 +115,10 @@ export default function SubjectSelectionModal({
         )
         const data = await res.json()
 
-        if (!res.ok || !data.unlocked) {
+        // Allow access if: 1) user has unlock, OR 2) user has trial attempts available
+        const hasAccess = data.unlocked || data.trial_available
+        
+        if (!res.ok || !hasAccess) {
           const qs = new URLSearchParams({
             type: 'interview',
             exam_id: String(exam?.id || ''),

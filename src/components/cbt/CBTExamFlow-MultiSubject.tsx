@@ -73,7 +73,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         })
         const data = await res.json()
 
-        if (res.ok && data.unlocked) {
+        if (res.ok && (data.unlocked || data.trial_available)) {
           setFlowStep('subjects')
         } else {
           // Redirect to activation/checkout page

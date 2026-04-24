@@ -225,8 +225,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         // --- ALGO 2: SMART RATING ---
         // Base 3.0 + (0.08 per exam taken), Max 5.0
         const attemptsCount = attempts.length;
-        const newRating = Math.min(5.0, 3.0 + (attemptsCount * 0.08));
-        setCalculatedRating(parseFloat(newRating.toFixed(2)));
+        const newRating = Math.min(5.0, 3.0 + (Number(attemptsCount || 0) * 0.08));
+        setCalculatedRating(Number(Number(newRating).toFixed(2)) || 3.0);
 
         // --- ALGO 3: REAL STUDY HOURS ---
         // Sum of CBT 'time_taken_seconds' + (Course Progress * estimated duration)
@@ -240,7 +240,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           return acc + ((progress / 100) * duration);
         }, 0);
 
-        setRealStudyHours(parseFloat((examHours + courseHours).toFixed(1)));
+        const totalHours = Number(examHours || 0) + Number(courseHours || 0);
+        setRealStudyHours(Number(totalHours.toFixed(1)) || 0);
 
         // --- ALGO 4: GLOBAL LEADERBOARD & RANK ---
         // Fetch real leaderboard data from backend
@@ -453,7 +454,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     {user.exams_taken} Tests
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-yellow-600">
-                    {parseFloat(user.score.toFixed(1))} pts
+                    {Number(user.score || 0).toFixed(1)} pts
                   </td>
                 </tr>
               ))}
@@ -474,7 +475,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-yellow-600 font-bold">{parseFloat(user.score.toFixed(1))} pts</div>
+                  <div className="text-yellow-600 font-bold">{Number(user.score || 0).toFixed(1)} pts</div>
                   <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-400'}`}>#{index + 1}</div>
                 </div>
               </div>
@@ -783,7 +784,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mr-2 ${darkMode ? 'bg-slate-600 text-slate-100' : 'bg-gray-300 text-gray-700'}`}>{user.avatar_initial}</div>
                                       <div className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-gray-900'}`}>{user.name}</div>
                                     </div>
-                                    <div className={`text-sm font-bold text-yellow-700`}>{parseFloat(user.score.toFixed(1))}</div>
+                                    <div className={`text-sm font-bold text-yellow-700`}>{Number(user.score || 0).toFixed(1)}</div>
                                   </div>
                                 ))}
                                 {leaderboard.length === 0 && <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-gray-500'} text-center py-4`}>No data available</div>}

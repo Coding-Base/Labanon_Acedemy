@@ -101,6 +101,15 @@ const MockExamResultsPage: React.FC = () => {
             return normalized as MockExamResult;
           });
 
+          // compute totals and percentage from normalized results if backend did not provide
+          const totalMarksPossible = (mockExam.total_marks ?? mockExam.total_marks_per_exam ?? 0) || normalizedResults.reduce((s, r: any) => s + ((r.max_marks ?? 0) || 0), 0);
+          const totalObt = normalizedResults.reduce((s, r: any) => s + (Number(r.marks_obtained) || 0), 0);
+          const pct = totalMarksPossible > 0 ? (totalObt / totalMarksPossible) * 100 : 0;
+          // derive grade if not provided
+          const derivedGrade = attemptData.grade || attemptData.letter_grade || (
+            pct >= 70 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'F'
+          );
+
           const resultData: ResultData = {
             id: attemptData.id,
             attempt: attemptData.id,
@@ -110,9 +119,9 @@ const MockExamResultsPage: React.FC = () => {
               passing_marks: mockExam.passing_marks ?? mockExam.passing_mark ?? 0,
               difficulty_level: mockExam.difficulty_level || mockExam.difficulty || 'mixed',
             },
-            total_marks_obtained: totalObtained,
-            grade: attemptData.grade || attemptData.letter_grade || '',
-            percentage: percentage,
+            total_marks_obtained: totalObt,
+            grade: derivedGrade,
+            percentage: pct,
             time_spent: timeSpent,
             subject_wise_stats: attemptData.subject_wise_stats || [],
             results: normalizedResults,
@@ -149,6 +158,13 @@ const MockExamResultsPage: React.FC = () => {
             return normalized as MockExamResult;
           });
 
+          const totalMarksPossible = (mockExam.total_marks ?? mockExam.total_marks_per_exam ?? 0) || normalizedResults.reduce((s, r: any) => s + ((r.max_marks ?? 0) || 0), 0);
+          const totalObt2 = normalizedResults.reduce((s, r: any) => s + (Number(r.marks_obtained) || 0), 0);
+          const pct2 = totalMarksPossible > 0 ? (totalObt2 / totalMarksPossible) * 100 : 0;
+          const derivedGrade2 = attemptDetail.grade || attemptDetail.letter_grade || (
+            pct2 >= 70 ? 'A' : pct2 >= 60 ? 'B' : pct2 >= 50 ? 'C' : pct2 >= 40 ? 'D' : 'F'
+          );
+
           const resultData: ResultData = {
             id: attemptDetail.id,
             attempt: attemptDetail.id,
@@ -158,9 +174,9 @@ const MockExamResultsPage: React.FC = () => {
               passing_marks: mockExam.passing_marks ?? mockExam.passing_mark ?? 0,
               difficulty_level: mockExam.difficulty_level || mockExam.difficulty || 'mixed',
             },
-            total_marks_obtained: totalObtained,
-            grade: attemptDetail.grade || attemptDetail.letter_grade || '',
-            percentage: percentage,
+            total_marks_obtained: totalObt2,
+            grade: derivedGrade2,
+            percentage: pct2,
             time_spent: timeSpent,
             subject_wise_stats: attemptDetail.subject_wise_stats || [],
             results: normalizedResults,
@@ -223,14 +239,14 @@ const MockExamResultsPage: React.FC = () => {
   const isPassed = Number(result.total_marks_obtained) >= Number(result.mock_exam.passing_marks);
   const gradeColor =
     result.grade === 'A'
-      ? '#00C896'
+      ? theme.palette.success.main
       : result.grade === 'B'
-      ? '#FFB84D'
+      ? theme.palette.warning.main
       : result.grade === 'C'
-      ? '#6B63FF'
+      ? theme.palette.secondary.main
       : result.grade === 'D'
-      ? '#FF9500'
-      : '#FF5757';
+      ? theme.palette.info.main
+      : theme.palette.error.main;
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -274,7 +290,7 @@ const MockExamResultsPage: React.FC = () => {
                     variant="determinate"
                     value={Math.min(Math.max(result.percentage, 0), 100)}
                     size={120}
-                    style={{ color: isPassed ? '#00C896' : '#FF5757' }}
+                    style={{ color: isPassed ? theme.palette.success.main : theme.palette.error.main }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-3xl font-bold">{result.percentage.toFixed(1)}%</span>
@@ -300,7 +316,7 @@ const MockExamResultsPage: React.FC = () => {
                   {result.grade}
                 </div>
                 <p className="text-gray-600 text-sm">Grade</p>
-                <p className={`text-lg font-bold mt-2 ${isPassed ? 'text-green-600' : 'text-red-600'}`}>
+                <p className="text-lg font-bold mt-2" style={{ color: isPassed ? theme.palette.success.main : theme.palette.error.main }}>
                   {isPassed ? '✓ PASSED' : '✗ FAILED'}
                 </p>
               </CardContent>
@@ -388,16 +404,16 @@ const MockExamResultsPage: React.FC = () => {
               <h2 className="text-xl font-bold text-gray-800 mb-4">Question Review</h2>
               <TableContainer component={Paper}>
                 <Table>
-                  <TableHead>
-                    <TableRow style={{ backgroundColor: '#f5f5f5' }}>
-                      <TableCell>Q#</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Your Answer</TableCell>
-                      <TableCell>Correct Answer</TableCell>
-                      <TableCell>Marks</TableCell>
-                      <TableCell>Action</TableCell>
-                    </TableRow>
-                  </TableHead>
+                    <TableHead>
+                      <TableRow style={{ backgroundColor: theme.palette.action.hover }}>
+                        <TableCell>Q#</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Your Answer</TableCell>
+                        <TableCell>Correct Answer</TableCell>
+                        <TableCell>Marks</TableCell>
+                        <TableCell>Action</TableCell>
+                      </TableRow>
+                    </TableHead>
                   <TableBody>
                     {result.results.map((res, idx) => (
                       <TableRow key={res.id} hover>

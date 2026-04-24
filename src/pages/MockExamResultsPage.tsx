@@ -19,6 +19,7 @@ import {
   Paper,
   Chip,
   Dialog,
+  useTheme,
 } from '@mui/material';
 import {
   Download,
@@ -60,6 +61,7 @@ const MockExamResultsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const theme = useTheme();
   const [result, setResult] = useState<ResultData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
@@ -71,33 +73,97 @@ const MockExamResultsPage: React.FC = () => {
         // Check if we have data from navigation state (from submission)
         const attemptData = (location.state as any)?.attemptData;
         if (attemptData) {
-          // Transform attempt data to ResultData format
+          // Transform attempt data to ResultData format (normalize different backend shapes)
+          const mockExam = attemptData.mock_exam || attemptData.custom_mock_exam || {};
+          const totalObtained = attemptData.obtained_marks ?? attemptData.total_marks_obtained ?? attemptData.marks_obtained ?? 0;
+          const percentage = typeof attemptData.percentage === 'string' ? parseFloat(attemptData.percentage) : (attemptData.percentage ?? 0);
+          const timeSpent = attemptData.time_spent_seconds ?? attemptData.time_spent ?? attemptData.time_spent_ms ?? 0;
+
+          const rawResults = attemptData.results || attemptData.answers || [];
+          const normalizedResults: MockExamResult[] = (rawResults || []).map((r: any, idx: number) => {
+            const selectedText = r.selected_option_text || r.selected_option?.option_text || r.selected_option?.text || (r.selected_option ? `Option ${r.selected_option}` : null);
+            const correctText = r.correct_option_text || r.correct_option?.option_text || r.correct_option?.text || (r.correct_answer_letter ? `Option ${r.correct_answer_letter}` : null);
+            const marksObtained = r.marks_obtained ?? 0;
+            const maxMarks = r.marks ?? r.max_marks ?? r.marks_possible ?? (r.question?.marks || 0) ?? 0;
+            const isCorrect = r.is_correct ?? (marksObtained > 0);
+            const normalized: any = {
+              id: r.id ?? idx,
+              attempt: attemptData.id,
+              question: r.question,
+              selected_option: r.selected_option ?? null,
+              marks_obtained: marksObtained,
+              is_correct: Boolean(isCorrect),
+              time_taken: r.time_taken ?? 0,
+              max_marks: maxMarks,
+            };
+            if (selectedText) normalized.selected_option_text = selectedText;
+            if (correctText) normalized.correct_option_text = correctText;
+            return normalized as MockExamResult;
+          });
+
           const resultData: ResultData = {
             id: attemptData.id,
             attempt: attemptData.id,
-            mock_exam: attemptData.mock_exam,
-            total_marks_obtained: attemptData.obtained_marks,
-            grade: attemptData.grade,
-            percentage: typeof attemptData.percentage === 'string' ? parseFloat(attemptData.percentage) : attemptData.percentage,
-            time_spent: attemptData.time_spent_seconds,
-            subject_wise_stats: [],
-            results: attemptData.results || [],
+            mock_exam: {
+              title: mockExam.title || '',
+              total_marks: mockExam.total_marks ?? mockExam.total_marks_per_exam ?? 0,
+              passing_marks: mockExam.passing_marks ?? mockExam.passing_mark ?? 0,
+              difficulty_level: mockExam.difficulty_level || mockExam.difficulty || 'mixed',
+            },
+            total_marks_obtained: totalObtained,
+            grade: attemptData.grade || attemptData.letter_grade || '',
+            percentage: percentage,
+            time_spent: timeSpent,
+            subject_wise_stats: attemptData.subject_wise_stats || [],
+            results: normalizedResults,
           };
           setResult(resultData);
         } else {
           // Fallback: fetch from attempt detail endpoint
           const response = await studentMockExamsAPI.getAttemptDetail(attemptIdNum);
           const attemptDetail = response.data;
+          // Normalize fetched attempt detail similarly
+          const mockExam = attemptDetail.mock_exam || attemptDetail.custom_mock_exam || {};
+          const totalObtained = attemptDetail.obtained_marks ?? attemptDetail.total_marks_obtained ?? attemptDetail.marks_obtained ?? 0;
+          const percentage = typeof attemptDetail.percentage === 'string' ? parseFloat(attemptDetail.percentage) : (attemptDetail.percentage ?? 0);
+          const timeSpent = attemptDetail.time_spent_seconds ?? attemptDetail.time_spent ?? 0;
+          const rawResults = attemptDetail.results || attemptDetail.answers || [];
+          const normalizedResults: MockExamResult[] = (rawResults || []).map((r: any, idx: number) => {
+            const selectedText = r.selected_option_text || r.selected_option?.option_text || r.selected_option?.text || (r.selected_option ? `Option ${r.selected_option}` : null);
+            const correctText = r.correct_option_text || r.correct_option?.option_text || r.correct_option?.text || (r.correct_answer_letter ? `Option ${r.correct_answer_letter}` : null);
+            const marksObtained = r.marks_obtained ?? 0;
+            const maxMarks = r.marks ?? r.max_marks ?? r.marks_possible ?? (r.question?.marks || 0) ?? 0;
+            const isCorrect = r.is_correct ?? (marksObtained > 0);
+            const normalized: any = {
+              id: r.id ?? idx,
+              attempt: attemptDetail.id,
+              question: r.question,
+              selected_option: r.selected_option ?? null,
+              marks_obtained: marksObtained,
+              is_correct: Boolean(isCorrect),
+              time_taken: r.time_taken ?? 0,
+              max_marks: maxMarks,
+            };
+            if (selectedText) normalized.selected_option_text = selectedText;
+            if (correctText) normalized.correct_option_text = correctText;
+            return normalized as MockExamResult;
+          });
+
           const resultData: ResultData = {
             id: attemptDetail.id,
             attempt: attemptDetail.id,
-            mock_exam: attemptDetail.mock_exam,
-            total_marks_obtained: attemptDetail.obtained_marks,
-            grade: attemptDetail.grade,
-            percentage: typeof attemptDetail.percentage === 'string' ? parseFloat(attemptDetail.percentage) : attemptDetail.percentage,
-            time_spent: attemptDetail.time_spent_seconds,
-            subject_wise_stats: [],
-            results: attemptDetail.results || [],
+            mock_exam: {
+              title: mockExam.title || '',
+              total_marks: mockExam.total_marks ?? mockExam.total_marks_per_exam ?? 0,
+              passing_marks: mockExam.passing_marks ?? mockExam.passing_mark ?? 0,
+              difficulty_level: mockExam.difficulty_level || mockExam.difficulty || 'mixed',
+            },
+            total_marks_obtained: totalObtained,
+            grade: attemptDetail.grade || attemptDetail.letter_grade || '',
+            percentage: percentage,
+            time_spent: timeSpent,
+            subject_wise_stats: attemptDetail.subject_wise_stats || [],
+            results: normalizedResults,
           };
           setResult(resultData);
         }
@@ -154,7 +220,7 @@ const MockExamResultsPage: React.FC = () => {
     );
   }
 
-  const isPassed = result.total_marks_obtained >= result.mock_exam.passing_marks;
+  const isPassed = Number(result.total_marks_obtained) >= Number(result.mock_exam.passing_marks);
   const gradeColor =
     result.grade === 'A'
       ? '#00C896'
@@ -249,8 +315,8 @@ const MockExamResultsPage: React.FC = () => {
           >
             <Card>
               <CardContent className="p-6 text-center">
-                <BarChart3 size={40} className="mx-auto mb-4 text-blue-600" />
-                <p className="text-2xl font-bold text-gray-800">
+                <BarChart3 size={40} className="mx-auto mb-4" style={{ color: theme.palette.primary.main }} />
+                <p className="text-2xl font-bold text-gray-800 dark:text-slate-100">
                   {formatTime(result.time_spent)}
                 </p>
                 <p className="text-gray-600 text-sm mt-2">Time Spent</p>
@@ -266,8 +332,8 @@ const MockExamResultsPage: React.FC = () => {
           >
             <Card>
               <CardContent className="p-6 text-center">
-                <TrendingUp size={40} className="mx-auto mb-4 text-purple-600" />
-                <p className="text-2xl font-bold text-gray-800">
+                <TrendingUp size={40} className="mx-auto mb-4" style={{ color: theme.palette.primary.main }} />
+                <p className="text-2xl font-bold text-gray-800 dark:text-slate-100">
                   {result.total_marks_obtained}/{result.mock_exam.total_marks}
                 </p>
                 <p className="text-gray-600 text-sm mt-2">Marks Obtained</p>
@@ -353,13 +419,15 @@ const MockExamResultsPage: React.FC = () => {
                             />
                           )}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
-                          {res.selected_option ? `Option ${res.selected_option}` : 'Not Answered'}
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-600">Option A</TableCell>
-                        <TableCell className="font-semibold">
-                          {res.marks_obtained}/{res.marks_obtained}
-                        </TableCell>
+                          <TableCell className="text-sm text-gray-600 dark:text-slate-200">
+                            { (res as any).selected_option_text || (res.selected_option ? `Option ${res.selected_option}` : 'Not Answered') }
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-600 dark:text-slate-200">
+                            { (res as any).correct_option_text || '—' }
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            { (res as any).marks_obtained ?? 0 }/{ (res as any).max_marks ?? 0 }
+                          </TableCell>
                         <TableCell>
                           <Button
                             size="small"

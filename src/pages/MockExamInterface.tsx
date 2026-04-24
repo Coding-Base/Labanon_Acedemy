@@ -19,6 +19,7 @@ import {
   Alert,
 } from '@mui/material';
 import { Clock, ChevronLeft, ChevronRight, AlertCircle, Flag } from 'lucide-react';
+import { useTheme } from '@mui/material';
 import { studentMockExamsAPI, MockExamQuestion, MockExamOption, MockExamAttempt } from '../api/mock_exams_api';
 import showToast from '../utils/toast';
 import { MathText } from '../utils/mathRenderer';
@@ -43,6 +44,7 @@ const MockExamInterface: React.FC = () => {
   const [showQuestionPalette, setShowQuestionPalette] = useState(false);
 
   const attemptIdNum = parseInt(attemptId || '0');
+  const theme = useTheme();
 
   // Fetch attempt details
   useEffect(() => {
@@ -53,17 +55,95 @@ const MockExamInterface: React.FC = () => {
         setAttempt(attemptData);
 
         // Calculate time remaining
-        const startTime = new Date(attemptData.started_at).getTime();
-        // We need to get the exam duration from the API or calculate it
-        const durationMs = 120 * 60 * 1000; // Default 120 minutes - should come from API
+        const startTime = new Date((attemptData as any).started_at).getTime();
+        // Default duration - will be overridden if exam provides one
+        let durationMs = 120 * 60 * 1000; // Default 120 minutes
         const nowTime = Date.now();
-        const elapsed = nowTime - startTime;
-        const remaining = Math.max(0, durationMs - elapsed);
+        let remaining = 0;
+        if (Number.isFinite(startTime)) {
+          const elapsed = nowTime - startTime;
+          remaining = Math.max(0, durationMs - elapsed);
+        } else {
+          // started_at missing/invalid, set remaining to full duration
+          remaining = durationMs;
+        }
+        // Guard against NaN
+        if (!Number.isFinite(remaining)) remaining = 0;
         setTimeRemaining(remaining);
 
-        // Fetch questions - ideally from API
-        // For now, we'll use empty array as placeholder
-        setQuestions([]);
+        // Fetch exam details to populate questions
+        try {
+          // attemptData may expose either `mock_exam` or `custom_mock_exam` (id or object)
+          const examField = (attemptData as any).mock_exam || (attemptData as any).custom_mock_exam;
+          const examId = typeof examField === 'number' ? examField : examField?.id;
+          if (examId) {
+            const examResp = await studentMockExamsAPI.getMockExamDetail(examId);
+            const examData = examResp.data;
+
+            // Build flat questions list from subjects (if subjects exist) or from examData.questions
+            let fetchedQuestions: MockExamQuestion[] = [];
+            const normalizeQuestion = (q: any): MockExamQuestion => {
+              const qTypeRaw = (q.question_type || q.questionType || '').toString().toLowerCase();
+              let normalizedType: MockExamQuestion['question_type'] = 'MCQ';
+              if (qTypeRaw.includes('multiple') || qTypeRaw === 'mcq') normalizedType = 'MCQ';
+              else if (qTypeRaw.includes('true') || qTypeRaw.includes('false')) normalizedType = 'TrueOrFalse';
+              else if (qTypeRaw.includes('essay')) normalizedType = 'Essay';
+              else normalizedType = 'MCQ';
+
+              const rawOptions = Array.isArray(q.options) ? q.options : q.options || [];
+              const normalizedOptions: MockExamOption[] = rawOptions
+                .map((opt: any) => ({
+                  id: opt.id,
+                  text: (opt.option_text || opt.text || '').toString(),
+                  is_correct: Boolean(opt.is_correct),
+                  order: opt.order || 0,
+                }))
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+              return {
+                id: q.id,
+                question_text: q.question_text || q.questionText || '',
+                question_type: normalizedType,
+                marks: q.marks || q.marks_per_question || 0,
+                difficulty: q.difficulty || q.difficulty_level || 'medium',
+                options: normalizedOptions,
+                explanation: q.explanation || '',
+                question_image: q.question_image || null,
+              } as MockExamQuestion;
+            };
+
+            if (Array.isArray(examData.subjects) && examData.subjects.length > 0) {
+              examData.subjects.forEach((sub: any) => {
+                const qs: any[] = sub.questions || [];
+                qs.forEach((q) => {
+                  fetchedQuestions.push(normalizeQuestion(q));
+                });
+              });
+            } else if (Array.isArray(examData.questions)) {
+              fetchedQuestions = examData.questions.map((q: any) => normalizeQuestion(q));
+            }
+
+            setQuestions(fetchedQuestions);
+
+            // If exam provides duration, recalc timeRemaining based on started_at
+            if (examData.total_duration_minutes) {
+              durationMs = examData.total_duration_minutes * 60 * 1000;
+              if (Number.isFinite(startTime)) {
+                const elapsed = Date.now() - startTime;
+                let newRemaining = Math.max(0, durationMs - elapsed);
+                if (!Number.isFinite(newRemaining)) newRemaining = 0;
+                setTimeRemaining(newRemaining);
+              } else {
+                setTimeRemaining(durationMs);
+              }
+            }
+          } else {
+            setQuestions([]);
+          }
+        } catch (err) {
+          console.error('Failed to fetch exam details', err);
+          setQuestions([]);
+        }
 
         // Initialize answers from existing attempt
         if (attemptData.answers && Array.isArray(attemptData.answers)) {
@@ -88,7 +168,7 @@ const MockExamInterface: React.FC = () => {
 
   // Timer countdown
   useEffect(() => {
-    if (timeRemaining <= 0 || !attempt) return;
+    if (!Number.isFinite(timeRemaining) || timeRemaining <= 0 || !attempt) return;
 
     const interval = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -151,6 +231,7 @@ const MockExamInterface: React.FC = () => {
   };
 
   const formatTime = (ms: number) => {
+    if (!Number.isFinite(ms) || ms <= 0) return '00:00';
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -180,9 +261,9 @@ const MockExamInterface: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col">
       {/* Header Bar */}
-      <div className="bg-white shadow-md p-4 sticky top-0 z-30">
+      <div className="bg-white shadow-md p-4 sticky top-0 z-30 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
@@ -194,20 +275,9 @@ const MockExamInterface: React.FC = () => {
           </div>
 
           {/* Timer */}
-          <div
-            className={`text-center p-4 rounded-lg flex items-center gap-2 ${
-              timeRemaining < 300000 ? 'bg-red-100' : 'bg-blue-100'
-            }`}
-          >
-            <Clock
-              size={20}
-              className={timeRemaining < 300000 ? 'text-red-600' : 'text-blue-600'}
-            />
-            <span
-              className={`text-2xl font-bold ${
-                timeRemaining < 300000 ? 'text-red-600' : 'text-blue-600'
-              }`}
-            >
+          <div className={`text-center p-4 rounded-lg flex items-center gap-2 bg-blue-100 dark:bg-slate-800`}>
+            <Clock size={20} style={{ color: Number.isFinite(timeRemaining) && timeRemaining < 300000 ? '#dc2626' : theme.palette.primary.main }} />
+            <span className={`text-2xl font-bold`} style={{ color: Number.isFinite(timeRemaining) && timeRemaining < 300000 ? '#dc2626' : theme.palette.primary.main }}>
               {formatTime(timeRemaining)}
             </span>
           </div>
@@ -227,7 +297,7 @@ const MockExamInterface: React.FC = () => {
           value={(answeredCount / totalQuestions) * 100}
           className="mt-4"
         />
-        <p className="text-xs text-gray-600 mt-2">
+        <p className="text-xs text-gray-600 dark:text-gray-300 mt-2">
           Answered: {answeredCount}/{totalQuestions}
         </p>
       </div>
@@ -279,25 +349,26 @@ const MockExamInterface: React.FC = () => {
                       <RadioGroup
                         value={answers[currentQuestion.id]?.toString() || ''}
                         onChange={(e) =>
+                          // MCQ options are numeric ids
                           handleAnswerChange(currentQuestion.id, parseInt(e.target.value))
                         }
                       >
-                        {currentQuestion.options.map((option: MockExamOption) => (
+                        {(currentQuestion.options || []).map((option: MockExamOption, optIdx: number) => (
                           <FormControlLabel
                             key={option.id}
-                            value={option.id.toString()}
+                            value={option.id?.toString() || ''}
                             control={<Radio />}
                             label={
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-900">
-                                  {String.fromCharCode(65 + currentQuestion.options.indexOf(option))}.
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                  {String.fromCharCode(65 + optIdx)}.
                                 </span>
-                                <span className="text-base text-gray-800">
+                                <span className="text-base text-gray-800 dark:text-gray-200">
                                   <MathText text={option.text} />
                                 </span>
                               </div>
                             }
-                            className="mb-3 p-3 border rounded-lg hover:bg-gray-50"
+                            className="mb-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
                           />
                         ))}
                       </RadioGroup>
@@ -306,9 +377,10 @@ const MockExamInterface: React.FC = () => {
                     {currentQuestion.question_type === 'TrueOrFalse' && (
                       <RadioGroup
                         row
-                        value={answers[currentQuestion.id]?.toString() || ''}
+                        value={String(answers[currentQuestion.id] ?? '')}
                         onChange={(e) =>
-                          handleAnswerChange(currentQuestion.id, parseInt(e.target.value))
+                          // store boolean-ish string; backend may expect specific format
+                          handleAnswerChange(currentQuestion.id, e.target.value)
                         }
                       >
                         <FormControlLabel

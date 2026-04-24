@@ -673,6 +673,52 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
     }
   }
 
+  // Update existing question
+  const handleUpdateQuestion = async () => {
+    if (!selectedQuestion) return
+    if (!questionForm.question_text.trim()) {
+      showToast('error', 'Question text is required')
+      return
+    }
+    try {
+      // Build payload (FormData for files)
+      const payload = new FormData()
+      payload.append('question_text', questionForm.question_text)
+      payload.append('question_type', questionForm.question_type)
+      payload.append('marks', String(questionForm.marks))
+      payload.append('difficulty', String(questionForm.difficulty))
+      payload.append('explanation', questionForm.explanation || '')
+      if (questionForm.question_image_file) payload.append('question_image_file', questionForm.question_image_file)
+      if (questionForm.explanation_image_file) payload.append('explanation_image_file', questionForm.explanation_image_file)
+
+      // Ensure backend-required subject field is present. Prefer currently selectedSubject (edit context),
+      // otherwise try to derive from selectedQuestion payload.
+      const subjectIdCandidate = selectedSubject?.id || (selectedQuestion && (selectedQuestion.subject || selectedQuestion.subject_id || (selectedQuestion.subject && selectedQuestion.subject.id)))
+      if (subjectIdCandidate) {
+        payload.append('subject', String(subjectIdCandidate))
+      }
+
+      await adminMockExamsAPI.updateQuestion(selectedQuestion.id, payload)
+      showToast('success', 'Question updated successfully')
+      setOpenQuestionDialog(false)
+      setSelectedQuestion(null)
+      setQuestionForm({
+        question_text: '',
+        question_image_file: null,
+        question_type: 'multiple_choice',
+        marks: 1,
+        difficulty: 'medium',
+        explanation: '',
+        explanation_image_file: null,
+      })
+      await fetchExamStructure()
+    } catch (error: any) {
+      console.error('Error updating question:', error)
+      const errorMsg = error?.response?.data?.detail || error?.response?.data || 'Failed to update question'
+      showToast('error', typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg))
+    }
+  }
+
   // Update Option (PATCH - update existing) with text, correct flag, and optional image
   const handleUpdateOption = async (option: any) => {
     if (!editingOptionText.trim()) {
@@ -868,6 +914,17 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                             onClick={(e) => {
                               e.stopPropagation()
                               setSelectedSubject(subject)
+                              // reset form for adding a new question
+                              setSelectedQuestion(null)
+                              setQuestionForm({
+                                question_text: '',
+                                question_image_file: null,
+                                question_type: 'multiple_choice',
+                                marks: 1,
+                                difficulty: 'medium',
+                                explanation: '',
+                                explanation_image_file: null,
+                              })
                               setOpenQuestionDialog(true)
                             }}
                             title="Add Question"
@@ -957,6 +1014,28 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                                       </Box>
                                     </Box>
                                     <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                      <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          // open dialog prefilled for editing this question
+                                          setSelectedSubject(subject)
+                                          setSelectedQuestion(question)
+                                          setQuestionForm({
+                                            question_text: question.question_text || '',
+                                            question_image_file: null,
+                                            question_type: question.question_type || 'multiple_choice',
+                                            marks: question.marks || 1,
+                                            difficulty: question.difficulty || 'medium',
+                                            explanation: question.explanation || '',
+                                            explanation_image_file: null,
+                                          })
+                                          setOpenQuestionDialog(true)
+                                        }}
+                                        title="Edit Question"
+                                      >
+                                        <Edit2 size={16} />
+                                      </IconButton>
                                       <IconButton
                                         size="small"
                                         onClick={(e) => {
@@ -1204,14 +1283,14 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       {/* Add Question Dialog */}
       <Dialog
         open={openQuestionDialog}
-        onClose={() => setOpenQuestionDialog(false)}
+        onClose={() => { setOpenQuestionDialog(false); setSelectedQuestion(null); }}
         maxWidth="xs"
         fullWidth
         PaperProps={{
           sx: { backgroundColor: darkMode ? '#1E293B' : 'white' },
         }}
       >
-        <DialogTitle>Add Question to {selectedSubject?.subject_name}</DialogTitle>
+        <DialogTitle>{selectedQuestion ? 'Edit Question' : `Add Question to ${selectedSubject?.subject_name}`}</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <TextField
             fullWidth
@@ -1338,16 +1417,16 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenQuestionDialog(false)}>Cancel</Button>
+          <Button onClick={() => { setOpenQuestionDialog(false); setSelectedQuestion(null); }}>Cancel</Button>
           <Button
             variant="contained"
-            onClick={handleAddQuestion}
+            onClick={selectedQuestion ? handleUpdateQuestion : handleAddQuestion}
             sx={{
               backgroundColor: theme.palette.primary.main,
               '&:hover': { backgroundColor: theme.palette.primary.dark },
             }}
           >
-            Add Question
+            {selectedQuestion ? 'Save Changes' : 'Add Question'}
           </Button>
         </DialogActions>
       </Dialog>

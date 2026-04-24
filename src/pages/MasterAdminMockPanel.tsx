@@ -543,7 +543,13 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
   const [editingOptionImage, setEditingOptionImage] = useState<File | null>(null)
 
   // Form states
-  const [subjectForm, setSubjectForm] = useState({ subject_name: '', order_index: 1 })
+  const [subjectForm, setSubjectForm] = useState({
+    subject_name: '',
+    order_index: 1,
+    num_questions: 10,
+    time_allocation_minutes: 20,
+    marks_per_question: 1,
+  })
   const [questionForm, setQuestionForm] = useState({
     question_text: '',
     question_image_file: null as File | null,
@@ -603,11 +609,20 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       console.log('Adding subject:', subjectForm)
       await adminMockExamsAPI.addSubject(examId, {
         subject_name: subjectForm.subject_name,
-        order_index: subjectForm.order_index,
+        num_questions: subjectForm.num_questions || 10,
+        time_allocation_minutes: subjectForm.time_allocation_minutes || 20,
+        marks_per_question: subjectForm.marks_per_question || 1,
+        order: subjectForm.order_index || 0,
       })
       showToast('success', 'Subject added successfully')
       setOpenSubjectDialog(false)
-      setSubjectForm({ subject_name: '', order_index: 1 })
+      setSubjectForm({
+        subject_name: '',
+        order_index: 1,
+        num_questions: 10,
+        time_allocation_minutes: 20,
+        marks_per_question: 1,
+      })
       await fetchExamStructure()
     } catch (error: any) {
       console.error('Error adding subject:', error)
@@ -1148,16 +1163,32 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
             placeholder="e.g., English, Mathematics"
             sx={{ mb: 2 }}
           />
-          <TextField
-            fullWidth
-            type="number"
-            label="Order Index"
-            value={subjectForm.order_index}
-            onChange={(e) =>
-              setSubjectForm({ ...subjectForm, order_index: parseInt(e.target.value) })
-            }
-            inputProps={{ min: 1 }}
-          />
+          <Grid container spacing={2} sx={{ mb: 1 }}>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Order Index"
+                value={subjectForm.order_index}
+                onChange={(e) =>
+                  setSubjectForm({ ...subjectForm, order_index: parseInt(e.target.value) })
+                }
+                inputProps={{ min: 1 }}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Number of Questions"
+                value={subjectForm.num_questions}
+                onChange={(e) =>
+                  setSubjectForm({ ...subjectForm, num_questions: parseInt(e.target.value) })
+                }
+                inputProps={{ min: 1 }}
+              />
+            </Grid>
+          </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenSubjectDialog(false)}>Cancel</Button>

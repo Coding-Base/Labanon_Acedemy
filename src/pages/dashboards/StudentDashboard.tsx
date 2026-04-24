@@ -663,14 +663,14 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
             {sidebarOpen && (
               <>
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} className="lg:hidden fixed inset-0 bg-black z-40" onClick={() => setSidebarOpen(false)} />
-                <motion.aside initial={{ x: -300, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -300, opacity: 0 }} className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-2xl p-6 flex flex-col`}>
+                <motion.aside initial={{ x: -300, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -300, opacity: 0 }} className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-2xl p-6`}>
                   <div className={`flex items-center justify-between mb-8 pb-4 border-b ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
                     <h2 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Menu</h2>
                     <button onClick={() => setSidebarOpen(false)} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}>
                       <X className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`} />
                     </button>
                   </div>
-                  <nav className="flex-1 overflow-y-auto space-y-2">
+                  <nav className="space-y-2">
                     {navItems.map((item) => (
                       <button
                         key={item.path}
@@ -688,10 +688,10 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                         <span>{item.label}</span>
                       </button>
                     ))}
+                    <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+                      <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md">Logout</button>
+                    </div>
                   </nav>
-                  <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-                    <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md">Logout</button>
-                  </div>
                 </motion.aside>
               </>
             )}

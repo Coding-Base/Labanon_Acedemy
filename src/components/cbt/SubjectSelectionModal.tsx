@@ -38,6 +38,7 @@ export default function SubjectSelectionModal({
   trialInfo
 }: SubjectSelectionModalProps): JSX.Element | null {
   const [subjects, setSubjects] = useState<Subject[]>([])
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
   const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,6 +50,17 @@ export default function SubjectSelectionModal({
     if (isOpen && exam) {
       fetchSubjects()
     }
+    // fetch current user role for activation modal bypass logic
+    ;(async () => {
+      try {
+        const token = localStorage.getItem('access')
+        if (!token) return
+        const res = await axios.get(`${API_BASE}/users/me/`, { headers: { Authorization: `Bearer ${token}` } })
+        setCurrentUserRole(res.data?.role || null)
+      } catch (e) {
+        // ignore
+      }
+    })()
   }, [isOpen, exam])
 
   useEffect(() => {
@@ -116,7 +128,10 @@ export default function SubjectSelectionModal({
         const data = await res.json()
 
         // Allow access if: 1) user has unlock, OR 2) user has trial attempts available
-        const hasAccess = data.unlocked || data.trial_available
+        const envDisable = import.meta.env.VITE_DISABLE_ACTIVATION_MODAL === 'true'
+        const roleBypass = currentUserRole === 'tutor' || currentUserRole === 'institution'
+
+        const hasAccess = data.unlocked || data.trial_available || envDisable || roleBypass
         
         if (!res.ok || !hasAccess) {
           const qs = new URLSearchParams({

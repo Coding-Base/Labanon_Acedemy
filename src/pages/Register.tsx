@@ -116,10 +116,7 @@ export default function Register() {
     }
   ];
 
-  // Filter roles based on referrer: only show student & researcher by default, tutor & institution if from institutions
-  const visibleRoles = fromInstitutions 
-    ? roles.filter(r => r.id === 'tutor' || r.id === 'institution')
-    : roles.filter(r => r.id === 'student' || r.id === 'researcher');
+  const visibleRoles = roles;
 
   const institutionTypes = [
     { value: 'university', label: 'University' },

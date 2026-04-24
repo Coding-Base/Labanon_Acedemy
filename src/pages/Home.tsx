@@ -94,6 +94,7 @@ export default function Home() {
   const [heroImageLoaded, setHeroImageLoaded] = useState(false);
   const [heroImageError, setHeroImageError] = useState(false);
   const [displayCourses, setDisplayCourses] = useState<DisplayCourse[]>([]);
+  const [displayDiplomas, setDisplayDiplomas] = useState<DisplayCourse[]>([]);
   
   const heroSectionRef = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -129,9 +130,9 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch real courses on load (Keep existing logic)
+  // Fetch real courses and diplomas on load
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchCoursesAndDiplomas = async () => {
       const dummyCourses: DisplayCourse[] = [
         { id: 101, title: 'JAMB CBT Masterclass 2024', category: 'Exam Prep', rating: 4.9, students: 2500, price: 15000, duration: '45h', image: IMAGES.webDev, imageKey: 'webDev' },
         { id: 102, title: 'Full Stack Web Development', category: 'Technology', rating: 4.8, students: 1800, price: 45000, duration: '120h', image: IMAGES.webDev, imageKey: 'webDev' },
@@ -141,12 +142,16 @@ export default function Home() {
 
       try {
         // Use a local axios instance without the global interceptors
-        // to avoid sending an expired/invalid Authorization header
-        // for public homepage requests.
         const publicApi = axios.create({ baseURL: API_BASE });
-        const res = await publicApi.get(`/courses/?page_size=4`);
-        const realCourses = res.data.results || res.data || [];
         
+        // Fetch both courses and diplomas in parallel
+        const [coursesRes, diplomasRes] = await Promise.all([
+          publicApi.get(`/courses/?page_size=4`).catch(() => ({ data: { results: [] } })),
+          publicApi.get(`/diplomas/?page_size=4`).catch(() => ({ data: { results: [] } }))
+        ]);
+
+        // Process courses
+        const realCourses = coursesRes.data.results || coursesRes.data || [];
         const formattedRealCourses: DisplayCourse[] = realCourses.map((c: any) => ({
             id: c.id,
             title: c.title,
@@ -163,18 +168,34 @@ export default function Home() {
         if (combined.length < 4) {
             combined.push(...dummyCourses.slice(0, 4 - combined.length));
         }
-        
         setDisplayCourses(combined);
 
+        // Process diplomas
+        const realDiplomas = diplomasRes.data.results || diplomasRes.data || [];
+        const formattedRealDiplomas: DisplayCourse[] = realDiplomas.map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            category: d.category || 'Diploma',
+            rating: d.rating || 4.8,
+            students: d.enrollments || 0,
+            price: Number(d.price) || 0,
+            duration: d.duration || '0h',
+            image: d.image || IMAGES.dataScience,
+            imageKey: 'custom',
+            isDiploma: true
+        }));
+
+        setDisplayDiplomas(formattedRealDiplomas);
+
       } catch (err) {
-        // If fetching real courses fails (e.g., 401 due to expired token),
-        // fallback to dummy courses so the homepage remains public.
-        console.error("Failed to fetch courses, using dummy data", err);
+        // If fetching fails, use empty arrays
+        console.error("Failed to fetch courses/diplomas", err);
         setDisplayCourses(dummyCourses);
+        setDisplayDiplomas([]);
       }
     };
 
-    fetchCourses();
+    fetchCoursesAndDiplomas();
   }, []);
 
   const handleHeroImageLoad = () => setHeroImageLoaded(true);
@@ -378,6 +399,102 @@ export default function Home() {
         </div>
       </motion.section>
 
+      {/* Featured Courses */}
+      <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Featured Courses</h2>
+              <p className="text-gray-600 mt-2">Explore our most popular learning paths</p>
+            </div>
+            <Link to="/marketplace" className="hidden md:flex items-center text-yellow-700 font-semibold hover:gap-2 transition-all">View All <ArrowRight className="w-4 h-4 ml-1" /></Link>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {displayCourses.map((course, index) => {
+              const courseUrl = `/marketplace/${course.id}`;
+              return (
+              <Link 
+                key={course.id}
+                to={courseUrl}
+                className="group block"
+              >
+                <motion.div whileHover={{ y: -10 }} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-full flex flex-col cursor-pointer">
+                  <div className="h-48 relative overflow-hidden">
+                     <img src={course.image} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" width={384} height={192} loading="lazy" decoding="async" />
+                     <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-800">{course.category}</div>
+                  </div>
+                  <div className="p-6 flex-1 flex flex-col">
+                     <div className="flex items-center gap-1 mb-2">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="font-bold text-sm">{course.rating}</span>
+                        <span className="text-gray-400 text-sm">({course.students})</span>
+                     </div>
+                     <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-yellow-700 transition-colors">{course.title}</h3>
+                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+                        <span className="font-bold text-xl text-yellow-700">₦{course.price.toLocaleString()}</span>
+                        <span className="text-sm font-semibold text-yellow-600 group-hover:text-yellow-700">Details →</span>
+                     </div>
+                  </div>
+                </motion.div>
+              </Link>
+            )})}
+          </div>
+          <div className="mt-8 text-center md:hidden">
+             <Link to="/marketplace" className="inline-block px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700">View All Courses</Link>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Diplomas Section */}
+      {displayDiplomas.length > 0 && (
+        <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+            <div className="flex justify-between items-end mb-12">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Featured Diplomas</h2>
+                <p className="text-gray-600 mt-2">Professional onsite diploma programs</p>
+              </div>
+              <Link to="/marketplace?type=diploma" className="hidden md:flex items-center text-yellow-700 font-semibold hover:gap-2 transition-all">View All <ArrowRight className="w-4 h-4 ml-1" /></Link>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {displayDiplomas.map((diploma) => {
+                const diplomaUrl = `/diploma/${diploma.id}`;
+                return (
+                <Link 
+                  key={diploma.id}
+                  to={diplomaUrl}
+                  className="group block"
+                >
+                  <motion.div whileHover={{ y: -10 }} className="bg-gray-50 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-full flex flex-col cursor-pointer border border-gray-100">
+                    <div className="h-48 relative overflow-hidden bg-gradient-to-br from-brand-100 to-brand-50">
+                       <img src={diploma.image} alt={diploma.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" width={384} height={192} loading="lazy" decoding="async" />
+                       <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-brand-700">Diploma</div>
+                    </div>
+                    <div className="p-6 flex-1 flex flex-col">
+                       <div className="flex items-center gap-1 mb-2">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          <span className="font-bold text-sm">{diploma.rating}</span>
+                          <span className="text-gray-400 text-sm">({diploma.students})</span>
+                       </div>
+                       <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-yellow-700 transition-colors">{diploma.title}</h3>
+                       <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-200">
+                          <span className="font-bold text-xl text-yellow-700">₦{diploma.price.toLocaleString()}</span>
+                          <span className="text-sm font-semibold text-yellow-600 group-hover:text-yellow-700">Learn More →</span>
+                       </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              )})}
+            </div>
+            <div className="mt-8 text-center md:hidden">
+               <Link to="/marketplace?type=diploma" className="inline-block px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700">View All Diplomas</Link>
+            </div>
+          </div>
+        </motion.section>
+      )}
+
       {/* --- NEW SECTION: EXAM SUCCESS / FLYER --- */}
       <section className="py-20 bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -395,7 +512,7 @@ export default function Home() {
                 <span>Exam Success Guaranteed</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-                Prepare for <span className="text-brand-600">JAMB & WAEC</span> <br/>
+                Prepare for <span className="text-brand-600">Exams</span> <br/>
                 the Smart Way
               </h2>
               <p className="text-lg text-gray-600">
@@ -443,7 +560,7 @@ export default function Home() {
               <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white transform rotate-2 hover:rotate-0 transition-transform duration-500">
                  <img 
                    src={flyerImage} 
-                   alt="LightHub Academy JAMB & WAEC Flyer" 
+                   alt="LightHub Academy Exams Flyer" 
                    className="w-full h-auto object-cover"
                    width={1200}
                    height={750}
@@ -461,45 +578,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Featured Courses */}
-      <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="py-16 md:py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex justify-between items-end mb-12">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Featured Courses</h2>
-              <p className="text-gray-600 mt-2">Explore our most popular learning paths</p>
-            </div>
-            <Link to="/marketplace" className="hidden md:flex items-center text-yellow-700 font-semibold hover:gap-2 transition-all">View All <ArrowRight className="w-4 h-4 ml-1" /></Link>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {displayCourses.map((course, index) => (
-              <motion.div key={course.id} whileHover={{ y: -10 }} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all">
-                <div className="h-48 relative">
-                   <img src={course.image} alt={course.title} className="w-full h-full object-cover" width={384} height={192} loading="lazy" decoding="async" />
-                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-800">{course.category}</div>
-                </div>
-                <div className="p-6">
-                   <div className="flex items-center gap-1 mb-2">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="font-bold text-sm">{course.rating}</span>
-                      <span className="text-gray-400 text-sm">({course.students})</span>
-                   </div>
-                   <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
-                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                      <span className="font-bold text-xl text-yellow-700">₦{course.price.toLocaleString()}</span>
-                      <button className="text-sm font-semibold text-gray-600 hover:text-yellow-600">Details</button>
-                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-          <div className="mt-8 text-center md:hidden">
-             <Link to="/marketplace" className="inline-block px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700">View All Courses</Link>
-          </div>
-        </div>
-      </motion.section>
 
       {/* --- NEW SECTION: FIND A TUTOR --- */}
       <section className="py-20 bg-yellow-50 relative overflow-hidden">

@@ -1163,32 +1163,28 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
             placeholder="e.g., English, Mathematics"
             sx={{ mb: 2 }}
           />
-          <Grid container spacing={2} sx={{ mb: 1 }}>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Order Index"
-                value={subjectForm.order_index}
-                onChange={(e) =>
-                  setSubjectForm({ ...subjectForm, order_index: parseInt(e.target.value) })
-                }
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Number of Questions"
-                value={subjectForm.num_questions}
-                onChange={(e) =>
-                  setSubjectForm({ ...subjectForm, num_questions: parseInt(e.target.value) })
-                }
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
-          </Grid>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '8px' }}>
+            <TextField
+              fullWidth
+              type="number"
+              label="Order Index"
+              value={subjectForm.order_index}
+              onChange={(e) =>
+                setSubjectForm({ ...subjectForm, order_index: parseInt(e.target.value) })
+              }
+              inputProps={{ min: 1 }}
+            />
+            <TextField
+              fullWidth
+              type="number"
+              label="Number of Questions"
+              value={subjectForm.num_questions}
+              onChange={(e) =>
+                setSubjectForm({ ...subjectForm, num_questions: parseInt(e.target.value) })
+              }
+              inputProps={{ min: 1 }}
+            />
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenSubjectDialog(false)}>Cancel</Button>

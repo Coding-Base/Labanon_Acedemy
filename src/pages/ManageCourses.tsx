@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
 import { Loader2, PlusCircle, AlertCircle } from 'lucide-react'
+import showToast from '../utils/toast'
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -17,6 +18,7 @@ export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMe
   const [page, setPage] = useState(1)
   const [pageCount, setPageCount] = useState(1)
   const [pageSize] = useState(10)
+  const [confirmingDelete, setConfirmingDelete] = useState<null | { id: number; title?: string }>(null)
 
   useEffect(() => {
     let mounted = true
@@ -45,6 +47,21 @@ export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMe
     load()
     return () => { mounted = false }
   }, [page])
+
+  // Delete handler
+  const performDelete = async (id: number) => {
+    try {
+      const token = localStorage.getItem('access')
+      await axios.delete(`${API_BASE}/courses/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+      setCourses((prev) => prev.filter((c) => c.id !== id))
+      showToast('success', 'Course deleted successfully')
+    } catch (err) {
+      console.error('Error deleting course', err)
+      showToast('error', 'Failed to delete course')
+    } finally {
+      setConfirmingDelete(null)
+    }
+  }
 
   if (loading) return (
     <div className="flex items-center justify-center p-12">
@@ -108,15 +125,24 @@ export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMe
               </div>
               
               {/* Route based on context: institution vs tutor */}
-              {isInstitution ? (
-                <Link to={`/institution/courses/manage?courseId=${c.id}`} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
-                    Manage
-                </Link>
-              ) : (
-                <Link to={`/tutor/manage/create?courseId=${c.id}`} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
-                    Manage
-                </Link>
-              )}
+              <div className="flex items-center gap-2">
+                {isInstitution ? (
+                  <Link to={`/institution/courses/manage?courseId=${c.id}`} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
+                      Manage
+                  </Link>
+                ) : (
+                  <Link to={`/tutor/manage/create?courseId=${c.id}`} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
+                      Manage
+                  </Link>
+                )}
+
+                <button
+                  onClick={() => setConfirmingDelete({ id: c.id, title: c.title })}
+                  className="px-3 py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 font-medium transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -142,6 +168,39 @@ export default function ManageCourses({ uploadCourseImageHandler, uploadLessonMe
             </button>
         </div>
       )}
+
+      {/* Delete confirmation modal */}
+      {confirmingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmingDelete(null)} />
+          <div className="relative z-50 bg-white dark:bg-slate-800 rounded-lg p-6 w-[90%] max-w-md shadow-2xl">
+            <h3 className="text-lg font-bold mb-2">Delete Course</h3>
+            <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">Are you sure you want to permanently delete <span className="font-semibold">{confirmingDelete.title}</span>? This action cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setConfirmingDelete(null)} className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => performDelete(confirmingDelete.id)} className="px-4 py-2 rounded-lg bg-red-600 text-white">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Confirm delete modal rendered outside default export so it doesn't re-declare hooks
+export function ManageCoursesDeleteModal({ confirmingDelete, onCancel, onConfirm }: { confirmingDelete: { id: number; title?: string } | null, onCancel: () => void, onConfirm: (id: number) => void }) {
+  if (!confirmingDelete) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
+      <div className="relative z-50 bg-white dark:bg-slate-800 rounded-lg p-6 w-[90%] max-w-md shadow-2xl">
+        <h3 className="text-lg font-bold mb-2">Delete Course</h3>
+        <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">Are you sure you want to permanently delete <span className="font-semibold">{confirmingDelete.title}</span>? This action cannot be undone.</p>
+        <div className="flex justify-end gap-3">
+          <button onClick={onCancel} className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50">Cancel</button>
+          <button onClick={() => onConfirm(confirmingDelete.id)} className="px-4 py-2 rounded-lg bg-red-600 text-white">Delete</button>
+        </div>
+      </div>
     </div>
   )
 }

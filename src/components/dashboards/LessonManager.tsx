@@ -81,7 +81,7 @@ export default function LessonManager() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
   const [newSubjectName, setNewSubjectName] = useState('')
   const [showSubjectInput, setShowSubjectInput] = useState(false)
-  const subjectSearchRef = useRef<NodeJS.Timeout>()
+  const subjectSearchRef = useRef<ReturnType<typeof setTimeout> | undefined>()
 
   // Topic Management
   const [topics, setTopics] = useState<Topic[]>([])
@@ -90,7 +90,7 @@ export default function LessonManager() {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
   const [newTopicName, setNewTopicName] = useState('')
   const [showTopicInput, setShowTopicInput] = useState(false)
-  const topicSearchRef = useRef<NodeJS.Timeout>()
+  const topicSearchRef = useRef<ReturnType<typeof setTimeout> | undefined>()
 
   // Lesson Management
   const [lessons, setLessons] = useState<Lesson[]>([])

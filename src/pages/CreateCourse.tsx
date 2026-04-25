@@ -4,6 +4,7 @@ import axios from 'axios'
 import { SUPPORTED_CURRENCIES } from '../constants/currencies'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import showToast from '../utils/toast'
 import { useVerificationStatus } from '../hooks/useVerificationStatus'
 import { VerificationBanner } from '../components/VerificationBanner'
 import { StepProgress } from '../components/wizard/StepProgress'
@@ -267,6 +268,24 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
           setCourseType('normal')
         }
 
+        // If this is a scheduled course whose end date has already passed, ensure it's unpublished
+        try {
+          if (data.published && (data.meeting_link || data.end_date) ) {
+            const endCheck = data.end_date || endDate
+            if (endCheck) {
+              const parsedEnd = new Date(endCheck)
+              if (!isNaN(parsedEnd.getTime()) && parsedEnd < new Date()) {
+                // Unpublish on load
+                await axios.patch(`${API_BASE}/courses/${id}/`, { published: false }, { headers: { Authorization: `Bearer ${token}` } })
+                showToast('warn', 'This scheduled course has ended — it was unpublished and saved as a draft.')
+              }
+            }
+          }
+        } catch (e) {
+          // non-fatal
+          console.error('Failed to auto-unpublish expired scheduled course', e)
+        }
+
         // Load modules
         const mods = (data.modules || []).map((m: any) => ({
           id: m.id,
@@ -361,7 +380,24 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
       if (hasError) return
     }
 
-    publish ? setPublishing(true) : setSaving(true)
+    // Prevent publishing expired scheduled courses: if publish requested but endDate already passed,
+    // force-save as draft and notify the user.
+    let publishFlag = publish
+    if (courseType === 'scheduled' && publish) {
+      try {
+        const parsedEnd = endDate ? new Date(endDate) : null
+        if (parsedEnd && !isNaN(parsedEnd.getTime()) && parsedEnd < new Date()) {
+          publishFlag = false
+          showToast('warn', 'Scheduled course end date has already passed — saving as draft and leaving unpublished.')
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
+
+    // Use appropriate UI state based on effective publish flag
+    if (publish && publishFlag) setPublishing(true)
+    else setSaving(true)
 
     try {
       const token = localStorage.getItem('access')
@@ -373,7 +409,7 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
       formData.append('description', description)
       formData.append('price', String(Number(price) || 0))
       formData.append('currency', currency)
-      formData.append('published', publish ? 'true' : 'false')
+      formData.append('published', publishFlag ? 'true' : 'false')
       formData.append('level', level)
       formData.append('outcome', outcome)
       formData.append('required_tools', requiredTools)

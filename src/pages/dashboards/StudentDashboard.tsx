@@ -208,8 +208,16 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         // 2. Fetch Detailed Data for Algorithms
         // Using correct attempt-list route
         const [attemptsRes, enrollmentsRes] = await Promise.all([
-          api.get('/cbt/attempt-list/', { params: { page_size: 100 } }).catch(() => ({ data: { results: [] } })),
-          api.get('/enrollments/', { params: { page_size: 100 } }).catch(() => ({ data: { results: [] } }))
+          api.get('/cbt/attempt-list/', { params: { page_size: 100 } })
+            .catch((err) => {
+              console.error('Error fetching attempts:', err);
+              return { data: { results: [] } };
+            }),
+          api.get('/enrollments/', { params: { page_size: 100 } })
+            .catch((err) => {
+              console.error('Error fetching enrollments:', err);
+              return { data: { results: [] } };
+            })
         ]);
 
         const attempts = attemptsRes.data.results || [];
@@ -226,7 +234,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         // Base 3.0 + (0.08 per exam taken), Max 5.0
         const attemptsCount = attempts.length;
         const newRating = Math.min(5.0, 3.0 + (Number(attemptsCount || 0) * 0.08));
-        setCalculatedRating(Number(Number(newRating).toFixed(2)) || 3.0);
+        const validRating = isFinite(newRating) ? newRating : 3.0;
+        setCalculatedRating(Number(validRating.toFixed(2)) || 3.0);
 
         // --- ALGO 3: REAL STUDY HOURS ---
         // Sum of CBT 'time_taken_seconds' + (Course Progress * estimated duration)
@@ -241,7 +250,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         }, 0);
 
         const totalHours = Number(examHours || 0) + Number(courseHours || 0);
-        setRealStudyHours(Number(totalHours.toFixed(1)) || 0);
+        const validHours = isFinite(totalHours) ? totalHours : 0;
+        setRealStudyHours(Number(validHours.toFixed(1)) || 0);
 
         // --- ALGO 4: GLOBAL LEADERBOARD & RANK ---
         // Fetch real leaderboard data from backend
@@ -250,23 +260,44 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           const leaderboardRes = await api.get('/cbt/leaderboard/', { params: { limit: 50 } }).catch(() => null);
           if (leaderboardRes?.data) {
             const data = Array.isArray(leaderboardRes.data) ? leaderboardRes.data : (leaderboardRes.data.results || []);
-            leaderboardData = data.map((item: any, idx: number) => ({
-              id: item.id || item.user_id || idx,
-              name: item.username || item.user?.username || item.name || 'Student',
-              score: item.avg_score !== undefined ? item.avg_score : (item.high_score || item.best_score || 0),
-              exams_taken: item.attempts_count !== undefined ? item.attempts_count : (item.exams_taken || 0),
-              avatar_initial: (item.name || item.username || item.user?.username || 'S').charAt(0).toUpperCase()
-            }));
-            // Debug log removed for production
+            leaderboardData = data.map((item: any, idx: number) => {
+              // Safely extract numeric score
+              let scoreValue = item.avg_score !== undefined ? item.avg_score : (item.high_score || item.best_score || 0);
+              if (typeof scoreValue === 'string') {
+                scoreValue = parseFloat(scoreValue);
+              }
+              scoreValue = (typeof scoreValue === 'number' && isFinite(scoreValue)) ? scoreValue : 0;
+              
+              return {
+                id: item.id || item.user_id || idx,
+                name: item.username || item.user?.username || item.name || 'Student',
+                score: scoreValue,
+                exams_taken: item.attempts_count !== undefined ? item.attempts_count : (item.exams_taken || 0),
+                avatar_initial: (item.name || item.username || item.user?.username || 'S').charAt(0).toUpperCase()
+              };
+            });
           }
         } catch (err) {
           console.error('Failed to fetch leaderboard:', err);
         }
 
-        // Current User Best Score
-        const myBestScore = attempts.length > 0 
-           ? Math.max(...attempts.map((a: any) => parseFloat(a.score || 0))) 
-           : 0;
+        // Current User Best Score - safely extract numeric score
+        const getNumericScore = (scoreField: any): number => {
+          if (typeof scoreField === 'number' && isFinite(scoreField)) return scoreField;
+          if (typeof scoreField === 'string') {
+            const parsed = parseFloat(scoreField);
+            return isFinite(parsed) ? parsed : 0;
+          }
+          return 0;
+        };
+
+        // Safely compute best score - guard against empty array and NaN
+        let myBestScore = 0;
+        if (attempts.length > 0) {
+          const scores = attempts.map((a: any) => getNumericScore(a.score));
+          const validScores = scores.filter((s) => isFinite(s) && s >= 0);
+          myBestScore = validScores.length > 0 ? Math.max(...validScores) : 0;
+        }
 
         const currentUserEntry: LeaderboardUser = {
             id: userData.id,
@@ -454,7 +485,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     {user.exams_taken} Tests
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-yellow-600">
-                    {Number(user.score || 0).toFixed(1)} pts
+                    {(typeof user.score === 'number' && isFinite(user.score) ? user.score.toFixed(1) : '0.0')} pts
                   </td>
                 </tr>
               ))}
@@ -475,7 +506,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-yellow-600 font-bold">{Number(user.score || 0).toFixed(1)} pts</div>
+                  <div className="text-yellow-600 font-bold">{typeof user.score === 'number' && isFinite(user.score) ? user.score.toFixed(1) : '0.0'} pts</div>
                   <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-400'}`}>#{index + 1}</div>
                 </div>
               </div>
@@ -542,7 +573,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className={`md:hidden p-2 rounded-lg ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'} mr-3 transition-colors`} aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'} aria-expanded={sidebarOpen}>
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className={`lg:hidden p-2 rounded-lg ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'} mr-3 transition-colors`} aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'} aria-expanded={sidebarOpen}>
                 <Menu className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`} />
               </button>
               <Link to={base} className="flex items-center space-x-3 group">
@@ -584,7 +615,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         </div>
       </motion.header>
       
-      <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} />
+      {/* <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} /> */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-[calc(100vh-5rem)]">
         <div className="flex h-full gap-6">
@@ -663,15 +694,28 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           <AnimatePresence>
             {sidebarOpen && (
               <>
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} className="lg:hidden fixed inset-0 bg-black z-40" onClick={() => setSidebarOpen(false)} />
-                <motion.aside initial={{ x: -300, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -300, opacity: 0 }} className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-2xl p-6`}>
+                <motion.div 
+                  key="overlay"
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 0.5 }} 
+                  exit={{ opacity: 0 }} 
+                  className="lg:hidden fixed inset-0 bg-black z-40" 
+                  onClick={() => setSidebarOpen(false)} 
+                />
+                <motion.aside 
+                  key="sidebar"
+                  initial={{ x: -300, opacity: 0 }} 
+                  animate={{ x: 0, opacity: 1 }} 
+                  exit={{ x: -300, opacity: 0 }} 
+                  className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-2xl p-6 flex flex-col`}
+                >
                   <div className={`flex items-center justify-between mb-8 pb-4 border-b ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
                     <h2 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Menu</h2>
                     <button onClick={() => setSidebarOpen(false)} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}>
                       <X className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`} />
                     </button>
                   </div>
-                  <nav className="space-y-2">
+                  <nav className="space-y-2 flex-1 overflow-y-auto pr-2 -mr-2">
                     {navItems.map((item) => (
                       <button
                         key={item.path}
@@ -689,10 +733,10 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                         <span>{item.label}</span>
                       </button>
                     ))}
-                    <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-                      <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md">Logout</button>
-                    </div>
                   </nav>
+                  <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+                    <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md">Logout</button>
+                  </div>
                 </motion.aside>
               </>
             )}
@@ -784,7 +828,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mr-2 ${darkMode ? 'bg-slate-600 text-slate-100' : 'bg-gray-300 text-gray-700'}`}>{user.avatar_initial}</div>
                                       <div className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-gray-900'}`}>{user.name}</div>
                                     </div>
-                                    <div className={`text-sm font-bold text-yellow-700`}>{Number(user.score || 0).toFixed(1)}</div>
+                                    <div className={`text-sm font-bold text-yellow-700`}>{typeof user.score === 'number' && isFinite(user.score) ? user.score.toFixed(1) : '0.0'}</div>
                                   </div>
                                 ))}
                                 {leaderboard.length === 0 && <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-gray-500'} text-center py-4`}>No data available</div>}
@@ -801,8 +845,11 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     <Route path="lessons" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><StudentLessonsPage darkMode={darkMode} /></div>} />
                     <Route path="cbt" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><CBTPage /></div>} />
                     <Route path="mock-exams" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><StudentMockExamsPage /></div>} />
-                    <Route path="mock-exams/attempt/:attemptId" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><MockExamInterface /></div>} />
-                    <Route path="mock-exams/results/:attemptId" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><MockExamResultsPage /></div>} />
+                    {/* Pass darkMode correctly here */}
+                    <Route path="mock-exams/attempt/:attemptId" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><MockExamInterface darkMode={darkMode} /></div>} />
+                    {/* Pass darkMode correctly here */}
+                    <Route path="mock-exams/results/:attemptId" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><MockExamResultsPage darkMode={darkMode} /></div>} />
+                    
                     <Route path="referrer" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><ReferrerPage /></div>} />
                     <Route path="cart" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><Cart /></div>} />
                     <Route path="payments" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><PaymentsPage /></div>} />

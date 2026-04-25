@@ -36,12 +36,23 @@ export async function fetchTrialDaysServer(): Promise<number> {
 export async function saveTrialDaysServer(days: number): Promise<number> {
   // try PUT then POST
   const payload = { trial_days: Number(days) }
-  const res = await axios.put(`${API_BASE}/admin/trial-days/`, payload).catch(async (e) => {
-    return axios.post(`${API_BASE}/admin/trial-days/`, payload)
-  })
-  const d = res.data?.trial_days ?? days
-  localStorage.setItem(LOCAL_KEY, String(d))
-  return Number(d)
+  try {
+    const res = await axios.put(`${API_BASE}/admin/trial-days/`, payload);
+    const d = res.data?.trial_days ?? days;
+    localStorage.setItem(LOCAL_KEY, String(d));
+    return Number(d);
+  } catch (putError) {
+    console.warn('PUT request failed, trying POST:', putError);
+    try {
+      const res = await axios.post(`${API_BASE}/admin/trial-days/`, payload);
+      const d = res.data?.trial_days ?? days;
+      localStorage.setItem(LOCAL_KEY, String(d));
+      return Number(d);
+    } catch (postError) {
+      console.error('Failed to save trial days (both PUT and POST):', postError);
+      throw new Error('Failed to save trial days to server');
+    }
+  }
 }
 
 export default {

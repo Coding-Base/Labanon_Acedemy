@@ -5,43 +5,52 @@ import { motion } from 'framer-motion';
 import {
   Card,
   CardContent,
-  CardActions,
   Button,
   CircularProgress,
   Alert,
-  LinearProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  Dialog,
-  useTheme,
+  Chip
 } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import {
-  Download,
-  Share2,
   ArrowLeft,
-  BarChart3,
   TrendingUp,
-  CheckCircle,
-  XCircle,
   Clock,
+  CheckCircle2,
+  XCircle,
+  BookOpen,
+  Info
 } from 'lucide-react';
 import api from '../utils/axiosInterceptor';
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
-import { studentMockExamsAPI, MockExamResult } from '../api/mock_exams_api';
+import { studentMockExamsAPI } from '../api/mock_exams_api';
 import showToast from '../utils/toast';
 import { MathText } from '../utils/mathRenderer';
 
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api';
+
+// --- Interfaces based on real JSON response ---
+interface OptionReview {
+  id: number;
+  text: string;
+  is_correct: boolean;
+  letter: string;
+}
+
+interface QuestionReview {
+  id: number;
+  question_text: string;
+  marks: number;
+  options: OptionReview[];
+  explanation: string;
+  user_selected_option_id: number | null;
+  is_correct: boolean | null;
+}
+
 interface ResultData {
   id: number;
-  attempt: number;
   mock_exam: {
+    id?: number;
     title: string;
+    description: string;
     total_marks: number;
     passing_marks: number;
     difficulty_level: string;
@@ -49,206 +58,158 @@ interface ResultData {
   total_marks_obtained: number;
   grade: string;
   percentage: number;
-  time_spent: number;
-  subject_wise_stats: Array<{
-    subject_name: string;
-    marks_obtained: number;
-    total_marks: number;
-    percentage: number;
-  }>;
-  results: MockExamResult[];
+  time_spent_seconds: number;
+  passed: boolean;
+  review_questions: QuestionReview[];
 }
 
-const MockExamResultsPage: React.FC = () => {
+interface MockExamResultsPageProps {
+  darkMode?: boolean;
+}
+
+const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = false }) => {
   const { attemptId } = useParams<{ attemptId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const theme = useTheme();
+  const muiTheme = React.useMemo(() => createTheme({
+    palette: {
+      mode: darkMode ? 'dark' : 'light',
+      background: {
+        default: darkMode ? '#0f172a' : '#f8fafc',
+        paper: darkMode ? '#1e293b' : '#ffffff',
+      },
+      primary: { main: '#ca8a04' },
+      success: { main: '#16a34a' },
+      error: { main: '#dc2626' }
+    }
+  }), [darkMode]);
+
   const [result, setResult] = useState<ResultData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const attemptIdNum = parseInt(attemptId || '0');
 
   useEffect(() => {
+    const processAttemptData = (attemptData: any): ResultData => {
+      const mockExam = attemptData.mock_exam || attemptData.custom_mock_exam || {};
+      
+      // Calculate time spent (fallback to start/end difference if time_spent is 0)
+      let timeSpent = attemptData.time_spent_seconds ?? attemptData.time_spent ?? 0;
+      if (!timeSpent && attemptData.start_time && attemptData.end_time) {
+        const start = new Date(attemptData.start_time).getTime();
+        const end = new Date(attemptData.end_time).getTime();
+        timeSpent = Math.max(0, Math.floor((end - start) / 1000));
+      }
+
+      // Format basic scores
+      const totalMarksPossible = Number(mockExam.total_marks || attemptData.total_marks || 0);
+      const obtainedMarks = Number(attemptData.obtained_marks ?? attemptData.total_marks_obtained ?? 0);
+      const percentageRaw = parseFloat(attemptData.percentage ?? '0');
+      const percentage = !isNaN(percentageRaw) ? percentageRaw : (totalMarksPossible > 0 ? (obtainedMarks / totalMarksPossible) * 100 : 0);
+      
+      // Extract User Answers
+      const rawResults = attemptData.results || attemptData.answers || [];
+      const answerMap = new Map();
+      rawResults.forEach((ans: any) => {
+        const qId = ans.question_id || ans.question?.id || ans.question;
+        const optId = ans.selected_option_id || ans.selected_option?.id || ans.selected_option;
+        answerMap.set(qId, { optId, is_correct: ans.is_correct });
+      });
+
+      // Extract Questions from Exam Schema
+      const reviewQuestions: QuestionReview[] = [];
+      const allQuestions: any[] = [];
+      
+      if (Array.isArray(mockExam.subjects)) {
+        mockExam.subjects.forEach((sub: any) => {
+          if (Array.isArray(sub.questions)) allQuestions.push(...sub.questions);
+        });
+      } else if (Array.isArray(mockExam.questions)) {
+        allQuestions.push(...mockExam.questions);
+      }
+
+      // Build comprehensive review array
+      allQuestions.forEach((q: any) => {
+        const uAns = answerMap.get(q.id);
+        
+        // Find the correct option to pull its explanation
+        const optionsArray = q.options || [];
+        const correctOption = optionsArray.find((o: any) => o.is_correct === true);
+        const explanationFromCorrectOption = correctOption?.explanation;
+
+        reviewQuestions.push({
+          id: q.id,
+          question_text: q.question_text || q.text || 'Unknown Question',
+          marks: q.marks || 1,
+          options: optionsArray.map((o: any) => ({
+            id: o.id,
+            text: o.option_text || o.text || '',
+            is_correct: Boolean(o.is_correct),
+            letter: o.option_letter || ''
+          })),
+          // Set explanation strictly from the correct option
+          explanation: explanationFromCorrectOption || 'No explanation provided.',
+          user_selected_option_id: uAns ? uAns.optId : null,
+          is_correct: uAns ? Boolean(uAns.is_correct) : null,
+        });
+      });
+
+      // Fallback if exam schema didn't have questions but results did (like CBT fallback)
+      if (reviewQuestions.length === 0 && rawResults.length > 0) {
+        rawResults.forEach((r: any, idx: number) => {
+           // Try to pull explanation from nested correct_option data
+           const fallbackExplanation = r.correct_option?.explanation || r.correct_option?.explain || 'No explanation provided.';
+           
+           reviewQuestions.push({
+             id: r.id || idx,
+             question_text: r.question?.question_text || r.question || `Question ${idx + 1}`,
+             marks: r.max_marks || 1,
+             options: [
+               { id: r.selected_option_id || 1, text: r.selected_option_text || 'Your Answer', is_correct: r.is_correct, letter: '' },
+               { id: 2, text: r.correct_option_text || 'Correct Answer', is_correct: true, letter: '' }
+             ],
+             explanation: fallbackExplanation,
+             user_selected_option_id: r.selected_option_id || 1,
+             is_correct: r.is_correct
+           });
+        });
+      }
+
+      return {
+        id: attemptData.id,
+        mock_exam: {
+          id: mockExam.id,
+          title: mockExam.title || 'Exam Results',
+          description: mockExam.description || '',
+          total_marks: totalMarksPossible,
+          passing_marks: Number(mockExam.passing_marks || 50),
+          difficulty_level: mockExam.difficulty_level || 'mixed',
+        },
+        total_marks_obtained: obtainedMarks,
+        grade: attemptData.grade || 'N/A',
+        percentage: percentage,
+        time_spent_seconds: timeSpent,
+        passed: Boolean(attemptData.passed),
+        review_questions: reviewQuestions
+      };
+    };
+
     const fetchResults = async () => {
       try {
-        // Check if we have data from navigation state (from submission)
         const attemptData = (location.state as any)?.attemptData;
         if (attemptData) {
-          // Debug: log attempt payload arriving via navigate state
-          // eslint-disable-next-line no-console
-          console.debug('MockExamResultsPage: attemptData from navigation state', attemptData);
-          // Transform attempt data to ResultData format (normalize different backend shapes)
-          const mockExam = attemptData.mock_exam || attemptData.custom_mock_exam || {};
-          const totalObtainedRaw = attemptData.obtained_marks ?? attemptData.total_marks_obtained ?? attemptData.marks_obtained ?? null;
-          const percentageRaw = attemptData.percentage ?? null;
-          const percentage = typeof percentageRaw === 'string' ? parseFloat(percentageRaw) : (percentageRaw ?? null);
-          const timeSpent = attemptData.time_spent_seconds ?? attemptData.time_spent ?? attemptData.time_spent_ms ?? 0;
-
-          const rawResults = attemptData.results || attemptData.answers || [];
-          const normalizedResults: MockExamResult[] = (rawResults || []).map((r: any, idx: number) => {
-            const selectedText = r.selected_option_text || r.selected_option?.option_text || r.selected_option?.text || (r.selected_option ? `Option ${r.selected_option}` : null);
-            const correctText = r.correct_option_text || r.correct_option?.option_text || r.correct_option?.text || (r.correct_answer_letter ? `Option ${r.correct_answer_letter}` : null);
-            const marksObtained = r.marks_obtained ?? 0;
-            const maxMarks = r.marks ?? r.max_marks ?? r.marks_possible ?? (r.question?.marks || 0) ?? 0;
-            const isCorrect = r.is_correct ?? (marksObtained > 0);
-            const normalized: any = {
-              id: r.id ?? idx,
-              attempt: attemptData.id,
-              question: r.question,
-              selected_option: r.selected_option ?? null,
-              marks_obtained: marksObtained,
-              is_correct: Boolean(isCorrect),
-              time_taken: r.time_taken ?? 0,
-              max_marks: maxMarks,
-            };
-            if (selectedText) normalized.selected_option_text = selectedText;
-            if (correctText) normalized.correct_option_text = correctText;
-            return normalized as MockExamResult;
-          });
-
-          // compute totals and percentage from normalized results, but prefer server totals if results are empty
-          const totalMarksPossible = (mockExam.total_marks ?? mockExam.total_marks_per_exam ?? 0) || normalizedResults.reduce((s, r: any) => s + ((r.max_marks ?? 0) || 0), 0);
-          const totalObtFromResults = normalizedResults.reduce((s, r: any) => s + (Number(r.marks_obtained) || 0), 0);
-          const totalObt = (normalizedResults.length > 0) ? totalObtFromResults : (Number(totalObtainedRaw) || totalObtFromResults || 0);
-          const pct = (percentage !== null && !Number.isNaN(Number(percentage))) ? Number(percentage) : (totalMarksPossible > 0 ? (totalObt / totalMarksPossible) * 100 : 0);
-          // derive grade if not provided
-          const derivedGrade = attemptData.grade || attemptData.letter_grade || (
-            pct >= 70 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'F'
-          );
-
-          const resultData: ResultData = {
-            id: attemptData.id,
-            attempt: attemptData.id,
-            mock_exam: {
-              title: mockExam.title || '',
-              total_marks: mockExam.total_marks ?? mockExam.total_marks_per_exam ?? 0,
-              passing_marks: mockExam.passing_marks ?? mockExam.passing_mark ?? 0,
-              difficulty_level: mockExam.difficulty_level || mockExam.difficulty || 'mixed',
-            },
-            total_marks_obtained: totalObt,
-            grade: attemptData.grade || derivedGrade,
-            percentage: pct,
-            time_spent: timeSpent,
-            subject_wise_stats: attemptData.subject_wise_stats || [],
-            results: normalizedResults,
-          };
-          setResult(resultData);
+          setResult(processAttemptData(attemptData));
         } else {
-          // Fallback: try mock-exams attempt endpoint first, then CBT performance endpoint
-          let attemptDetail: any = null;
           try {
             const response = await studentMockExamsAPI.getAttemptDetail(attemptIdNum);
-            attemptDetail = response.data;
+            setResult(processAttemptData(response.data));
           } catch (err: any) {
-            // If not found on mock-exams, try CBT performance endpoint
             if (err?.response?.status === 404) {
-              try {
-                const cbtResp = await api.get(`${API_BASE}/cbt/attempts/${attemptIdNum}/performance/`);
-                const cbtData = cbtResp.data;
-                // Map CBT performance response into ResultData shape (best-effort)
-                const normalizedResults: MockExamResult[] = (cbtData.questions || cbtData.results || []).map((q: any, idx: number) => {
-                  const selected = q.selected_option_text || q.selected_choice || q.selected || null;
-                  const correct = q.correct_option_text || q.correct_answer || q.correct || null;
-                  return {
-                    id: q.id ?? idx,
-                    attempt: attemptIdNum,
-                    question: q.question || q.question_text || q.prompt || null,
-                    selected_option: q.selected_option ?? null,
-                    selected_option_text: selected,
-                    correct_option_text: correct,
-                    marks_obtained: q.score ?? q.marks_obtained ?? 0,
-                    max_marks: q.max_marks ?? q.marks_possible ?? q.marks ?? 0,
-                    is_correct: q.is_correct ?? (Number(q.score || 0) > 0),
-                    time_taken: q.time_taken ?? 0,
-                  } as MockExamResult;
-                });
-
-                const totalMarksPossible = cbtData.total_marks ?? normalizedResults.reduce((s, r: any) => s + ((r.max_marks ?? 0) || 0), 0);
-                const totalObt = cbtData.total_score ?? cbtData.score ?? normalizedResults.reduce((s, r: any) => s + (Number(r.marks_obtained) || 0), 0);
-                const pct = totalMarksPossible > 0 ? (Number(totalObt) / Number(totalMarksPossible)) * 100 : (cbtData.percentage ?? 0);
-
-                const resultData: ResultData = {
-                  id: cbtData.id ?? attemptIdNum,
-                  attempt: cbtData.attempt_id ?? attemptIdNum,
-                  mock_exam: {
-                    title: cbtData.title || cbtData.exam_title || `CBT Attempt ${attemptIdNum}`,
-                    total_marks: Number(totalMarksPossible) || 0,
-                    passing_marks: Number(cbtData.passing_marks) || 0,
-                    difficulty_level: cbtData.difficulty || 'mixed',
-                  },
-                  total_marks_obtained: Number(totalObt) || 0,
-                  grade: cbtData.grade || (pct >= 70 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'F'),
-                  percentage: Number(pct) || 0,
-                  time_spent: cbtData.time_spent_seconds ?? cbtData.time_spent ?? 0,
-                  subject_wise_stats: cbtData.subject_wise_stats || [],
-                  results: normalizedResults,
-                };
-
-                setResult(resultData);
-                attemptDetail = null; // handled by CBT branch
-              } catch (cbtErr) {
-                // fallback failure - rethrow original
-                throw err;
-              }
+              const cbtResp = await api.get(`${API_BASE}/cbt/attempts/${attemptIdNum}/performance/`);
+              setResult(processAttemptData(cbtResp.data));
             } else {
               throw err;
             }
-          }
-
-          // If we have a mock-exams attempt detail, normalize it
-          if (attemptDetail) {
-            const mockExam = attemptDetail.mock_exam || attemptDetail.custom_mock_exam || {};
-            const totalObtained = attemptDetail.obtained_marks ?? attemptDetail.total_marks_obtained ?? attemptDetail.marks_obtained ?? 0;
-            const percentage = typeof attemptDetail.percentage === 'string' ? parseFloat(attemptDetail.percentage) : (attemptDetail.percentage ?? 0);
-            const timeSpent = attemptDetail.time_spent_seconds ?? attemptDetail.time_spent ?? 0;
-            const rawResults = attemptDetail.results || attemptDetail.answers || [];
-            const normalizedResults: MockExamResult[] = (rawResults || []).map((r: any, idx: number) => {
-              const selectedText = r.selected_option_text || r.selected_option?.option_text || r.selected_option?.text || (r.selected_option ? `Option ${r.selected_option}` : null);
-              const correctText = r.correct_option_text || r.correct_option?.option_text || r.correct_option?.text || (r.correct_answer_letter ? `Option ${r.correct_answer_letter}` : null);
-              const marksObtained = r.marks_obtained ?? 0;
-              const maxMarks = r.marks ?? r.max_marks ?? r.marks_possible ?? (r.question?.marks || 0) ?? 0;
-              const isCorrect = r.is_correct ?? (marksObtained > 0);
-              const normalized: any = {
-                id: r.id ?? idx,
-                attempt: attemptDetail.id,
-                question: r.question,
-                selected_option: r.selected_option ?? null,
-                marks_obtained: marksObtained,
-                is_correct: Boolean(isCorrect),
-                time_taken: r.time_taken ?? 0,
-                max_marks: maxMarks,
-              };
-              if (selectedText) normalized.selected_option_text = selectedText;
-              if (correctText) normalized.correct_option_text = correctText;
-              return normalized as MockExamResult;
-            });
-
-            const totalMarksPossible = (mockExam.total_marks ?? mockExam.total_marks_per_exam ?? 0) || normalizedResults.reduce((s, r: any) => s + ((r.max_marks ?? 0) || 0), 0);
-            const totalObt2 = normalizedResults.reduce((s, r: any) => s + (Number(r.marks_obtained) || 0), 0);
-            const pct2 = totalMarksPossible > 0 ? (totalObt2 / totalMarksPossible) * 100 : 0;
-            const derivedGrade2 = attemptDetail.grade || attemptDetail.letter_grade || (
-              pct2 >= 70 ? 'A' : pct2 >= 60 ? 'B' : pct2 >= 50 ? 'C' : pct2 >= 40 ? 'D' : 'F'
-            );
-
-            const resultData: ResultData = {
-              id: attemptDetail.id,
-              attempt: attemptDetail.id,
-              mock_exam: {
-                title: mockExam.title || '',
-                total_marks: mockExam.total_marks ?? mockExam.total_marks_per_exam ?? 0,
-                passing_marks: mockExam.passing_marks ?? mockExam.passing_mark ?? 0,
-                difficulty_level: mockExam.difficulty_level || mockExam.difficulty || 'mixed',
-              },
-              total_marks_obtained: totalObt2,
-              grade: derivedGrade2,
-              percentage: pct2,
-              time_spent: timeSpent,
-              subject_wise_stats: attemptDetail.subject_wise_stats || [],
-              results: normalizedResults,
-            };
-            setResult(resultData);
           }
         }
       } catch (error) {
@@ -264,254 +225,254 @@ const MockExamResultsPage: React.FC = () => {
     }
   }, [attemptIdNum, navigate, location]);
 
-  const handleDownloadReport = () => {
-    // Generate PDF report
-    showToast('success', 'Report downloaded');
-  };
-
-  const handleShareResults = async () => {
-    const shareText = `I scored ${result?.total_marks_obtained}/${result?.mock_exam.total_marks} (${result?.percentage.toFixed(1)}%) on ${result?.mock_exam.title} mock exam!`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Mock Exam Results',
-          text: shareText,
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    } else {
-      // Fallback: Copy to clipboard
-      navigator.clipboard.writeText(shareText);
-      showToast('success', 'Results copied to clipboard');
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <CircularProgress />
+      <div className={`flex items-center justify-center min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+        <CircularProgress size={60} thickness={4} />
       </div>
     );
   }
 
   if (!result) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Alert severity="error">Failed to load results</Alert>
+      <div className={`flex items-center justify-center min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+        <Alert severity="error" className="max-w-md">Failed to load exam results data. Please try again.</Alert>
       </div>
     );
   }
 
-  const passingMarksNum = Number(result.mock_exam.passing_marks || 0);
-  const isPassed = (result as any).passed !== undefined
-    ? Boolean((result as any).passed)
-    : (passingMarksNum > 0
-      ? Number(result.total_marks_obtained) >= passingMarksNum
-      : (result.grade ? result.grade !== 'F' : result.percentage >= 50)
-    );
+  const isPassed = result.passed;
   const gradeColor =
-    result.grade === 'A'
-      ? theme.palette.success.main
-      : result.grade === 'B'
-      ? theme.palette.warning.main
-      : result.grade === 'C'
-      ? theme.palette.secondary.main
-      : result.grade === 'D'
-      ? theme.palette.info.main
-      : theme.palette.error.main;
+    result.grade === 'A' ? muiTheme.palette.success.main :
+    result.grade === 'B' ? muiTheme.palette.primary.main :
+    result.grade === 'C' ? muiTheme.palette.warning.main :
+    muiTheme.palette.error.main;
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    }
+    if (hours > 0) return `${hours}h ${minutes}m ${secs}s`;
     return `${minutes}m ${secs}s`;
   };
 
-  // Compute performance metrics from results
-  const correctCount = result?.results.filter((r: any) => r.is_correct).length || 0;
-  const incorrectCount = (result?.results.length || 0) - correctCount;
-  const accuracy = (result?.results.length || 0) > 0 ? (correctCount / (result?.results.length || 1)) * 100 : 0;
-  const sumTimeTaken = result?.results.reduce((s: number, r: any) => s + (Number(r.time_taken) || 0), 0);
-  const effectiveTimeSpent = (result?.time_spent && Number(result.time_spent) > 0) ? Number(result.time_spent) : (sumTimeTaken || 0);
-  const avgTimePerQuestion = (result?.results.length || 0) > 0 ? effectiveTimeSpent / (result?.results.length || 1) : 0;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-8" style={{ backgroundColor: theme.palette.background.default }}>
-      <div className="max-w-5xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
+    <ThemeProvider theme={muiTheme}>
+      <div className={`min-h-screen py-8 px-4 sm:px-6 lg:px-8 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-gray-900'}`}>
+        <div className="max-w-5xl mx-auto">
+          
+          {/* Top Navigation */}
           <Button
             startIcon={<ArrowLeft />}
             onClick={() => {
-              // Navigate back to the mock exam page if available, otherwise to the exams list
-              const examId = (result && (result as any).mock_exam && (result as any).mock_exam.id) || null;
+              const examId = result.mock_exam.id || null;
               if (examId) navigate(`/student/mock-exams/exams/${examId}`);
               else navigate('/student/mock-exams');
             }}
-            className="mb-4"
+            className={`mb-6 ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}
           >
             Back to Exam
           </Button>
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-slate-100 mb-2">
-            {result.mock_exam.title}
-          </h1>
-          <p className="text-gray-600 dark:text-slate-300">Results & Performance Analysis</p>
-        </div>
 
-        {/* Result Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* Score Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card style={{ backgroundColor: theme.palette.background.paper }}>
-              <CardContent className="p-6 text-center">
-                <div className="relative w-32 h-32 mx-auto mb-4">
-                  <CircularProgress
-                    variant="determinate"
-                    value={Math.min(Math.max(result.percentage, 0), 100)}
-                    size={120}
-                    style={{ color: isPassed ? theme.palette.success.main : theme.palette.error.main }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-bold">{result.percentage.toFixed(1)}%</span>
-                  </div>
-                </div>
-                <p className="text-gray-600 text-sm">Percentage</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Grade Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card style={{ backgroundColor: theme.palette.background.paper }}>
-              <CardContent className="p-6 text-center">
-                <div
-                  className="w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center text-4xl font-bold text-white"
-                  style={{ backgroundColor: gradeColor }}
-                >
-                  {result.grade}
-                </div>
-                <p className="text-gray-600 text-sm">Grade</p>
-                <p className="text-lg font-bold mt-2" style={{ color: isPassed ? theme.palette.success.main : theme.palette.error.main }}>
-                  {isPassed ? '✓ PASSED' : '✗ FAILED'}
+          {/* Header Section */}
+          <div className="mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className={`text-3xl md:text-4xl font-bold mb-2 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                  {result.mock_exam.title}
+                </h1>
+                <p className={`text-lg ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                  {result.mock_exam.description || 'Mock Exam Performance Review'}
                 </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Time Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card style={{ backgroundColor: theme.palette.background.paper }}>
-              <CardContent className="p-6 text-center">
-                <Clock size={40} className="mx-auto mb-4" style={{ color: theme.palette.primary.main }} />
-                <p className="text-2xl font-bold text-gray-800 dark:text-slate-100">
-                  {formatTime(effectiveTimeSpent)}
-                </p>
-                <p className="text-gray-600 text-sm mt-2">Time Spent</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Marks Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card style={{ backgroundColor: theme.palette.background.paper }}>
-              <CardContent className="p-6 text-center">
-                <TrendingUp size={40} className="mx-auto mb-4" style={{ color: theme.palette.primary.main }} />
-                <p className="text-2xl font-bold text-gray-800 dark:text-slate-100">
-                  {result.total_marks_obtained}/{result.mock_exam.total_marks}
-                </p>
-                <p className="text-gray-600 text-sm mt-2">Marks Obtained</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Answers & Explanations - simplified view */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card className="mb-8 border-l-4" style={{ borderLeftColor: theme.palette.primary.main, backgroundColor: theme.palette.background.paper }}>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 mb-4" style={{ color: theme.palette.primary.main }}>✅ Answers & Explanations</h2>
-              <div className="space-y-6">
-                {result.results.map((res, idx) => {
-                  const q = (res as any).question || {};
-                  const questionText = q.question_text || q.text || String(q) || `Question ${idx + 1}`;
-                  const userAnswer = (res as any).selected_option_text || (res.selected_option ? `Option ${res.selected_option}` : 'Not answered');
-                  const correctAnswer = (res as any).correct_option_text || q.correct_answer || '—';
-                  const optionExplanation = (res as any).selected_option?.explanation || (res as any).selected_option?.explain || null;
-                  const correctOptionExplanation = (res as any).correct_option?.explanation || (res as any).correct_option?.explain || null;
-                  const explanation = optionExplanation || correctOptionExplanation || q.explanation || (res as any).explanation || 'No explanation provided.';
-                  return (
-                    <div key={res.id} className="p-4 rounded-md" style={{ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-                      <h3 className="font-semibold text-gray-800 dark:text-slate-100">{idx + 1}. {questionText}</h3>
-                      <div className="mt-2 text-sm text-gray-700 dark:text-slate-300">
-                        <p><strong>Your answer:</strong> {userAnswer}</p>
-                        <p><strong>Correct answer:</strong> {correctAnswer}</p>
-                        <p className="mt-2"><strong>Explanation:</strong></p>
-                        <div className="prose dark:prose-invert max-w-none mt-1 text-sm" dangerouslySetInnerHTML={{ __html: explanation }} />
-                      </div>
-                    </div>
-                  )
-                })}
               </div>
-            </CardContent>
-            <CardActions className="flex gap-3 justify-end p-6">
-              <Button
-                variant="outlined"
-                startIcon={<Download size={18} />}
-                onClick={handleDownloadReport}
-              >
-                Download Report
-              </Button>
+              <div className="flex gap-2">
+                <Chip label={`Difficulty: ${result.mock_exam.difficulty_level}`} variant="outlined" color="primary" />
+                <Chip label={`Pass Mark: ${result.mock_exam.passing_marks}%`} variant="outlined" />
+              </div>
+            </div>
+          </div>
+
+          {/* Key Metrics Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            {/* Score Percentage */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Card className="h-full border-0 shadow-md rounded-2xl overflow-hidden" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+                <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full">
+                  <div className="relative w-28 h-28 mx-auto mb-3">
+                    <CircularProgress
+                      variant="determinate"
+                      value={Math.min(Math.max(result.percentage, 0), 100)}
+                      size={112}
+                      thickness={5}
+                      style={{ color: isPassed ? muiTheme.palette.success.main : muiTheme.palette.error.main }}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {result.percentage.toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Final Score</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Grade */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <Card className="h-full border-0 shadow-md rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+                <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full">
+                  <div
+                    className="w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl font-extrabold text-white shadow-inner"
+                    style={{ backgroundColor: gradeColor }}
+                  >
+                    {result.grade}
+                  </div>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Grade Achieved</p>
+                  <p className={`text-lg font-bold mt-1 ${isPassed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {isPassed ? 'PASSED' : 'FAILED'}
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Total Marks */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <Card className="h-full border-0 shadow-md rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+                <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${darkMode ? 'bg-yellow-900/30' : 'bg-yellow-100'}`}>
+                    <TrendingUp size={32} style={{ color: muiTheme.palette.primary.main }} />
+                  </div>
+                  <p className={`text-3xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                    {result.total_marks_obtained} <span className={`text-lg font-normal ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>/ {result.mock_exam.total_marks}</span>
+                  </p>
+                  <p className={`text-sm font-medium mt-2 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Marks Obtained</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Time Spent */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+              <Card className="h-full border-0 shadow-md rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+                <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                    <Clock size={32} className="text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                    {formatTime(result.time_spent_seconds)}
+                  </p>
+                  <p className={`text-sm font-medium mt-2 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Time Spent</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Detailed Question Review */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <div className="flex items-center gap-3 mb-6 mt-12">
+              <BookOpen className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-800'}`}>
+                Answers & Explanations
+              </h2>
+            </div>
+
+            {result.review_questions.length > 0 ? (
+              <div className="space-y-6">
+                {result.review_questions.map((q, idx) => (
+                  <Card key={q.id} className="border-0 shadow-sm overflow-hidden rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+                    <div className={`h-2 w-full ${q.is_correct === true ? 'bg-green-500' : q.is_correct === false ? 'bg-red-500' : 'bg-gray-300'}`}></div>
+                    <CardContent className="p-6 md:p-8">
+                      {/* Question Header */}
+                      <div className="flex justify-between items-start mb-6 gap-4">
+                        <div className="flex gap-4">
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${darkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <h3 className={`text-lg font-semibold leading-relaxed ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                              <MathText text={q.question_text} />
+                            </h3>
+                            <p className={`text-sm mt-1 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Max marks: {q.marks}</p>
+                          </div>
+                        </div>
+                        {q.is_correct === true && <CheckCircle2 className="text-green-500 w-8 h-8 flex-shrink-0" />}
+                        {q.is_correct === false && <XCircle className="text-red-500 w-8 h-8 flex-shrink-0" />}
+                      </div>
+
+                      {/* Options Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 pl-12">
+                        {q.options.map((opt) => {
+                          const isCorrectOption = opt.is_correct;
+                          const isUserSelection = q.user_selected_option_id === opt.id;
+                          
+                          // Style determination based on selection and correctness
+                          let optionClasses = `p-4 border rounded-xl flex items-start gap-3 transition-colors ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`;
+                          let textClasses = darkMode ? 'text-slate-300' : 'text-gray-700';
+                          
+                          if (isCorrectOption) {
+                            optionClasses = `p-4 border-2 rounded-xl flex items-start gap-3 ${darkMode ? 'bg-green-900/20 border-green-500/50' : 'bg-green-50 border-green-400'}`;
+                            textClasses = darkMode ? 'text-green-300 font-medium' : 'text-green-800 font-medium';
+                          } else if (isUserSelection && !isCorrectOption) {
+                            optionClasses = `p-4 border-2 rounded-xl flex items-start gap-3 ${darkMode ? 'bg-red-900/20 border-red-500/50' : 'bg-red-50 border-red-400'}`;
+                            textClasses = darkMode ? 'text-red-300 font-medium' : 'text-red-800 font-medium';
+                          }
+
+                          return (
+                            <div key={opt.id} className={optionClasses}>
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold border ${isCorrectOption ? 'bg-green-500 text-white border-green-600' : isUserSelection ? 'bg-red-500 text-white border-red-600' : (darkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-gray-100 border-gray-300 text-gray-600')}`}>
+                                {opt.letter || '-'}
+                              </div>
+                              <div className={textClasses}>
+                                <MathText text={opt.text} />
+                              </div>
+                              {isCorrectOption && isUserSelection && <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto flex-shrink-0" />}
+                              {isUserSelection && !isCorrectOption && <XCircle className="w-5 h-5 text-red-500 ml-auto flex-shrink-0" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Explanation Box */}
+                      <div className={`mt-6 rounded-xl p-5 ${darkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-blue-50 border border-blue-100'}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Info className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                          <h4 className={`font-semibold ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>Explanation</h4>
+                        </div>
+                        <div className={`text-sm leading-relaxed ${darkMode ? 'text-slate-300' : 'text-blue-900/80'}`}>
+                          <MathText text={q.explanation} />
+                        </div>
+                      </div>
+
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+                <CardContent className="p-8 text-center">
+                  <p className={darkMode ? 'text-slate-400' : 'text-gray-500'}>
+                    Detailed question review is not available for this exam attempt.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Bottom Actions */}
+            <div className="mt-10 flex justify-center pb-12">
               <Button
                 variant="contained"
-                startIcon={<Share2 size={18} />}
-                onClick={handleShareResults}
+                size="large"
+                className="px-10 py-3 rounded-xl font-bold shadow-lg"
+                onClick={() => navigate('/student/mock-exams')}
+                style={{ backgroundColor: muiTheme.palette.primary.main, color: 'white' }}
               >
-                Share Results
+                Attempt Another Exam
               </Button>
-            </CardActions>
-          </Card>
+            </div>
 
-          <div className="mb-8">
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={() => {
-                const examId = (result && (result as any).mock_exam && (result as any).mock_exam.id) || null;
-                if (examId) navigate(`/student/mock-exams/exams/${examId}`);
-                else navigate('/student/mock-exams');
-              }}
-              style={{ backgroundColor: theme.palette.primary.main }}
-            >
-              Attempt Another Exam
-            </Button>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 };
 

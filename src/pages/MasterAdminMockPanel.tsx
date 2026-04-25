@@ -435,7 +435,7 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
             <MenuItem value="mixed">Mixed</MenuItem>
           </TextField>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 type="number"
@@ -447,7 +447,7 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
                 variant="outlined"
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 type="number"
@@ -1104,6 +1104,15 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                                                     }}
                                                     variant="outlined"
                                                   />
+                                                  <TextField
+                                                    size="small"
+                                                    multiline
+                                                    minRows={2}
+                                                    value={editingOptionExplanation}
+                                                    onChange={(e) => setEditingOptionExplanation(e.target.value)}
+                                                    placeholder="Explanation (shown in results)"
+                                                    variant="outlined"
+                                                  />
                                                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                                     <FormControlLabel
                                                       control={
@@ -1395,7 +1404,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
             )}
           </Box>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 type="number"
@@ -1407,7 +1416,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                 inputProps={{ min: 1 }}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <TextField
                 fullWidth
                 select
@@ -1475,7 +1484,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
     <div className="space-y-6">
       {/* Stats Cards */}
       <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-amber-500">{overview.total_exams}</div>
@@ -1488,7 +1497,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-green-500">
@@ -1500,7 +1509,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-amber-500">
@@ -1512,7 +1521,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-violet-500">

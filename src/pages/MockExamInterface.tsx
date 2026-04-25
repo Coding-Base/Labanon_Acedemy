@@ -45,12 +45,25 @@ const MockExamInterface: React.FC = () => {
 
   const attemptIdNum = parseInt(attemptId || '0');
   const theme = useTheme();
+  // Fallback: sometimes nested routing or router context may not populate params as expected.
+  // Try to extract attempt id from the pathname if parseInt gave 0.
+  const resolvedAttemptId = attemptIdNum || (() => {
+    try {
+      const m = window.location.pathname.match(/attempt\/(\d+)/i);
+      return m ? parseInt(m[1], 10) : 0;
+    } catch (e) {
+      return 0;
+    }
+  })();
+  // Small debug aid when request isn't firing
+  // eslint-disable-next-line no-console
+  console.debug('MockExamInterface - resolvedAttemptId=', resolvedAttemptId);
 
   // Fetch attempt details
   useEffect(() => {
     const fetchAttemptDetails = async () => {
       try {
-        const response = await studentMockExamsAPI.getAttemptDetail(attemptIdNum);
+        const response = await studentMockExamsAPI.getAttemptDetail(resolvedAttemptId);
         const attemptData = response.data as MockExamAttempt;
         setAttempt(attemptData);
 
@@ -157,14 +170,14 @@ const MockExamInterface: React.FC = () => {
         setIsLoading(false);
       } catch (error) {
         showToast('error', 'Failed to load exam');
-        navigate('../');
+        navigate('/student/mock-exams');
       }
     };
 
-    if (attemptIdNum) {
+    if (resolvedAttemptId) {
       fetchAttemptDetails();
     }
-  }, [attemptIdNum, navigate]);
+  }, [resolvedAttemptId, navigate]);
 
   // Timer countdown
   useEffect(() => {
@@ -215,15 +228,30 @@ const MockExamInterface: React.FC = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      // Send time spent in seconds. Prefer computing from attempt.started_at if available.
+      let timeSpentSeconds = 0;
+      try {
+        if (attempt && (attempt as any).started_at) {
+          const started = new Date((attempt as any).started_at).getTime();
+          if (Number.isFinite(started) && started > 0) {
+            timeSpentSeconds = Math.max(0, Math.floor((Date.now() - started) / 1000));
+          }
+        }
+      } catch (e) {
+        // fallback to timeRemaining (ms -> seconds) if started_at missing
+        if (Number.isFinite(timeRemaining)) timeSpentSeconds = Math.max(0, Math.floor((timeRemaining || 0) / 1000));
+      }
+
       const response = await studentMockExamsAPI.submitMockExamAttempt(
-        attemptIdNum,
+        resolvedAttemptId,
         answers,
-        timeRemaining
+        timeSpentSeconds
       );
       showToast('success', 'Exam submitted successfully!');
       // Navigate with the attempt data in state to show results
       // Use relative path to stay within StudentDashboard context
-      navigate(`../mock-exams/results/${attemptIdNum}`, { state: { attemptData: response.data } });
+      // Navigate to the student-scoped results route
+      navigate(`/student/mock-exams/results/${resolvedAttemptId}`, { state: { attemptData: response.data } });
     } catch (error) {
       showToast('error', 'Failed to submit exam');
       setIsSubmitting(false);
@@ -263,7 +291,7 @@ const MockExamInterface: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col">
       {/* Header Bar */}
-      <div className="bg-white shadow-md p-4 sticky top-0 z-30 dark:bg-slate-900">
+      <div className="shadow-md p-4 sticky top-0 z-30" style={{ backgroundColor: theme.palette.background.paper }}>
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
@@ -275,7 +303,7 @@ const MockExamInterface: React.FC = () => {
           </div>
 
           {/* Timer */}
-          <div className={`text-center p-4 rounded-lg flex items-center gap-2 bg-blue-100 dark:bg-slate-800`}>
+          <div className={`text-center p-4 rounded-lg flex items-center gap-2 bg-yellow-100 dark:bg-slate-800`}>
             <Clock size={20} style={{ color: Number.isFinite(timeRemaining) && timeRemaining < 300000 ? '#dc2626' : theme.palette.primary.main }} />
             <span className={`text-2xl font-bold`} style={{ color: Number.isFinite(timeRemaining) && timeRemaining < 300000 ? '#dc2626' : theme.palette.primary.main }}>
               {formatTime(timeRemaining)}
@@ -312,7 +340,7 @@ const MockExamInterface: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card>
+              <Card style={{ backgroundColor: theme.palette.background.paper }}>
                 <CardContent className="p-8">
                   {/* Question Text */}
                   <div className="mb-8">
@@ -321,7 +349,7 @@ const MockExamInterface: React.FC = () => {
                         <MathText text={currentQuestion.question_text} />
                       </h2>
                       <div className="flex gap-2 ml-4">
-                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
+                        <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-semibold">
                           {currentQuestion.marks} marks
                         </span>
                         {markedForReview.has(currentQuestion.id) && (
@@ -461,7 +489,7 @@ const MockExamInterface: React.FC = () => {
 
         {/* Question Palette Sidebar */}
         <div className="w-64">
-          <Card>
+          <Card style={{ backgroundColor: theme.palette.background.paper }}>
             <CardContent className="p-4">
               <h3 className="font-bold text-gray-800 mb-4">Questions</h3>
               <div className="grid grid-cols-4 gap-2 max-h-96 overflow-auto">
@@ -471,7 +499,7 @@ const MockExamInterface: React.FC = () => {
                     onClick={() => setCurrentQuestionIdx(idx)}
                     className={`p-2 rounded font-semibold text-sm transition ${
                       idx === currentQuestionIdx
-                        ? 'bg-blue-500 text-white'
+                        ? 'bg-yellow-500 text-white'
                         : answers[q.id] !== null
                         ? 'bg-green-100 text-green-700'
                         : markedForReview.has(q.id)
@@ -511,7 +539,7 @@ const MockExamInterface: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="fixed inset-0 flex items-center justify-center p-4"
         >
-          <Card className="max-w-md">
+          <Card className="max-w-md" style={{ backgroundColor: theme.palette.background.paper }}>
             <CardContent className="p-8">
               <div className="flex items-center gap-3 mb-6">
                 <AlertCircle className="text-orange-600" size={28} />

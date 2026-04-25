@@ -111,7 +111,7 @@ export default function Home() {
       title: 'LightHub Academy - Africa\'s Premier Digital Learning Platform',
       description: 'Master digital skills with premium courses, live classes, CBT practice, and expert tutors. Affordable learning platform offering certifications and career transformation.',
       keywords: 'online courses, CBT practice, JAMB, WAEC, digital learning, online tutors, certifications, coding courses, exam preparation',
-      image: `${window.location.origin}/src/pages/labanonlogo.png`,
+      image: `${window.location.origin}/labanonlogo.png`,
       type: 'website',
       url: window.location.href
     })

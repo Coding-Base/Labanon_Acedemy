@@ -22,3 +22,9 @@ html, body, #root { height: 100%; }
 		@apply my-3;
 	}
 }
+
+/* Prevent Recharts ResponsiveContainer from throwing width/height warnings when rendered inside flex containers */
+.recharts-responsive-container {
+  min-width: 0;
+  min-height: 120px;
+}

@@ -445,6 +445,7 @@ export const adminMockExamsAPI = {
         text: data.text.trim(),
         is_correct: Boolean(data.is_correct),
         order: data.order || 0,
+        explanation: data.explanation ? data.explanation.trim() : undefined,
       });
       return response;
     } catch (error: any) {
@@ -476,6 +477,13 @@ export const adminMockExamsAPI = {
         }
         if (data.is_correct !== undefined && data.is_correct !== null) {
           updateData.is_correct = Boolean(data.is_correct);
+        }
+        if (data.explanation !== undefined && data.explanation !== null) {
+          if (typeof data.explanation === 'string') {
+            updateData.explanation = data.explanation.trim();
+          } else {
+            updateData.explanation = data.explanation;
+          }
         }
         if (data.order !== undefined) {
           updateData.order = data.order;

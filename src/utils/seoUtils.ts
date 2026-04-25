@@ -116,7 +116,7 @@ export function getOrganizationSchema() {
     '@type': 'Organization',
     name: 'LightHub Academy',
     url: window.location.origin,
-    logo: `${window.location.origin}/src/pages/labanonlogo.png`,
+    logo: `${window.location.origin}/labanonlogo.png`,
     description: 'Africa\'s premier digital learning ecosystem transforming education through technology',
     sameAs: [
       'https://www.facebook.com/lighthubacademy',
@@ -176,7 +176,7 @@ export function getEducationalOrganizationSchema() {
     '@type': 'EducationalOrganization',
     name: 'LightHub Academy',
     url: window.location.origin,
-    logo: `${window.location.origin}/src/pages/labanonlogo.png`,
+    logo: `${window.location.origin}/labanonlogo.png`,
     description: 'Digital Learning Platform offering courses, certifications, and CBT practice',
     founder: {
       '@type': 'Person',

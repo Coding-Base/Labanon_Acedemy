@@ -435,7 +435,7 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
             <MenuItem value="mixed">Mixed</MenuItem>
           </TextField>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 6 }}>
+            <Grid item xs={6}>
               <TextField
                 fullWidth
                 type="number"
@@ -447,7 +447,7 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
                 variant="outlined"
               />
             </Grid>
-            <Grid size={{ xs: 6 }}>
+            <Grid item xs={6}>
               <TextField
                 fullWidth
                 type="number"
@@ -540,6 +540,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
   const [editingOptionId, setEditingOptionId] = useState<number | null>(null)
   const [editingOptionText, setEditingOptionText] = useState('')
   const [editingOptionIsCorrect, setEditingOptionIsCorrect] = useState(false)
+  const [editingOptionExplanation, setEditingOptionExplanation] = useState('')
   const [editingOptionImage, setEditingOptionImage] = useState<File | null>(null)
 
   // Form states
@@ -736,6 +737,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       const formData = new FormData()
       formData.append('option_text', editingOptionText)
       formData.append('is_correct', editingOptionIsCorrect.toString())
+      formData.append('explanation', editingOptionExplanation || '')
       if (editingOptionImage) {
         formData.append('option_image_file', editingOptionImage)
       }
@@ -745,6 +747,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       setEditingOptionId(null)
       setEditingOptionText('')
       setEditingOptionIsCorrect(false)
+      setEditingOptionExplanation('')
       setEditingOptionImage(null)
       await fetchExamStructure()
     } catch (error: any) {
@@ -761,6 +764,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       await adminMockExamsAPI.updateOption(option.id, {
         option_text: option.option_text,
         is_correct: !option.is_correct,
+        explanation: option.explanation || '',
       })
       showToast('success', `Marked as ${!option.is_correct ? 'correct' : 'incorrect'}`)
       await fetchExamStructure()
@@ -823,13 +827,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          color: theme.palette.primary.main,
-          fontWeight: 'bold',
-          borderBottom: `1px solid ${darkMode ? '#334155' : '#e0e0e0'}`,
-        }}
-      >
+      <DialogTitle sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
         Exam Structure: {exam?.title}
       </DialogTitle>
 
@@ -1099,6 +1097,9 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                                                       } else if (e.key === 'Escape') {
                                                         setEditingOptionId(null)
                                                         setEditingOptionImage(null)
+                                                        setEditingOptionText('')
+                                                        setEditingOptionIsCorrect(false)
+                                                        setEditingOptionExplanation('')
                                                       }
                                                     }}
                                                     variant="outlined"
@@ -1145,6 +1146,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                                                     setEditingOptionId(option.id)
                                                     setEditingOptionText(option.option_text)
                                                     setEditingOptionIsCorrect(option.is_correct)
+                                                    setEditingOptionExplanation(option.explanation || '')
                                                     setEditingOptionImage(null)
                                                   }}
                                                 >
@@ -1167,7 +1169,13 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                                                   </IconButton>
                                                   <IconButton
                                                     size="small"
-                                                    onClick={() => setEditingOptionId(null)}
+                                                    onClick={() => {
+                                                      setEditingOptionId(null)
+                                                      setEditingOptionImage(null)
+                                                      setEditingOptionText('')
+                                                      setEditingOptionIsCorrect(false)
+                                                      setEditingOptionExplanation('')
+                                                    }}
                                                     title="Cancel"
                                                     sx={{ color: 'gray' }}
                                                   >
@@ -1387,7 +1395,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
             )}
           </Box>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 6 }}>
+            <Grid item xs={6}>
               <TextField
                 fullWidth
                 type="number"
@@ -1399,7 +1407,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                 inputProps={{ min: 1 }}
               />
             </Grid>
-            <Grid size={{ xs: 6 }}>
+            <Grid item xs={6}>
               <TextField
                 fullWidth
                 select
@@ -1467,7 +1475,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
     <div className="space-y-6">
       {/* Stats Cards */}
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-amber-500">{overview.total_exams}</div>
@@ -1480,7 +1488,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-green-500">
@@ -1492,7 +1500,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-amber-500">
@@ -1504,7 +1512,7 @@ const ActivityOverviewTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = fals
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
             <CardContent className="text-center">
               <div className="text-3xl font-bold text-violet-500">

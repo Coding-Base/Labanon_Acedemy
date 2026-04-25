@@ -298,7 +298,7 @@ export default function LessonManager() {
 
     try {
       setSaving(true)
-      const payload = {
+      const payload: any = {
         subject: selectedSubject?.id,
         topic: selectedTopic.id,
         title: lessonTitle.trim(),
@@ -308,7 +308,19 @@ export default function LessonManager() {
         linked_topics: linkedTopic ? [linkedTopic] : [],
         meta_description: metaDescription.trim(),
         meta_keywords: metaKeywords.trim(),
-        og_image: ogImage.trim()
+      }
+
+      // Only include og_image when the user provided a non-empty value
+      const ogImageValue = ogImage.trim();
+      if (ogImageValue) {
+        let finalOg = ogImageValue;
+        try {
+          new URL(finalOg);
+        } catch (_) {
+          const value = finalOg.startsWith('/') ? finalOg : `/${finalOg}`;
+          finalOg = `${window.location.origin}${value}`;
+        }
+        payload.og_image = finalOg;
       }
 
       if (editingLesson) {
@@ -329,7 +341,25 @@ export default function LessonManager() {
       resetLessonForm()
     } catch (error: any) {
       console.error('Error saving lesson:', error, error?.response?.data)
-      showToast('Error saving lesson', 'error')
+      // Try to extract backend validation errors and show them clearly
+      const errData = error?.response?.data
+      let message = 'Error saving lesson'
+      if (errData) {
+        if (typeof errData === 'string') message = errData
+        else if (Array.isArray(errData)) message = errData.join(' ')
+        else if (errData.detail) message = String(errData.detail)
+        else {
+          const parts: string[] = []
+          Object.entries(errData).forEach(([k, v]) => {
+            if (Array.isArray(v)) parts.push(`${k}: ${v.join(' ')}`)
+            else parts.push(`${k}: ${String(v)}`)
+          })
+          if (parts.length) message = parts.join(' | ')
+        }
+      } else if (error?.message) {
+        message = error.message
+      }
+      showToast(message, 'error')
     } finally {
       setSaving(false)
     }

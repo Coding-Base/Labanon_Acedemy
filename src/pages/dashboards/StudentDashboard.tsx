@@ -614,8 +614,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           </div>
         </div>
       </motion.header>
-      
-      {/* <UserMessages isOpen={showInbox} onClose={() => setShowInbox(false)} /> */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-[calc(100vh-5rem)]">
         <div className="flex h-full gap-6">
@@ -744,11 +742,13 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
 
             <div className="flex-1 min-h-0">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-2xl shadow-lg h-full flex flex-col overflow-hidden border`}>
+              {/* Main Scrolling Container */}
               <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="min-h-full p-6">
+                {/* Note the pb-24 padding applied specifically to avoid overlapping mobile nav */}
+                <div className="min-h-full p-6 pb-24 lg:pb-6">
                   <Routes>
                     <Route path="overview" element={
-                      <div>
+                      <div className="w-full min-h-full">
                         <div className="mb-6">
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
@@ -839,33 +839,34 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                       </div>
                     } />
 
-                    <Route path="courses" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><MyCourses /></div>} />
-                    <Route path="courses/:id" element={<div className={`w-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><CoursePlayer /></div>} />
-                    <Route path="courses/:id/details" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><CourseDetail /></div>} />
-                    <Route path="lessons" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><StudentLessonsPage darkMode={darkMode} /></div>} />
-                    <Route path="cbt" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><CBTPage /></div>} />
-                    <Route path="mock-exams" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><StudentMockExamsPage /></div>} />
-                    {/* Pass darkMode correctly here */}
-                    <Route path="mock-exams/attempt/:attemptId" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><MockExamInterface darkMode={darkMode} /></div>} />
-                    {/* Pass darkMode correctly here */}
-                    <Route path="mock-exams/results/:attemptId" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><MockExamResultsPage darkMode={darkMode} /></div>} />
+                    {/* FIXED ROUTES: Removed h-full and redundant overflow-y-auto so parent controls scrolling seamlessly */}
+                    <Route path="courses" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MyCourses /></div>} />
+                    <Route path="courses/:id" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CoursePlayer /></div>} />
+                    <Route path="courses/:id/details" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CourseDetail /></div>} />
                     
-                    <Route path="referrer" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><ReferrerPage /></div>} />
-                    <Route path="cart" element={<div className={`h-full ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><Cart /></div>} />
-                    <Route path="payments" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><PaymentsPage /></div>} />
-                    <Route path="profile" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><Profile /></div>} />
-                    <Route path="progress" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><ProgressPage /></div>} />
-                    <Route path="leaderboard" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><LeaderboardPage /></div>} />
-                    <Route path="certificates" element={<div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}><CertificatesPage /></div>} />
+                    <Route path="lessons" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><StudentLessonsPage darkMode={darkMode} /></div>} />
+                    
+                    <Route path="cbt" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CBTPage /></div>} />
+                    <Route path="mock-exams" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><StudentMockExamsPage /></div>} />
+                    <Route path="mock-exams/attempt/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamInterface /></div>} />
+                    <Route path="mock-exams/results/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamResultsPage /></div>} />
+                    
+                    <Route path="referrer" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ReferrerPage /></div>} />
+                    <Route path="cart" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Cart /></div>} />
+                    <Route path="payments" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><PaymentsPage /></div>} />
+                    <Route path="profile" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Profile /></div>} />
+                    <Route path="progress" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ProgressPage /></div>} />
+                    <Route path="leaderboard" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><LeaderboardPage /></div>} />
+                    <Route path="certificates" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CertificatesPage /></div>} />
                     <Route path="schedule" element={
-                        <div className={`h-full overflow-y-auto pr-2 -mr-2 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}>
+                        <div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                             <SchedulePage userRole="student" />
                         </div>
                     } />
                     
-                    <Route path="" element={<div className="h-full flex items-center justify-center"><p className={`${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Redirecting...</p></div>} />
+                    <Route path="" element={<div className="w-full min-h-full flex items-center justify-center"><p className={`${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Redirecting...</p></div>} />
                     <Route path="*" element={
-                      <div className={`h-full flex items-center justify-center text-center ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+                      <div className={`w-full min-h-full flex items-center justify-center text-center ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
                         <div>
                           <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Page Not Found</h3>
                           <button onClick={() => navigate('/student')} className="px-6 py-2 bg-yellow-600 text-white rounded-lg">Go to Dashboard</button>

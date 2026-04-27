@@ -126,7 +126,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     };
 
     fetchDirectMessageUnreadCount();
-    // Refresh every 30 seconds to keep count up to date
     const interval = setInterval(fetchDirectMessageUnreadCount, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -145,17 +144,13 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   }, [navigate]);
 
   // --- ALGORITHMS ---
-
-  // 1. Calculate Consecutive Days Streak
   const calculateStreak = (activities: string[]) => {
     if (!activities.length) return 0;
     
-    // Sort dates descending
     const sortedDates = activities
       .map(d => new Date(d).setHours(0,0,0,0))
       .sort((a, b) => b - a);
     
-    // Remove duplicates
     const uniqueDates = [...new Set(sortedDates)];
     
     let currentStreak = 0;
@@ -163,7 +158,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    // Check if activity started today or yesterday
     if (uniqueDates[0] === today || uniqueDates[0] === yesterday.getTime()) {
       currentStreak = 1;
       for (let i = 0; i < uniqueDates.length - 1; i++) {
@@ -188,7 +182,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
       if (!summary) setLoadingSummary(true);
 
       try {
-        // 1. Fetch Basic Info
         const [userRes, summaryRes] = await Promise.all([
           api.get('/users/me/'),
           api.get('/dashboard/')
@@ -201,12 +194,9 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         
         setSummary({ ...dashData, ...userData });
 
-        // 1a. Member Since
         const joinDate = new Date(userData.date_joined || new Date());
         setMemberSince(joinDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
 
-        // 2. Fetch Detailed Data for Algorithms
-        // Using correct attempt-list route
         const [attemptsRes, enrollmentsRes] = await Promise.all([
           api.get('/cbt/attempt-list/', { params: { page_size: 100 } })
             .catch((err) => {
@@ -223,28 +213,22 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         const attempts = attemptsRes.data.results || [];
         const enrollments = enrollmentsRes.data.results || [];
 
-        // --- ALGO 1: STREAK ---
         const activityDates: string[] = [
           ...attempts.map((a: any) => a.started_at),
           ...enrollments.map((e: any) => e.updated_at || e.created_at)
         ].filter(Boolean);
         setStreak(calculateStreak(activityDates));
 
-        // --- ALGO 2: SMART RATING ---
-        // Base 3.0 + (0.08 per exam taken), Max 5.0
         const attemptsCount = attempts.length;
         const newRating = Math.min(5.0, 3.0 + (Number(attemptsCount || 0) * 0.08));
         const validRating = isFinite(newRating) ? newRating : 3.0;
         setCalculatedRating(Number(validRating.toFixed(2)) || 3.0);
 
-        // --- ALGO 3: REAL STUDY HOURS ---
-        // Sum of CBT 'time_taken_seconds' + (Course Progress * estimated duration)
         const examSeconds = attempts.reduce((acc: number, curr: any) => acc + (curr.time_taken_seconds || 0), 0);
         const examHours = examSeconds / 3600;
 
         const courseHours = enrollments.reduce((acc: number, curr: any) => {
           const progress = parseFloat(curr.progress || 0);
-          // If course duration unknown, assume 5 hours avg per course
           const duration = parseFloat(curr.course?.duration || 5); 
           return acc + ((progress / 100) * duration);
         }, 0);
@@ -253,15 +237,12 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         const validHours = isFinite(totalHours) ? totalHours : 0;
         setRealStudyHours(Number(validHours.toFixed(1)) || 0);
 
-        // --- ALGO 4: GLOBAL LEADERBOARD & RANK ---
-        // Fetch real leaderboard data from backend
         let leaderboardData: LeaderboardUser[] = [];
         try {
           const leaderboardRes = await api.get('/cbt/leaderboard/', { params: { limit: 50 } }).catch(() => null);
           if (leaderboardRes?.data) {
             const data = Array.isArray(leaderboardRes.data) ? leaderboardRes.data : (leaderboardRes.data.results || []);
             leaderboardData = data.map((item: any, idx: number) => {
-              // Safely extract numeric score
               let scoreValue = item.avg_score !== undefined ? item.avg_score : (item.high_score || item.best_score || 0);
               if (typeof scoreValue === 'string') {
                 scoreValue = parseFloat(scoreValue);
@@ -281,7 +262,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           console.error('Failed to fetch leaderboard:', err);
         }
 
-        // Current User Best Score - safely extract numeric score
         const getNumericScore = (scoreField: any): number => {
           if (typeof scoreField === 'number' && isFinite(scoreField)) return scoreField;
           if (typeof scoreField === 'string') {
@@ -291,7 +271,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           return 0;
         };
 
-        // Safely compute best score - guard against empty array and NaN
         let myBestScore = 0;
         if (attempts.length > 0) {
           const scores = attempts.map((a: any) => getNumericScore(a.score));
@@ -308,14 +287,12 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
             is_current_user: true
         };
 
-        // Merge real data with current user, Sort, Deduplicate
         const allBoard = [...leaderboardData, currentUserEntry].sort((a, b) => b.score - a.score);
         const uniqueBoard = Array.from(new Map(allBoard.map(item => [item.id, item])).values())
                                 .sort((a, b) => b.score - a.score);
 
         setLeaderboard(uniqueBoard);
 
-        // Find Rank
         const rankIndex = uniqueBoard.findIndex(u => u.id === userData.id);
         setUserRank(rankIndex !== -1 ? rankIndex + 1 : '—');
 
@@ -332,7 +309,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   }, [doLogout, props.summary, location.state]);
 
   if (loadingSummary) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-gray-50">
       <div className="text-center">
         <Loader2 className="w-12 h-12 text-yellow-600 animate-spin mx-auto mb-4" />
         <p className="text-gray-600 font-medium">Loading your student portal...</p>
@@ -378,7 +355,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     return normalized === `${base}/${p}`;
   };
 
-  // --- Sub-Component: Referrer Page ---
   const ReferrerPage = () => (
     <div className="space-y-6">
       <div className={`bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 text-white relative overflow-hidden`}>
@@ -430,7 +406,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     </div>
   );
 
-  // --- Sub-Component: Leaderboard Table ---
   const LeaderboardPage = () => (
     <div className={`space-y-6 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}>
       <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 rounded-2xl p-8 text-white relative overflow-hidden">
@@ -442,7 +417,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
       </div>
 
       <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl shadow-sm border overflow-hidden`}>
-        {/* Desktop / Tablet Table */}
         <div className="hidden sm:block">
           <table className="w-full">
             <thead className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'} border-b`}>
@@ -493,7 +467,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           </table>
         </div>
 
-        {/* Mobile list */}
         <div className="sm:hidden p-4 space-y-3">
           {leaderboard.map((user, index) => (
             <div key={user.id} className={`p-3 rounded-lg border ${user.is_current_user ? (darkMode ? 'bg-yellow-900/30 border-yellow-700' : 'bg-yellow-50 border-yellow-200') : (darkMode ? 'bg-slate-700/50 border-slate-600' : 'bg-white border-gray-100')}`}>
@@ -518,9 +491,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   );
 
   return (
-    <div className={`student-dashboard ${darkMode ? 'dark-mode' : ''} min-h-screen ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-gradient-to-br from-gray-50 to-yellow-50'} overflow-hidden`}>
+    <div className={`student-dashboard ${darkMode ? 'dark-mode bg-slate-950 text-slate-100' : 'bg-gradient-to-br from-gray-50 to-yellow-50'} h-[100dvh] w-full flex flex-col overflow-hidden`}>
       <style>{`
-        /* Student dashboard custom scrollbar */
         .student-dashboard .custom-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: rgba(250,204,21,0.9) rgba(15,23,42,0.18);
@@ -541,12 +513,9 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         .student-dashboard .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           filter: brightness(0.95);
         }
-        /* Reduce visual noise on small devices */
         @media (max-width: 1024px) {
           .student-dashboard .custom-scrollbar::-webkit-scrollbar { height: 8px; }
         }
-
-        /* Dark-mode overrides for common utility classes inside this dashboard scope */
         .student-dashboard.dark-mode .bg-white { background-color: #0f1724 !important; }
         .student-dashboard.dark-mode .bg-white/90 { background-color: rgba(15,23,36,0.9) !important; }
         .student-dashboard.dark-mode .bg-white\\/10 { background-color: rgba(255,255,255,0.04) !important; }
@@ -564,14 +533,17 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           background-color: #0b1220 !important; color: #e6eef8 !important; border-color: #1f2937 !important;
         }
       `}</style>
+      
       <GospelVideoModal />
+      
+      {/* Header is fixed flex-none */}
       <motion.header 
         initial={{ y: -20, opacity: 0 }} 
         animate={{ y: 0, opacity: 1 }} 
-        className={`sticky top-0 z-40 ${darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/90'} backdrop-blur-lg border-b shadow-sm`}
+        className={`flex-none z-40 ${darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/90'} backdrop-blur-lg border-b shadow-sm h-16`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+          <div className="flex items-center justify-between h-full">
             <div className="flex items-center">
               <button onClick={() => setSidebarOpen(!sidebarOpen)} className={`lg:hidden p-2 rounded-lg ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'} mr-3 transition-colors`} aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'} aria-expanded={sidebarOpen}>
                 <Menu className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`} />
@@ -615,280 +587,271 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         </div>
       </motion.header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-[calc(100vh-5rem)]">
-        <div className="flex h-full gap-6">
-          
-          <motion.aside initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="hidden lg:block w-64 flex-shrink-0">
-            <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-2xl shadow-lg p-6 sticky top-24 h-[calc(100vh-8rem)] flex flex-col border`}>
-              <div className="mb-8">
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-md">
-                      {summary?.username.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+      {/* Main Flex Container */}
+      <div className="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6 relative">
+        <motion.aside initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="hidden lg:flex w-64 flex-col flex-none">
+          <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-2xl shadow-lg p-6 flex flex-col h-full border overflow-hidden`}>
+            <div className="mb-6 flex-none">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-md">
+                    {summary?.username.charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <h3 className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</h3>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Student</p>
-                    <div className="flex items-center mt-1">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Star key={i} className={`w-3 h-3 ${i <= Math.round(calculatedRating) ? 'text-yellow-400 fill-current' : darkMode ? 'text-slate-600' : 'text-gray-300'}`} />
-                      ))}
-                      <span className={`ml-1 text-xs font-semibold ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>{calculatedRating}</span>
-                    </div>
-                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
                 </div>
-
-                <div className={`space-y-2 pt-4 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className={darkMode ? 'text-slate-400' : 'text-gray-600'}>Member Since</span>
-                    <span className={`font-semibold ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>{memberSince || '...'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className={darkMode ? 'text-slate-400' : 'text-gray-600'}>Learning Streak</span>
-                    <span className="font-semibold text-orange-600">{streak} days 🔥</span>
+                <div>
+                  <h3 className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</h3>
+                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Student</p>
+                  <div className="flex items-center mt-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star key={i} className={`w-3 h-3 ${i <= Math.round(calculatedRating) ? 'text-yellow-400 fill-current' : darkMode ? 'text-slate-600' : 'text-gray-300'}`} />
+                    ))}
+                    <span className={`ml-1 text-xs font-semibold ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>{calculatedRating}</span>
                   </div>
                 </div>
               </div>
 
-              <nav className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar">
-                <div className="space-y-1">
-                  {navItems.map((item) => {
-                    const active = isActivePath(item.path);
-                    const renderItem = () => (
-                      <motion.div key={item.path} whileHover={{ x: 5 }} transition={{ type: "spring", stiffness: 300 }}>
-                        <button
-                          onClick={() => {
-                            navigate(item.path);
-                          }}
-                          className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                            active 
-                              ? darkMode
-                                ? 'bg-gradient-to-r from-yellow-600/20 to-orange-600/20 text-yellow-400 border-l-4 border-yellow-500 shadow-sm'
-                                : 'bg-gradient-to-r from-yellow-50 to-orange-50 text-yellow-700 border-l-4 border-yellow-500 shadow-sm'
-                              : darkMode
-                              ? 'text-slate-300 hover:bg-slate-700/50 hover:text-yellow-400'
-                              : 'text-gray-700 hover:bg-gray-50 hover:text-yellow-600'
-                          }`}
-                        >
-                          <div className={`${active ? 'text-yellow-500' : darkMode ? 'text-slate-500' : 'text-gray-400'}`}>{item.icon}</div>
-                          <span className="font-medium">{item.label}</span>
-                          {active && <ChevronRight className="w-4 h-4 ml-auto" />}
-                        </button>
-                      </motion.div>
-                    );
-                    return renderItem();
-                  })}
+              <div className={`space-y-2 pt-4 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className={darkMode ? 'text-slate-400' : 'text-gray-600'}>Member Since</span>
+                  <span className={`font-semibold ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>{memberSince || '...'}</span>
                 </div>
-              </nav>
-
-              <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="mt-6 w-full py-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all shadow-md">
-                Upgrade to Pro
-              </motion.button>
+                <div className="flex items-center justify-between text-sm">
+                  <span className={darkMode ? 'text-slate-400' : 'text-gray-600'}>Learning Streak</span>
+                  <span className="font-semibold text-orange-600">{streak} days 🔥</span>
+                </div>
+              </div>
             </div>
-          </motion.aside>
 
-          <AnimatePresence>
-            {sidebarOpen && (
-              <>
-                <motion.div 
-                  key="overlay"
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 0.5 }} 
-                  exit={{ opacity: 0 }} 
-                  className="lg:hidden fixed inset-0 bg-black z-40" 
-                  onClick={() => setSidebarOpen(false)} 
-                />
-                <motion.aside 
-                  key="sidebar"
-                  initial={{ x: -300, opacity: 0 }} 
-                  animate={{ x: 0, opacity: 1 }} 
-                  exit={{ x: -300, opacity: 0 }} 
-                  className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-2xl p-6 flex flex-col`}
-                >
-                  <div className={`flex items-center justify-between mb-8 pb-4 border-b ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-                    <h2 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Menu</h2>
-                    <button onClick={() => setSidebarOpen(false)} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}>
-                      <X className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`} />
-                    </button>
-                  </div>
-                  <nav className="space-y-2 flex-1 overflow-y-auto pr-2 -mr-2">
-                    {navItems.map((item) => (
+            <nav className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar">
+              <div className="space-y-1">
+                {navItems.map((item) => {
+                  const active = isActivePath(item.path);
+                  return (
+                    <motion.div key={item.path} whileHover={{ x: 5 }} transition={{ type: "spring", stiffness: 300 }}>
                       <button
-                        key={item.path}
-                        onClick={() => {
-                          navigate(`${base}/${item.path}`);
-                          setSidebarOpen(false);
-                        }}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                          darkMode
-                            ? 'text-slate-300 hover:bg-slate-700 hover:text-yellow-400'
+                        onClick={() => navigate(item.path)}
+                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                          active 
+                            ? darkMode
+                              ? 'bg-gradient-to-r from-yellow-600/20 to-orange-600/20 text-yellow-400 border-l-4 border-yellow-500 shadow-sm'
+                              : 'bg-gradient-to-r from-yellow-50 to-orange-50 text-yellow-700 border-l-4 border-yellow-500 shadow-sm'
+                            : darkMode
+                            ? 'text-slate-300 hover:bg-slate-700/50 hover:text-yellow-400'
                             : 'text-gray-700 hover:bg-gray-50 hover:text-yellow-600'
                         }`}
                       >
-                        <div className={darkMode ? 'text-slate-500' : 'text-gray-500'}>{item.icon}</div>
-                        <span>{item.label}</span>
+                        <div className={`${active ? 'text-yellow-500' : darkMode ? 'text-slate-500' : 'text-gray-400'}`}>{item.icon}</div>
+                        <span className="font-medium">{item.label}</span>
+                        {active && <ChevronRight className="w-4 h-4 ml-auto" />}
                       </button>
-                    ))}
-                  </nav>
-                  <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-                    <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md">Logout</button>
-                  </div>
-                </motion.aside>
-              </>
-            )}
-          </AnimatePresence>
-
-            <div className="flex-1 min-h-0">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-2xl shadow-lg h-full flex flex-col overflow-hidden border`}>
-              {/* Main Scrolling Container */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {/* Note the pb-24 padding applied specifically to avoid overlapping mobile nav */}
-                <div className="min-h-full p-6 pb-24 lg:pb-6">
-                  <Routes>
-                    <Route path="overview" element={
-                      <div className="w-full min-h-full">
-                        <div className="mb-6">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
-                              <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Welcome back, <span className="bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">{summary?.username}</span>! 👋</h1>
-                              <p className={`${darkMode ? 'text-slate-400' : 'text-gray-600'} mt-2`}>Track your progress, access courses, and ace your exams</p>
-                            </div>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-xl font-semibold hover:shadow-lg">
-                              <PlayCircle className="w-5 h-5 inline mr-2" />Continue Learning
-                            </motion.button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                          {stats.map((stat) => (
-                            <div key={stat.title} className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'} rounded-2xl border p-6 shadow-sm hover:shadow-md transition-shadow`}>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-600'} mb-1`}>{stat.title}</p>
-                                  <p className={`text-2xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{stat.value}</p>
-                                  <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-500'} mt-1`}>{stat.change}</p>
-                                </div>
-                                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-md`}>
-                                  <div className="text-white">{stat.icon}</div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Downloads Card */}
-                        <div className="mb-8">
-                          <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} rounded-2xl border p-6`}>
-                            <DownloadsCard darkMode={darkMode} />
-                          </div>
-                        </div>
-
-                        {/* Review card linking to reviews page */}
-                        <div className="mb-6">
-                          <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-100'} rounded-xl shadow-sm border p-4 flex items-center justify-between gap-4`}>
-                            <div>
-                              <div className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Share Feedback</div>
-                              <div className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Tell us about your experience</div>
-                              <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'} mt-1`}>Leave a review about the platform or your recent exam.</div>
-                            </div>
-                            <div>
-                              <Link to="/reviews?role=student" className="px-4 py-2 bg-yellow-600 text-white rounded">Write a Review</Link>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                          <div className="lg:col-span-2">
-                            <div className="mb-8">
-                              <h2 className={`text-xl font-bold mb-4 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Quick Actions</h2>
-                              <div className="grid grid-cols-2 gap-4">
-                                {quickActions.map((action) => (
-                                  <motion.button key={action.title} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(action.path)} className={`${action.color} p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:shadow-lg transition-all border border-transparent hover:border-gray-200`}>
-                                    {action.icon}
-                                    <span className="text-sm font-semibold text-center">{action.title}</span>
-                                  </motion.button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="lg:col-span-1">
-                            <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} border rounded-2xl shadow-sm p-5`}>
-                              <div className="flex justify-between items-center mb-4">
-                                <h3 className={`font-bold flex items-center ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}><Trophy className="w-5 h-5 text-yellow-500 mr-2" /> Top Scorers</h3>
-                                <Link to="/student/leaderboard" className="text-sm text-yellow-600 hover:underline">See More</Link>
-                              </div>
-                              <div className="space-y-4">
-                                {leaderboard.slice(0, 3).map((user, idx) => (
-                                  <div key={user.id} className={`flex items-center justify-between p-3 rounded-xl ${darkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
-                                    <div className="flex items-center">
-                                      <span className={`font-bold mr-3 ${idx===0?'text-yellow-600':idx===1?'text-gray-500':'text-amber-700'}`}>#{idx+1}</span>
-                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mr-2 ${darkMode ? 'bg-slate-600 text-slate-100' : 'bg-gray-300 text-gray-700'}`}>{user.avatar_initial}</div>
-                                      <div className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-gray-900'}`}>{user.name}</div>
-                                    </div>
-                                    <div className={`text-sm font-bold text-yellow-700`}>{typeof user.score === 'number' && isFinite(user.score) ? user.score.toFixed(1) : '0.0'}</div>
-                                  </div>
-                                ))}
-                                {leaderboard.length === 0 && <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-gray-500'} text-center py-4`}>No data available</div>}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    } />
-
-                    {/* FIXED ROUTES: Removed h-full and redundant overflow-y-auto so parent controls scrolling seamlessly */}
-                    <Route path="courses" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MyCourses /></div>} />
-                    <Route path="courses/:id" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CoursePlayer /></div>} />
-                    <Route path="courses/:id/details" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CourseDetail /></div>} />
-                    
-                    <Route path="lessons" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><StudentLessonsPage darkMode={darkMode} /></div>} />
-                    
-                    <Route path="cbt" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CBTPage /></div>} />
-                    <Route path="mock-exams" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><StudentMockExamsPage /></div>} />
-                    <Route path="mock-exams/attempt/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamInterface /></div>} />
-                    <Route path="mock-exams/results/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamResultsPage /></div>} />
-                    
-                    <Route path="referrer" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ReferrerPage /></div>} />
-                    <Route path="cart" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Cart /></div>} />
-                    <Route path="payments" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><PaymentsPage /></div>} />
-                    <Route path="profile" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Profile /></div>} />
-                    <Route path="progress" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ProgressPage /></div>} />
-                    <Route path="leaderboard" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><LeaderboardPage /></div>} />
-                    <Route path="certificates" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CertificatesPage /></div>} />
-                    <Route path="schedule" element={
-                        <div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            <SchedulePage userRole="student" />
-                        </div>
-                    } />
-                    
-                    <Route path="" element={<div className="w-full min-h-full flex items-center justify-center"><p className={`${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Redirecting...</p></div>} />
-                    <Route path="*" element={
-                      <div className={`w-full min-h-full flex items-center justify-center text-center ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-                        <div>
-                          <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Page Not Found</h3>
-                          <button onClick={() => navigate('/student')} className="px-6 py-2 bg-yellow-600 text-white rounded-lg">Go to Dashboard</button>
-                        </div>
-                      </div>
-                    } />
-                  </Routes>
-                </div>
+                    </motion.div>
+                  );
+                })}
               </div>
-            </motion.div>
+            </nav>
+
+            <motion.button onClick={() => doLogout()} whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="mt-6 flex-none w-full py-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all shadow-md">
+              Upgrade to Pro
+            </motion.button>
           </div>
-        </div>
+        </motion.aside>
+
+        <AnimatePresence>
+          {sidebarOpen && (
+            <>
+              <motion.div 
+                key="overlay"
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 0.5 }} 
+                exit={{ opacity: 0 }} 
+                className="lg:hidden fixed inset-0 bg-black z-40" 
+                onClick={() => setSidebarOpen(false)} 
+              />
+              <motion.aside 
+                key="sidebar"
+                initial={{ x: -300, opacity: 0 }} 
+                animate={{ x: 0, opacity: 1 }} 
+                exit={{ x: -300, opacity: 0 }} 
+                className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-2xl p-6 flex flex-col`}
+              >
+                <div className={`flex items-center justify-between mb-8 pb-4 border-b ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+                  <h2 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Menu</h2>
+                  <button onClick={() => setSidebarOpen(false)} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}>
+                    <X className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`} />
+                  </button>
+                </div>
+                <nav className="space-y-2 flex-1 overflow-y-auto pr-2 -mr-2">
+                  {navItems.map((item) => (
+                    <button
+                      key={item.path}
+                      onClick={() => {
+                        navigate(`${base}/${item.path}`);
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                        darkMode
+                          ? 'text-slate-300 hover:bg-slate-700 hover:text-yellow-400'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-yellow-600'
+                      }`}
+                    >
+                      <div className={darkMode ? 'text-slate-500' : 'text-gray-500'}>{item.icon}</div>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </nav>
+                <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+                  <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md">Logout</button>
+                </div>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+
+        <main className="flex-1 flex flex-col min-w-0 bg-transparent rounded-2xl relative overflow-hidden">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-2xl shadow-lg border flex-1 flex flex-col overflow-hidden`}>
+            
+            {/* THIS INNER DIV CONTROLS THE SCROLL FOR ALL ROUTES */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+              <div className="min-h-full p-6 pb-24 lg:pb-6">
+                <Routes>
+                  <Route path="overview" element={
+                    <div className="w-full min-h-full">
+                      <div className="mb-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div>
+                            <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Welcome back, <span className="bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">{summary?.username}</span>! 👋</h1>
+                            <p className={`${darkMode ? 'text-slate-400' : 'text-gray-600'} mt-2`}>Track your progress, access courses, and ace your exams</p>
+                          </div>
+                          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-xl font-semibold hover:shadow-lg">
+                            <PlayCircle className="w-5 h-5 inline mr-2" />Continue Learning
+                          </motion.button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        {stats.map((stat) => (
+                          <div key={stat.title} className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'} rounded-2xl border p-6 shadow-sm hover:shadow-md transition-shadow`}>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-600'} mb-1`}>{stat.title}</p>
+                                <p className={`text-2xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{stat.value}</p>
+                                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-500'} mt-1`}>{stat.change}</p>
+                              </div>
+                              <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-md`}>
+                                <div className="text-white">{stat.icon}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mb-8">
+                        <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} rounded-2xl border p-6`}>
+                          <DownloadsCard darkMode={darkMode} />
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-100'} rounded-xl shadow-sm border p-4 flex items-center justify-between gap-4`}>
+                          <div>
+                            <div className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Share Feedback</div>
+                            <div className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Tell us about your experience</div>
+                            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'} mt-1`}>Leave a review about the platform or your recent exam.</div>
+                          </div>
+                          <div>
+                            <Link to="/reviews?role=student" className="px-4 py-2 bg-yellow-600 text-white rounded">Write a Review</Link>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2">
+                          <div className="mb-8">
+                            <h2 className={`text-xl font-bold mb-4 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Quick Actions</h2>
+                            <div className="grid grid-cols-2 gap-4">
+                              {quickActions.map((action) => (
+                                <motion.button key={action.title} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate(action.path)} className={`${action.color} p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:shadow-lg transition-all border border-transparent hover:border-gray-200`}>
+                                  {action.icon}
+                                  <span className="text-sm font-semibold text-center">{action.title}</span>
+                                </motion.button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="lg:col-span-1">
+                          <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} border rounded-2xl shadow-sm p-5`}>
+                            <div className="flex justify-between items-center mb-4">
+                              <h3 className={`font-bold flex items-center ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}><Trophy className="w-5 h-5 text-yellow-500 mr-2" /> Top Scorers</h3>
+                              <Link to="/student/leaderboard" className="text-sm text-yellow-600 hover:underline">See More</Link>
+                            </div>
+                            <div className="space-y-4">
+                              {leaderboard.slice(0, 3).map((user, idx) => (
+                                <div key={user.id} className={`flex items-center justify-between p-3 rounded-xl ${darkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
+                                  <div className="flex items-center">
+                                    <span className={`font-bold mr-3 ${idx===0?'text-yellow-600':idx===1?'text-gray-500':'text-amber-700'}`}>#{idx+1}</span>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mr-2 ${darkMode ? 'bg-slate-600 text-slate-100' : 'bg-gray-300 text-gray-700'}`}>{user.avatar_initial}</div>
+                                    <div className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-gray-900'}`}>{user.name}</div>
+                                  </div>
+                                  <div className={`text-sm font-bold text-yellow-700`}>{typeof user.score === 'number' && isFinite(user.score) ? user.score.toFixed(1) : '0.0'}</div>
+                                </div>
+                              ))}
+                              {leaderboard.length === 0 && <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-gray-500'} text-center py-4`}>No data available</div>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  } />
+
+                  <Route path="courses" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MyCourses /></div>} />
+                  <Route path="courses/:id" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CoursePlayer /></div>} />
+                  <Route path="courses/:id/details" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CourseDetail /></div>} />
+                  
+                  <Route path="lessons" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><StudentLessonsPage darkMode={darkMode} /></div>} />
+                  
+                  <Route path="cbt" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CBTPage /></div>} />
+                  <Route path="mock-exams" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><StudentMockExamsPage /></div>} />
+                  <Route path="mock-exams/attempt/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamInterface /></div>} />
+                  <Route path="mock-exams/results/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamResultsPage /></div>} />
+                  
+                  <Route path="referrer" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ReferrerPage /></div>} />
+                  <Route path="cart" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Cart /></div>} />
+                  <Route path="payments" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><PaymentsPage /></div>} />
+                  <Route path="profile" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Profile /></div>} />
+                  <Route path="progress" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ProgressPage /></div>} />
+                  <Route path="leaderboard" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><LeaderboardPage /></div>} />
+                  <Route path="certificates" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CertificatesPage /></div>} />
+                  <Route path="schedule" element={
+                      <div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          <SchedulePage userRole="student" />
+                      </div>
+                  } />
+                  
+                  <Route path="" element={<div className="w-full min-h-full flex items-center justify-center"><p className={`${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Redirecting...</p></div>} />
+                  <Route path="*" element={
+                    <div className={`w-full min-h-full flex items-center justify-center text-center ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+                      <div>
+                        <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Page Not Found</h3>
+                        <button onClick={() => navigate('/student')} className="px-6 py-2 bg-yellow-600 text-white rounded-lg">Go to Dashboard</button>
+                      </div>
+                    </div>
+                  } />
+                </Routes>
+              </div>
+            </div>
+          </motion.div>
+        </main>
       </div>
 
-      <div className={`lg:hidden fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} border-t shadow-lg z-30 flex justify-around items-center h-16`}>
+      <div className={`lg:hidden fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-[60] flex justify-around items-center h-16`}>
         {navItems.slice(0, 5).map((item) => {
           const active = isActivePath(item.path);
           return (
             <Link key={item.path} to={item.path} className={`flex flex-col items-center p-2 flex-1 ${active ? 'text-yellow-600' : (darkMode ? 'text-slate-400' : 'text-gray-600')}`}>
               <div className={`${active ? 'text-yellow-600' : (darkMode ? 'text-slate-500' : 'text-gray-500')} mb-1`}>{React.cloneElement(item.icon, { size: 20 })}</div>
               <span className={`text-xs font-medium ${darkMode ? 'text-slate-300' : ''}`}>{item.label}</span>
-              {active && <div className="absolute -top-1 w-12 h-1 bg-yellow-600 rounded-t-lg"></div>}
             </Link>
           );
         })}

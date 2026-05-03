@@ -103,6 +103,20 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
   const [lessonsData, setLessonsData] = useState<{ [key: string]: Lesson[] }>({})
 
   const contentRef = useRef<HTMLDivElement>(null)
+  const requestIdRef = useRef(0)
+
+  // Simple debounced value hook to avoid rapid-fire updates and API calls
+  const useDebouncedValue = <T,>(value: T, delay = 300) => {
+    const [debounced, setDebounced] = useState<T>(value)
+    useEffect(() => {
+      const id = window.setTimeout(() => setDebounced(value), delay)
+      return () => window.clearTimeout(id)
+    }, [value, delay])
+    return debounced
+  }
+
+  const debouncedGlobalSearch = useDebouncedValue(globalSearch, 400)
+  const debouncedLessonSearch = useDebouncedValue(lessonSearch, 250)
 
   useEffect(() => {
     if (selectedLessonForView && contentRef.current) {
@@ -144,29 +158,40 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
     loadHierarchy()
   }, [])
 
+  // Debounced search effect: use debouncedGlobalSearch and guard responses
   useEffect(() => {
-    const query = globalSearch.trim()
+    const query = debouncedGlobalSearch.trim()
     if (!query) {
+      // clear results immediately when search cleared
       setSearchResults([])
       setSearching(false)
       return
     }
 
-    const timer = window.setTimeout(async () => {
+    let cancelled = false
+    const requestId = ++requestIdRef.current
+
+    const run = async () => {
       try {
         setSearching(true)
         const response = await api.get(`${API_BASE}/lessons/lessons/search/`, { params: { q: query, page_size: 100 } })
-        setSearchResults(toArray(response.data))
+        if (cancelled) return
+        // only set results for the latest request
+        if (requestId === requestIdRef.current) setSearchResults(toArray(response.data))
       } catch (error: any) {
+        if (cancelled) return
         console.error('Error searching lessons:', error)
-        setSearchResults([])
+        if (requestId === requestIdRef.current) setSearchResults([])
       } finally {
-        setSearching(false)
+        if (cancelled) return
+        if (requestId === requestIdRef.current) setSearching(false)
       }
-    }, 300)
+    }
 
-    return () => window.clearTimeout(timer)
-  }, [globalSearch])
+    run()
+
+    return () => { cancelled = true }
+  }, [debouncedGlobalSearch])
 
   const loadHierarchy = async () => {
     try {
@@ -290,7 +315,7 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
   const currentLessons = (selectedTopic ? lessonsData[selectedTopic.id] || [] : [])
     .filter(lesson => {
       const text = `${lesson.title} ${lesson.tags || ''}`.toLowerCase()
-      return text.includes(lessonSearch.toLowerCase())
+      return text.includes(debouncedLessonSearch.toLowerCase())
     })
     .sort((a, b) => sortOrder === 'Alphabetical' ? a.title.localeCompare(b.title) : new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 

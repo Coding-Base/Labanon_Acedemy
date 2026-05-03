@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import {
   Search,
   Plus,
@@ -7,10 +7,9 @@ import {
   FolderOpen,
   ChevronDown,
   Loader2,
-  X,
   Edit,
   Save,
-  Eye,
+  Tags,
 } from 'lucide-react'
 import api from '../../utils/axiosInterceptor'
 import showToast from '../../utils/toast'
@@ -19,22 +18,37 @@ import 'react-quill/dist/quill.snow.css'
 import 'katex/dist/katex.min.css'
 
 interface Subject {
-  id: string // UUID
+  id: string
+  name: string
+  created_at: string
+}
+
+interface LessonSubfolder {
+  id: string
+  subject: string
+  subject_name?: string
   name: string
   created_at: string
 }
 
 interface Topic {
-  id: string // UUID
+  id: string
   subject: string
+  subject_name?: string
+  subfolder: string
+  subfolder_name?: string
   name: string
   created_at: string
 }
 
 interface Lesson {
-  id: string // UUID
-  subject: string
+  id: string
+  subject?: string
+  subject_name?: string
+  subfolder?: string
+  subfolder_name?: string
   topic: string
+  topic_name?: string
   title: string
   content: string
   publisher_name: string
@@ -44,151 +58,132 @@ interface Lesson {
   meta_description?: string
   meta_keywords?: string
   og_image?: string
+  tags?: string
   created_at: string
   updated_at: string
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
-// Quill modules for rich text editor with math (KaTeX) support
 const quillModules = {
   toolbar: [
     ['bold', 'italic', 'underline', 'strike'],
     ['blockquote', 'code-block'],
-    [{ 'header': 1 }, { 'header': 2 }],
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-    [{ 'script': 'sub'}, { 'script': 'super' }],
+    [{ header: 1 }, { header: 2 }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ script: 'sub' }, { script: 'super' }],
     ['image', 'link', 'formula'],
-    ['clean']
-  ]
+    ['clean'],
+  ],
 }
 
 const quillFormats = ['bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block', 'header', 'list', 'script', 'image', 'link', 'formula']
 
-// Helper to check if Quill content is actually empty (removes HTML tags)
+const toArray = (data: any) => Array.isArray(data) ? data : (data?.results || [])
+
 const isLessonContentEmpty = (content: string): boolean => {
   if (!content) return true
-  // Remove HTML tags and check if anything remains
-  const plainText = content.replace(/<[^>]*>/g, '').trim()
-  return !plainText
+  return !content.replace(/<[^>]*>/g, '').trim()
 }
 
 export default function LessonManager() {
-  // Subject Management
   const [subjects, setSubjects] = useState<Subject[]>([])
-  const [subjectSearch, setSubjectSearch] = useState('')
-  const [subjectSuggestions, setSubjectSuggestions] = useState<Subject[]>([])
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
-  const [newSubjectName, setNewSubjectName] = useState('')
-  const [showSubjectInput, setShowSubjectInput] = useState(false)
-  const subjectSearchRef = useRef<ReturnType<typeof setTimeout> | undefined>()
-
-  // Topic Management
+  const [subfolders, setSubfolders] = useState<LessonSubfolder[]>([])
   const [topics, setTopics] = useState<Topic[]>([])
-  const [topicSearch, setTopicSearch] = useState('')
-  const [topicSuggestions, setTopicSuggestions] = useState<Topic[]>([])
-  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
-  const [newTopicName, setNewTopicName] = useState('')
-  const [showTopicInput, setShowTopicInput] = useState(false)
-  const topicSearchRef = useRef<ReturnType<typeof setTimeout> | undefined>()
-
-  // Lesson Management
   const [lessons, setLessons] = useState<Lesson[]>([])
+
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+  const [selectedSubfolder, setSelectedSubfolder] = useState<LessonSubfolder | null>(null)
+  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
+
+  const [subjectSearch, setSubjectSearch] = useState('')
+  const [subfolderSearch, setSubfolderSearch] = useState('')
+  const [topicSearch, setTopicSearch] = useState('')
+
+  const [newSubjectName, setNewSubjectName] = useState('')
+  const [newSubfolderName, setNewSubfolderName] = useState('')
+  const [newTopicName, setNewTopicName] = useState('')
+  const [showSubjectInput, setShowSubjectInput] = useState(false)
+  const [showSubfolderInput, setShowSubfolderInput] = useState(false)
+  const [showTopicInput, setShowTopicInput] = useState(false)
+
   const [lessonTitle, setLessonTitle] = useState('')
   const [lessonContent, setLessonContent] = useState('')
   const [publisherName, setPublisherName] = useState('')
   const [publisherTitle, setPublisherTitle] = useState('')
   const [linkedTopic, setLinkedTopic] = useState<string | null>(null)
+  const [lessonTags, setLessonTags] = useState('')
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
 
-  // SEO Fields
   const [metaDescription, setMetaDescription] = useState('')
   const [metaKeywords, setMetaKeywords] = useState('')
   const [ogImage, setOgImage] = useState('')
 
-  // UI States
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set())
+  const [expandedSubfolders, setExpandedSubfolders] = useState<Set<string>>(new Set())
 
-  // Load all subjects on mount
   useEffect(() => {
     loadSubjects()
   }, [])
 
-  // Debug: Log form state
   useEffect(() => {
-    console.log('Lesson form state:', {
-      lessonTitle,
-      lessonContentPlainText: lessonContent.replace(/<[^>]*>/g, '').trim(),
-      isContentEmpty: isLessonContentEmpty(lessonContent),
-      shouldBeEnabled: !(!lessonTitle.trim() || isLessonContentEmpty(lessonContent))
-    })
-  }, [lessonTitle, lessonContent])
-
-  // Debounced subject search
-  useEffect(() => {
-    if (subjectSearchRef.current) clearTimeout(subjectSearchRef.current)
-    
-    if (subjectSearch.trim() && Array.isArray(subjects)) {
-      subjectSearchRef.current = setTimeout(() => {
-        const filtered = subjects.filter(s =>
-          s.name.toLowerCase().includes(subjectSearch.toLowerCase())
-        )
-        setSubjectSuggestions(filtered)
-      }, 300)
+    if (selectedSubject) {
+      loadSubfolders(selectedSubject.id)
     } else {
-      setSubjectSuggestions([])
+      setSubfolders([])
     }
-  }, [subjectSearch, subjects])
+    setSelectedSubfolder(null)
+    setSelectedTopic(null)
+    setTopics([])
+    setLessons([])
+  }, [selectedSubject])
 
-  // Debounced topic search
   useEffect(() => {
-    if (topicSearchRef.current) clearTimeout(topicSearchRef.current)
-    
-    if (topicSearch.trim() && selectedSubject && Array.isArray(topics)) {
-      topicSearchRef.current = setTimeout(() => {
-        const filtered = topics.filter(t =>
-          t.subject === selectedSubject.id &&
-          t.name.toLowerCase().includes(topicSearch.toLowerCase())
-        )
-        setTopicSuggestions(filtered)
-      }, 300)
+    if (selectedSubfolder) {
+      loadTopics(selectedSubfolder.id)
     } else {
-      setTopicSuggestions([])
+      setTopics([])
     }
-  }, [topicSearch, topics, selectedSubject])
+    setSelectedTopic(null)
+    setLessons([])
+  }, [selectedSubfolder])
 
-  // Load lessons when topic is selected
   useEffect(() => {
-    if (selectedTopic) {
-      loadLessons(selectedTopic.id)
-    }
+    if (selectedTopic) loadLessons(selectedTopic.id)
+    else setLessons([])
   }, [selectedTopic])
 
   const loadSubjects = async () => {
     try {
       setLoading(true)
       const response = await api.get(`${API_BASE}/lessons/subjects/`)
-      console.log('Raw subjects response:', response.data)
-      // Handle both array and paginated responses { results: [...] }
-      const data = Array.isArray(response.data) ? response.data : (response.data?.results || [])
-      setSubjects(data)
+      setSubjects(toArray(response.data))
     } catch (error: any) {
-      console.error('Error loading subjects:', error, error?.response?.data)
-      showToast('Error loading subjects', 'error')
-      setSubjects([]) // Ensure subjects is always an array
+      console.error('Error loading folders:', error, error?.response?.data)
+      showToast('Error loading folders', 'error')
+      setSubjects([])
     } finally {
       setLoading(false)
     }
   }
 
-  const loadTopics = async (subjectId: string) => {
+  const loadSubfolders = async (subjectId: string) => {
     try {
-      const response = await api.get(`${API_BASE}/lessons/topics/?subject=${subjectId}`)
-      console.log('Raw topics response:', response.data)
-      const data = Array.isArray(response.data) ? response.data : (response.data?.results || [])
-      setTopics(data)
+      const response = await api.get(`${API_BASE}/lessons/subfolders/?subject=${subjectId}`)
+      setSubfolders(toArray(response.data))
+    } catch (error: any) {
+      console.error('Error loading subfolders:', error, error?.response?.data)
+      showToast('Error loading subfolders', 'error')
+      setSubfolders([])
+    }
+  }
+
+  const loadTopics = async (subfolderId: string) => {
+    try {
+      const response = await api.get(`${API_BASE}/lessons/topics/?subfolder=${subfolderId}`)
+      setTopics(toArray(response.data))
     } catch (error: any) {
       console.error('Error loading topics:', error, error?.response?.data)
       showToast('Error loading topics', 'error')
@@ -199,9 +194,7 @@ export default function LessonManager() {
   const loadLessons = async (topicId: string) => {
     try {
       const response = await api.get(`${API_BASE}/lessons/lessons/?topic=${topicId}`)
-      console.log('Raw lessons response:', response.data)
-      const data = Array.isArray(response.data) ? response.data : (response.data?.results || [])
-      setLessons(data)
+      setLessons(toArray(response.data))
     } catch (error: any) {
       console.error('Error loading lessons:', error, error?.response?.data)
       showToast('Error loading lessons', 'error')
@@ -211,75 +204,79 @@ export default function LessonManager() {
 
   const addSubject = async () => {
     if (!newSubjectName.trim()) {
-      showToast('Subject name is required', 'error')
+      showToast('Folder name is required', 'error')
       return
     }
-
     try {
       setSaving(true)
-      const response = await api.post(`${API_BASE}/lessons/subjects/`, {
-        name: newSubjectName.trim()
-      })
-      // Select the created subject and refresh the list to ensure consistency
+      const response = await api.post(`${API_BASE}/lessons/subjects/`, { name: newSubjectName.trim() })
       setSelectedSubject(response.data)
+      setExpandedSubjects(prev => new Set(prev).add(response.data.id))
       setNewSubjectName('')
       setShowSubjectInput(false)
-      showToast('Subject created successfully', 'success')
+      showToast('Folder created successfully', 'success')
       await loadSubjects()
     } catch (error: any) {
-      console.error('Error creating subject:', error, error?.response?.data)
-      const errData = error?.response?.data
-      let message = 'Error creating subject'
-      if (errData) {
-        if (Array.isArray(errData)) {
-          message = errData.join(' ')
-        } else if (errData.name) {
-          message = Array.isArray(errData.name) ? errData.name.join(' ') : String(errData.name)
-        } else if (typeof errData === 'object') {
-          const parts: string[] = []
-          Object.values(errData).forEach(v => {
-            if (Array.isArray(v)) parts.push(...v.map(String))
-            else if (typeof v === 'string') parts.push(v)
-          })
-          message = parts.length ? parts.join(' ') : JSON.stringify(errData)
-        } else {
-          message = String(errData)
-        }
-      } else if (error?.message) {
-        message = error.message
-      }
-      showToast(message, 'error')
+      console.error('Error creating folder:', error, error?.response?.data)
+      showToast(getErrorMessage(error, 'Error creating folder'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const addSubfolder = async () => {
+    if (!selectedSubject) {
+      showToast('Please select a folder first', 'error')
+      return
+    }
+    if (!newSubfolderName.trim()) {
+      showToast('Subfolder name is required', 'error')
+      return
+    }
+    try {
+      setSaving(true)
+      const response = await api.post(`${API_BASE}/lessons/subfolders/`, {
+        subject: selectedSubject.id,
+        name: newSubfolderName.trim(),
+      })
+      setSubfolders(prev => [...prev, response.data])
+      setSelectedSubfolder(response.data)
+      setExpandedSubfolders(prev => new Set(prev).add(response.data.id))
+      setNewSubfolderName('')
+      setShowSubfolderInput(false)
+      showToast('Subfolder created successfully', 'success')
+    } catch (error: any) {
+      console.error('Error creating subfolder:', error, error?.response?.data)
+      showToast(getErrorMessage(error, 'Error creating subfolder'), 'error')
     } finally {
       setSaving(false)
     }
   }
 
   const addTopic = async () => {
-    if (!selectedSubject) {
-      showToast('Please select a subject first', 'error')
+    if (!selectedSubfolder || !selectedSubject) {
+      showToast('Please select a subfolder first', 'error')
       return
     }
-
     if (!newTopicName.trim()) {
       showToast('Topic name is required', 'error')
       return
     }
-
     try {
       setSaving(true)
       const response = await api.post(`${API_BASE}/lessons/topics/`, {
         subject: selectedSubject.id,
-        name: newTopicName.trim()
+        subfolder: selectedSubfolder.id,
+        name: newTopicName.trim(),
       })
-      const updatedTopics = [...topics, response.data]
-      setTopics(updatedTopics)
+      setTopics(prev => [...prev, response.data])
+      setSelectedTopic(response.data)
       setNewTopicName('')
       setShowTopicInput(false)
-      setSelectedTopic(response.data)
       showToast('Topic created successfully', 'success')
     } catch (error: any) {
       console.error('Error creating topic:', error, error?.response?.data)
-      showToast('Error creating topic', 'error')
+      showToast(getErrorMessage(error, 'Error creating topic'), 'error')
     } finally {
       setSaving(false)
     }
@@ -290,7 +287,6 @@ export default function LessonManager() {
       showToast('Please select a topic first', 'error')
       return
     }
-
     if (!lessonTitle.trim() || isLessonContentEmpty(lessonContent)) {
       showToast('Lesson title and content are required', 'error')
       return
@@ -299,7 +295,6 @@ export default function LessonManager() {
     try {
       setSaving(true)
       const payload: any = {
-        subject: selectedSubject?.id,
         topic: selectedTopic.id,
         title: lessonTitle.trim(),
         content: lessonContent.trim(),
@@ -308,58 +303,35 @@ export default function LessonManager() {
         linked_topics: linkedTopic ? [linkedTopic] : [],
         meta_description: metaDescription.trim(),
         meta_keywords: metaKeywords.trim(),
+        tags: lessonTags.trim(),
       }
 
-      // Only include og_image when the user provided a non-empty value
-      const ogImageValue = ogImage.trim();
+      const ogImageValue = ogImage.trim()
       if (ogImageValue) {
-        let finalOg = ogImageValue;
+        let finalOg = ogImageValue
         try {
-          new URL(finalOg);
+          new URL(finalOg)
         } catch (_) {
-          const value = finalOg.startsWith('/') ? finalOg : `/${finalOg}`;
-          finalOg = `${window.location.origin}${value}`;
+          const value = finalOg.startsWith('/') ? finalOg : `/${finalOg}`
+          finalOg = `${window.location.origin}${value}`
         }
-        payload.og_image = finalOg;
+        payload.og_image = finalOg
       }
 
       if (editingLesson) {
-        // Update existing lesson
-        const response = await api.put(
-          `${API_BASE}/lessons/lessons/${editingLesson.id}/`,
-          payload
-        )
-        setLessons(lessons.map(l => l.id === editingLesson.id ? response.data : l))
+        const response = await api.put(`${API_BASE}/lessons/lessons/${editingLesson.id}/`, payload)
+        setLessons(prev => prev.map(l => l.id === editingLesson.id ? response.data : l))
         showToast('Lesson updated successfully', 'success')
       } else {
-        // Create new lesson
         const response = await api.post(`${API_BASE}/lessons/lessons/`, payload)
-        setLessons([...lessons, response.data])
+        setLessons(prev => [...prev, response.data])
         showToast('Lesson created successfully', 'success')
       }
 
       resetLessonForm()
     } catch (error: any) {
       console.error('Error saving lesson:', error, error?.response?.data)
-      // Try to extract backend validation errors and show them clearly
-      const errData = error?.response?.data
-      let message = 'Error saving lesson'
-      if (errData) {
-        if (typeof errData === 'string') message = errData
-        else if (Array.isArray(errData)) message = errData.join(' ')
-        else if (errData.detail) message = String(errData.detail)
-        else {
-          const parts: string[] = []
-          Object.entries(errData).forEach(([k, v]) => {
-            if (Array.isArray(v)) parts.push(`${k}: ${v.join(' ')}`)
-            else parts.push(`${k}: ${String(v)}`)
-          })
-          if (parts.length) message = parts.join(' | ')
-        }
-      } else if (error?.message) {
-        message = error.message
-      }
-      showToast(message, 'error')
+      showToast(getErrorMessage(error, 'Error saving lesson'), 'error')
     } finally {
       setSaving(false)
     }
@@ -371,6 +343,7 @@ export default function LessonManager() {
     setPublisherName('')
     setPublisherTitle('')
     setLinkedTopic(null)
+    setLessonTags('')
     setMetaDescription('')
     setMetaKeywords('')
     setOgImage('')
@@ -384,39 +357,39 @@ export default function LessonManager() {
     setPublisherName(lesson.publisher_name)
     setPublisherTitle(lesson.publisher_title || '')
     setLinkedTopic(lesson.linked_topics?.[0] || null)
+    setLessonTags(lesson.tags || '')
     setMetaDescription(lesson.meta_description || '')
     setMetaKeywords(lesson.meta_keywords || '')
     setOgImage(lesson.og_image || '')
   }
 
-  const deleteLesson = async (lessonId: string) => {
-    if (!window.confirm('Are you sure you want to delete this lesson?')) return
-
+  const deleteSubject = async (subjectId: string) => {
+    if (!window.confirm('Are you sure? This will delete all subfolders, topics, and lessons under this folder.')) return
     try {
       setSaving(true)
-      await api.delete(`${API_BASE}/lessons/lessons/${lessonId}/`)
-      setLessons(lessons.filter(l => l.id !== lessonId))
-      showToast('Lesson deleted successfully', 'success')
+      await api.delete(`${API_BASE}/lessons/subjects/${subjectId}/`)
+      setSubjects(prev => prev.filter(s => s.id !== subjectId))
+      if (selectedSubject?.id === subjectId) setSelectedSubject(null)
+      showToast('Folder deleted successfully', 'success')
     } catch (error: any) {
-      console.error('Error deleting lesson:', error, error?.response?.data)
-      showToast('Error deleting lesson', 'error')
+      console.error('Error deleting folder:', error, error?.response?.data)
+      showToast('Error deleting folder', 'error')
     } finally {
       setSaving(false)
     }
   }
 
-  const deleteSubject = async (subjectId: string) => {
-    if (!window.confirm('Are you sure? This will delete all topics and lessons under this subject.')) return
-
+  const deleteSubfolder = async (subfolderId: string) => {
+    if (!window.confirm('Are you sure? This will delete all topics and lessons under this subfolder.')) return
     try {
       setSaving(true)
-      await api.delete(`${API_BASE}/lessons/subjects/${subjectId}/`)
-      setSubjects(subjects.filter(s => s.id !== subjectId))
-      if (selectedSubject?.id === subjectId) setSelectedSubject(null)
-      showToast('Subject deleted successfully', 'success')
+      await api.delete(`${API_BASE}/lessons/subfolders/${subfolderId}/`)
+      setSubfolders(prev => prev.filter(s => s.id !== subfolderId))
+      if (selectedSubfolder?.id === subfolderId) setSelectedSubfolder(null)
+      showToast('Subfolder deleted successfully', 'success')
     } catch (error: any) {
-      console.error('Error deleting subject:', error, error?.response?.data)
-      showToast('Error deleting subject', 'error')
+      console.error('Error deleting subfolder:', error, error?.response?.data)
+      showToast('Error deleting subfolder', 'error')
     } finally {
       setSaving(false)
     }
@@ -424,11 +397,10 @@ export default function LessonManager() {
 
   const deleteTopic = async (topicId: string) => {
     if (!window.confirm('Are you sure? This will delete all lessons under this topic.')) return
-
     try {
       setSaving(true)
       await api.delete(`${API_BASE}/lessons/topics/${topicId}/`)
-      setTopics(topics.filter(t => t.id !== topicId))
+      setTopics(prev => prev.filter(t => t.id !== topicId))
       if (selectedTopic?.id === topicId) setSelectedTopic(null)
       showToast('Topic deleted successfully', 'success')
     } catch (error: any) {
@@ -439,21 +411,46 @@ export default function LessonManager() {
     }
   }
 
-  const toggleSubjectExpanded = (subjectId: string) => {
-    const newSet = new Set(expandedSubjects)
-    if (newSet.has(subjectId)) {
-      newSet.delete(subjectId)
-    } else {
-      newSet.add(subjectId)
-      loadTopics(subjectId)
+  const deleteLesson = async (lessonId: string) => {
+    if (!window.confirm('Are you sure you want to delete this lesson?')) return
+    try {
+      setSaving(true)
+      await api.delete(`${API_BASE}/lessons/lessons/${lessonId}/`)
+      setLessons(prev => prev.filter(l => l.id !== lessonId))
+      showToast('Lesson deleted successfully', 'success')
+    } catch (error: any) {
+      console.error('Error deleting lesson:', error, error?.response?.data)
+      showToast('Error deleting lesson', 'error')
+    } finally {
+      setSaving(false)
     }
-    setExpandedSubjects(newSet)
   }
+
+  const toggleSubjectExpanded = (subject: Subject) => {
+    setSelectedSubject(subject)
+    setExpandedSubjects(prev => {
+      const next = new Set(prev)
+      next.has(subject.id) ? next.delete(subject.id) : next.add(subject.id)
+      return next
+    })
+  }
+
+  const toggleSubfolderExpanded = (subfolder: LessonSubfolder) => {
+    setSelectedSubfolder(subfolder)
+    setExpandedSubfolders(prev => {
+      const next = new Set(prev)
+      next.has(subfolder.id) ? next.delete(subfolder.id) : next.add(subfolder.id)
+      return next
+    })
+  }
+
+  const filteredSubjects = subjects.filter(s => s.name.toLowerCase().includes(subjectSearch.toLowerCase()))
+  const filteredSubfolders = subfolders.filter(s => s.name.toLowerCase().includes(subfolderSearch.toLowerCase()))
+  const filteredTopics = topics.filter(t => t.name.toLowerCase().includes(topicSearch.toLowerCase()))
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel: Subject & Topic Selection */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-md p-4 sticky top-20">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -461,252 +458,165 @@ export default function LessonManager() {
               Lesson Organization
             </h3>
 
-            {/* Subject Search */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subject
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search subjects..."
-                  value={subjectSearch}
-                  onChange={(e) => setSubjectSearch(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                />
-                <Search className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" />
+            {loading ? (
+              <div className="py-10 flex justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-yellow-500" />
               </div>
-
-              {/* Subject Suggestions or All Subjects Folder View */}
-              {subjectSuggestions.length > 0 ? (
-                // Show search results
-                <div className="mt-2 border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
-                  {subjectSuggestions.map(subject => (
-                    <button
-                      key={subject.id}
-                      onClick={() => {
-                        setSelectedSubject(subject)
-                        setSubjectSearch('')
-                        setSubjectSuggestions([])
-                        loadTopics(subject.id)
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-yellow-50 border-b last:border-b-0 transition"
-                    >
-                      {subject.name}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                // Show all subjects as folder tree when not searching
-                subjects.length > 0 && (
-                  <div className="mt-2 border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
-                    {subjects.map(subject => (
+            ) : (
+              <div className="space-y-6">
+                <ManagementSection
+                  label="Folder / Field"
+                  placeholder="Search folders..."
+                  search={subjectSearch}
+                  onSearch={setSubjectSearch}
+                  showInput={showSubjectInput}
+                  onShowInput={() => setShowSubjectInput(true)}
+                  inputPlaceholder="New folder name"
+                  inputValue={newSubjectName}
+                  onInputChange={setNewSubjectName}
+                  onSave={addSubject}
+                  addLabel="Add Folder"
+                  saving={saving}
+                >
+                  <div className="mt-2 border border-gray-200 rounded-lg max-h-56 overflow-y-auto">
+                    {filteredSubjects.length === 0 ? (
+                      <p className="px-3 py-3 text-sm text-gray-500">No folders found</p>
+                    ) : filteredSubjects.map(subject => (
                       <div key={subject.id} className="border-b last:border-b-0">
-                        {/* Subject Folder Item */}
                         <button
-                          onClick={() => {
-                            toggleSubjectExpanded(subject.id)
-                            setSelectedSubject(subject)
-                          }}
+                          onClick={() => toggleSubjectExpanded(subject)}
                           className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-yellow-50 transition ${selectedSubject?.id === subject.id ? 'bg-yellow-100' : ''}`}
                         >
-                          <div className="flex items-center gap-2 flex-1">
-                            <ChevronDown 
-                              className={`w-4 h-4 transition-transform ${expandedSubjects.has(subject.id) ? '' : '-rotate-90'}`}
-                            />
+                          <span className="flex items-center gap-2 min-w-0">
+                            <ChevronDown className={`w-4 h-4 transition-transform ${expandedSubjects.has(subject.id) ? '' : '-rotate-90'}`} />
                             <FolderOpen className="w-4 h-4 text-yellow-600" />
-                            <span className="font-medium text-gray-800">{subject.name}</span>
-                          </div>
+                            <span className="font-medium text-gray-800 truncate">{subject.name}</span>
+                          </span>
                         </button>
-
-                        {/* Topics under expanded subject */}
-                        {expandedSubjects.has(subject.id) && topics.length > 0 && (
-                          <div className="bg-gray-50 pl-6">
-                            {topics
-                              .filter(t => t.subject === subject.id)
-                              .map(topic => (
-                                <button
-                                  key={topic.id}
-                                  onClick={() => setSelectedTopic(topic)}
-                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-yellow-50 border-t transition ${selectedTopic?.id === topic.id ? 'bg-yellow-100' : ''}`}
-                                >
-                                  {topic.name}
-                                </button>
-                              ))}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
-                )
-              )}
+                </ManagementSection>
 
-              {/* Add Custom Subject */}
-              {showSubjectInput && (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="New subject name"
-                    value={newSubjectName}
-                    onChange={(e) => setNewSubjectName(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                {selectedSubject && (
+                  <SelectedCard
+                    eyebrow="Selected Folder"
+                    title={selectedSubject.name}
+                    onDelete={() => deleteSubject(selectedSubject.id)}
                   />
-                  <button
-                    onClick={addSubject}
-                    disabled={saving}
-                    className="px-3 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 transition"
+                )}
+
+                {selectedSubject && (
+                  <ManagementSection
+                    label="Subfolder / Department"
+                    placeholder="Search subfolders..."
+                    search={subfolderSearch}
+                    onSearch={setSubfolderSearch}
+                    showInput={showSubfolderInput}
+                    onShowInput={() => setShowSubfolderInput(true)}
+                    inputPlaceholder="New subfolder name"
+                    inputValue={newSubfolderName}
+                    onInputChange={setNewSubfolderName}
+                    onSave={addSubfolder}
+                    addLabel="Add Subfolder"
+                    saving={saving}
                   >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  </button>
-                </div>
-              )}
+                    <div className="mt-2 border border-gray-200 rounded-lg max-h-56 overflow-y-auto">
+                      {filteredSubfolders.length === 0 ? (
+                        <p className="px-3 py-3 text-sm text-gray-500">No subfolders found</p>
+                      ) : filteredSubfolders.map(subfolder => (
+                        <button
+                          key={subfolder.id}
+                          onClick={() => toggleSubfolderExpanded(subfolder)}
+                          className={`w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-yellow-50 border-b last:border-b-0 transition ${selectedSubfolder?.id === subfolder.id ? 'bg-yellow-100' : ''}`}
+                        >
+                          <ChevronDown className={`w-4 h-4 transition-transform ${expandedSubfolders.has(subfolder.id) ? '' : '-rotate-90'}`} />
+                          <FolderOpen className="w-4 h-4 text-yellow-600" />
+                          <span className="font-medium text-gray-800 truncate">{subfolder.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </ManagementSection>
+                )}
 
-              {!showSubjectInput && (
-                <button
-                  onClick={() => setShowSubjectInput(true)}
-                  className="mt-2 w-full px-3 py-2 border border-dashed border-yellow-300 text-yellow-600 rounded-lg hover:bg-yellow-50 flex items-center justify-center gap-2 transition"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Subject
-                </button>
-              )}
-            </div>
+                {selectedSubfolder && (
+                  <SelectedCard
+                    eyebrow="Selected Subfolder"
+                    title={selectedSubfolder.name}
+                    onDelete={() => deleteSubfolder(selectedSubfolder.id)}
+                  />
+                )}
 
-            {/* Selected Subject Display */}
-            {selectedSubject && (
-              <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs text-gray-500">Selected Subject</p>
-                    <p className="font-semibold text-gray-800">{selectedSubject.name}</p>
-                  </div>
-                  <button
-                    onClick={() => deleteSubject(selectedSubject.id)}
-                    className="text-red-500 hover:text-red-700 transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Topic Search */}
-            {selectedSubject && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Area / Topic
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
+                {selectedSubfolder && (
+                  <ManagementSection
+                    label="Topic"
                     placeholder="Search topics..."
-                    value={topicSearch}
-                    onChange={(e) => setTopicSearch(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    search={topicSearch}
+                    onSearch={setTopicSearch}
+                    showInput={showTopicInput}
+                    onShowInput={() => setShowTopicInput(true)}
+                    inputPlaceholder="New topic name"
+                    inputValue={newTopicName}
+                    onInputChange={setNewTopicName}
+                    onSave={addTopic}
+                    addLabel="Add Topic"
+                    saving={saving}
+                  >
+                    <div className="mt-2 border border-gray-200 rounded-lg max-h-56 overflow-y-auto">
+                      {filteredTopics.length === 0 ? (
+                        <p className="px-3 py-3 text-sm text-gray-500">No topics found</p>
+                      ) : filteredTopics.map(topic => (
+                        <button
+                          key={topic.id}
+                          onClick={() => setSelectedTopic(topic)}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-yellow-50 border-b last:border-b-0 transition ${selectedTopic?.id === topic.id ? 'bg-yellow-100 font-semibold text-gray-900' : 'text-gray-700'}`}
+                        >
+                          {topic.name}
+                        </button>
+                      ))}
+                    </div>
+                  </ManagementSection>
+                )}
+
+                {selectedTopic && (
+                  <SelectedCard
+                    eyebrow="Selected Topic"
+                    title={selectedTopic.name}
+                    onDelete={() => deleteTopic(selectedTopic.id)}
                   />
-                  <Search className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" />
-                </div>
-
-                {/* Topic Suggestions */}
-                {topicSuggestions.length > 0 && (
-                  <div className="mt-2 border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
-                    {topicSuggestions.map(topic => (
-                      <button
-                        key={topic.id}
-                        onClick={() => {
-                          setSelectedTopic(topic)
-                          setTopicSearch('')
-                          setTopicSuggestions([])
-                        }}
-                        className="w-full text-left px-3 py-2 hover:bg-yellow-50 border-b last:border-b-0 transition"
-                      >
-                        {topic.name}
-                      </button>
-                    ))}
-                  </div>
                 )}
-
-                {/* Add Custom Topic */}
-                {showTopicInput && (
-                  <div className="mt-2 flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="New topic name"
-                      value={newTopicName}
-                      onChange={(e) => setNewTopicName(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    />
-                    <button
-                      onClick={addTopic}
-                      disabled={saving}
-                      className="px-3 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 transition"
-                    >
-                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    </button>
-                  </div>
-                )}
-
-                {!showTopicInput && (
-                  <button
-                    onClick={() => setShowTopicInput(true)}
-                    className="mt-2 w-full px-3 py-2 border border-dashed border-yellow-300 text-yellow-600 rounded-lg hover:bg-yellow-50 flex items-center justify-center gap-2 transition"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Topic
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Selected Topic Display */}
-            {selectedTopic && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs text-gray-500">Selected Topic</p>
-                    <p className="font-semibold text-gray-800">{selectedTopic.name}</p>
-                  </div>
-                  <button
-                    onClick={() => deleteTopic(selectedTopic.id)}
-                    className="text-red-500 hover:text-red-700 transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Panel: Lesson Creation/Editing */}
         <div className="lg:col-span-2">
           {selectedTopic ? (
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-6">
-                {editingLesson ? 'Edit Lesson' : 'Create New Lesson'}
-              </h3>
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-gray-800">
+                  {editingLesson ? 'Edit Lesson' : 'Create New Lesson'}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {selectedSubject?.name} &gt; {selectedSubfolder?.name} &gt; {selectedTopic.name}
+                </p>
+              </div>
 
               <div className="space-y-6">
-                {/* Lesson Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lesson Title
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Lesson Title</label>
                   <input
                     type="text"
                     value={lessonTitle}
                     onChange={(e) => setLessonTitle(e.target.value)}
-                    placeholder="e.g., Quadratic Equations"
+                    placeholder="e.g., Thermodynamics"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                 </div>
 
-                {/* Lesson Content */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lesson Content (Rich Text with Math Support)
-                  </label>
-                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Lesson Content (Rich Text with Math Support)</label>
+                  <div className="border border-gray-300 rounded-lg overflow-hidden [&_.ql-editor]:min-h-[560px] [&_.ql-container]:min-h-[560px]">
                     <ReactQuill
                       value={lessonContent}
                       onChange={setLessonContent}
@@ -714,17 +624,13 @@ export default function LessonManager() {
                       formats={quillFormats}
                       theme="snow"
                       placeholder="Enter lesson content..."
-                      style={{ minHeight: '300px' }}
                     />
                   </div>
                 </div>
 
-                {/* Publisher Details */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Publisher Name
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Publisher Name</label>
                     <input
                       type="text"
                       value={publisherName}
@@ -735,9 +641,7 @@ export default function LessonManager() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Publisher Title
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Publisher Title</label>
                     <input
                       type="text"
                       value={publisherTitle}
@@ -748,15 +652,26 @@ export default function LessonManager() {
                   </div>
                 </div>
 
-                {/* SEO Fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <Tags className="w-4 h-4 text-yellow-600" />
+                    Lesson Tags
+                  </label>
+                  <input
+                    type="text"
+                    value={lessonTags}
+                    onChange={(e) => setLessonTags(e.target.value)}
+                    placeholder="dynamics, force, momentum"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Comma-separated terms students can search for.</p>
+                </div>
+
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <h4 className="font-semibold text-blue-900 mb-4">SEO & Social Media</h4>
-                  
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Meta Description (60-160 characters for Google)
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description (60-160 characters for Google)</label>
                       <textarea
                         value={metaDescription}
                         onChange={(e) => setMetaDescription(e.target.value.slice(0, 160))}
@@ -769,9 +684,7 @@ export default function LessonManager() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Meta Keywords (comma-separated)
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Keywords (comma-separated)</label>
                       <input
                         type="text"
                         value={metaKeywords}
@@ -782,9 +695,7 @@ export default function LessonManager() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Open Graph Image URL (for social sharing)
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Open Graph Image URL (for social sharing)</label>
                       <input
                         type="url"
                         value={ogImage}
@@ -796,12 +707,9 @@ export default function LessonManager() {
                   </div>
                 </div>
 
-                {/* Linked Topic */}
                 {topics.length > 1 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Link to Another Topic (Optional)
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Link to Another Topic (Optional)</label>
                     <select
                       value={linkedTopic || ''}
                       onChange={(e) => setLinkedTopic(e.target.value || null)}
@@ -811,21 +719,17 @@ export default function LessonManager() {
                       {topics
                         .filter(t => t.id !== selectedTopic?.id)
                         .map(topic => (
-                          <option key={topic.id} value={topic.id}>
-                            {topic.name}
-                          </option>
+                          <option key={topic.id} value={topic.id}>{topic.name}</option>
                         ))}
                     </select>
                   </div>
                 )}
 
-                {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t">
                   <div className="flex-1 relative">
                     <button
                       onClick={saveLesson}
                       disabled={saving || !lessonTitle.trim() || isLessonContentEmpty(lessonContent)}
-                      title={`Title: "${lessonTitle}" | Content: ${isLessonContentEmpty(lessonContent) ? 'empty' : 'filled'}`}
                       className="w-full px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 transition font-semibold flex items-center justify-center gap-2"
                     >
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -851,7 +755,6 @@ export default function LessonManager() {
                 </div>
               </div>
 
-              {/* Lessons List */}
               {lessons.length > 0 && (
                 <div className="mt-8 pt-8 border-t">
                   <h4 className="font-bold text-gray-800 mb-4">Lessons in {selectedTopic.name}</h4>
@@ -863,16 +766,19 @@ export default function LessonManager() {
                         animate={{ opacity: 1 }}
                         className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition"
                       >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1 min-w-0">
                             <h5 className="font-semibold text-gray-800">{lesson.title}</h5>
                             <p className="text-sm text-gray-600 mt-1">
                               By {lesson.publisher_name}
                               {lesson.publisher_title && <span className="text-gray-500"> ({lesson.publisher_title})</span>}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(lesson.created_at).toLocaleDateString()}
-                            </p>
+                            {lesson.tags && (
+                              <p className="text-xs text-yellow-700 mt-2 truncate">
+                                Tags: {lesson.tags}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">{new Date(lesson.created_at).toLocaleDateString()}</p>
                           </div>
                           <div className="flex gap-2">
                             <button
@@ -897,11 +803,102 @@ export default function LessonManager() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-md p-12 text-center">
-              <p className="text-gray-600">Select a subject and topic to create or manage lessons</p>
+              <p className="text-gray-600">Select a folder, subfolder, and topic to create or manage lessons</p>
             </div>
           )}
         </div>
       </div>
     </div>
   )
+}
+
+function ManagementSection(props: {
+  label: string
+  placeholder: string
+  search: string
+  onSearch: (value: string) => void
+  showInput: boolean
+  onShowInput: () => void
+  inputPlaceholder: string
+  inputValue: string
+  onInputChange: (value: string) => void
+  onSave: () => void
+  addLabel: string
+  saving: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">{props.label}</label>
+      <div className="relative">
+        <input
+          type="text"
+          placeholder={props.placeholder}
+          value={props.search}
+          onChange={(e) => props.onSearch(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        />
+        <Search className="absolute right-3 top-2.5 w-4 h-4 text-gray-400" />
+      </div>
+
+      {props.children}
+
+      {props.showInput ? (
+        <div className="mt-2 flex gap-2">
+          <input
+            type="text"
+            placeholder={props.inputPlaceholder}
+            value={props.inputValue}
+            onChange={(e) => props.onInputChange(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          />
+          <button
+            onClick={props.onSave}
+            disabled={props.saving}
+            className="px-3 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 transition"
+          >
+            {props.saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={props.onShowInput}
+          className="mt-2 w-full px-3 py-2 border border-dashed border-yellow-300 text-yellow-600 rounded-lg hover:bg-yellow-50 flex items-center justify-center gap-2 transition"
+        >
+          <Plus className="w-4 h-4" />
+          {props.addLabel}
+        </button>
+      )}
+    </div>
+  )
+}
+
+function SelectedCard(props: { eyebrow: string; title: string; onDelete: () => void }) {
+  return (
+    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+      <div className="flex justify-between items-start gap-3">
+        <div className="min-w-0">
+          <p className="text-xs text-gray-500">{props.eyebrow}</p>
+          <p className="font-semibold text-gray-800 truncate">{props.title}</p>
+        </div>
+        <button onClick={props.onDelete} className="text-red-500 hover:text-red-700 transition">
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function getErrorMessage(error: any, fallback: string) {
+  const errData = error?.response?.data
+  if (!errData) return error?.message || fallback
+  if (typeof errData === 'string') return errData
+  if (Array.isArray(errData)) return errData.join(' ')
+  if (errData.detail) return String(errData.detail)
+  const parts: string[] = []
+  Object.entries(errData).forEach(([key, value]) => {
+    if (Array.isArray(value)) parts.push(`${key}: ${value.join(' ')}`)
+    else parts.push(`${key}: ${String(value)}`)
+  })
+  return parts.length ? parts.join(' | ') : fallback
 }

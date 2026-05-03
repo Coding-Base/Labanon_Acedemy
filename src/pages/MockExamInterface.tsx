@@ -8,12 +8,14 @@ import {
   Card,
   CardContent,
   Modal,
+  Backdrop,
   LinearProgress,
   RadioGroup,
   FormControlLabel,
   Radio,
   Checkbox,
   TextField,
+  Box,
   Alert,
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -34,7 +36,6 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
   const { attemptId } = useParams<{ attemptId: string }>();
   const navigate = useNavigate();
 
-  // Create an explicit MUI theme to ensure nested Material components respect darkMode
   const muiTheme = React.useMemo(() => createTheme({
     palette: {
       mode: darkMode ? 'dark' : 'light',
@@ -42,7 +43,7 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
         default: darkMode ? '#0f172a' : '#f8fafc',
         paper: darkMode ? '#1e293b' : '#ffffff',
       },
-      primary: { main: '#ca8a04' }, // Matched somewhat with yellow-600
+      primary: { main: '#ca8a04' },
     }
   }), [darkMode]);
 
@@ -68,7 +69,6 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
     }
   })();
   
-  // Fetch attempt details
   useEffect(() => {
     const fetchAttemptDetails = async () => {
       try {
@@ -76,9 +76,8 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
         const attemptData = response.data as MockExamAttempt;
         setAttempt(attemptData);
 
-        // Calculate time remaining
         const startTime = new Date((attemptData as any).started_at).getTime();
-        let durationMs = 120 * 60 * 1000; // Default 120 minutes
+        let durationMs = 120 * 60 * 1000;
         const nowTime = Date.now();
         let remaining = 0;
         if (Number.isFinite(startTime)) {
@@ -90,7 +89,6 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
         if (!Number.isFinite(remaining)) remaining = 0;
         setTimeRemaining(remaining);
 
-        // Fetch exam details to populate questions
         try {
           const examField = (attemptData as any).mock_exam || (attemptData as any).custom_mock_exam;
           const examId = typeof examField === 'number' ? examField : examField?.id;
@@ -249,19 +247,20 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
   const answeredCount = Object.values(answers).filter((v) => v !== null).length;
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen"><CircularProgress /></div>;
+    return <div className="flex items-center justify-center min-h-[50vh]"><CircularProgress /></div>;
   }
 
   if (!attempt || !currentQuestion) {
-    return <div className="flex items-center justify-center min-h-screen"><Alert severity="error">Failed to load exam interface</Alert></div>;
+    return <div className="flex items-center justify-center min-h-[50vh]"><Alert severity="error">Failed to load exam interface</Alert></div>;
   }
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-gradient-to-br from-slate-50 to-slate-100 text-gray-900'}`}>
+      {/* FIX 3: Removed height constraints here so it conforms completely to the dashboard's flex rules */}
+      <div className="w-full flex flex-col bg-transparent">
         
         {/* Header Bar */}
-        <div className={`shadow-md p-4 sticky top-0 z-30 border-b ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`shadow-md p-4 sticky top-0 z-30 border-b rounded-xl mb-4 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="max-w-7xl mx-auto flex justify-between items-center">
             <div>
               <h1 className={`text-2xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-800'}`}>
@@ -292,14 +291,14 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
           <LinearProgress
             variant="determinate"
             value={(answeredCount / totalQuestions) * 100}
-            className="mt-4"
+            className="mt-4 rounded-full"
           />
           <p className={`text-xs mt-2 ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>
             Answered: {answeredCount}/{totalQuestions}
           </p>
         </div>
 
-        <div className="flex-1 max-w-7xl mx-auto w-full py-8 px-4 flex gap-6">
+        <div className="flex-1 max-w-7xl mx-auto w-full py-4 flex gap-6">
           {/* Question Section */}
           <div className="flex-1">
             <AnimatePresence mode="wait">
@@ -309,7 +308,7 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card>
+                <Card style={{ backgroundColor: muiTheme.palette.background.paper, backgroundImage: 'none' }} className={`shadow-lg rounded-xl border ${darkMode ? 'border-slate-700' : 'border-gray-100'}`}>
                   <CardContent className="p-8">
                     <div className="mb-8">
                       <div className="flex justify-between items-start mb-4">
@@ -317,11 +316,11 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
                           <MathText text={currentQuestion.question_text} />
                         </h2>
                         <div className="flex gap-2 ml-4">
-                          <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-semibold">
+                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${darkMode ? 'bg-yellow-900/30 text-yellow-500' : 'bg-yellow-100 text-yellow-700'}`}>
                             {currentQuestion.marks} marks
                           </span>
                           {markedForReview.has(currentQuestion.id) && (
-                            <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                            <span className={`px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 ${darkMode ? 'bg-orange-900/30 text-orange-500' : 'bg-orange-100 text-orange-700'}`}>
                               <Flag size={14} />
                               Marked
                             </span>
@@ -333,7 +332,7 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
                         <img
                           src={currentQuestion.question_image}
                           alt="Question"
-                          className="max-w-full h-64 object-contain mb-6"
+                          className="max-w-full h-64 object-contain mb-6 rounded-lg"
                         />
                       )}
                     </div>
@@ -361,7 +360,7 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
                                   </span>
                                 </div>
                               }
-                              className={`mb-3 p-3 border rounded-lg transition-colors ${darkMode ? 'border-slate-700 hover:bg-slate-700' : 'border-gray-200 hover:bg-gray-50'}`}
+                              className={`mb-3 p-3 border rounded-lg transition-colors ${darkMode ? 'border-slate-700 hover:bg-slate-700/50' : 'border-gray-200 hover:bg-gray-50'}`}
                             />
                           ))}
                         </RadioGroup>
@@ -375,8 +374,17 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
                             handleAnswerChange(currentQuestion.id, e.target.value)
                           }
                         >
-                          <FormControlLabel value="true" control={<Radio />} label="True" className="mr-8" />
-                          <FormControlLabel value="false" control={<Radio />} label="False" />
+                          <FormControlLabel 
+                            value="true" 
+                            control={<Radio />} 
+                            label={<span className={darkMode ? 'text-slate-200' : 'text-gray-900'}>True</span>} 
+                            className="mr-8" 
+                          />
+                          <FormControlLabel 
+                            value="false" 
+                            control={<Radio />} 
+                            label={<span className={darkMode ? 'text-slate-200' : 'text-gray-900'}>False</span>} 
+                          />
                         </RadioGroup>
                       )}
 
@@ -444,11 +452,11 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
           </div>
 
           {/* Question Palette Sidebar */}
-          <div className="w-64">
-            <Card>
+          <div className="w-64 hidden lg:block">
+            <Card style={{ backgroundColor: muiTheme.palette.background.paper, backgroundImage: 'none' }} className={`shadow-lg rounded-xl border ${darkMode ? 'border-slate-700' : 'border-gray-100'}`}>
               <CardContent className="p-4">
                 <h3 className={`font-bold mb-4 ${darkMode ? 'text-slate-100' : 'text-gray-800'}`}>Questions</h3>
-                <div className="grid grid-cols-4 gap-2 max-h-96 overflow-auto">
+                <div className="grid grid-cols-4 gap-2 max-h-96 overflow-auto custom-scrollbar">
                   {questions.map((q, idx) => (
                     <button
                       key={q.id}
@@ -471,15 +479,15 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
                 <div className={`mt-6 space-y-2 text-xs border-t pt-4 ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 border rounded ${darkMode ? 'bg-green-900/40 border-green-500' : 'bg-green-100 border-green-500'}`}></div>
-                    <span>Answered</span>
+                    <span className={darkMode ? 'text-slate-300' : 'text-gray-700'}>Answered</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 border rounded ${darkMode ? 'bg-orange-900/40 border-orange-500' : 'bg-orange-100 border-orange-500'}`}></div>
-                    <span>Marked for Review</span>
+                    <span className={darkMode ? 'text-slate-300' : 'text-gray-700'}>Marked for Review</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 border rounded ${darkMode ? 'bg-slate-700 border-slate-500' : 'bg-gray-100 border-gray-500'}`}></div>
-                    <span>Not Visited</span>
+                    <span className={darkMode ? 'text-slate-300' : 'text-gray-700'}>Not Visited</span>
                   </div>
                 </div>
               </CardContent>
@@ -492,13 +500,13 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="fixed inset-0 flex items-center justify-center p-4"
+            className="fixed inset-0 flex items-center justify-center p-4 z-[70]"
           >
-            <Card className="max-w-md w-full">
+            <Card className="max-w-md w-full" style={{ backgroundColor: muiTheme.palette.background.paper, backgroundImage: 'none' }}>
               <CardContent className="p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <AlertCircle className="text-orange-600" size={28} />
-                  <h2 className="text-2xl font-bold">Submit Exam?</h2>
+                  <h2 className={`text-2xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Submit Exam?</h2>
                 </div>
 
                 <div className={`p-4 rounded-lg mb-6 space-y-2 ${darkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
@@ -519,7 +527,7 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
                     Cancel
                   </Button>
                   <Button fullWidth variant="contained" color="error" onClick={handleSubmit} disabled={isSubmitting}>
-                    {isSubmitting ? <CircularProgress size={20} /> : 'Submit'}
+                    {isSubmitting ? <CircularProgress size={20} color="inherit" /> : 'Submit'}
                   </Button>
                 </div>
               </CardContent>

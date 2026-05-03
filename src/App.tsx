@@ -43,6 +43,7 @@ const PaymentVerify = lazy(() => import('./pages/PaymentVerify'))
 const ActivateCheckout = lazy(() => import('./pages/ActivateCheckout'))
 
 // Mock Exams pages (lazy)
+const MockExamUnlockPage = lazy(() => import('./pages/MockExamUnlockPage'))
 const MockExamInterface = lazy(() => import('./pages/MockExamInterface'))
 const MockExamResultsPage = lazy(() => import('./pages/MockExamResultsPage'))
 
@@ -128,6 +129,7 @@ export default function App() {
             <Route path="/activate" element={<ActivateCheckout />} />
 
             {/* Mock Exams Routes */}
+            <Route path="/mock-exam-unlock/:examId" element={<MockExamUnlockPage />} />
             <Route path="/mock-exams/attempt/:attemptId" element={<MockExamInterface />} />
             <Route path="/mock-exams/results/:attemptId" element={<MockExamResultsPage />} />
 

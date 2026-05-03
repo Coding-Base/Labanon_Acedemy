@@ -50,8 +50,6 @@ const StudentMockExamsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('');
-  const [selectedExam, setSelectedExam] = useState<CustomMockExam | null>(null);
-  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [unlockStatus, setUnlockStatus] = useState<any>(null);
   const [unlockedExams, setUnlockedExams] = useState<Set<number>>(new Set());
   const [showHistory, setShowHistory] = useState(false);
@@ -118,31 +116,14 @@ const StudentMockExamsPage: React.FC = () => {
         const attemptResponse = await studentMockExamsAPI.startMockExamAttempt(exam.id);
         navigate(`attempt/${attemptResponse.data.id}`);
       } else {
-        // Need to unlock with payment
-        setSelectedExam(exam);
-        setIsUnlockModalOpen(true);
+        // Need to unlock with payment - redirect to payment page
+        navigate(`/mock-exam-unlock/${exam.id}`);
       }
     } catch (error) {
       showToast('error', 'Failed to check exam status');
     }
   };
 
-  const handleUnlock = async (paymentData: any) => {
-    if (!selectedExam) return;
-
-    try {
-      await studentMockExamsAPI.unlockMockExam(selectedExam.id, paymentData);
-      setUnlockedExams(prev => new Set([...prev, selectedExam.id]));
-      setIsUnlockModalOpen(false);
-      showToast('success', 'Exam unlocked successfully!');
-
-      // Start attempt after unlocking
-      const attemptResponse = await studentMockExamsAPI.startMockExamAttempt(selectedExam.id);
-      navigate(`attempt/${attemptResponse.data.id}`);
-    } catch (error) {
-      showToast('error', 'Failed to unlock exam');
-    }
-  };
 
   const getDifficultyColor = (level: string) => {
     switch (level.toLowerCase()) {
@@ -415,160 +396,7 @@ const StudentMockExamsPage: React.FC = () => {
           )}
         </AnimatePresence>
       </Container>
-
-      {/* Unlock Modal */}
-      <MockExamUnlockModal
-        isOpen={isUnlockModalOpen}
-        exam={selectedExam}
-        unlockStatus={unlockStatus}
-        onClose={() => setIsUnlockModalOpen(false)}
-        onUnlock={handleUnlock}
-      />
     </div>
-  );
-};
-
-// ============ UNLOCK MODAL COMPONENT ============
-
-interface UnlockModalProps {
-  isOpen: boolean;
-  exam: CustomMockExam | null;
-  unlockStatus: any;
-  onClose: () => void;
-  onUnlock: (paymentData: any) => void;
-}
-
-const MockExamUnlockModal: React.FC<UnlockModalProps> = ({
-  isOpen,
-  exam,
-  unlockStatus,
-  onClose,
-  onUnlock,
-}) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  if (!exam) return null;
-
-  const feeAmount = exam.fee?.fee_amount || 0;
-  const discountPercent = exam.fee?.discount_percentage || 0;
-  const discountAmount = (feeAmount * discountPercent) / 100;
-  const finalAmount = feeAmount - discountAmount;
-
-  const handleContinue = async () => {
-    setIsProcessing(true);
-    try {
-      onUnlock({
-        amount: finalAmount,
-        currency: exam.fee?.currency || 'NGN',
-      });
-    } catch (error) {
-      showToast('error', 'Failed to process unlock');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  return (
-    <Modal
-      open={isOpen}
-      onClose={onClose}
-      closeAfterTransition
-      slots={{ backdrop: Backdrop }}
-      slotProps={{
-        backdrop: {
-          timeout: 500,
-          className: "bg-slate-900/60 backdrop-blur-sm"
-        },
-      }}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="fixed inset-0 flex items-center justify-center p-4 z-50"
-      >
-        <Card className="w-full max-w-md bg-white dark:bg-slate-800 border-0 shadow-2xl rounded-2xl overflow-hidden">
-          <CardContent className="p-8 text-gray-900 dark:text-slate-100">
-            <h2 className="text-2xl font-extrabold mb-2">✨ Unlock Exam</h2>
-            <p className="text-gray-600 dark:text-slate-400 mb-6 font-medium text-lg border-b dark:border-slate-700 pb-4">{exam.title}</p>
-            
-            {/* Unlock reason/message */}
-            {unlockStatus && (
-              <Alert 
-                severity={unlockStatus.unlocked ? 'success' : 'info'} 
-                className="mb-6 rounded-xl font-medium"
-              >
-                {unlockStatus.message}
-              </Alert>
-            )}
-
-            {feeAmount === 0 ? (
-              <Alert severity="success" className="mb-6 rounded-xl">
-                🎉 This exam is completely FREE!
-              </Alert>
-            ) : (
-              <>
-                <Alert severity="info" className="mb-6 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
-                  💡 <strong>Did you know?</strong> If you've unlocked any CBT exam before, you get FREE access to all mock exams!
-                </Alert>
-                <div className="bg-gray-50 dark:bg-slate-900/50 p-5 rounded-xl mb-8 space-y-3 border border-gray-100 dark:border-slate-700">
-                  <div className="flex justify-between items-center text-gray-600 dark:text-slate-400">
-                    <span>Base Price:</span>
-                    <span className="font-semibold text-gray-900 dark:text-slate-200">
-                      {exam.fee?.currency} {feeAmount}
-                    </span>
-                  </div>
-                  {discountPercent > 0 && (
-                    <>
-                      <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
-                        <span>Discount ({discountPercent}%):</span>
-                        <span className="font-semibold">- {exam.fee?.currency} {discountAmount.toFixed(2)}</span>
-                      </div>
-                      <div className="border-t border-gray-200 dark:border-slate-700 pt-3 mt-3 flex justify-between items-center">
-                        <span className="font-bold text-gray-900 dark:text-white">Final Price:</span>
-                        <span className="font-black text-xl text-indigo-600 dark:text-indigo-400">
-                          {exam.fee?.currency} {finalAmount.toFixed(2)}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                  {discountPercent === 0 && (
-                    <div className="border-t border-gray-200 dark:border-slate-700 pt-3 mt-3 flex justify-between items-center">
-                      <span className="font-bold text-gray-900 dark:text-white">Total:</span>
-                      <span className="font-black text-xl text-indigo-600 dark:text-indigo-400">
-                        {exam.fee?.currency} {feeAmount.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-             <div className="flex gap-3 mt-4">
-              <Button 
-                fullWidth 
-                variant="outlined" 
-                onClick={onClose} 
-                disabled={isProcessing}
-                className="py-3 rounded-xl font-bold border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300"
-              >
-                Cancel
-              </Button>
-              <Button
-                fullWidth
-                variant="contained"
-                color="primary"
-                onClick={handleContinue}
-                disabled={isProcessing}
-                className="py-3 rounded-xl font-bold shadow-md"
-              >
-                {isProcessing ? <CircularProgress size={24} color="inherit" /> : 'Proceed to Payment'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </Modal>
   );
 };
 

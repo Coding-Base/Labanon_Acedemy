@@ -491,7 +491,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   );
 
   return (
-    <div className={`student-dashboard ${darkMode ? 'dark-mode bg-slate-950 text-slate-100' : 'bg-gradient-to-br from-gray-50 to-yellow-50'} h-[100dvh] w-full flex flex-col overflow-hidden`}>
+    <div className={`student-dashboard ${darkMode ? 'dark-mode bg-slate-950 text-slate-100' : 'bg-gradient-to-br from-gray-50 to-yellow-50'} fixed inset-0 w-full flex flex-col overflow-hidden`}>
       <style>{`
         .student-dashboard .custom-scrollbar {
           scrollbar-width: thin;
@@ -587,7 +587,6 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
         </div>
       </motion.header>
 
-      {/* Main Flex Container */}
       <div className="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6 relative">
         <motion.aside initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="hidden lg:flex w-64 flex-col flex-none">
           <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-2xl shadow-lg p-6 flex flex-col h-full border overflow-hidden`}>
@@ -813,8 +812,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   
                   <Route path="cbt" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CBTPage /></div>} />
                   <Route path="mock-exams" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><StudentMockExamsPage /></div>} />
-                  <Route path="mock-exams/attempt/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamInterface /></div>} />
-                  <Route path="mock-exams/results/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamResultsPage /></div>} />
+                  <Route path="mock-exams/attempt/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamInterface darkMode={darkMode} /></div>} />
+                  <Route path="mock-exams/results/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamResultsPage darkMode={darkMode} /></div>} />
                   
                   <Route path="referrer" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ReferrerPage /></div>} />
                   <Route path="cart" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Cart /></div>} />

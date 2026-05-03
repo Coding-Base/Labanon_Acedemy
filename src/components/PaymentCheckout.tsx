@@ -9,7 +9,7 @@ const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:800
 
 interface PaymentCheckoutProps {
   itemId: number
-  itemType: 'course' | 'diploma' | 'activation'
+  itemType: 'course' | 'diploma' | 'activation' | 'mock_exam'
   amount: number
   currency?: string
   itemTitle: string

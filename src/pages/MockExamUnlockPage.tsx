@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AlertCircle, Clock, Award, Zap, Lock } from 'lucide-react';
-import PaymentCheckout from '../../components/PaymentCheckout';
-import { studentMockExamsAPI } from '../../api/mock_exams_api';
-import showToast from '../../utils/toast';
+import PaymentCheckout from '../components/PaymentCheckout';
+import { studentMockExamsAPI } from '../api/mock_exams_api';
+import showToast from '../utils/toast';
 
 interface CustomMockExam {
   id: number;
@@ -67,12 +67,11 @@ const MockExamUnlockPage: React.FC = () => {
 
   const handlePaymentSuccess = async () => {
     try {
-      // Start exam attempt after successful payment
-      const attemptRes = await studentMockExamsAPI.startMockExamAttempt(Number(examId));
-      showToast('success', 'Exam unlocked successfully! Starting exam...');
-      navigate(`/mock-exams/attempt/${attemptRes.data.id}`);
+      // After mock exam payment, redirect to mock exams listing
+      showToast('success', 'Payment successful! Redirecting to mock exams...');
+      navigate('/student/mock-exams');
     } catch (err: any) {
-      showToast('error', 'Failed to start exam. Please try again.');
+      showToast('error', 'Failed to redirect after payment. Please navigate to Mock Exams.');
       console.error(err);
     }
   };

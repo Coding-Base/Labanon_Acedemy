@@ -227,7 +227,7 @@ const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = fa
 
   if (isLoading) {
     return (
-      <div className={`flex items-center justify-center min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      <div className="flex items-center justify-center min-h-[50vh]">
         <CircularProgress size={60} thickness={4} />
       </div>
     );
@@ -235,7 +235,7 @@ const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = fa
 
   if (!result) {
     return (
-      <div className={`flex items-center justify-center min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      <div className="flex items-center justify-center min-h-[50vh]">
         <Alert severity="error" className="max-w-md">Failed to load exam results data. Please try again.</Alert>
       </div>
     );
@@ -258,8 +258,9 @@ const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = fa
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <div className={`min-h-screen py-8 px-4 sm:px-6 lg:px-8 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-gray-900'}`}>
-        <div className="max-w-5xl mx-auto">
+      {/* FIX 3: Replaced min-h-screen with w-full flex flex-col bg-transparent */}
+      <div className="w-full flex flex-col bg-transparent">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
           
           {/* Top Navigation */}
           <Button
@@ -296,7 +297,7 @@ const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = fa
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
             {/* Score Percentage */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card className="h-full border-0 shadow-md rounded-2xl overflow-hidden" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+              <Card className="h-full border-0 shadow-md rounded-2xl overflow-hidden" sx={{ bgcolor: darkMode ? 'background.paper' : 'white', backgroundImage: 'none' }}>
                 <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full">
                   <div className="relative w-28 h-28 mx-auto mb-3">
                     <CircularProgress
@@ -319,7 +320,7 @@ const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = fa
 
             {/* Grade */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              <Card className="h-full border-0 shadow-md rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+              <Card className="h-full border-0 shadow-md rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white', backgroundImage: 'none' }}>
                 <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full">
                   <div
                     className="w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl font-extrabold text-white shadow-inner"
@@ -337,7 +338,7 @@ const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = fa
 
             {/* Total Marks */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <Card className="h-full border-0 shadow-md rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+              <Card className="h-full border-0 shadow-md rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white', backgroundImage: 'none' }}>
                 <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full">
                   <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${darkMode ? 'bg-yellow-900/30' : 'bg-yellow-100'}`}>
                     <TrendingUp size={32} style={{ color: muiTheme.palette.primary.main }} />
@@ -352,7 +353,7 @@ const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = fa
 
             {/* Time Spent */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <Card className="h-full border-0 shadow-md rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+              <Card className="h-full border-0 shadow-md rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white', backgroundImage: 'none' }}>
                 <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full">
                   <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
                     <Clock size={32} className="text-blue-600 dark:text-blue-400" />
@@ -378,7 +379,7 @@ const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = fa
             {result.review_questions.length > 0 ? (
               <div className="space-y-6">
                 {result.review_questions.map((q, idx) => (
-                  <Card key={q.id} className="border-0 shadow-sm overflow-hidden rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+                  <Card key={q.id} className="border-0 shadow-sm overflow-hidden rounded-2xl" sx={{ bgcolor: darkMode ? 'background.paper' : 'white', backgroundImage: 'none' }}>
                     <div className={`h-2 w-full ${q.is_correct === true ? 'bg-green-500' : q.is_correct === false ? 'bg-red-500' : 'bg-gray-300'}`}></div>
                     <CardContent className="p-6 md:p-8">
                       {/* Question Header */}
@@ -447,7 +448,7 @@ const MockExamResultsPage: React.FC<MockExamResultsPageProps> = ({ darkMode = fa
                 ))}
               </div>
             ) : (
-              <Card sx={{ bgcolor: darkMode ? 'background.paper' : 'white' }}>
+              <Card sx={{ bgcolor: darkMode ? 'background.paper' : 'white', backgroundImage: 'none' }}>
                 <CardContent className="p-8 text-center">
                   <p className={darkMode ? 'text-slate-400' : 'text-gray-500'}>
                     Detailed question review is not available for this exam attempt.

@@ -224,6 +224,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [showPermissionManager, setShowPermissionManager] = useState(false)
   const [blogs, setBlogs] = useState<any[]>([])
   const [blogsLoading, setBlogsLoading] = useState(false)
+  const [blogPage, setBlogPage] = useState(1)
+  const [blogPageInfo, setBlogPageInfo] = useState<{count: number; next: string | null; previous: string | null; current: number}>({count: 0, next: null, previous: null, current: 1})
   const [showAllSignups, setShowAllSignups] = useState(false)
   const [showBlogForm, setShowBlogForm] = useState(false)
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
@@ -713,7 +715,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       loadOverviewStats()
     }
     if (tab === 'payments') loadPayments(paymentPage)
-    if (tab === 'blog') loadBlogs()
+    if (tab === 'blog') loadBlogs(blogPage)
     if (tab === 'promos') loadPromos()
     if (tab === 'trial') loadTrialDays()
     if (tab === 'gospel') loadGospels()
@@ -1068,16 +1070,25 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
   }
 
-  async function loadBlogs() {
+  async function loadBlogs(page = 1) {
     setBlogsLoading(true)
     try {
       const token = localStorage.getItem('access')
-      const res = await axios.get(`${API_BASE}/blog/`, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await axios.get(`${API_BASE}/blog/?page=${page}`, { headers: { Authorization: `Bearer ${token}` } })
       const data = res.data.results || res.data
-      setBlogs(Array.isArray(data) ? data : [])
+      const items = Array.isArray(data) ? data : []
+      setBlogs(items)
+      setBlogPage(page)
+      setBlogPageInfo({
+        count: res.data.count || items.length || 0,
+        next: res.data.next || null,
+        previous: res.data.previous || null,
+        current: page
+      })
     } catch (err) { 
       console.error(err)
       setBlogs([])
+      setBlogPageInfo({count: 0, next: null, previous: null, current: page})
     } finally {
       setBlogsLoading(false)
     }
@@ -1205,7 +1216,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         const key = draftKey(editingBlog?.id ?? null);
         localStorage.removeItem(key);
       } catch (e) {}
-      loadBlogs()
+      loadBlogs(blogPage)
       setBlogMessage({ type: 'success', text: editingBlog ? 'Blog updated' : 'Blog created' })
       setTimeout(() => setBlogMessage(null), 3000)
     } catch (err) {
@@ -1221,7 +1232,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     try {
       const token = localStorage.getItem('access')
       await axios.post(`${API_BASE}/blog/${blogId}/publish/`, {}, { headers: { Authorization: `Bearer ${token}` } })
-      loadBlogs()
+      loadBlogs(blogPage)
     } catch (err) {
       console.error(err)
       setBlogMessage({ type: 'error', text: 'Failed to publish blog' })
@@ -1234,7 +1245,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     try {
       const token = localStorage.getItem('access')
       await axios.delete(`${API_BASE}/blog/${blogId}/`, { headers: { Authorization: `Bearer ${token}` } })
-      loadBlogs()
+      loadBlogs(blogPage)
     } catch (err) {
       console.error(err)
       setBlogMessage({ type: 'error', text: 'Failed to delete blog' })
@@ -4049,6 +4060,42 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 </div>
                               </motion.div>
                             ))}
+
+                          {(blogPageInfo.count > 10 || blogPageInfo.next || blogPageInfo.previous) && (
+                            <div className="mt-6 flex flex-col gap-3 items-center justify-between sm:flex-row">
+                              <div className="text-sm text-gray-600">Page {blogPageInfo.current} of {Math.max(1, Math.ceil(blogPageInfo.count / 10))}</div>
+                              <div className="flex items-center gap-2">
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => loadBlogs(Math.max(1, blogPage - 1))}
+                                  disabled={!blogPageInfo.previous}
+                                  className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+                                    blogPageInfo.previous
+                                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                      : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                  }`}
+                                >
+                                  <ChevronLeft className="w-4 h-4 mr-1" />
+                                  Previous
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => loadBlogs(blogPage + 1)}
+                                  disabled={!blogPageInfo.next}
+                                  className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+                                    blogPageInfo.next
+                                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                      : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                  }`}
+                                >
+                                  Next
+                                  <ChevronRight className="w-4 h-4 ml-1" />
+                                </motion.button>
+                              </div>
+                            </div>
+                          )}
                           </div>
                         )}
                       </div>

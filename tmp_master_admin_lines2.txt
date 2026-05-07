@@ -1,0 +1,125 @@
+3981:                             </motion.button>
+3982:                           </div>
+3983:                         </div>
+3984: 
+3985:                         {blogs.length === 0 ? (
+3986:                           <div className="text-center py-12">
+3987:                             <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+3988:                             <p className="text-gray-500">No blog posts yet</p>
+3989:                           </div>
+3990:                         ) : (
+3991:                           <div className="space-y-4">
+3992:                             {blogs.map((blog) => (
+3993:                               <motion.div
+3994:                                 key={blog.id}
+3995:                                 whileHover={{ y: -3 }}
+3996:                                 className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
+3997:                               >
+3998:                                 <div className="flex items-start justify-between mb-4">
+3999:                                   <div>
+4000:                                     <h4 className="text-lg font-bold text-gray-900">{blog.title}</h4>
+4001:                                     <p className="text-sm text-gray-500 mt-1">By {blog.author_username} • {new Date(blog.created_at).toLocaleDateString()}</p>
+4002:                                   </div>
+4003:                                   <span className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold ${
+4004:                                     blog.is_published ? 'bg-yellow-100 text-yellow-800' : 'bg-yellow-100 text-yellow-800'
+4005:                                   }`}>
+4006:                                     {blog.is_published ? 'Published' : 'Draft'}
+4007:                                   </span>
+4008:                                 </div>
+4009:                                  
+4010:                                 {(() => {
+4011:                                   const firstImg = blog.image || extractFirstImageSrc(blog.content)
+4012:                                   const imgUrl = firstImg ? getImageUrl(firstImg) : ''
+4013:                                   return imgUrl ? (
+4014:                                     <img src={imgUrl} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
+4015:                                   ) : null
+4016:                                 })()}
+4017: 
+4018:                                 <p className="text-gray-600 mb-4 line-clamp-2">{stripHtml(blog.excerpt || blog.content)}</p>
+4019:                                  
+4020:                                 <div className="flex gap-3">
+4021:                                   <motion.button
+4022:                                     whileHover={{ scale: 1.05 }}
+4023:                                     whileTap={{ scale: 0.95 }}
+4024:                                     onClick={() => {
+4025:                                       setEditingBlog(blog)
+4026:                                       setBlogFormData({
+4027:                                         title: blog.title,
+4028:                                         content: blog.content,
+4029:                                         image: blog.image,
+4030:                                         excerpt: blog.excerpt,
+4031:                                         image_description: blog.image_description || '',
+4032:                                         meta_title: blog.meta_title || '',
+4033:                                         meta_description: blog.meta_description || '',
+4034:                                         meta_keywords: blog.meta_keywords || ''
+4035:                                       })
+4036:                                       setShowBlogForm(true)
+4037:                                     }}
+4038:                                     className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
+4039:                                   >
+4040:                                     Edit
+4041:                                   </motion.button>
+4042:                                   {!blog.is_published && (
+4043:                                     <motion.button
+4044:                                       whileHover={{ scale: 1.05 }}
+4045:                                       whileTap={{ scale: 0.95 }}
+4046:                                       onClick={() => publishBlog(blog.id)}
+4047:                                       className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
+4048:                                     >
+4049:                                       Publish
+4050:                                     </motion.button>
+4051:                                   )}
+4052:                                   <motion.button
+4053:                                     whileHover={{ scale: 1.05 }}
+4054:                                     whileTap={{ scale: 0.95 }}
+4055:                                     onClick={() => deleteBlog(blog.id)}
+4056:                                     className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200"
+4057:                                   >
+4058:                                     Delete
+4059:                                   </motion.button>
+4060:                                 </div>
+4061:                               </motion.div>
+4062:                             ))}
+4063:                           </div>
+4064: 
+4065:                           {blogPageInfo.count > 10 && (
+4066:                             <div className="mt-6 flex flex-col gap-3 items-center justify-between sm:flex-row">
+4067:                               <div className="text-sm text-gray-600">Page {blogPageInfo.current} of {Math.max(1, Math.ceil(blogPageInfo.count / 10))}</div>
+4068:                               <div className="flex items-center gap-2">
+4069:                                 <motion.button
+4070:                                   whileHover={{ scale: 1.05 }}
+4071:                                   whileTap={{ scale: 0.95 }}
+4072:                                   onClick={() => loadBlogs(Math.max(1, blogPage - 1))}
+4073:                                   disabled={!blogPageInfo.previous}
+4074:                                   className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+4075:                                     blogPageInfo.previous
+4076:                                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+4077:                                       : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+4078:                                   }`}
+4079:                                 >
+4080:                                   <ChevronLeft className="w-4 h-4 mr-1" />
+4081:                                   Previous
+4082:                                 </motion.button>
+4083:                                 <motion.button
+4084:                                   whileHover={{ scale: 1.05 }}
+4085:                                   whileTap={{ scale: 0.95 }}
+4086:                                   onClick={() => loadBlogs(blogPage + 1)}
+4087:                                   disabled={!blogPageInfo.next}
+4088:                                   className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+4089:                                     blogPageInfo.next
+4090:                                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+4091:                                       : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+4092:                                   }`}
+4093:                                 >
+4094:                                   Next
+4095:                                   <ChevronRight className="w-4 h-4 ml-1" />
+4096:                                 </motion.button>
+4097:                               </div>
+4098:                             </div>
+4099:                           )}
+4100:                       </div>
+4101:                     )}
+4102:                   </div>
+4103:                 )}
+4104: 
+4105:                 {tab === 'gospel' && (

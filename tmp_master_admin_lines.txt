@@ -1,0 +1,196 @@
+3921:                                         {exams.map((ex: any) => (
+3922:                                           <option key={ex.id} value={ex.id}>{ex.title || ex.name || ex.slug || `Exam ${ex.id}`}</option>
+3923:                                         ))}
+3924:                                       </select>
+3925:                                     </div>
+3926:                                   )}
+3927:                                 </div>
+3928:                                 <label className="flex items-center gap-2"><input type="checkbox" checked={promoFormData.active} onChange={(e) => setPromoFormData(prev => ({...prev, active: e.target.checked}))} /> Active</label>
+3929:                               </div>
+3930:                             </div>
+3931:                             <div className="mt-4 flex justify-end gap-2">
+3932:                               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setShowPromoForm(false); setEditingPromo(null) }} className="px-4 py-2 bg-gray-100 rounded">Cancel</motion.button>
+3933:                               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => savePromo()} className="px-4 py-2 bg-yellow-600 text-white rounded">Save</motion.button>
+3934:                             </div>
+3935:                           </motion.div>
+3936:                         </motion.div>
+3937:                       )}
+3938:                     </AnimatePresence>
+3939:                   </div>
+3940:                 )}
+3941: 
+3942:                 {tab === 'blog' && (
+3943:                   <div>
+3944:                     {blogMessage && (
+3945:                       <div className={`p-3 rounded-lg mb-4 ${blogMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+3946:                         {blogMessage.text}
+3947:                       </div>
+3948:                     )}
+3949:                     {blogsLoading ? (
+3950:                       <div className="flex items-center justify-center py-12">
+3951:                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+3952:                         <span className="text-gray-600">Loading blogs...</span>
+3953:                       </div>
+3954:                     ) : (
+3955:                       <div>
+3956:                         <div className="mb-6 flex items-center justify-between">
+3957:                           <h3 className="text-lg font-semibold text-gray-900">Blog Posts</h3>
+3958:                           <div className="flex items-center gap-3">
+3959:                             {/* Ensure visible on desktop: duplicate CTA that is explicitly shown on md+ */}
+3960:                             <motion.button
+3961:                               whileHover={{ scale: 1.05 }}
+3962:                               whileTap={{ scale: 0.95 }}
+3963:                               onClick={() => {
+3964:                                 setShowBlogForm(true)
+3965:                                 setEditingBlog(null)
+3966:                                 setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: ''})
+3967:                               }}
+3968:                               className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg hidden md:inline-flex"
+3969:                             >
+3970:                               + New Blog Post
+3971:                             </motion.button>
+3972: 
+3973:                             {/* Also include a compact button visible on small screens */}
+3974:                             <motion.button
+3975:                               whileHover={{ scale: 1.05 }}
+3976:                               whileTap={{ scale: 0.95 }}
+3977:                               onClick={() => { setShowBlogForm(true); setEditingBlog(null); setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: ''}) }}
+3978:                               className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold md:hidden"
+3979:                             >
+3980:                               + New
+3981:                             </motion.button>
+3982:                           </div>
+3983:                         </div>
+3984: 
+3985:                         {blogs.length === 0 ? (
+3986:                           <div className="text-center py-12">
+3987:                             <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+3988:                             <p className="text-gray-500">No blog posts yet</p>
+3989:                           </div>
+3990:                         ) : (
+3991:                           <>
+3992:                             <div className="space-y-4">
+3993:                             {blogs.map((blog) => (
+3994:                               <motion.div
+3995:                                 key={blog.id}
+3996:                                 whileHover={{ y: -3 }}
+3997:                                 className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
+3998:                               >
+3999:                                 <div className="flex items-start justify-between mb-4">
+4000:                                   <div>
+4001:                                     <h4 className="text-lg font-bold text-gray-900">{blog.title}</h4>
+4002:                                     <p className="text-sm text-gray-500 mt-1">By {blog.author_username} • {new Date(blog.created_at).toLocaleDateString()}</p>
+4003:                                   </div>
+4004:                                   <span className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold ${
+4005:                                     blog.is_published ? 'bg-yellow-100 text-yellow-800' : 'bg-yellow-100 text-yellow-800'
+4006:                                   }`}>
+4007:                                     {blog.is_published ? 'Published' : 'Draft'}
+4008:                                   </span>
+4009:                                 </div>
+4010:                                  
+4011:                                 {(() => {
+4012:                                   const firstImg = blog.image || extractFirstImageSrc(blog.content)
+4013:                                   const imgUrl = firstImg ? getImageUrl(firstImg) : ''
+4014:                                   return imgUrl ? (
+4015:                                     <img src={imgUrl} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
+4016:                                   ) : null
+4017:                                 })()}
+4018: 
+4019:                                 <p className="text-gray-600 mb-4 line-clamp-2">{stripHtml(blog.excerpt || blog.content)}</p>
+4020:                                  
+4021:                                 <div className="flex gap-3">
+4022:                                   <motion.button
+4023:                                     whileHover={{ scale: 1.05 }}
+4024:                                     whileTap={{ scale: 0.95 }}
+4025:                                     onClick={() => {
+4026:                                       setEditingBlog(blog)
+4027:                                       setBlogFormData({
+4028:                                         title: blog.title,
+4029:                                         content: blog.content,
+4030:                                         image: blog.image,
+4031:                                         excerpt: blog.excerpt,
+4032:                                         image_description: blog.image_description || '',
+4033:                                         meta_title: blog.meta_title || '',
+4034:                                         meta_description: blog.meta_description || '',
+4035:                                         meta_keywords: blog.meta_keywords || ''
+4036:                                       })
+4037:                                       setShowBlogForm(true)
+4038:                                     }}
+4039:                                     className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
+4040:                                   >
+4041:                                     Edit
+4042:                                   </motion.button>
+4043:                                   {!blog.is_published && (
+4044:                                     <motion.button
+4045:                                       whileHover={{ scale: 1.05 }}
+4046:                                       whileTap={{ scale: 0.95 }}
+4047:                                       onClick={() => publishBlog(blog.id)}
+4048:                                       className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
+4049:                                     >
+4050:                                       Publish
+4051:                                     </motion.button>
+4052:                                   )}
+4053:                                   <motion.button
+4054:                                     whileHover={{ scale: 1.05 }}
+4055:                                     whileTap={{ scale: 0.95 }}
+4056:                                     onClick={() => deleteBlog(blog.id)}
+4057:                                     className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200"
+4058:                                   >
+4059:                                     Delete
+4060:                                   </motion.button>
+4061:                                 </div>
+4062:                               </motion.div>
+4063:                             ))}
+4064:                           </div>
+4065: 
+4066:                           {blogPageInfo.count > 10 && (
+4067:                             <div className="mt-6 flex flex-col gap-3 items-center justify-between sm:flex-row">
+4068:                               <div className="text-sm text-gray-600">Page {blogPageInfo.current} of {Math.max(1, Math.ceil(blogPageInfo.count / 10))}</div>
+4069:                               <div className="flex items-center gap-2">
+4070:                                 <motion.button
+4071:                                   whileHover={{ scale: 1.05 }}
+4072:                                   whileTap={{ scale: 0.95 }}
+4073:                                   onClick={() => loadBlogs(Math.max(1, blogPage - 1))}
+4074:                                   disabled={!blogPageInfo.previous}
+4075:                                   className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+4076:                                     blogPageInfo.previous
+4077:                                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+4078:                                       : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+4079:                                   }`}
+4080:                                 >
+4081:                                   <ChevronLeft className="w-4 h-4 mr-1" />
+4082:                                   Previous
+4083:                                 </motion.button>
+4084:                                 <motion.button
+4085:                                   whileHover={{ scale: 1.05 }}
+4086:                                   whileTap={{ scale: 0.95 }}
+4087:                                   onClick={() => loadBlogs(blogPage + 1)}
+4088:                                   disabled={!blogPageInfo.next}
+4089:                                   className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+4090:                                     blogPageInfo.next
+4091:                                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+4092:                                       : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+4093:                                   }`}
+4094:                                 >
+4095:                                   Next
+4096:                                   <ChevronRight className="w-4 h-4 ml-1" />
+4097:                                 </motion.button>
+4098:                               </div>
+4099:                             </div>
+4100:                           )}
+4101:                         </>
+4102:                       )}
+4103:                   </div>
+4104:                 )}
+4105: 
+4106:                 {tab === 'gospel' && (
+4107:                   <div>
+4108:                     {gospelMessage && (
+4109:                       <motion.div
+4110:                         initial={{ opacity: 0, y: -10 }}
+4111:                         animate={{ opacity: 1, y: 0 }}
+4112:                         className={`mb-4 p-4 rounded-lg ${gospelMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
+4113:                       >
+4114:                         {gospelMessage.text}
+4115:                       </motion.div>
+4116:                     )}

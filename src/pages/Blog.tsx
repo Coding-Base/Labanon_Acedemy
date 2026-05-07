@@ -10,6 +10,7 @@ import useDebounce from '../utils/useDebounce'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
 const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
+const BLOG_PAGE_SIZE = 10
 
 function getImageSrc(img?: string) {
   if (!img) return undefined
@@ -106,7 +107,8 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearch = useDebounce(searchTerm, 300)
-  const [pageInfo, setPageInfo] = useState({ count: 0, next: null, previous: null })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageInfo, setPageInfo] = useState({ count: 0, next: null, previous: null, current: 1 })
 
   useEffect(() => {
     loadBlogs()
@@ -117,7 +119,7 @@ export default function BlogPage() {
     try {
       // Create a public axios instance without interceptors for public endpoints
       const publicApi = axios.create({ baseURL: API_BASE })
-      const response = await publicApi.get(`/blog/published/?page=${page}`)
+      const response = await publicApi.get(`/blog/published/?page=${page}&page_size=${BLOG_PAGE_SIZE}`)
       
       const rawBlogs = Array.isArray(response.data.results) ? response.data.results : Array.isArray(response.data) ? response.data : []
       // Convert any relative image src in content to absolute backend origin so cards display images correctly
@@ -132,10 +134,12 @@ export default function BlogPage() {
       })
 
       setBlogs(blogsData)
+      setCurrentPage(page)
       setPageInfo({
         count: response.data.count || blogsData.length || 0,
         next: response.data.next || null,
-        previous: response.data.previous || null
+        previous: response.data.previous || null,
+        current: page
       })
     } catch (err) {
       console.error('Failed to load blogs:', err)
@@ -233,7 +237,8 @@ export default function BlogPage() {
             </p>
           </motion.div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-8">
+          <>
+            <div className="grid md:grid-cols-2 gap-8">
             {filteredBlogs.map((blog) => {
               // Use only the featured `image` for the card — do NOT use content images
               const imgSrc = blog.image ? getImageSrc(blog.image) : undefined
@@ -310,7 +315,29 @@ export default function BlogPage() {
               </div>
             )})}
           </div>
-          
+
+          {(pageInfo.count > BLOG_PAGE_SIZE || pageInfo.next || pageInfo.previous) && (
+            <div className="mt-8 flex flex-col gap-3 items-center justify-between sm:flex-row">
+              <div className="text-sm text-gray-600">Page {currentPage} of {Math.max(1, Math.ceil(pageInfo.count / BLOG_PAGE_SIZE))}</div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => loadBlogs(Math.max(1, currentPage - 1))}
+                  disabled={!pageInfo.previous}
+                  className={`px-4 py-2 rounded-lg font-medium transition ${pageInfo.previous ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => loadBlogs(currentPage + 1)}
+                  disabled={!pageInfo.next}
+                  className={`px-4 py-2 rounded-lg font-medium transition ${pageInfo.next ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         )}
 
         {/* Empty State */}

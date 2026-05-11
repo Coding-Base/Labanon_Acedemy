@@ -49,6 +49,7 @@ export default function Register() {
   const params = new URLSearchParams(location.search);
   const nextParam = params.get('next') || '';
   const pendingDownload = params.get('pendingDownload') || '';
+  const referralCode = params.get('ref') || params.get('referral_code') || localStorage.getItem('referral_code') || '';
   const fromInstitutions = params.get('from') === 'institutions'; // Check if coming from institutions page
 
   const [username, setUsername] = useState('');
@@ -242,6 +243,7 @@ export default function Register() {
         first_name: role === 'institution' ? contactFullName || institutionName : firstName,
         last_name: role === 'institution' ? '' : lastName,
       };
+      if (referralCode) registrationData.referral_code = referralCode;
 
       // Add institution-specific data if role is institution
       if (role === 'institution') {
@@ -257,6 +259,7 @@ export default function Register() {
       }
 
       await register(registrationData);
+      if (referralCode) localStorage.setItem('referral_code', referralCode);
 
       // If user just registered and there was a pending download, request the public endpoint
       if (pendingDownload) {

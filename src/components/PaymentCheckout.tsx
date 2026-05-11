@@ -54,6 +54,8 @@ export default function PaymentCheckout({
   const [processing, setProcessing] = useState(false)
   const [tutorShare, setTutorShare] = useState<number>(95)
   const [institutionShare, setInstitutionShare] = useState<number>(95)
+  const [referralBalance, setReferralBalance] = useState<number>(0)
+  const [redeemingPoints, setRedeemingPoints] = useState(false)
   const navigate = useNavigate()
 
   // Load Paystack script on mount
@@ -62,6 +64,21 @@ export default function PaymentCheckout({
     script.src = 'https://js.paystack.co/v1/inline.js'
     document.body.appendChild(script)
   }, [])
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const token = localStorage.getItem('access')
+        if (!token || itemType !== 'course') return
+        const res = await axios.get(`${API_BASE}/referrals/me/`, { headers: { Authorization: `Bearer ${token}` } })
+        if (mounted) setReferralBalance(Number(res.data.points_balance || 0))
+      } catch (e) {
+        if (mounted) setReferralBalance(0)
+      }
+    })()
+    return () => { mounted = false }
+  }, [itemType])
 
   // Load configured split from backend so UI reflects admin settings
   useEffect(() => {
@@ -104,6 +121,8 @@ export default function PaymentCheckout({
         amount: promoData && promoData.valid ? Number(promoData.new_total) : amount,
         currency: currency,
       }
+      const referralCode = localStorage.getItem('referral_code')
+      if (referralCode) payload.referral_code = referralCode
       if (meta) {
         Object.assign(payload, meta)
       }
@@ -161,6 +180,30 @@ export default function PaymentCheckout({
       console.error(err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const redeemWithPoints = async () => {
+    setError('')
+    setRedeemingPoints(true)
+    try {
+      const token = localStorage.getItem('access')
+      if (!token) {
+        window.location.href = `/login?next=/${itemType}/${itemId}`
+        return
+      }
+      await axios.post(
+        `${API_BASE}/referrals/redeem/`,
+        { item_type: itemType, item_id: itemId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      alert('Referral points redeemed! You now have access.')
+      if (onSuccess) onSuccess()
+      else navigate('/student/courses')
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to redeem referral points')
+    } finally {
+      setRedeemingPoints(false)
     }
   }
 
@@ -323,6 +366,17 @@ export default function PaymentCheckout({
           </>
         )}
       </button>
+
+      {itemType === 'course' && referralBalance >= Number(amount || 0) && (
+        <button
+          onClick={redeemWithPoints}
+          disabled={redeemingPoints || loading || processing}
+          className="w-full py-3 border border-green-500 text-green-700 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-50 disabled:opacity-60 transition-all"
+        >
+          {redeemingPoints ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+          Pay with referral points ({referralBalance.toLocaleString()} pts)
+        </button>
+      )}
 
       <p className="text-xs text-gray-500 text-center">
         Your payment is secure and encrypted. You will be redirected to Paystack to complete payment.

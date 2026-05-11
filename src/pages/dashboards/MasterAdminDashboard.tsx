@@ -43,7 +43,8 @@ import {
   RefreshCw,
   Zap,
   File as FileIcon,
-  BookMarked
+  BookMarked,
+  Gift
 } from 'lucide-react'
 // Recharts for analytics charts
 import {
@@ -634,6 +635,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
   // Materials Management State
   const [materialsRefreshKey, setMaterialsRefreshKey] = useState(0)
+  const [referralAdminData, setReferralAdminData] = useState<any | null>(null)
+  const [referralAdminLoading, setReferralAdminLoading] = useState(false)
+  const [referralPercentInput, setReferralPercentInput] = useState('')
+  const [referralMessage, setReferralMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
 
   // Define tabs
   const allTabs = [
@@ -651,6 +656,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'signature', label: 'Signature', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
+    { id: 'referrals', label: 'Referrals', icon: <Gift className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'verification', label: 'Verification', icon: <CheckCircle className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'legal-documents', label: 'Legal Documents', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
@@ -715,6 +721,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       loadOverviewStats()
     }
     if (tab === 'payments') loadPayments(paymentPage)
+    if (tab === 'referrals') loadReferralAdmin()
     if (tab === 'blog') loadBlogs(blogPage)
     if (tab === 'promos') loadPromos()
     if (tab === 'trial') loadTrialDays()
@@ -925,6 +932,38 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     } finally {
       setPaymentsLoading(false)
       try { loadActivationFees() } catch (e) { /* ignore */ }
+    }
+  }
+
+  async function loadReferralAdmin() {
+    setReferralAdminLoading(true)
+    setReferralMessage(null)
+    try {
+      const token = localStorage.getItem('access')
+      const [eventsRes, settingsRes] = await Promise.all([
+        axios.get(`${API_BASE}/referrals/admin/events/`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE}/referrals/admin/settings/`, { headers: { Authorization: `Bearer ${token}` } })
+      ])
+      setReferralAdminData(eventsRes.data)
+      setReferralPercentInput(String(settingsRes.data.referral_percent ?? 0.05))
+    } catch (err) {
+      console.error('Failed to load referrals', err)
+      setReferralAdminData({ summary: {}, results: [] })
+    } finally {
+      setReferralAdminLoading(false)
+    }
+  }
+
+  async function saveReferralSettings() {
+    try {
+      const token = localStorage.getItem('access')
+      await axios.patch(`${API_BASE}/referrals/admin/settings/`, { 
+        referral_percent: Number(referralPercentInput || 0.05)
+      }, { headers: { Authorization: `Bearer ${token}` } })
+      setReferralMessage({ type: 'success', text: 'Referral settings updated successfully' })
+      await loadReferralAdmin()
+    } catch (err: any) {
+      setReferralMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to update referral settings' })
     }
   }
 
@@ -3640,6 +3679,86 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       </div>
                     )}
                     </div>
+                    )}
+                  </div>
+                )}
+
+                {tab === 'referrals' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">Referral Management</h2>
+                        <p className="text-gray-600 mt-1">Track referral progress, rewards, and point redemptions.</p>
+                      </div>
+                      <button onClick={loadReferralAdmin} className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">Refresh</button>
+                    </div>
+
+                    <div className="bg-white rounded-lg border p-5">
+                      <h3 className="font-semibold text-gray-900 mb-3">Referral Reward Settings</h3>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex-1">
+                          <label className="text-sm font-medium text-gray-700 mb-1 block">Referral Percent (Decimal)</label>
+                          <input type="number" min="0" step="0.01" value={referralPercentInput} onChange={(e) => setReferralPercentInput(e.target.value)} className="px-3 py-2 border rounded-lg w-full" placeholder="e.g., 0.05 for 5%" />
+                          <p className="text-xs text-gray-500 mt-1">Enter as decimal fraction (0.05 = 5%, 0.10 = 10%, 0.25 = 25%)</p>
+                        </div>
+                        <button onClick={saveReferralSettings} className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 w-full sm:w-auto font-medium transition-colors">Save Referral Settings</button>
+                      </div>
+                      {referralMessage && <p className={`text-sm mt-2 ${referralMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{referralMessage.text}</p>}
+                    </div>
+
+                    {referralAdminLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+                        <span className="text-gray-600">Loading referrals...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          {[
+                            ['Total Events', referralAdminData?.summary?.total_events || 0],
+                            ['Successful Referrals', referralAdminData?.summary?.successful_referrals || 0],
+                            ['Points Awarded', referralAdminData?.summary?.awarded_points || 0],
+                            ['Points Redeemed', referralAdminData?.summary?.redeemed_points || 0],
+                          ].map(([label, value]) => (
+                            <div key={String(label)} className="bg-white rounded-lg border p-5">
+                              <div className="text-sm text-gray-600">{label}</div>
+                              <div className="text-2xl font-bold text-gray-900 mt-1">{Number(value).toLocaleString()}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="bg-white rounded-lg border overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead className="bg-gray-50 border-b">
+                                <tr>
+                                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Referrer</th>
+                                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Referred User</th>
+                                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Action</th>
+                                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Item</th>
+                                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Points</th>
+                                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Date</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {(referralAdminData?.results || []).map((event: any) => (
+                                  <tr key={event.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3 text-sm text-gray-900">{event.referrer_name || event.referrer_email}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{event.referred_name || event.referred_email || '—'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">{String(event.event_type || '').replace(/_/g, ' ')}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{event.item_title || event.material_id || '—'}</td>
+                                    <td className={`px-4 py-3 text-sm font-semibold ${event.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>{event.points > 0 ? '+' : ''}{event.points}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{event.created_at ? new Date(event.created_at).toLocaleString() : '—'}</td>
+                                  </tr>
+                                ))}
+                                {(!referralAdminData?.results || referralAdminData.results.length === 0) && (
+                                  <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No referral activity yet</td></tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
                 )}

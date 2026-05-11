@@ -41,6 +41,22 @@ export default function MaterialCard({
 }: MaterialCardProps) {
   const navigate = useNavigate()
   const [loading, setLoading] = React.useState(false)
+  const [referralBalance, setReferralBalance] = React.useState(0)
+
+  React.useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const token = localStorage.getItem('access')
+        if (!token || material.is_free || material.user_has_access) return
+        const res = await api.get('/referrals/me/')
+        if (mounted) setReferralBalance(Number(res.data.points_balance || 0))
+      } catch (e) {
+        if (mounted) setReferralBalance(0)
+      }
+    })()
+    return () => { mounted = false }
+  }, [material.id, material.is_free, material.user_has_access])
 
   const handleDownload = async () => {
     setLoading(true)
@@ -100,12 +116,15 @@ export default function MaterialCard({
         const platformFee = rawPrice * 0.05
         const finalAmount = +(rawPrice + platformFee).toFixed(2)
 
-        const res = await api.post('/payments/initiate/', {
+        const payload: any = {
           item_type: 'material',
           item_id: material.id,
           amount: finalAmount,
           currency: 'NGN'
-        })
+        }
+        const referralCode = localStorage.getItem('referral_code')
+        if (referralCode) payload.referral_code = referralCode
+        const res = await api.post('/payments/initiate/', payload)
 
         // Store payment metadata for verification flow
         sessionStorage.setItem('paymentReference', res.data.reference || '')
@@ -136,6 +155,26 @@ export default function MaterialCard({
         setLoading(false)
       }
     })()
+  }
+
+  const handleRedeemPoints = async () => {
+    const currentPath = window.location.pathname + window.location.search
+    const token = localStorage.getItem('access')
+    if (!token) {
+      navigate(`/login?next=${encodeURIComponent(currentPath)}&pendingPurchase=${material.id}`)
+      return
+    }
+    setLoading(true)
+    try {
+      await api.post('/referrals/redeem/', { item_type: 'material', item_id: material.id })
+      alert('Referral points redeemed. Your material is ready to download.')
+      onPurchase?.()
+      await handleDownload()
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to redeem referral points')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const areaColors: Record<string, string> = {
@@ -247,18 +286,30 @@ export default function MaterialCard({
                 {loading ? 'Preparing...' : 'Download Now'}
               </button>
             ) : (
-              <button
-                onClick={handleAddToCart}
-                disabled={loading}
-                className="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ShoppingCart className="w-4 h-4" />
+              <div className="space-y-2">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={loading}
+                  className="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="w-4 h-4" />
+                  )}
+                  {loading ? 'Processing...' : 'Buy Now'}
+                </button>
+                {referralBalance >= Number(material.price || 0) && (
+                  <button
+                    onClick={handleRedeemPoints}
+                    disabled={loading}
+                    className="w-full px-4 py-2 border border-green-500 text-green-700 bg-white hover:bg-green-50 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                    Pay with referral points
+                  </button>
                 )}
-                {loading ? 'Processing...' : 'Buy Now'}
-              </button>
+              </div>
             )}
           </>
         )}

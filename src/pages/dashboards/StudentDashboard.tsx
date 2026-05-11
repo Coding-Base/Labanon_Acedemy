@@ -37,7 +37,8 @@ import {
   Sun,
   BookMarked,
   Gift,
-  MessageSquare
+  MessageSquare,
+  Copy
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import MyCourses from '../MyCourses';
@@ -108,6 +109,9 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [userRank, setUserRank] = useState<number | string>('—');
   const [memberSince, setMemberSince] = useState<string>('');
+  const [referralData, setReferralData] = useState<any | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [copyMessage, setCopyMessage] = useState('');
 
   const base = '/student';
   const loggedOutRef = useRef(false);
@@ -308,6 +312,28 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     return () => { mounted = false; };
   }, [doLogout, props.summary, location.state]);
 
+  const loadReferralData = useCallback(async () => {
+    setReferralLoading(true);
+    try {
+      const res = await api.get('/referrals/me/');
+      // normalize points_balance to string/number for display
+      const data = res.data || {};
+      setReferralData({
+        ...data,
+        points_balance: data.points_balance,
+        settings: data.settings || {}
+      });
+    } catch (err) {
+      console.warn('Failed to load referral data:', err);
+    } finally {
+      setReferralLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!loadingSummary) loadReferralData();
+  }, [loadingSummary, loadReferralData]);
+
   if (loadingSummary) return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-gray-50">
       <div className="text-center">
@@ -405,6 +431,88 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
       </div>
     </div>
   );
+
+  const copyToClipboard = async (value: string, label: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyMessage(label);
+    } catch (err) {
+      setCopyMessage('Could not copy');
+    }
+    setTimeout(() => setCopyMessage(''), 1800);
+  };
+
+  const RealReferrerPage = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://lighthubacademy.org';
+    const code = referralData?.code || '';
+    const registerLink = code ? `${origin}/register?ref=${encodeURIComponent(code)}` : '';
+    const marketplaceLink = code ? `${origin}/marketplace?ref=${encodeURIComponent(code)}` : '';
+    const events = referralData?.recent_events || [];
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-yellow-600 to-green-600 rounded-2xl p-8 text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <h2 className="text-3xl font-bold mb-2">Earn by Referring</h2>
+            <p className="opacity-90">Share your code, earn points, and spend them on courses or materials.</p>
+          </div>
+          <Gift className="absolute right-8 top-1/2 -translate-y-1/2 w-32 h-32 text-white opacity-20" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} rounded-2xl border p-6 text-center`}>
+            <div className="text-3xl font-bold text-yellow-600 mb-2">{referralData?.total_referrals || 0}</div>
+            <p className={`${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>Total Referrals</p>
+          </div>
+          <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} rounded-2xl border p-6 text-center`}>
+            <div className="text-3xl font-bold text-green-600 mb-2">{Number(referralData?.points_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <p className={`${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>Credit Balance (NGN)</p>
+          </div>
+          <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} rounded-2xl border p-6 text-center`}>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{referralData?.verified_signups || 0}</div>
+            <p className={`${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>Verified Signups</p>
+          </div>
+        </div>
+
+        <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} rounded-2xl border p-8`}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Your Referral Links</h3>
+            {referralLoading && <Loader2 className="w-5 h-5 animate-spin text-yellow-600" />}
+          </div>
+          <div className={`flex gap-3 p-4 rounded-lg mb-3 ${darkMode ? 'bg-slate-800' : 'bg-gray-100'}`}>
+            <input type="text" value={registerLink || 'Loading your referral link...'} readOnly className={`flex-1 ${darkMode ? 'bg-slate-800 text-slate-200' : 'bg-gray-100 text-gray-700'} border-none outline-none`} />
+            <button onClick={() => copyToClipboard(registerLink, 'Registration link copied')} disabled={!registerLink} className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center gap-2 disabled:opacity-50"><Copy className="w-4 h-4" /> Copy</button>
+          </div>
+          <div className={`flex gap-3 p-4 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-gray-100'}`}>
+            <input type="text" value={marketplaceLink || 'Loading your marketplace link...'} readOnly className={`flex-1 ${darkMode ? 'bg-slate-800 text-slate-200' : 'bg-gray-100 text-gray-700'} border-none outline-none`} />
+            <button onClick={() => copyToClipboard(marketplaceLink, 'Marketplace link copied')} disabled={!marketplaceLink} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"><Copy className="w-4 h-4" /> Copy</button>
+          </div>
+          {copyMessage && <p className="text-sm text-green-600 mt-3">{copyMessage}</p>}
+          {code && <p className={`text-sm mt-4 ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>Code: <span className="font-mono font-semibold">{code}</span> - each course purchase earns {((referralData?.settings?.referral_percent || 0.05) * 100).toFixed(2)}% of the platform share as credits.</p>}
+        </div>
+
+        <div className={`${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'} rounded-2xl border overflow-hidden`}>
+          <div className="p-6 border-b border-gray-200">
+            <h3 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Recent Referral Activity</h3>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {events.length === 0 ? (
+              <div className={`p-6 text-sm ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>No referral activity yet.</div>
+            ) : events.map((event: any) => (
+              <div key={event.id} className="p-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className={`font-medium capitalize ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{String(event.event_type || '').replace(/_/g, ' ')}</p>
+                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>{event.referred_name || event.item_title || 'Referral points'} - {new Date(event.created_at).toLocaleString()}</p>
+                </div>
+                <span className={`font-bold ${event.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>{event.points > 0 ? '+' : ''}{event.points}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const LeaderboardPage = () => (
     <div className={`space-y-6 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'}`}>
@@ -815,7 +923,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   <Route path="mock-exams/attempt/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamInterface darkMode={darkMode} /></div>} />
                   <Route path="mock-exams/results/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamResultsPage darkMode={darkMode} /></div>} />
                   
-                  <Route path="referrer" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ReferrerPage /></div>} />
+                  <Route path="referrer" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><RealReferrerPage /></div>} />
                   <Route path="cart" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Cart /></div>} />
                   <Route path="payments" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><PaymentsPage /></div>} />
                   <Route path="profile" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Profile /></div>} />

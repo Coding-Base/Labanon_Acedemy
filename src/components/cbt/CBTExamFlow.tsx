@@ -5,7 +5,7 @@ import SubjectSelectionModal from './SubjectSelectionModal'
 import QuestionConfigurationModal from './QuestionConfigurationModal'
 import TestNamingAndTimeModal from './TestNamingAndTimeModal'
 import ExamInterface from './ExamInterface-MultiSubject'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -35,6 +35,9 @@ type FlowStep = 'exam' | 'subjects' | 'questions-config' | 'naming-time' | 'exam
 
 export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const queryParams = new URLSearchParams(location.search)
+  const startAfterActivation = queryParams.get('start_after_activation') === '1' || queryParams.get('start_after_activation') === 'true'
   const [flowStep, setFlowStep] = useState<FlowStep>('exam')
 
   // Exam selection state
@@ -112,12 +115,25 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
               // If backend didn't return allowed_subjects, fallback to empty array
               setAllowedSubjects([])
             }
+            // If user just returned from payment and asked to auto-start, preselect allowed subjects and skip to question configuration
+            if (startAfterActivation) {
+              if (data.allowed_subjects && Array.isArray(data.allowed_subjects)) {
+                setSelectedSubjects(data.allowed_subjects)
+                setFlowStep('questions-config')
+                return
+              }
+            }
           } else {
             // For non-JAMB exams, an unlocked activation grants access to all subjects.
             // Fetch the exam subjects and mark them as allowed.
             try {
               const subjectsRes = await axios.get(`${API_BASE}/cbt/exams/${exam.id}/subjects/`)
               setAllowedSubjects(subjectsRes.data || [])
+              if (startAfterActivation) {
+                setSelectedSubjects(subjectsRes.data || [])
+                setFlowStep('questions-config')
+                return
+              }
             } catch (err) {
               console.error('Failed to load exam subjects for non-JAMB unlock:', err)
               setAllowedSubjects([])

@@ -154,6 +154,36 @@ export default function SubjectSelectionModal({
     }
   }
 
+  const handlePayNow = (): void => {
+    if (!exam) return
+
+    try {
+      // Analytics event (if analytics present)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      if (window && (window as any).dataLayer) {
+        // @ts-ignore
+        (window as any).dataLayer.push({ event: 'cbt_pay_cta_clicked', exam_id: exam.id })
+      }
+    } catch (e) {
+      // ignore analytics errors
+    }
+
+    const qs = new URLSearchParams({
+      type: 'exam',
+      exam_id: String(exam.id),
+      exam_title: String(exam.title || '')
+    })
+
+    // Return to CBT page after payment — ActivateCheckout decodes this param
+    const returnTo = `/student/cbt?exam_id=${encodeURIComponent(String(exam.id))}`
+    qs.set('return_to', encodeURIComponent(returnTo))
+    // Ask CBT flow to auto-start after activation
+    qs.set('start_after_activation', '1')
+
+    window.location.href = `/activate?${qs.toString()}`
+  }
+
   if (!isOpen || !exam) return null
 
   const displayedSubjects = isPreLocked
@@ -198,6 +228,16 @@ export default function SubjectSelectionModal({
                       ? 'You have 5 free attempts to explore this exam. No payment required!' 
                       : `${trialInfo.trial_attempts_remaining} attempt${trialInfo.trial_attempts_remaining !== 1 ? 's' : ''} remaining of your free trial`}
                   </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <button
+                    onClick={handlePayNow}
+                    aria-label="Skip trial and pay to unlock exam"
+                    disabled={loading || checkingActivation}
+                    className="ml-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 transition font-medium"
+                  >
+                    Skip Trial — Pay Now
+                  </button>
                 </div>
               </div>
             </div>

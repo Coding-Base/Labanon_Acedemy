@@ -3,6 +3,8 @@
 import React, { useState } from 'react'
 import { Upload, Link as LinkIcon, AlertCircle } from 'lucide-react'
 import api from '../../utils/axiosInterceptor'
+import OversizeImageModal from '../OversizeImageModal'
+import { validateImageSize } from '../../utils/uploadValidators'
 
 const AREAS = [
   { value: 'academy', label: 'Academy' },
@@ -26,6 +28,8 @@ export default function CreateMaterialForm({ onSuccess }: CreateMaterialFormProp
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [oversizeModalOpen, setOversizeModalOpen] = useState(false)
+  const [oversizeFileSize, setOversizeFileSize] = useState(0)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -50,9 +54,11 @@ export default function CreateMaterialForm({ onSuccess }: CreateMaterialFormProp
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate image size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image exceeds 5MB limit')
+    // Validate image size using shared validator (400KB max)
+    const validation = validateImageSize(file)
+    if (!validation.ok) {
+      setOversizeFileSize(validation.bytes)
+      setOversizeModalOpen(true)
       return
     }
 
@@ -504,6 +510,13 @@ export default function CreateMaterialForm({ onSuccess }: CreateMaterialFormProp
         </button>
 
       </form>
+
+      <OversizeImageModal
+        open={oversizeModalOpen}
+        size={oversizeFileSize}
+        maxSize={400 * 1024}
+        onClose={() => setOversizeModalOpen(false)}
+      />
     </div>
   )
 }

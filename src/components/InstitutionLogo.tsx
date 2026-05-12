@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/axiosInterceptor';
 import { Save, Loader2, Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import OversizeImageModal from './OversizeImageModal';
+import { validateImageSize } from '../utils/uploadValidators';
 
 export default function InstitutionLogo({ darkMode }: { darkMode?: boolean }) {
   const [loading, setLoading] = useState(false);
@@ -9,6 +11,8 @@ export default function InstitutionLogo({ darkMode }: { darkMode?: boolean }) {
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [oversizeModalOpen, setOversizeModalOpen] = useState(false);
+  const [oversizeFileSize, setOversizeFileSize] = useState(0);
 
   useEffect(() => { loadInstitution(); }, []);
 
@@ -38,6 +42,15 @@ export default function InstitutionLogo({ darkMode }: { darkMode?: boolean }) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate image size
+    const validation = validateImageSize(file);
+    if (!validation.ok) {
+      setOversizeFileSize(validation.bytes);
+      setOversizeModalOpen(true);
+      return;
+    }
+
     try {
       setSaving(true);
       const url = await uploadImage(file);
@@ -105,6 +118,14 @@ export default function InstitutionLogo({ darkMode }: { darkMode?: boolean }) {
           {saving ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />} Save Logo
         </button>
       </div>
+
+      <OversizeImageModal
+        open={oversizeModalOpen}
+        size={oversizeFileSize}
+        maxSize={400 * 1024}
+        onClose={() => setOversizeModalOpen(false)}
+        darkMode={darkMode}
+      />
     </div>
   );
 }

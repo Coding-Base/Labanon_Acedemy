@@ -51,6 +51,8 @@ import {
 } from 'lucide-react'
 import { adminMockExamsAPI, CustomMockExam } from '../api/mock_exams_api'
 import showToast from '../utils/toast'
+import OversizeImageModal from '../components/OversizeImageModal'
+import { validateImageSize } from '../utils/uploadValidators'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -93,6 +95,7 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
     total_marks: 100,
     passing_marks: 50,
   })
+  
 
   // Fetch exams
   const fetchExams = useCallback(async () => {
@@ -542,6 +545,8 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
   const [editingOptionIsCorrect, setEditingOptionIsCorrect] = useState(false)
   const [editingOptionExplanation, setEditingOptionExplanation] = useState('')
   const [editingOptionImage, setEditingOptionImage] = useState<File | null>(null)
+  const [oversizeModalOpen, setOversizeModalOpen] = useState(false)
+  const [oversizeFileSize, setOversizeFileSize] = useState(0)
 
   // Form states
   const [subjectForm, setSubjectForm] = useState({
@@ -1131,7 +1136,16 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                                                       inputProps={{ accept: 'image/*' }}
                                                       onChange={(e) => {
                                                         const file = (e.target as HTMLInputElement).files?.[0]
-                                                        if (file) setEditingOptionImage(file)
+                                                        if (file) {
+                                                          // Validate image size
+                                                          const validation = validateImageSize(file)
+                                                          if (!validation.ok) {
+                                                            setOversizeFileSize(validation.bytes)
+                                                            setOversizeModalOpen(true)
+                                                            return
+                                                          }
+                                                          setEditingOptionImage(file)
+                                                        }
                                                       }}
                                                       variant="standard"
                                                       sx={{ flex: 1, maxWidth: '200px' }}
@@ -2112,6 +2126,7 @@ const PlatformIntegrationTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = f
           </Button>
         </DialogActions>
       </Dialog>
+
     </div>
   )
 }

@@ -3,6 +3,8 @@ import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { CssBaseline, Switch, FormControlLabel } from '@mui/material'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
+import OversizeImageModal from '../../components/OversizeImageModal'
+import { validateImageSize } from '../../utils/uploadValidators'
 import axios from 'axios'
 import showToast from '../../utils/toast'
 import useTokenRefresher from '../../utils/useTokenRefresher'
@@ -232,6 +234,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
   const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, image_description: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
   const [savingBlog, setSavingBlog] = useState(false)
+  // Oversize image modal state for blog image validation
+  const [oversizeModalOpen, setOversizeModalOpen] = useState(false)
+  const [oversizeFileSize, setOversizeFileSize] = useState(0)
   // Promo codes management
   const [promos, setPromos] = useState<any[]>([])
   const [promosLoading, setPromosLoading] = useState(false)
@@ -4898,7 +4903,20 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setBlogFormData((prev) => ({...prev, image: e.target.files?.[0] ?? null}))}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null
+                      if (!file) {
+                        setBlogFormData((prev) => ({ ...prev, image: null }))
+                        return
+                      }
+                      const validation = validateImageSize(file)
+                      if (!validation.ok) {
+                        setOversizeFileSize(validation.bytes)
+                        setOversizeModalOpen(true)
+                        return
+                      }
+                      setBlogFormData((prev) => ({ ...prev, image: file }))
+                    }}
                     className="w-full"
                   />
                   {typeof blogFormData.image === 'string' && blogFormData.image && (
@@ -5008,6 +5026,14 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           </motion.div>
         </motion.div>
       )}
+
+      <OversizeImageModal
+        open={oversizeModalOpen}
+        size={oversizeFileSize}
+        maxSize={400 * 1024}
+        onClose={() => setOversizeModalOpen(false)}
+        darkMode={darkMode}
+      />
 
       {/* System Settings Modal */}
       {showSettings && (

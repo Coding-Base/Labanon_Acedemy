@@ -24,6 +24,8 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { SUPPORTED_CURRENCIES } from '../constants/currencies'
+import OversizeImageModal from './OversizeImageModal'
+import { validateImageSize } from '../utils/uploadValidators'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -76,6 +78,8 @@ export default function InstitutionDiplomas({ darkMode }: { darkMode?: boolean }
   // Image handling
   const [imageTab, setImageTab] = useState<'url' | 'upload'>('upload') 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [oversizeModalOpen, setOversizeModalOpen] = useState(false)
+  const [oversizeFileSize, setOversizeFileSize] = useState(0)
   
   const [formData, setFormData] = useState<DiplomaFormData>({
     title: '',
@@ -179,6 +183,14 @@ export default function InstitutionDiplomas({ darkMode }: { darkMode?: boolean }
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Validate image size
+      const validation = validateImageSize(file)
+      if (!validation.ok) {
+        setOversizeFileSize(validation.bytes)
+        setOversizeModalOpen(true)
+        return
+      }
+
       setSelectedFile(file)
       // Create a blob URL for preview immediately
       setFormData({ ...formData, image: URL.createObjectURL(file) })
@@ -949,6 +961,14 @@ export default function InstitutionDiplomas({ darkMode }: { darkMode?: boolean }
           ))}
         </div>
       )}
+
+      <OversizeImageModal
+        open={oversizeModalOpen}
+        size={oversizeFileSize}
+        maxSize={400 * 1024}
+        onClose={() => setOversizeModalOpen(false)}
+        darkMode={darkMode}
+      />
     </div>
   )
 }

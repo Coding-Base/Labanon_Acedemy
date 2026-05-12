@@ -5,6 +5,8 @@ import { Save, Loader2, AlertCircle, CheckCircle, Copy, Globe, Upload } from 'lu
 import { motion } from 'framer-motion';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import OversizeImageModal from './OversizeImageModal';
+import { validateImageSize } from '../utils/uploadValidators';
 
 // Add rich text editor styling
 const richTextEditorStyles = `
@@ -65,6 +67,8 @@ export default function InstitutionPortfolio({ institutionId, darkMode }: { inst
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState(false);
+  const [oversizeModalOpen, setOversizeModalOpen] = useState(false);
+  const [oversizeFileSize, setOversizeFileSize] = useState(0);
   
   const [formData, setFormData] = useState<Partial<Portfolio>>({
     title: '',
@@ -178,6 +182,17 @@ export default function InstitutionPortfolio({ institutionId, darkMode }: { inst
 
   const addGalleryItem = async () => {
     if (!portfolio?.id) return setError('Create portfolio first');
+    
+    // Validate file size if file is being uploaded
+    if (galleryForm.file) {
+      const validation = validateImageSize(galleryForm.file);
+      if (!validation.ok) {
+        setOversizeFileSize(validation.bytes);
+        setOversizeModalOpen(true);
+        return;
+      }
+    }
+
     try {
       let imageUrl = galleryForm.imageUrl;
       if (galleryForm.file) {
@@ -415,6 +430,15 @@ export default function InstitutionPortfolio({ institutionId, darkMode }: { inst
               <input type="file" name="main_image_file" accept="image/*" onChange={async (e) => {
                 const f = (e.target as HTMLInputElement).files?.[0];
                 if (!f) return;
+
+                // Validate image size
+                const validation = validateImageSize(f);
+                if (!validation.ok) {
+                  setOversizeFileSize(validation.bytes);
+                  setOversizeModalOpen(true);
+                  return;
+                }
+
                 try {
                   const url = await uploadImage(f);
                   setFormData(prev => ({ ...prev, image: url })); // Functional update for safety
@@ -567,6 +591,14 @@ export default function InstitutionPortfolio({ institutionId, darkMode }: { inst
           </div>
         </div>
       </div>
+
+      <OversizeImageModal
+        open={oversizeModalOpen}
+        size={oversizeFileSize}
+        maxSize={400 * 1024}
+        onClose={() => setOversizeModalOpen(false)}
+        darkMode={darkMode}
+      />
     </div>
   );
 }

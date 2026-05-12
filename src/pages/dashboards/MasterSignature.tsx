@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import api from '../../utils/axiosInterceptor'
 import { Save, Loader2, Upload, CheckCircle, AlertCircle } from 'lucide-react'
+import OversizeImageModal from '../../components/OversizeImageModal'
+import { validateImageSize } from '../../utils/uploadValidators'
 
 export default function MasterSignature() {
   const [loading, setLoading] = useState(false)
@@ -8,6 +10,8 @@ export default function MasterSignature() {
   const [formData, setFormData] = useState({ signer_name: '', signature_image: '' })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [oversizeModalOpen, setOversizeModalOpen] = useState(false)
+  const [oversizeFileSize, setOversizeFileSize] = useState(0)
 
   useEffect(() => {
     loadMeta()
@@ -28,6 +32,15 @@ export default function MasterSignature() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Validate image size
+    const validation = validateImageSize(file)
+    if (!validation.ok) {
+      setOversizeFileSize(validation.bytes)
+      setOversizeModalOpen(true)
+      return
+    }
+
     setSaving(true)
     setError('')
     setSuccess('')
@@ -133,6 +146,13 @@ export default function MasterSignature() {
           Save Signature
         </button>
       </div>
+
+      <OversizeImageModal
+        open={oversizeModalOpen}
+        size={oversizeFileSize}
+        maxSize={400 * 1024}
+        onClose={() => setOversizeModalOpen(false)}
+      />
     </div>
   )
 }

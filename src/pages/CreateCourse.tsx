@@ -13,6 +13,8 @@ import { CourseStep2_Structure } from '../components/wizard/CourseStep2_Structur
 import { CourseStep3_Content } from '../components/wizard/CourseStep3_Content'
 import { CourseStep4_Quiz } from '../components/wizard/CourseStep4_Quiz'
 import { CourseStep5_Preview } from '../components/wizard/CourseStep5_Preview'
+import OversizeImageModal from '../components/OversizeImageModal'
+import { validateImageSize } from '../utils/uploadValidators'
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -101,6 +103,8 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
   // Image upload
   const [courseImageFile, setCourseImageFile] = useState<File | null>(null)
   const [courseImagePreview, setCourseImagePreview] = useState<string | null>(null)
+  const [oversizeModalOpen, setOversizeModalOpen] = useState(false)
+  const [oversizeFileSize, setOversizeFileSize] = useState(0)
 
   // UI state
   const [saving, setSaving] = useState(false)
@@ -594,6 +598,14 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
   const onCourseImageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null
     if (file) {
+      // Validate image size
+      const validation = validateImageSize(file)
+      if (!validation.ok) {
+        setOversizeFileSize(validation.bytes)
+        setOversizeModalOpen(true)
+        return
+      }
+
       setCourseImageFile(file)
       const reader = new FileReader()
       reader.onload = () => setCourseImagePreview(String(reader.result))
@@ -810,6 +822,14 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
             </div>
           </div>
         )}
+
+        <OversizeImageModal
+          open={oversizeModalOpen}
+          size={oversizeFileSize}
+          maxSize={400 * 1024}
+          onClose={() => setOversizeModalOpen(false)}
+          darkMode={darkMode}
+        />
       </div>
     </div>
   )

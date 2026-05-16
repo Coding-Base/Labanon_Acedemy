@@ -209,6 +209,7 @@ export default function Home() {
     { label: 'Reviews', path: '/reviews' },
     { label: 'Blog', path: '/blog' },
     { label: 'Documentation', path: '/documentation' },
+    { label: 'Partnership Invitation', path: '/partnership-invitation' },
     { label: 'About', path: '/about' },
     { label: 'Find a Tutor', path: '/online-tutorial-for-student-application' }, 
   ];
@@ -696,6 +697,68 @@ export default function Home() {
           </div>
         </div>
       </motion.section>
+
+      {/* Partnership Invitation Section */}
+      <section className="py-20 bg-white border-t border-gray-100 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-r from-yellow-600 to-orange-600 rounded-3xl overflow-hidden shadow-2xl relative">
+            {/* Background elements */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-black/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
+            
+            <div className="grid lg:grid-cols-2 relative z-10">
+              <div className="p-10 md:p-16 flex flex-col justify-center text-white">
+                <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/20 backdrop-blur rounded-full text-sm font-bold tracking-wider mb-6 w-max border border-white/30">
+                  <Globe className="w-4 h-4 text-white" />
+                  <span>Global Reach & Visibility</span>
+                </div>
+                
+                <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+                  Become a <span className="text-white drop-shadow-md">Course Creator</span> on LightHub Academy
+                </h2>
+                
+                <p className="text-lg md:text-xl text-white/90 mb-8 max-w-lg leading-relaxed">
+                  Join our ecosystem of expert educators. Transform lives globally while earning from your knowledge through our transparent revenue-sharing model.
+                </p>
+                
+                <ul className="space-y-4 mb-10 text-white">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-white shrink-0" />
+                    <span>Host recorded courses, hybrid programs, or workshops</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-white shrink-0" />
+                    <span>Dedicated support for onboarding and course setup</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-white shrink-0" />
+                    <span>Build your personal brand and authority</span>
+                  </li>
+                </ul>
+                
+                <div>
+                  <Link 
+                    to="/partnership-invitation" 
+                    className="inline-flex items-center px-8 py-4 bg-white text-yellow-700 rounded-xl font-bold text-lg hover:bg-gray-50 hover:shadow-lg transition-all transform hover:-translate-y-1"
+                  >
+                    Partner With Us
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Link>
+                </div>
+              </div>
+              
+              <div className="relative hidden lg:block">
+                <div className="absolute inset-0 bg-gradient-to-l from-transparent to-orange-600 z-10 w-24"></div>
+                <img 
+                  src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1000&q=80" 
+                  alt="Team collaboration" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Contact form section */}
       <section className="py-16 md:py-20 bg-gray-900 text-white">

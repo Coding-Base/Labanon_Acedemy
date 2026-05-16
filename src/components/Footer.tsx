@@ -9,6 +9,7 @@ const navItems = [
   { label: 'Marketplace', path: '/marketplace' },
   { label: 'Reviews', path: '/reviews' },
   { label: 'Blog', path: '/blog' },
+  { label: 'Partnership Invitation', path: '/partnership-invitation' },
   { label: 'About', path: '/about' },
 ]
 

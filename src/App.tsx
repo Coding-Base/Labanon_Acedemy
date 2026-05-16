@@ -34,6 +34,7 @@ const AdminCourseDetail = lazy(() => import('./pages/AdminCourseDetail'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+const PartnershipInvitation = lazy(() => import('./pages/PartnershipInvitation'))
 
 // CBT pages (lazy)
 const PerformancePage = lazy(() => import('./components/cbt/PerformancePage'))
@@ -146,6 +147,7 @@ export default function App() {
             <Route path="/institutions" element={<InstitutionPortfolios />} />
             <Route path="/online-tutorial-for-student-application" element={<TutorApplication />} />
             <Route path="/documentation" element={<Documentation />} />
+            <Route path="/partnership-invitation" element={<PartnershipInvitation />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/about" element={<About />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -78,6 +78,7 @@ const NAV_ITEMS = [
   { label: 'Reviews', path: '/reviews' },
   { label: 'Blog', path: '/blog' },
   { label: 'Documentation', path: '/documentation' },
+  { label: 'Partnership Invitation', path: '/partnership-invitation' },
   { label: 'About', path: '/about' },
   { label: 'Find a Tutor', path: '/online-tutorial-for-student-application' },
 ]

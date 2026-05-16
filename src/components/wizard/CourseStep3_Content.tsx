@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Trash2, Plus, Edit2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { Trash2, Plus, Edit2, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader, Film } from 'lucide-react'
 import { VideoUploadWidget } from '../VideoUploadWidget'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -21,6 +21,13 @@ type ModuleItem = {
   lessons?: Lesson[]
 }
 
+interface PendingVideo {
+  videoId: string;
+  moduleIdx: number;
+  status: 'processing' | 'ready';
+  cloudfrontUrl?: string;
+}
+
 interface CourseStep3Props {
   courseType: 'normal' | 'scheduled'
   modules: ModuleItem[]
@@ -37,6 +44,8 @@ interface CourseStep3Props {
   onLessonContentChange: (value: string) => void
   onEditingLessonIndexChange: (index: number | null) => void
   onVideoUploadComplete?: (videoId: string, moduleIdx: number, lessonIdx: number) => void
+  pendingVideo?: PendingVideo | null
+  onClearPendingVideo?: () => void
 }
 
 /**
@@ -59,6 +68,8 @@ export function CourseStep3_Content({
   onLessonContentChange,
   onEditingLessonIndexChange,
   onVideoUploadComplete,
+  pendingVideo,
+  onClearPendingVideo,
 }: CourseStep3Props) {
   const [expandedModuleIndex, setExpandedModuleIndex] = useState<number | null>(0)
   useEffect(() => {
@@ -97,15 +108,24 @@ export function CourseStep3_Content({
     if (currentModuleIndex === null) return
     if (!lessonTitle.trim()) return
 
+    // Build the video data from pendingVideo if it exists for this module
+    const videoData: Record<string, any> = {}
+    if (pendingVideo && pendingVideo.moduleIdx === currentModuleIndex) {
+      videoData.video_s3 = pendingVideo.videoId
+      if (pendingVideo.status === 'ready' && pendingVideo.cloudfrontUrl) {
+        videoData.video_s3_url = pendingVideo.cloudfrontUrl
+      }
+    }
+
     const newModules = modules.map((mod, idx) => {
       if (idx === currentModuleIndex) {
         const updatedLessons = editingLessonIndex !== null
           ? (mod.lessons || []).map((ls, lIdx) =>
               lIdx === editingLessonIndex
-                ? { ...ls, title: lessonTitle, content: lessonContent }  // Preserves video_s3_url, youtube_url, etc.
+                ? { ...ls, title: lessonTitle, content: lessonContent, ...videoData }  // Merge video + preserves existing fields
                 : ls
             )
-          : [...(mod.lessons || []), { title: lessonTitle, content: lessonContent }]
+          : [...(mod.lessons || []), { title: lessonTitle, content: lessonContent, ...videoData }]
         return { ...mod, lessons: updatedLessons }
       }
       return mod
@@ -115,6 +135,10 @@ export function CourseStep3_Content({
     onLessonTitleChange('')
     onLessonContentChange('')
     onEditingLessonIndexChange(null)
+    // Clear pending video after it's been merged into the lesson
+    if (pendingVideo && pendingVideo.moduleIdx === currentModuleIndex) {
+      onClearPendingVideo?.()
+    }
   }
 
   const deleteLesson = (moduleIdx: number, lessonIdx: number) => {
@@ -283,39 +307,59 @@ export function CourseStep3_Content({
 
                       {/* Video Upload Section */}
                       <div className="border-t pt-4 mt-4">
-                        <h5 className="font-semibold text-gray-900 mb-3">Add Video to Lesson</h5>
+                        <h5 className="font-semibold text-gray-900 mb-3">
+                          <Film className="w-4 h-4 inline mr-2" />
+                          Add Video to Lesson
+                        </h5>
+
+                        {/* Show existing video info when editing a lesson that already has a video */}
+                        {editingLessonIndex !== null && (() => {
+                          const existingLesson = modules[mIdx]?.lessons?.[editingLessonIndex]
+                          if (existingLesson?.video_s3_url || existingLesson?.youtube_url) {
+                            return (
+                              <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                <span className="text-sm text-green-700">
+                                  This lesson already has a video. Upload a new one below to replace it.
+                                </span>
+                              </div>
+                            )
+                          }
+                          return null
+                        })()}
+
+                        {/* Pending video indicator */}
+                        {pendingVideo && pendingVideo.moduleIdx === mIdx && (
+                          <div className={`mb-3 p-3 rounded-lg flex items-center gap-2 ${
+                            pendingVideo.status === 'ready'
+                              ? 'bg-green-50 border border-green-200'
+                              : 'bg-yellow-50 border border-yellow-200'
+                          }`}>
+                            {pendingVideo.status === 'ready' ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                <span className="text-sm text-green-700">
+                                  ✓ Video ready — it will be attached when you click "{editingLessonIndex !== null ? 'Update Lesson' : 'Add Lesson'}"
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Loader className="w-4 h-4 text-yellow-600 flex-shrink-0 animate-spin" />
+                                <span className="text-sm text-yellow-700">
+                                  Video encoding in progress... It will be attached when you add the lesson.
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        )}
+
                         <VideoUploadWidget
                           onUploadComplete={(videoData) => {
-                            // Immediately trigger polling in parent with indices
-                            // Parent will handle state updates
+                            // Only notify parent to start polling — no direct module mutation
                             const videoId = videoData.video_id || videoData.video_s3
                             if (videoId && currentModuleIndex !== null && onVideoUploadComplete) {
-                              // Calculate lesson index - if editing, use that; otherwise use last lesson
-                              const lessonIdx = editingLessonIndex !== null 
-                                ? editingLessonIndex 
-                                : Math.max(0, (modules[currentModuleIndex]?.lessons?.length ?? 1) - 1)
+                              const lessonIdx = editingLessonIndex ?? 0
                               onVideoUploadComplete(videoId, currentModuleIndex, lessonIdx)
-                            } else if (videoId && currentModuleIndex !== null) {
-                              // Fallback if no callback
-                              const lessonIdx = editingLessonIndex ?? (modules[currentModuleIndex]?.lessons?.length ?? 0) - 1
-                              const newModules = modules.map((mod, idx) => {
-                                if (idx === currentModuleIndex) {
-                                  const updatedLessons = (mod.lessons || []).map((ls, lIdx) => {
-                                    if (lIdx === lessonIdx) {
-                                      return {
-                                        ...ls,
-                                        video_s3: videoId,
-                                        video_s3_url: videoData.cloudfront_url,
-                                        video_s3_status: videoData.status || 'processing'
-                                      }
-                                    }
-                                    return ls
-                                  })
-                                  return { ...mod, lessons: updatedLessons }
-                                }
-                                return mod
-                              })
-                              onModulesChange(newModules)
                             }
                           }}
                           onError={(error) => {
@@ -337,6 +381,7 @@ export function CourseStep3_Content({
                               onEditingLessonIndexChange(null)
                               onLessonTitleChange('')
                               onLessonContentChange('')
+                              onClearPendingVideo?.()
                             }}
                             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                           >

@@ -115,7 +115,27 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
   // Encoding status tracking (restored from old version)
   const [isEncodingVideo, setIsEncodingVideo] = useState(false)
   const [encodingVideoId, setEncodingVideoId] = useState<string | null>(null)
+  const [showEncodingModal, setShowEncodingModal] = useState(false)
   const videoPollingRefs = useRef<Record<string, number>>({})
+
+  // Pending video — stored until user explicitly adds/updates a lesson
+  const [pendingVideo, setPendingVideo] = useState<{
+    videoId: string;
+    moduleIdx: number;
+    status: 'processing' | 'ready';
+    cloudfrontUrl?: string;
+  } | null>(null)
+
+  // Step navigation warning modal
+  const [showStepWarningModal, setShowStepWarningModal] = useState(false)
+  const [pendingStepNavigation, setPendingStepNavigation] = useState<number | null>(null)
+
+  // Toast notification for encoding complete
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const showToast = (_type: string, message: string) => {
+    setToastMessage(message)
+    setTimeout(() => setToastMessage(null), 5000)
+  }
 
   // ===== VIDEO POLLING HELPERS (from old version) =====
   async function waitForVideoReady(videoId: string, token: string | null, timeoutMs = 30000, intervalMs = 3000) {
@@ -167,7 +187,7 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
     })
   }
 
-  function startPollingForVideo(videoId: string, moduleIdx: number, lessonIdx: number) {
+  function startPollingForVideo(videoId: string, moduleIdx: number, _lessonIdx: number) {
     const token = localStorage.getItem('access')
     if (!videoId || !token) {
       return
@@ -176,22 +196,17 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
       return
     }
     
-    // Immediately update modules with initial video info (status: processing)
-    setModules((prev) => {
-      const copy = JSON.parse(JSON.stringify(prev))
-      if (copy[moduleIdx] && copy[moduleIdx].lessons && copy[moduleIdx].lessons[lessonIdx]) {
-        copy[moduleIdx].lessons[lessonIdx] = {
-          ...copy[moduleIdx].lessons[lessonIdx],
-          video_s3: videoId,
-          video_s3_status: 'processing'
-        }
-      }
-      return copy
+    // Store video in pending state — it will be merged into a lesson when the user clicks "Add Lesson"
+    setPendingVideo({
+      videoId,
+      moduleIdx,
+      status: 'processing',
     })
     
     // Start encoding feedback
     setIsEncodingVideo(true)
     setEncodingVideoId(videoId)
+    setShowEncodingModal(true)
     
     const interval = window.setInterval(async () => {
       try {
@@ -200,28 +215,23 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
         })
         const data = res.data
         if (data && data.status === 'ready') {
-          setModules((prev) => {
-            const copy = JSON.parse(JSON.stringify(prev))  // Deep copy
-            
-            if (copy[moduleIdx] && copy[moduleIdx].lessons) {
-              const lesson = copy[moduleIdx].lessons![lessonIdx]
-              copy[moduleIdx].lessons![lessonIdx] = { 
-                ...lesson, 
-                video_s3_url: data.cloudfront_url, 
-                video_s3_status: data.status 
-              }
+          // Update pendingVideo with the cloudfront URL
+          setPendingVideo((prev) => {
+            if (prev && prev.videoId === videoId) {
+              return { ...prev, status: 'ready', cloudfrontUrl: data.cloudfront_url }
             }
-            return copy
+            return prev
           })
+          
           window.clearInterval(videoPollingRefs.current[videoId])
           delete videoPollingRefs.current[videoId]
           
-          // Stop encoding feedback
+          // Stop encoding tracking
           setIsEncodingVideo(false)
           setEncodingVideoId(null)
+          setShowEncodingModal(false)
           
-          // Show success message
-          alert('✓ Video encoding complete — URL attached to lesson.')
+          showToast('success', '✓ Video encoding complete — you can now add the lesson.')
         }
       } catch (err) {
         console.error('[CreateCourse] Polling error:', err)
@@ -337,22 +347,51 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
     return () => { mounted = false }
   }, [location.search])
 
-  // Navigation
+  // Navigation — with encoding warning when leaving Step 3
+  const isEncodingActive = isEncodingVideo && Object.keys(videoPollingRefs.current).length > 0
+
+  const navigateToStep = (targetStep: number) => {
+    // If we're on Step 3 and encoding is active, show warning before leaving
+    if (currentStep === 3 && targetStep !== 3 && isEncodingActive) {
+      setPendingStepNavigation(targetStep)
+      setShowStepWarningModal(true)
+      return
+    }
+    setCurrentStep(targetStep)
+  }
+
+  const cancelEncodingAndNavigate = () => {
+    // Stop all polling
+    Object.entries(videoPollingRefs.current).forEach(([vid, intervalId]) => {
+      window.clearInterval(intervalId)
+      delete videoPollingRefs.current[vid]
+    })
+    setIsEncodingVideo(false)
+    setEncodingVideoId(null)
+    setShowEncodingModal(false)
+    setPendingVideo(null)
+    setShowStepWarningModal(false)
+    if (pendingStepNavigation !== null) {
+      setCurrentStep(pendingStepNavigation)
+      setPendingStepNavigation(null)
+    }
+  }
+
   const handleNextStep = () => {
     if (currentStep < STEP_LABELS.length) {
-      setCurrentStep(currentStep + 1)
+      navigateToStep(currentStep + 1)
     }
   }
 
   const handlePrevStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+      navigateToStep(currentStep - 1)
     }
   }
 
   const handleStepClick = (step: number) => {
     if (step < currentStep) {
-      setCurrentStep(step)
+      navigateToStep(step)
     }
   }
 
@@ -710,6 +749,8 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
                 onLessonContentChange={setLessonContent}
                 onEditingLessonIndexChange={setEditingLessonIndex}
                 onVideoUploadComplete={startPollingForVideo}
+                pendingVideo={pendingVideo}
+                onClearPendingVideo={() => setPendingVideo(null)}
               />
             )}
 
@@ -768,8 +809,8 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
           </div>
         </div>
 
-        {/* Video Encoding Feedback Overlay */}
-        {isEncodingVideo && encodingVideoId && (
+        {/* Video Encoding Feedback Overlay — only shown when showEncodingModal is true */}
+        {showEncodingModal && isEncodingVideo && encodingVideoId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-auto">
             {/* Blur background */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-md z-40" />
@@ -794,12 +835,8 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
               <div className="flex gap-3 w-full">
                 <button
                   onClick={() => {
-                    setIsEncodingVideo(false)
-                    setEncodingVideoId(null)
-                    if (encodingVideoId && videoPollingRefs.current[encodingVideoId]) {
-                      window.clearInterval(videoPollingRefs.current[encodingVideoId])
-                      delete videoPollingRefs.current[encodingVideoId]
-                    }
+                    // Only hide the modal — polling continues in the background
+                    setShowEncodingModal(false)
                   }}
                   className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition"
                 >
@@ -807,18 +844,91 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
                 </button>
                 <button
                   onClick={() => {
-                    setIsEncodingVideo(false)
-                    setEncodingVideoId(null)
+                    // Stop polling AND hide modal
                     if (encodingVideoId && videoPollingRefs.current[encodingVideoId]) {
                       window.clearInterval(videoPollingRefs.current[encodingVideoId])
                       delete videoPollingRefs.current[encodingVideoId]
                     }
+                    setIsEncodingVideo(false)
+                    setEncodingVideoId(null)
+                    setShowEncodingModal(false)
+                    setPendingVideo(null)
                   }}
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
                 >
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Floating Encoding Badge — shown when modal is minimized but encoding is still in progress */}
+        {!showEncodingModal && isEncodingVideo && encodingVideoId && (
+          <button
+            onClick={() => setShowEncodingModal(true)}
+            className="fixed bottom-6 right-6 z-40 flex items-center gap-3 px-4 py-3 bg-white border border-brand-200 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer group"
+          >
+            <div className="relative w-5 h-5">
+              <div className="absolute inset-0 border-2 border-gray-200 rounded-full" />
+              <div className="absolute inset-0 border-2 border-brand-600 rounded-full animate-spin border-r-transparent border-t-transparent" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 group-hover:text-brand-600 transition">
+              Encoding video...
+            </span>
+          </button>
+        )}
+
+        {/* Step Navigation Warning Modal — shown when leaving Step 3 during encoding */}
+        {showStepWarningModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-auto">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-40" />
+            <div className="relative z-50 bg-white rounded-lg p-6 w-[90%] md:w-96 shadow-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Video Encoding In Progress</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Video encoding is still ongoing. Leaving this step would cancel it.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowStepWarningModal(false)
+                    setPendingStepNavigation(null)
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={cancelEncodingAndNavigate}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed top-6 right-6 z-50 animate-fade-in">
+            <div className="flex items-center gap-3 px-5 py-3 bg-green-600 text-white rounded-lg shadow-lg">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-sm font-medium">{toastMessage}</span>
+              <button onClick={() => setToastMessage(null)} className="ml-2 text-white/80 hover:text-white">
+                ×
+              </button>
             </div>
           </div>
         )}

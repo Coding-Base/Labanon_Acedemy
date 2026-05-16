@@ -32,7 +32,7 @@ export default function PartnershipInvitation() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       const messageBody = `
 Organization Type: ${formData.organizationType}
@@ -40,7 +40,7 @@ Country: ${formData.country}
 
 I am interested in the Course Creator Partnership Invitation.
       `;
-      
+
       await axios.post(`${API_BASE}/messages/contact/`, {
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
@@ -49,7 +49,7 @@ I am interested in the Course Creator Partnership Invitation.
         message: messageBody,
         type: 'partnership_invitation'
       });
-      
+
       setSuccess(true);
       setFormData({
         firstName: '',
@@ -69,7 +69,7 @@ I am interested in the Course Creator Partnership Invitation.
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,9 +79,9 @@ I am interested in the Course Creator Partnership Invitation.
                 Course Creator <span className="text-brand-600">Partnership Invitation</span>
               </h1>
               <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
-                We are delighted to introduce Light Hub Academy (LHA)—a growing global digital learning platform committed to empowering learners through quality education, transformational knowledge, skills development, leadership training, and purpose-driven learning experiences.
+                We are delighted to introduce Light Hub Academy (LHA) a growing global digital learning platform committed to empowering learners through quality education, transformational knowledge, skills development, leadership training, and purpose-driven learning experiences.
               </p>
-              
+
               <ul className="space-y-4">
                 {[
                   'Global Reach & Visibility',
@@ -95,23 +95,23 @@ I am interested in the Course Creator Partnership Invitation.
                   </li>
                 ))}
               </ul>
-              
+
               <div className="pt-4">
                 <a href="#apply" className="inline-block px-8 py-4 bg-brand-600 text-white rounded font-bold text-lg hover:bg-brand-700 transition-colors">
                   Partner with Us
                 </a>
               </div>
             </div>
-            
+
             <div className="flex-1 w-full relative">
               <div className="aspect-[4/5] rounded-tl-[100px] rounded-br-[100px] overflow-hidden shadow-2xl relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80" 
-                  alt="Smiling professional" 
+                <img
+                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80"
+                  alt="Smiling professional"
                   className="w-full h-full object-cover"
                 />
               </div>
-              
+
               {/* Floating Stat Card */}
               <div className="absolute -bottom-6 -left-6 bg-gray-900 text-white p-6 rounded-xl shadow-2xl max-w-xs hidden sm:block">
                 <div className="text-3xl font-bold mb-1 border-b border-gray-700 pb-2">Why Partner?</div>
@@ -133,7 +133,7 @@ I am interested in the Course Creator Partnership Invitation.
               We welcome courses across a wide range of disciplines. If your expertise lies outside these categories, we would still be glad to explore it with you.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all border-t-4 border-t-brand-600">
               <Laptop className="w-10 h-10 text-brand-600 mb-6" />
@@ -146,7 +146,7 @@ I am interested in the Course Creator Partnership Invitation.
                 <li>• Cybersecurity & Cloud</li>
               </ul>
             </div>
-            
+
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all border-t-4 border-t-green-500">
               <Briefcase className="w-10 h-10 text-green-500 mb-6" />
               <h3 className="text-xl font-bold text-gray-900 mb-4">Business & Career</h3>
@@ -158,7 +158,7 @@ I am interested in the Course Creator Partnership Invitation.
                 <li>• Leadership & Coaching</li>
               </ul>
             </div>
-            
+
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all border-t-4 border-t-purple-500">
               <Building className="w-10 h-10 text-purple-500 mb-6" />
               <h3 className="text-xl font-bold text-gray-900 mb-4">Engineering & Pro Skills</h3>
@@ -214,7 +214,7 @@ I am interested in the Course Creator Partnership Invitation.
       <section id="apply" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row gap-16">
-            
+
             {/* Left side text */}
             <div className="flex-1">
               <h2 className="text-3xl font-bold text-gray-900 mb-6">Who Can Apply?</h2>
@@ -235,7 +235,7 @@ I am interested in the Course Creator Partnership Invitation.
                   </div>
                 ))}
               </div>
-              
+
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Join Us in Transforming Lives</h3>
               <p className="text-gray-600 mb-6">
                 At Light Hub Academy, we believe education should not only transfer knowledge but also ignite purpose, excellence, and societal transformation.
@@ -247,18 +247,18 @@ I am interested in the Course Creator Partnership Invitation.
                 "If you are passionate about teaching and ready to expand your impact, we would be honored to partner with you."
               </p>
             </div>
-            
+
             {/* Right side form */}
             <div className="w-full lg:w-[450px]">
               <div className="bg-white rounded-xl shadow-2xl border border-gray-100 p-8 sticky top-28">
                 <h3 className="text-2xl font-bold text-gray-900 mb-6">Apply to Partner</h3>
-                
+
                 {success ? (
                   <div className="bg-green-50 text-green-800 p-6 rounded-lg text-center">
                     <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
                     <h4 className="font-bold text-lg mb-2">Application Submitted!</h4>
                     <p>Thank you for your interest. Our team will review your application and contact you soon.</p>
-                    <button 
+                    <button
                       onClick={() => setSuccess(false)}
                       className="mt-6 text-brand-600 font-semibold hover:underline"
                     >
@@ -272,7 +272,7 @@ I am interested in the Course Creator Partnership Invitation.
                         {error}
                       </div>
                     )}
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <input
@@ -297,7 +297,7 @@ I am interested in the Course Creator Partnership Invitation.
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <input
                         type="email"
@@ -309,7 +309,7 @@ I am interested in the Course Creator Partnership Invitation.
                         className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-brand-600 focus:border-brand-600 outline-none transition-all"
                       />
                     </div>
-                    
+
                     <div>
                       <input
                         type="tel"
@@ -321,7 +321,7 @@ I am interested in the Course Creator Partnership Invitation.
                         className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-brand-600 focus:border-brand-600 outline-none transition-all"
                       />
                     </div>
-                    
+
                     <div>
                       <select
                         name="organizationType"
@@ -338,7 +338,7 @@ I am interested in the Course Creator Partnership Invitation.
                         <option value="Other">Other</option>
                       </select>
                     </div>
-                    
+
                     <div>
                       <input
                         type="text"
@@ -350,11 +350,11 @@ I am interested in the Course Creator Partnership Invitation.
                         className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-brand-600 focus:border-brand-600 outline-none transition-all"
                       />
                     </div>
-                    
+
                     <p className="text-xs text-gray-500 my-4 leading-relaxed">
                       By submitting your info in the form above, you agree to our Terms of Use and Privacy Notice. We may use this info to contact you and/or use data from third parties to personalize your experience.
                     </p>
-                    
+
                     <button
                       type="submit"
                       disabled={loading}
@@ -373,7 +373,7 @@ I am interested in the Course Creator Partnership Invitation.
           </div>
         </div>
       </section>
-      
+
       <Footer />
     </div>
   );

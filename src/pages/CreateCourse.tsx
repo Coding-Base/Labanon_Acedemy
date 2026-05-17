@@ -510,18 +510,19 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
               const lessonPayload: any = {
                 module: moduleId,
                 title: ls.title,
-                content: ls.content
+                content: ls.content,
+                order: li
               }
               if (ls.video_s3) lessonPayload.video_s3 = ls.video_s3
               if (ls.video_s3_url) lessonPayload.video_s3_url = ls.video_s3_url
               if (ls.youtube_url) lessonPayload.youtube_url = ls.youtube_url
 
               if (ls.id) {
-                await axios.patch(`${API_BASE}/lessons/${ls.id}/`, lessonPayload,
+                await axios.patch(`${API_BASE}/course-lessons/${ls.id}/`, lessonPayload,
                   { headers: { Authorization: `Bearer ${token}` } }
                 )
               } else {
-                await axios.post(`${API_BASE}/lessons/`, lessonPayload,
+                await axios.post(`${API_BASE}/course-lessons/`, lessonPayload,
                   { headers: { Authorization: `Bearer ${token}` } }
                 )
               }

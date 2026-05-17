@@ -423,9 +423,9 @@ export default function CreateCourse() {
                     if (ls.youtube_url) lessonPayload.youtube_url = ls.youtube_url
                     
                     if (ls.id) {
-                      await axios.patch(`${API_BASE}/lessons/${ls.id}/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
+                      await axios.patch(`${API_BASE}/course-lessons/${ls.id}/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
                     } else {
-                      await axios.post(`${API_BASE}/lessons/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
+                      await axios.post(`${API_BASE}/course-lessons/`, lessonPayload, { headers: { Authorization: `Bearer ${token}` } })
                     }
                   } catch (err) { console.error(err) }
                 }

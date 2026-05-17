@@ -105,7 +105,7 @@ export default function ManageCourseDetail({ uploadCourseImageHandler, uploadLes
         setUploadProgress(null)
       }
 
-      const res = await axios.post(`${API_BASE}/lessons/`, { module: moduleId, title: newLessonTitle, content: newLessonContent, video: videoRef }, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await axios.post(`${API_BASE}/course-lessons/`, { module: moduleId, title: newLessonTitle, content: newLessonContent, video: videoRef }, { headers: { Authorization: `Bearer ${token}` } })
       // Refresh modules list
       const c = await axios.get(`${API_BASE}/courses/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
       setModules(c.data.modules || [])

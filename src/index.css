@@ -28,3 +28,40 @@ html, body, #root { height: 100%; }
   min-width: 0;
   min-height: 120px;
 }
+
+/* ── CoursePlayer dark theme utilities ─────────────────── */
+.course-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+.course-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.course-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.course-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.animate-pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+.sidebar-transition {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease;
+}

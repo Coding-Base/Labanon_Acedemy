@@ -47,7 +47,7 @@ I am interested in the Course Creator Partnership Invitation.
         phone: formData.phone,
         subject: 'Course Creator Partnership Application',
         message: messageBody,
-        type: 'partnership_invitation'
+        type: 'Partnership'
       });
 
       setSuccess(true);

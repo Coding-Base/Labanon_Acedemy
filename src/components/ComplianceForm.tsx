@@ -375,11 +375,12 @@ export default function ComplianceForm({ entityType, entityId, darkMode = false 
               <div className="space-y-3">
                 {legalDocs.map(doc => (
                   <div key={doc.id} className={`${darkMode ? 'bg-slate-700 border-yellow-800 hover:border-yellow-700' : 'bg-white border-yellow-100 hover:border-yellow-300'} rounded-lg p-4 border-2 flex items-center justify-between transition`}>
-                    <div>
+                    <div className="flex-1 pr-4">
                       <p className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{doc.title}</p>
+                      {doc.description && <p className={`text-sm mt-1 mb-1 ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>{doc.description}</p>}
                       <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>v{doc.version}</p>
                     </div>
-                    <a href={doc.document_file} target="_blank" rel="noreferrer" className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-semibold flex items-center gap-2 transition">
+                    <a href={doc.document_file} target="_blank" rel="noreferrer" className="flex-shrink-0 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-semibold flex items-center gap-2 transition">
                       <Download className="w-4 h-4" /> Download
                     </a>
                   </div>

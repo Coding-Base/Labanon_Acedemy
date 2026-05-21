@@ -77,7 +77,7 @@ const quillModules = {
   ],
 }
 
-const quillFormats = ['bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block', 'header', 'list', 'script', 'image', 'link', 'formula']
+const quillFormats = ['bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block', 'header', 'list', 'script', 'image', 'link', 'formula', 'table']
 
 const toArray = (data: any) => Array.isArray(data) ? data : (data?.results || [])
 

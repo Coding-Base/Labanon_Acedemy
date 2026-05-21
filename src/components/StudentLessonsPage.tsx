@@ -90,6 +90,7 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
   const [selectedSubfolder, setSelectedSubfolder] = useState<LessonSubfolder | null>(null)
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
   const [selectedLessonForView, setSelectedLessonForView] = useState<Lesson | null>(null)
+  const [linkedLessons, setLinkedLessons] = useState<Lesson[]>([])
 
   const [globalSearch, setGlobalSearch] = useState('')
   const [lessonSearch, setLessonSearch] = useState('')
@@ -140,6 +141,24 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
         image: selectedLessonForView.og_image
       })
       injectStructuredData(schema)
+
+      if (selectedLessonForView.linked_topics && selectedLessonForView.linked_topics.length > 0) {
+        const fetchLinkedLessons = async () => {
+          try {
+            const promises = selectedLessonForView.linked_topics!.map(topicId => 
+              api.get(`${API_BASE}/lessons/lessons/`, { params: { topic: topicId, page_size: 10 } })
+            )
+            const responses = await Promise.all(promises)
+            const lessons = responses.flatMap(r => toArray(r.data))
+            setLinkedLessons(lessons.filter(l => l.id !== selectedLessonForView.id))
+          } catch (err) {
+            console.error('Failed to load linked lessons', err)
+          }
+        }
+        fetchLinkedLessons()
+      } else {
+        setLinkedLessons([])
+      }
 
       setTimeout(() => {
         renderMathInElement(contentRef.current!, {
@@ -399,6 +418,35 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
               Take Practice Test
             </a>
           </div>
+
+          {linkedLessons.length > 0 && (
+            <div className={`mt-8 pt-8 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+              <h4 className={`text-xl font-bold mb-4 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                Also see similar lessons
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {linkedLessons.map(lesson => (
+                  <button
+                    key={lesson.id}
+                    onClick={() => {
+                      setSelectedLessonForView(null)
+                      setTimeout(() => handleSearchLessonClick(lesson), 50)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                    className={`text-left rounded-xl border p-4 transition hover:shadow-md ${darkMode ? 'bg-slate-700 border-slate-600 hover:bg-slate-600' : 'bg-orange-50/50 border-orange-100 hover:bg-orange-50'}`}
+                  >
+                    <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
+                      {lesson.topic_name || 'Related Topic'}
+                    </p>
+                    <h5 className={`font-bold line-clamp-2 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                      {lesson.title}
+                    </h5>
+                    {lesson.tags && <p className={`text-xs mt-2 truncate ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Tags: {lesson.tags}</p>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     )

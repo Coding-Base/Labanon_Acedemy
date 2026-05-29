@@ -93,7 +93,13 @@ const loadSignatureImage = (): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'Anonymous';
-      const apiUrl = (import.meta.env as any).VITE_API_BASE?.replace('/api', '') || 'http://localhost:8000';
+      let apiUrl = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api';
+      apiUrl = apiUrl.replace(/\/api\/?$/, '');
+      
+      if (apiUrl && !apiUrl.startsWith('http') && !apiUrl.startsWith('//') && !apiUrl.startsWith('/')) {
+        apiUrl = 'https://' + apiUrl;
+      }
+      
       img.src = `${apiUrl}/api/signature/?t=${Date.now()}`;
       
       img.onload = () => resolve(img);

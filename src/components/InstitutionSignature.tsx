@@ -91,7 +91,11 @@ export default function InstitutionSignature({ darkMode }: { darkMode?: boolean 
     setError('');
     setSuccess('');
     try {
-      await api.patch(`/institutions/${institutionId}/`, formData);
+      await api.patch(`/institutions/${institutionId}/`, {
+        signer_name: formData.signer_name,
+        signer_position: formData.signer_position,
+        signature_image_input: formData.signature_image,
+      });
       setSuccess('Signature details saved successfully!');
     } catch (err) {
       setError('Failed to save details.');

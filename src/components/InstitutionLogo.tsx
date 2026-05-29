@@ -70,7 +70,7 @@ export default function InstitutionLogo({ darkMode }: { darkMode?: boolean }) {
     setError('');
     setSuccess('');
     try {
-      await api.patch(`/institutions/${institutionId}/`, { logo_image: logoUrl });
+      await api.patch(`/institutions/${institutionId}/`, { logo_image_input: logoUrl });
       setSuccess('Logo saved successfully!');
     } catch (err) {
       console.error(err);

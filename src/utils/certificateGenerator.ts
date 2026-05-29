@@ -333,7 +333,7 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(...BLACK);
-  const splitTitle = doc.splitTextToSize(`[${data.courseTitle.toUpperCase()}]`, width - 80);
+  const splitTitle = doc.splitTextToSize(`${data.courseTitle.toUpperCase()}`, width - 80);
   doc.text(splitTitle, centerX, currentY, { align: 'center' });
 
   currentY += (splitTitle.length * 8) + 4;

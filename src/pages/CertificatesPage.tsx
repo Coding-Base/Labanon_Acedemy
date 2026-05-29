@@ -101,6 +101,15 @@ export default function CertificatesPage() {
             }
         }
 
+        // Path C: Additional fallback - parse creator string for "(institution)"
+        if (!institutionData && creatorString && creatorString.toLowerCase().includes('(institution)')) {
+            const instName = creatorString.replace(/\(institution\)/i, '').trim();
+            const searchRes = await api.get(`/institutions/?search=${encodeURIComponent(instName)}`);
+            if (searchRes.data.results && searchRes.data.results.length > 0) {
+                institutionData = searchRes.data.results[0]; // Take the first match
+            }
+        }
+
         // If we found institution data, extract signature & logo details
         if (institutionData) {
             if (institutionData.signer_name) instSignerName = institutionData.signer_name;

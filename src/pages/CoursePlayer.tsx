@@ -163,6 +163,10 @@ export default function CoursePlayer(): JSX.Element {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileSheetTab, setMobileSheetTab] = useState<'contents' | 'progress' | 'quiz' | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<number>>(new Set());
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('studentDashboardDarkMode');
+    return saved ? JSON.parse(saved) : true;
+  });
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -641,10 +645,10 @@ export default function CoursePlayer(): JSX.Element {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f1117]">
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-[#0f1117]' : 'bg-gray-50'}`}>
         <div className="text-center">
-          <div className="w-14 h-14 border-4 border-slate-700 border-t-amber-500 rounded-full animate-spin mx-auto" />
-          <p className="mt-5 text-slate-400 text-sm tracking-wide">Loading course content…</p>
+          <div className={`w-14 h-14 border-4 ${darkMode ? 'border-slate-700 border-t-amber-500' : 'border-gray-200 border-t-yellow-500'} rounded-full animate-spin mx-auto`} />
+          <p className={`mt-5 text-sm tracking-wide ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Loading course content…</p>
         </div>
       </div>
     );
@@ -652,10 +656,10 @@ export default function CoursePlayer(): JSX.Element {
 
   if (!course) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f1117]">
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-[#0f1117]' : 'bg-gray-50'}`}>
         <div className="text-center">
-          <BookOpen className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-slate-300 mb-2">Course not found</h2>
+          <BookOpen className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-slate-700' : 'text-gray-300'}`} />
+          <h2 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Course not found</h2>
           <button
             onClick={() => navigate('/')}
             className="px-6 py-2.5 bg-amber-500 text-black font-semibold rounded-lg hover:bg-amber-400 transition"
@@ -677,11 +681,11 @@ export default function CoursePlayer(): JSX.Element {
 
   // Sidebar content renderer (dark themed with checklist)
   const renderSidebarContent = (
-    <div className="bg-[#1a1d27] rounded-xl overflow-hidden border border-slate-700/50">
+    <div className={`rounded-xl overflow-hidden border ${darkMode ? 'bg-[#1a1d27] border-slate-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
       {/* Sidebar Header */}
       <div className="p-4 border-b border-slate-700/50">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-slate-100 text-sm tracking-wide uppercase">Course Content</h3>
+          <h3 className={`font-semibold text-sm tracking-wide uppercase ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>Course Content</h3>
           <button onClick={() => setSidebarCollapsed(true)} className="lg:hidden p-1 text-slate-400 hover:text-white">
             <X className="w-4 h-4" />
           </button>
@@ -834,21 +838,21 @@ export default function CoursePlayer(): JSX.Element {
   );
 
   return (
-    <div className="w-full min-h-screen bg-[#0f1117] pb-20 lg:pb-0">
+    <div className={`w-full min-h-screen pb-20 lg:pb-0 ${darkMode ? 'bg-[#0f1117]' : 'bg-gradient-to-br from-gray-50 to-yellow-50'}`}>
       {/* Dark Header */}
-      <div className="bg-[#161922] border-b border-slate-800">
+      <div className={`border-b ${darkMode ? 'bg-[#161922] border-slate-800' : 'bg-white border-gray-200 shadow-sm'}`}>
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 min-w-0">
               <button
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center text-slate-400 hover:text-white transition flex-shrink-0"
+                className={`inline-flex items-center transition flex-shrink-0 ${darkMode ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 <span className="hidden sm:inline text-sm">Back</span>
               </button>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-semibold text-white truncate">{course.title}</h1>
+                <h1 className={`text-base sm:text-lg font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{course.title}</h1>
                 <div className="flex items-center gap-3 mt-0.5">
                   <span className="inline-flex items-center text-xs text-slate-400">
                     <User className="w-3 h-3 mr-1" />
@@ -953,7 +957,7 @@ export default function CoursePlayer(): JSX.Element {
             ) : null}
 
             {/* Lesson Video / Content */}
-            <div className="bg-[#1a1d27] rounded-xl border border-slate-700/50 overflow-hidden mb-6">
+            <div className={`rounded-xl border overflow-hidden mb-6 ${darkMode ? 'bg-[#1a1d27] border-slate-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
               
               {/* Media Player Container */}
               <div className={`bg-black w-full ${cinemaMode ? 'cinema-transition' : ''}`}>
@@ -961,13 +965,13 @@ export default function CoursePlayer(): JSX.Element {
               </div>
 
               {/* Lesson Info Header */}
-              <div className="p-6 border-b border-slate-700/50">
+              <div className={`p-6 border-b ${darkMode ? 'border-slate-700/50' : 'border-gray-200'}`}>
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <div className="inline-flex items-center px-2.5 py-1 rounded bg-slate-800 text-amber-500 text-xs font-semibold mb-3 tracking-wide uppercase">
+                    <div className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold mb-3 tracking-wide uppercase ${darkMode ? 'bg-slate-800 text-amber-500' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'}`}>
                       {((currentLesson as any)?.moduleTitle) || 'Introduction'}
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-white">{currentLesson?.title || 'Course Introduction'}</h2>
+                    <h2 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{currentLesson?.title || 'Course Introduction'}</h2>
                     {currentLesson?.description && <p className="mt-2 text-slate-400 text-sm">{currentLesson.description}</p>}
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0 hidden sm:flex">
@@ -981,23 +985,52 @@ export default function CoursePlayer(): JSX.Element {
 
               {/* Lesson Content */}
               <div className="p-6">
-                <div className="prose prose-invert prose-slate max-w-none">
-                  <div
-                    className="text-slate-300 text-sm sm:text-base leading-relaxed"
-                    dangerouslySetInnerHTML={{
-                      __html: currentLesson?.content || '<p class="text-slate-500 italic">No detailed content available for this lesson.</p>'
-                    }}
-                  />
-                </div>
+                <style>{`
+                  .ql-rendered-content h1 { font-size: 1.75rem; font-weight: 700; margin: 1rem 0 0.5rem; }
+                  .ql-rendered-content h2 { font-size: 1.4rem; font-weight: 700; margin: 1rem 0 0.5rem; }
+                  .ql-rendered-content h3 { font-size: 1.15rem; font-weight: 600; margin: 0.75rem 0 0.4rem; }
+                  .ql-rendered-content p { margin: 0.5rem 0; line-height: 1.75; }
+                  .ql-rendered-content strong, .ql-rendered-content b { font-weight: 700; }
+                  .ql-rendered-content em, .ql-rendered-content i { font-style: italic; }
+                  .ql-rendered-content u { text-decoration: underline; }
+                  .ql-rendered-content s, .ql-rendered-content strike { text-decoration: line-through; }
+                  .ql-rendered-content ul, .ql-rendered-content ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+                  .ql-rendered-content ul { list-style-type: disc; }
+                  .ql-rendered-content ol { list-style-type: decimal; }
+                  .ql-rendered-content li { margin: 0.25rem 0; }
+                  .ql-rendered-content blockquote { border-left: 4px solid #f59e0b; padding: 0.5rem 1rem; margin: 0.75rem 0; font-style: italic; opacity: 0.9; }
+                  .ql-rendered-content pre { padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.75rem 0; font-family: monospace; font-size: 0.875rem; }
+                  .ql-rendered-content code { font-family: monospace; font-size: 0.875rem; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }
+                  .ql-rendered-content a { color: #f59e0b; text-decoration: underline; }
+                  .ql-rendered-content a:hover { color: #fbbf24; }
+                  .ql-rendered-content img { max-width: 100%; border-radius: 0.5rem; margin: 0.75rem 0; }
+                  .ql-rendered-content.dark-content { color: #cbd5e1; }
+                  .ql-rendered-content.dark-content h1, .ql-rendered-content.dark-content h2, .ql-rendered-content.dark-content h3 { color: #f1f5f9; }
+                  .ql-rendered-content.dark-content blockquote { background: rgba(30,41,59,0.5); color: #94a3b8; }
+                  .ql-rendered-content.dark-content pre { background: #0f172a; color: #e2e8f0; }
+                  .ql-rendered-content.dark-content code { background: rgba(15,23,42,0.6); color: #fbbf24; }
+                  .ql-rendered-content.light-content { color: #374151; }
+                  .ql-rendered-content.light-content h1, .ql-rendered-content.light-content h2, .ql-rendered-content.light-content h3 { color: #111827; }
+                  .ql-rendered-content.light-content blockquote { background: #f9fafb; color: #6b7280; }
+                  .ql-rendered-content.light-content pre { background: #f3f4f6; color: #1f2937; }
+                  .ql-rendered-content.light-content code { background: #f3f4f6; color: #b45309; }
+                  .ql-rendered-content.light-content a { color: #d97706; }
+                `}</style>
+                <div
+                  className={`ql-rendered-content text-sm sm:text-base leading-relaxed ${darkMode ? 'dark-content' : 'light-content'}`}
+                  dangerouslySetInnerHTML={{
+                    __html: currentLesson?.content || '<p style="opacity:0.5;font-style:italic">No detailed content available for this lesson.</p>'
+                  }}
+                />
               </div>
 
               {/* Navigation Buttons */}
-              <div className="p-4 sm:p-6 border-t border-slate-700/50 bg-[#161922]">
+              <div className={`p-4 sm:p-6 border-t ${darkMode ? 'border-slate-700/50 bg-[#161922]' : 'border-gray-200 bg-gray-50'}`}>
                 <div className="flex items-center justify-between gap-4">
                   <button
                     onClick={goPrev}
                     disabled={lessonIndex === 0}
-                    className="px-4 py-2.5 sm:px-6 bg-transparent text-slate-300 rounded-lg border border-slate-600 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition font-medium text-sm inline-flex items-center gap-2"
+                    className={`px-4 py-2.5 sm:px-6 bg-transparent rounded-lg border disabled:opacity-30 disabled:cursor-not-allowed transition font-medium text-sm inline-flex items-center gap-2 ${darkMode ? 'text-slate-300 border-slate-600 hover:bg-slate-800 hover:text-white' : 'text-gray-600 border-gray-300 hover:bg-gray-100 hover:text-gray-900'}`}
                   >
                     <ChevronLeft className="w-4 h-4" />
                     <span className="hidden sm:inline">Previous</span>
@@ -1086,7 +1119,7 @@ export default function CoursePlayer(): JSX.Element {
       </div>
 
       {/* Mobile Bottom Navigation + Sheet */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#161922] border-t border-slate-800 pb-safe flex items-center justify-around">
+      <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t pb-safe flex items-center justify-around ${darkMode ? 'bg-[#161922] border-slate-800' : 'bg-white border-gray-200 shadow-lg'}`}>
         <button
           onClick={() => setMobileSheetTab('contents')}
           className={`flex flex-col items-center justify-center py-3 w-full border-t-2 ${mobileSheetTab === 'contents' ? 'border-amber-500 text-amber-500' : 'border-transparent text-slate-400'}`}
@@ -1107,7 +1140,7 @@ export default function CoursePlayer(): JSX.Element {
       {mobileSheetTab && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileSheetTab(null)} />
-          <div className="relative bg-[#1a1d27] rounded-t-2xl w-full h-[80vh] flex flex-col animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+          <div className={`relative rounded-t-2xl w-full h-[80vh] flex flex-col animate-slide-up shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${darkMode ? 'bg-[#1a1d27]' : 'bg-white'}`}>
             <div className="flex justify-center pt-3 pb-2" onClick={() => setMobileSheetTab(null)}>
               <div className="w-12 h-1.5 bg-slate-600 rounded-full" />
             </div>

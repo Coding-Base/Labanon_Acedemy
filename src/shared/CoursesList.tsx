@@ -66,11 +66,11 @@ export default function CoursesList() {
     try {
       // fetch courses
       const [coursesRes, diplomasRes] = await Promise.all([
-        axios.get(`${API_BASE}/courses/`, { params: { page, page_size: pageSize, search: debouncedSearch } }),
+        axios.get(`${API_BASE}/courses/`, { params: { page, page_size: pageSize, search: debouncedSearch, published: true } }),
         axios.get(`${API_BASE}/diplomas/`, { params: { page, page_size: pageSize, search: debouncedSearch } }),
       ])
 
-      const courseResults = coursesRes.data.results || []
+      const courseResults = (coursesRes.data.results || []).filter((c: any) => c.published !== false)
       const diplomaResults = (diplomasRes.data.results || []).map((d: any) => ({
         id: d.id,
         title: d.title,

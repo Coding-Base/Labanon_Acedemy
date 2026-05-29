@@ -598,7 +598,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <motion.button 
                           whileHover={{ y: -3 }}
-                          onClick={() => setCreatingCourse(true)} 
+                          onClick={() => navigate('courses/create')} 
                           className={`${darkMode ? 'bg-slate-800 border-slate-700 hover:border-yellow-600/50 hover:bg-slate-700/50' : 'bg-white border-gray-100 hover:border-yellow-200 hover:bg-yellow-50/30'} rounded-xl border p-6 transition-all group text-left`}
                         >
                           <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${darkMode ? 'bg-yellow-900/30 text-yellow-500' : 'bg-yellow-100 text-yellow-600'} group-hover:scale-110 transition-transform`}>

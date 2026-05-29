@@ -247,6 +247,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const quillRef = useRef<any>(null)
+  
+  // Email Broadcast State
+  const [broadcastAudience, setBroadcastAudience] = useState('all')
+  const [broadcastSubject, setBroadcastSubject] = useState('')
+  const [broadcastContent, setBroadcastContent] = useState('')
+  const [isBroadcasting, setIsBroadcasting] = useState(false)
+  const [broadcastMessage, setBroadcastMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
 
   // Dark / Light mode (persisted)
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -640,6 +647,35 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
   // Materials Management State
   const [materialsRefreshKey, setMaterialsRefreshKey] = useState(0)
+
+  const sendBroadcast = async () => {
+    if (!broadcastSubject.trim() || !broadcastContent.trim()) {
+      setBroadcastMessage({ type: 'error', text: 'Subject and message are required.' })
+      return
+    }
+    setIsBroadcasting(true)
+    setBroadcastMessage(null)
+    try {
+      const token = localStorage.getItem('access')
+      await axios.post(`${API_BASE}/messages/broadcast-email/`, {
+        audience: broadcastAudience,
+        subject: broadcastSubject,
+        message: broadcastContent
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setBroadcastMessage({ type: 'success', text: 'Broadcast queued successfully.' })
+      setBroadcastSubject('')
+      setBroadcastContent('')
+      setTimeout(() => setBroadcastMessage(null), 3000)
+    } catch (e) {
+      console.error(e)
+      setBroadcastMessage({ type: 'error', text: 'Failed to queue broadcast.' })
+    } finally {
+      setIsBroadcasting(false)
+    }
+  }
+
   const [referralAdminData, setReferralAdminData] = useState<any | null>(null)
   const [referralAdminLoading, setReferralAdminLoading] = useState(false)
   const [referralPercentInput, setReferralPercentInput] = useState('')
@@ -664,6 +700,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'referrals', label: 'Referrals', icon: <Gift className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'verification', label: 'Verification', icon: <CheckCircle className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'legal-documents', label: 'Legal Documents', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
+    { id: 'broadcast', label: 'Email Broadcast', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
     { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
     { id: 'gospel', label: 'Gospel', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
     { id: 'messages', label: 'Messages', icon: <Mail className="w-5 h-5" />, permission: 'can_view_messages' as PermissionKey },
@@ -4060,6 +4097,66 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </motion.div>
                       )}
                     </AnimatePresence>
+                  </div>
+                )}
+
+                {tab === 'broadcast' && (
+                  <div>
+                    <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Email Broadcast</h2>
+                    {broadcastMessage && (
+                      <div className={`p-4 rounded-lg mb-6 ${broadcastMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+                        {broadcastMessage.text}
+                      </div>
+                    )}
+                    <div className={`p-6 rounded-xl border shadow-sm ${darkMode ? 'bg-[#1a1d27] border-slate-700/50' : 'bg-white border-gray-200'}`}>
+                      <div className="grid grid-cols-1 gap-6">
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Target Audience</label>
+                          <select
+                            value={broadcastAudience}
+                            onChange={(e) => setBroadcastAudience(e.target.value)}
+                            className={`w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 ${darkMode ? 'bg-[#161922] border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                          >
+                            <option value="all">All Users</option>
+                            <option value="student">Students</option>
+                            <option value="tutor">Tutors</option>
+                            <option value="institution">Institutions</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Subject</label>
+                          <input
+                            type="text"
+                            value={broadcastSubject}
+                            onChange={(e) => setBroadcastSubject(e.target.value)}
+                            className={`w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 ${darkMode ? 'bg-[#161922] border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                            placeholder="e.g. Important Platform Update"
+                          />
+                        </div>
+                        <div>
+                          <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Message</label>
+                          <div className={darkMode ? 'text-black bg-white rounded overflow-hidden' : 'bg-white text-black'}>
+                            <ReactQuill
+                              theme="snow"
+                              value={broadcastContent}
+                              onChange={setBroadcastContent}
+                              modules={quillModules}
+                              className="h-64 mb-12"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end mt-4">
+                          <button
+                            onClick={sendBroadcast}
+                            disabled={isBroadcasting}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                          >
+                            {isBroadcasting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
+                            {isBroadcasting ? 'Sending...' : 'Send Broadcast'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 

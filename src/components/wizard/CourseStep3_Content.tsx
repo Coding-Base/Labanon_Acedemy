@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Trash2, Plus, Edit2, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader, Film } from 'lucide-react'
+import { Trash2, Plus, Edit2, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader, Film, X } from 'lucide-react'
 import { VideoUploadWidget } from '../VideoUploadWidget'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -72,6 +72,8 @@ export function CourseStep3_Content({
   onClearPendingVideo,
 }: CourseStep3Props) {
   const [expandedModuleIndex, setExpandedModuleIndex] = useState<number | null>(0)
+  const [editingModuleIndex, setEditingModuleIndex] = useState<number | null>(null)
+  const [editModuleTitle, setEditModuleTitle] = useState('')
   useEffect(() => {
     // Track module changes silently
   }, [modules])
@@ -102,6 +104,15 @@ export function CourseStep3_Content({
     onModulesChange([...modules, newModule])
     onModuleTitleInputChange('')
     onCurrentModuleIndexChange(modules.length)
+  }
+
+  const saveModuleTitle = (mIdx: number) => {
+    if (!editModuleTitle.trim()) return
+    const newModules = modules.map((mod, idx) =>
+      idx === mIdx ? { ...mod, title: editModuleTitle.trim() } : mod
+    )
+    onModulesChange(newModules)
+    setEditingModuleIndex(null)
   }
 
   const addOrUpdateLesson = () => {
@@ -198,24 +209,72 @@ export function CourseStep3_Content({
           {modules.map((module, mIdx) => (
             <div key={mIdx} className="border border-gray-200 rounded-lg overflow-hidden">
               {/* Module Header */}
-              <button
-                onClick={() =>
-                  setExpandedModuleIndex(expandedModuleIndex === mIdx ? null : mIdx)
-                }
-                className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between"
-              >
-                <span className="font-medium text-gray-900">{module.title}</span>
+              <div className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between border-b border-gray-200">
+                {editingModuleIndex === mIdx ? (
+                  <div className="flex-1 flex items-center gap-2 mr-4">
+                    <input
+                      type="text"
+                      value={editModuleTitle}
+                      onChange={(e) => setEditModuleTitle(e.target.value)}
+                      className="flex-1 px-2 py-1 border border-brand-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-500 text-sm bg-white"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveModuleTitle(mIdx)
+                        if (e.key === 'Escape') setEditingModuleIndex(null)
+                      }}
+                    />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); saveModuleTitle(mIdx); }}
+                      className="p-1.5 text-green-600 hover:bg-green-100 rounded transition"
+                      title="Save"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingModuleIndex(null); }}
+                      className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"
+                      title="Cancel"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center gap-2">
+                    <button
+                      onClick={() => setExpandedModuleIndex(expandedModuleIndex === mIdx ? null : mIdx)}
+                      className="font-medium text-gray-900 flex-1 text-left"
+                    >
+                      {module.title}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditModuleTitle(module.title);
+                        setEditingModuleIndex(mIdx);
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded transition"
+                      title="Edit module title"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600">
                     {(module.lessons || []).length} lesson{(module.lessons || []).length !== 1 ? 's' : ''}
                   </span>
-                  {expandedModuleIndex === mIdx ? (
-                    <ChevronUp className="w-4 h-4 text-gray-600" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-600" />
-                  )}
+                  <button
+                    onClick={() => setExpandedModuleIndex(expandedModuleIndex === mIdx ? null : mIdx)}
+                    className="p-1 text-gray-600 hover:bg-gray-200 rounded"
+                  >
+                    {expandedModuleIndex === mIdx ? (
+                      <ChevronUp className="w-4 h-4 text-gray-600" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-gray-600" />
+                    )}
+                  </button>
                 </div>
-              </button>
+              </div>
 
               {/* Module Content */}
               {expandedModuleIndex === mIdx && (

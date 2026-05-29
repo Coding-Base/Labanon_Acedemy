@@ -76,7 +76,18 @@ export default function CourseCompletionModal({
                     } catch (e) { console.error("Failed to search institution", e); }
                 }
 
-                // 3. Set Signature State if data found (with absolute URLs)
+                // 3. Additional fallback: parse creator string for "(institution)"
+                if (!institutionData && data.creator && data.creator.toLowerCase().includes('(institution)')) {
+                    const instName = data.creator.replace(/\(institution\)/i, '').trim();
+                    try {
+                        const searchRes = await api.get(`/institutions/?search=${encodeURIComponent(instName)}`);
+                        if (searchRes.data.results && searchRes.data.results.length > 0) {
+                            institutionData = searchRes.data.results[0]; // Take the first match
+                        }
+                    } catch (e) { console.error("Failed to search institution by extracted name", e); }
+                }
+
+                // 4. Set Signature State if data found (with absolute URLs)
                 if (institutionData && institutionData.signature_image && institutionData.signer_name) {
                     setInstSignature({
                         url: getAbsoluteUrl(institutionData.signature_image) || institutionData.signature_image,

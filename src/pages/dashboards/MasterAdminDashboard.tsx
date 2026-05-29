@@ -247,6 +247,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
   const quillRef = useRef<any>(null)
+  const broadcastQuillRef = useRef<any>(null)
   
   // Email Broadcast State
   const [broadcastAudience, setBroadcastAudience] = useState('all')
@@ -530,6 +531,54 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       }
     }
   }), [setBlogFormData])
+
+  // Separate Quill modules for the broadcast editor with its own image upload handler
+  const broadcastQuillModules = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link', 'image'],
+        ['clean']
+      ],
+      handlers: {
+        image: function () {
+          const input = document.createElement('input')
+          input.setAttribute('type', 'file')
+          input.setAttribute('accept', 'image/*')
+          input.click()
+          input.onchange = async () => {
+            const file = input.files?.[0]
+            if (!file) return
+            try {
+              const token = localStorage.getItem('access')
+              const fd = new FormData()
+              fd.append('file', file)
+              const res = await axios.post(`${API_BASE}/courses/upload-image/`, fd, { headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'multipart/form-data' } })
+              const url = res.data.url
+              const backendOrigin = API_BASE.replace(/\/api\/?$/, '')
+              let absUrl = url
+              if (url && url.startsWith('/')) {
+                absUrl = `${backendOrigin}${url}`
+              } else if (url && !/^https?:\/\//i.test(url)) {
+                absUrl = `${backendOrigin}/${url}`
+              }
+              const quill = (broadcastQuillRef as any).current?.getEditor()
+              if (quill) {
+                const range = quill.getSelection(true)
+                quill.insertEmbed(range.index, 'image', absUrl)
+                quill.setSelection(range.index + 1)
+              }
+            } catch (err) {
+              console.error('Broadcast image upload failed', err)
+            }
+          }
+        }
+      }
+    }
+  }), [])
   
   // Memoize the onChange handler for Quill
   const handleQuillChange = useCallback((val: string) => {
@@ -4137,10 +4186,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Message</label>
                           <div className={darkMode ? 'text-black bg-white rounded overflow-hidden' : 'bg-white text-black'}>
                             <ReactQuill
+                              ref={broadcastQuillRef as any}
                               theme="snow"
                               value={broadcastContent}
                               onChange={setBroadcastContent}
-                              modules={quillModules}
+                              modules={broadcastQuillModules}
                               className="h-64 mb-12"
                             />
                           </div>

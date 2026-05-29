@@ -705,11 +705,26 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     setIsBroadcasting(true)
     setBroadcastMessage(null)
     try {
+      // Ensure images are responsive in email clients by adding inline styles
+      let finalMessage = broadcastContent;
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(broadcastContent, 'text/html');
+        const images = doc.querySelectorAll('img');
+        images.forEach(img => {
+          img.style.maxWidth = '100%';
+          img.style.height = 'auto';
+        });
+        finalMessage = doc.body.innerHTML;
+      } catch (e) {
+        console.error("Failed to make images responsive", e);
+      }
+
       const token = localStorage.getItem('access')
       await axios.post(`${API_BASE}/messages/broadcast-email/`, {
         audience: broadcastAudience,
         subject: broadcastSubject,
-        message: broadcastContent
+        message: finalMessage
       }, {
         headers: { Authorization: `Bearer ${token}` }
       })

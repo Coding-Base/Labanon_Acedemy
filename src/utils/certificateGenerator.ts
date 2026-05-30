@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import labanonLogoUrl from '../pages/labanon.png';
 
 // Define the interface for the data passed to the generator
 export interface CertificateData {
@@ -136,8 +137,18 @@ const drawCornerOrnaments = (doc: jsPDF, width: number, height: number) => {
   doc.triangle(width - m, height - m, width - m - sz, height - m, width - m, height - m - sz, 'F');
 };
 
-// --- Helper: Draw Circular Seal ---
-const drawCertSeal = (doc: jsPDF, x: number, y: number) => {
+// --- Helper: Load bundled labanon logo ---
+const loadBundledLogo = (): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = (e) => reject(e);
+    img.src = labanonLogoUrl;
+  });
+};
+
+// --- Helper: Draw Circular Seal with Logo ---
+const drawCertSeal = async (doc: jsPDF, x: number, y: number) => {
   // Outer gold circle
   doc.setFillColor(...GOLD);
   doc.circle(x, y, 14, 'F');
@@ -151,11 +162,18 @@ const drawCertSeal = (doc: jsPDF, x: number, y: number) => {
   doc.setLineWidth(0.6);
   doc.circle(x, y, 8, 'S');
 
-  // "L" text in center
-  doc.setFont('times', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(...GOLD);
-  doc.text('L', x, y + 2, { align: 'center' });
+  // Render labanon.png logo inside the seal
+  try {
+    const logoImg = await loadBundledLogo();
+    const logoSize = 14; // mm, fits within the inner circle
+    doc.addImage(logoImg, 'PNG', x - logoSize / 2, y - logoSize / 2 - 1, logoSize, logoSize);
+  } catch (e) {
+    // Fallback: draw "L" text if logo fails to load
+    doc.setFont('times', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...GOLD);
+    doc.text('L', x, y + 2, { align: 'center' });
+  }
 
   // Small text below
   doc.setFont('helvetica', 'bold');
@@ -164,41 +182,56 @@ const drawCertSeal = (doc: jsPDF, x: number, y: number) => {
   doc.text('ACADEMY', x, y + 6, { align: 'center' });
 };
 
-// --- Helper: Draw decorative watermark lightbulbs ---
-const drawWatermarks = (doc: jsPDF, width: number, height: number) => {
-  // Faint gold circles on right side (lightbulb approximation)
-  doc.setDrawColor(230, 210, 140);
-  doc.setLineWidth(0.3);
-  
-  // Large circle, right side, vertically centered
+// --- Helper: Draw decorative watermark logos ---
+const drawWatermarks = async (doc: jsPDF, width: number, height: number) => {
+  // Try to load the actual logo for watermarks
+  let logoImg: HTMLImageElement | null = null;
+  try {
+    logoImg = await loadBundledLogo();
+  } catch (e) {
+    console.warn('Failed to load logo for watermarks', e);
+  }
+
+  // Large watermark, right side, vertically centered
   const cx = width - 50;
   const cy = height / 2 + 5;
-  
-  doc.setFillColor(252, 248, 230);
-  doc.circle(cx, cy, 22, 'F');
-  doc.setDrawColor(240, 220, 150);
-  doc.circle(cx, cy, 22, 'S');
-  
-  // Small lightbulb icon (simplified) inside the circle
-  doc.setFillColor(240, 220, 150);
-  doc.circle(cx, cy - 4, 6, 'F');
-  doc.setFillColor(252, 248, 230);
-  doc.circle(cx, cy - 4, 4.5, 'F');
-  
-  // Lightbulb filament lines
-  doc.setDrawColor(220, 200, 120);
-  doc.setLineWidth(0.4);
-  doc.line(cx - 2, cy + 2, cx - 2, cy + 7);
-  doc.line(cx + 2, cy + 2, cx + 2, cy + 7);
-  doc.line(cx - 2, cy + 7, cx + 2, cy + 7);
+  const largeSize = 44; // mm diameter
 
-  // Bottom-right smaller circle watermark
+  // Faint circle background
+  doc.setFillColor(252, 248, 235);
+  doc.circle(cx, cy, largeSize / 2, 'F');
+  doc.setDrawColor(245, 225, 160);
+  doc.setLineWidth(0.2);
+  doc.circle(cx, cy, largeSize / 2, 'S');
+
+  if (logoImg) {
+    // Render logo inside the circle at low opacity (~12%)
+    const gState = (doc as any).GState({ opacity: 0.12 });
+    (doc as any).setGState(gState);
+    doc.addImage(logoImg, 'PNG', cx - largeSize / 2 + 4, cy - largeSize / 2 + 2, largeSize - 8, largeSize - 4);
+    // Reset opacity
+    const fullOpacity = (doc as any).GState({ opacity: 1.0 });
+    (doc as any).setGState(fullOpacity);
+  }
+
+  // Bottom-right smaller watermark
   const cx2 = width - 30;
   const cy2 = height - 45;
-  doc.setFillColor(252, 248, 230);
-  doc.circle(cx2, cy2, 12, 'F');
-  doc.setDrawColor(240, 220, 150);
-  doc.circle(cx2, cy2, 12, 'S');
+  const smallSize = 24; // mm diameter
+
+  doc.setFillColor(252, 248, 235);
+  doc.circle(cx2, cy2, smallSize / 2, 'F');
+  doc.setDrawColor(245, 225, 160);
+  doc.setLineWidth(0.2);
+  doc.circle(cx2, cy2, smallSize / 2, 'S');
+
+  if (logoImg) {
+    const gState2 = (doc as any).GState({ opacity: 0.10 });
+    (doc as any).setGState(gState2);
+    doc.addImage(logoImg, 'PNG', cx2 - smallSize / 2 + 2, cy2 - smallSize / 2 + 1, smallSize - 4, smallSize - 2);
+    const fullOpacity2 = (doc as any).GState({ opacity: 1.0 });
+    (doc as any).setGState(fullOpacity2);
+  }
 };
 
 export const generateCertificate = async (data: CertificateData): Promise<Blob> => {
@@ -248,7 +281,7 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   drawCornerOrnaments(doc, width, height);
 
   // --- 6. Watermark Elements ---
-  drawWatermarks(doc, width, height);
+  await drawWatermarks(doc, width, height);
 
   // --- 7. Header: Logo & Academy Name ---
   let headerY = 30;
@@ -327,11 +360,11 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
 
   currentY += 14;
 
-  // --- 10. "has successfully completed the training program in" ---
+  // --- 10. "has successfully completed" ---
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...MID_GRAY);
-  doc.text('has successfully completed the training program in', centerX, currentY, { align: 'center' });
+  doc.text('has successfully completed', centerX, currentY, { align: 'center' });
 
   currentY += 12;
 
@@ -344,24 +377,25 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
 
   currentY += (splitTitle.length * 8) + 4;
 
-  // --- 12. "conducted by ..." ---
-  const conductedBy = institutionName
-    ? `conducted by ${institutionName}`
-    : 'conducted by Light Hub Academy.';
-
+  // --- 12. Course description text (institution vs tutor) ---
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...MID_GRAY);
-  doc.text(conductedBy, centerX, currentY, { align: 'center' });
+
+  if (institutionName) {
+    // Institution course
+    const descLine = `an online non-credit course offered by ${institutionName}`;
+    doc.text(descLine, centerX, currentY, { align: 'center' });
+    currentY += 6;
+    doc.text('through Light Hub Academy.', centerX, currentY, { align: 'center' });
+  } else {
+    // Tutor course
+    doc.text('an online non-credit course offered', centerX, currentY, { align: 'center' });
+    currentY += 6;
+    doc.text('through Light Hub Academy.', centerX, currentY, { align: 'center' });
+  }
 
   currentY += 10;
-
-  // --- 13. Description paragraph ---
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...LIGHT_GRAY);
-  const descText = 'This training has equipped the recipient with the knowledge\nand skills necessary to excel in this field.';
-  doc.text(descText, centerX, currentY, { align: 'center' });
 
   // --- 14. Footer Section: DATE — SEAL — SIGNATURE ---
   const footerY = height - 42;
@@ -389,68 +423,24 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   doc.setTextColor(...DARK_GRAY);
   doc.text('DATE', leftX, footerY + 10, { align: 'center' });
 
-  // === CENTER: SEAL ===
-  drawCertSeal(doc, centerX, footerY + 2);
+  // === CENTER / RIGHT: SEAL ===
+  // For institution courses, shift seal to far right. Otherwise, keep it centered.
+  const rightX = width - 55;
+  const sealX = hasInstSig ? rightX : centerX;
+  await drawCertSeal(doc, sealX, footerY + 2);
 
-  // === RIGHT SIDE: SIGNATURE(S) ===
+  // === RIGHT SIDE / CENTER: SIGNATURE(S) ===
   if (hasInstSig) {
-    // --- DUAL SIGNATURE MODE ---
-    // Platform CEO signature on left-center area
-    const sigLeftX = centerX - 55;
-
-    try {
-      const sigImg = await loadSignatureImage().catch(() => null);
-      if (sigImg) {
-        const sigW = 35;
-        const sigH = (sigImg.height / sigImg.width) * sigW;
-        doc.addImage(sigImg, 'PNG', sigLeftX - sigW / 2, footerY - 14, sigW, sigH);
-      }
-    } catch (e) {
-      console.warn('Platform signature load failed', e);
-    }
-
-    doc.setDrawColor(...MID_GRAY);
-    doc.setLineWidth(0.3);
-    doc.line(sigLeftX - 20, footerY + 5, sigLeftX + 20, footerY + 5);
-
-    // Fetch platform signer info
-    let platformNameLine = 'Ndubuisi Osinachi Blessed';
-    let platformTitleLine = 'CEO, LightHub Academy';
-    try {
-      const apiUrl = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api';
-      const res = await fetch(`${apiUrl}/admin/signature/`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.signer_name) {
-          const parts = json.signer_name.split(',').map((s: string) => s.trim());
-          if (parts.length >= 2) {
-            platformNameLine = parts.slice(0, parts.length - 1).join(', ');
-            platformTitleLine = parts.slice(parts.length - 1).join(', ');
-          } else {
-            platformNameLine = json.signer_name;
-          }
-        }
-      }
-    } catch (e) { /* ignore */ }
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...DARK_GRAY);
-    doc.text(platformNameLine, sigLeftX, footerY + 10, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(...MID_GRAY);
-    doc.text(platformTitleLine, sigLeftX, footerY + 14, { align: 'center' });
-
-    // Institution signature on right side
-    const sigRightX = centerX + 55;
+    // --- INSTITUTION-ONLY SIGNATURE MODE ---
+    // Institution signature centered at the bottom
+    const sigCenterX = centerX;
 
     try {
       const instSigImg = await loadImage(data.institutionSignatureUrl!).catch(() => null);
       if (instSigImg) {
-        const sigW = 35;
+        const sigW = 40;
         const sigH = (instSigImg.height / instSigImg.width) * sigW;
-        doc.addImage(instSigImg, 'PNG', sigRightX - sigW / 2, footerY - 14, sigW, sigH);
+        doc.addImage(instSigImg, 'PNG', sigCenterX - sigW / 2, footerY - 14, sigW, sigH);
       }
     } catch (e) {
       console.warn('Institution signature load failed', e);
@@ -458,21 +448,20 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
 
     doc.setDrawColor(...MID_GRAY);
     doc.setLineWidth(0.3);
-    doc.line(sigRightX - 20, footerY + 5, sigRightX + 20, footerY + 5);
+    doc.line(sigCenterX - 25, footerY + 5, sigCenterX + 25, footerY + 5);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(...DARK_GRAY);
-    doc.text(data.institutionSignerName!, sigRightX, footerY + 10, { align: 'center' });
+    doc.text(data.institutionSignerName!, sigCenterX, footerY + 10, { align: 'center' });
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(...MID_GRAY);
     const posText = data.institutionSignerPosition || 'Authorized Signature';
-    doc.text(posText, sigRightX, footerY + 14, { align: 'center' });
+    doc.text(posText, sigCenterX, footerY + 14, { align: 'center' });
 
   } else {
-    // --- SINGLE SIGNATURE MODE ---
-    const rightX = width - 55;
+    // --- SINGLE SIGNATURE MODE (tutor course — master admin/CEO signature) ---
 
     // Load and draw platform signature
     try {

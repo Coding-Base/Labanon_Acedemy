@@ -159,18 +159,43 @@ const drawCertSeal = async (doc: jsPDF, x: number, y: number) => {
 
   // Circular text on the yellow background
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(5.5);
+  doc.setFontSize(5);
   doc.setTextColor(30, 30, 30);
-  const text = "LIGHT HUB ACADEMY • LIGHT HUB ACADEMY • ";
+  
   const radius = 12.2;
-  const startAngle = -Math.PI / 2;
-  for (let i = 0; i < text.length; i++) {
-    const angle = startAngle + (i * (Math.PI * 2 / text.length));
-    const char = text[i];
-    const tx = x + radius * Math.cos(angle);
-    const ty = y + radius * Math.sin(angle);
-    doc.text(char, tx, ty, { angle: (angle * 180 / Math.PI) + 90, align: 'center', baseline: 'middle' });
+  
+  // Draw Top Text: "LIGHT HUB ACADEMY"
+  const topText = "LIGHT HUB ACADEMY";
+  const topStartAngle = -160;
+  const topEndAngle = -20;
+  const topStep = (topEndAngle - topStartAngle) / (topText.length - 1);
+  for (let i = 0; i < topText.length; i++) {
+    const angleDeg = topStartAngle + (i * topStep);
+    const angleRad = angleDeg * Math.PI / 180;
+    const tx = x + radius * Math.cos(angleRad);
+    const ty = y + radius * Math.sin(angleRad);
+    const rot = -(angleDeg + 90);
+    doc.text(topText[i], tx, ty, { angle: rot, align: 'center', baseline: 'middle' });
   }
+
+  // Draw Bottom Text: "LIGHT HUB ACADEMY"
+  const bottomText = "LIGHT HUB ACADEMY";
+  const bottomStartAngle = 160;
+  const bottomEndAngle = 20;
+  const bottomStep = (bottomEndAngle - bottomStartAngle) / (bottomText.length - 1);
+  for (let i = 0; i < bottomText.length; i++) {
+    const angleDeg = bottomStartAngle + (i * bottomStep);
+    const angleRad = angleDeg * Math.PI / 180;
+    const tx = x + radius * Math.cos(angleRad);
+    const ty = y + radius * Math.sin(angleRad);
+    const rot = -(angleDeg - 90);
+    doc.text(bottomText[i], tx, ty, { angle: rot, align: 'center', baseline: 'middle' });
+  }
+
+  // Draw separator dots
+  doc.setFontSize(6);
+  doc.text('•', x - radius, y, { align: 'center', baseline: 'middle' });
+  doc.text('•', x + radius, y, { align: 'center', baseline: 'middle' });
 
   // Inner gold ring
   doc.setDrawColor(...GOLD);
@@ -180,9 +205,9 @@ const drawCertSeal = async (doc: jsPDF, x: number, y: number) => {
   // Render labanon.png logo inside the seal
   try {
     const logoImg = await loadBundledLogo();
-    const logoSize = 12; // mm, fits nicely within the inner circle
-    // Perfectly centered (removed the -1 offset)
-    doc.addImage(logoImg, 'PNG', x - logoSize / 2, y - logoSize / 2, logoSize, logoSize);
+    const logoSize = 10; // mm, fits nicely within the inner circle (radius 8)
+    // Shifted slightly right (+0.8mm) to account for visual weighting of the L logo
+    doc.addImage(logoImg, 'PNG', x - logoSize / 2 + 0.8, y - logoSize / 2, logoSize, logoSize);
   } catch (e) {
     // Fallback: draw "L" text if logo fails to load
     doc.setFont('times', 'bold');
@@ -444,8 +469,8 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
       if (instSigImg) {
         const sigW = 40;
         const sigH = (instSigImg.height / instSigImg.width) * sigW;
-        // Align signature bottom exactly with the underline
-        doc.addImage(instSigImg, 'PNG', sigCenterX - sigW / 2, footerY + 4 - sigH, sigW, sigH);
+        // Place signature resting perfectly on the line (which is at footerY + 5)
+        doc.addImage(instSigImg, 'PNG', sigCenterX - sigW / 2, footerY - 23, sigW, sigH);
       }
     } catch (e) {
       console.warn('Institution signature load failed', e);
@@ -474,8 +499,8 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
       if (sigImg) {
         const sigW = 40;
         const sigH = (sigImg.height / sigImg.width) * sigW;
-        // Align signature bottom exactly with the underline
-        doc.addImage(sigImg, 'PNG', rightX - sigW / 2, footerY + 4 - sigH, sigW, sigH);
+        // Place signature resting perfectly on the line (which is at footerY + 5)
+        doc.addImage(sigImg, 'PNG', rightX - sigW / 2, footerY - 23, sigW, sigH);
       }
     } catch (e) {
       console.warn('Signature load failed', e);

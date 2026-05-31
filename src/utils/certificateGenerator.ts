@@ -157,6 +157,21 @@ const drawCertSeal = async (doc: jsPDF, x: number, y: number) => {
   doc.setFillColor(30, 30, 30);
   doc.circle(x, y, 10.5, 'F');
 
+  // Circular text on the yellow background
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(5.5);
+  doc.setTextColor(30, 30, 30);
+  const text = "LIGHT HUB ACADEMY • LIGHT HUB ACADEMY • ";
+  const radius = 12.2;
+  const startAngle = -Math.PI / 2;
+  for (let i = 0; i < text.length; i++) {
+    const angle = startAngle + (i * (Math.PI * 2 / text.length));
+    const char = text[i];
+    const tx = x + radius * Math.cos(angle);
+    const ty = y + radius * Math.sin(angle);
+    doc.text(char, tx, ty, { angle: (angle * 180 / Math.PI) + 90, align: 'center', baseline: 'middle' });
+  }
+
   // Inner gold ring
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.6);
@@ -165,21 +180,22 @@ const drawCertSeal = async (doc: jsPDF, x: number, y: number) => {
   // Render labanon.png logo inside the seal
   try {
     const logoImg = await loadBundledLogo();
-    const logoSize = 14; // mm, fits within the inner circle
-    doc.addImage(logoImg, 'PNG', x - logoSize / 2, y - logoSize / 2 - 1, logoSize, logoSize);
+    const logoSize = 12; // mm, fits nicely within the inner circle
+    // Perfectly centered (removed the -1 offset)
+    doc.addImage(logoImg, 'PNG', x - logoSize / 2, y - logoSize / 2, logoSize, logoSize);
   } catch (e) {
     // Fallback: draw "L" text if logo fails to load
     doc.setFont('times', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(...GOLD);
     doc.text('L', x, y + 2, { align: 'center' });
-  }
 
-  // Small text below
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(3.5);
-  doc.setTextColor(...WHITE);
-  doc.text('ACADEMY', x, y + 6, { align: 'center' });
+    // Small text below only shown if logo fails
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(3.5);
+    doc.setTextColor(...WHITE);
+    doc.text('ACADEMY', x, y + 6, { align: 'center' });
+  }
 };
 
 // --- Helper: Draw decorative watermark logos ---
@@ -192,46 +208,34 @@ const drawWatermarks = async (doc: jsPDF, width: number, height: number) => {
     console.warn('Failed to load logo for watermarks', e);
   }
 
-  // Large watermark, right side, vertically centered
-  const cx = width - 50;
-  const cy = height / 2 + 5;
   const largeSize = 44; // mm diameter
-
-  // Faint circle background
-  doc.setFillColor(252, 248, 235);
-  doc.circle(cx, cy, largeSize / 2, 'F');
-  doc.setDrawColor(245, 225, 160);
-  doc.setLineWidth(0.2);
-  doc.circle(cx, cy, largeSize / 2, 'S');
-
-  if (logoImg) {
-    // Render logo inside the circle at low opacity (~12%)
-    const gState = (doc as any).GState({ opacity: 0.12 });
-    (doc as any).setGState(gState);
-    doc.addImage(logoImg, 'PNG', cx - largeSize / 2 + 4, cy - largeSize / 2 + 2, largeSize - 8, largeSize - 4);
-    // Reset opacity
-    const fullOpacity = (doc as any).GState({ opacity: 1.0 });
-    (doc as any).setGState(fullOpacity);
-  }
-
-  // Bottom-right smaller watermark
-  const cx2 = width - 30;
-  const cy2 = height - 45;
   const smallSize = 24; // mm diameter
+  const drawWatermark = (cx: number, cy: number, size: number, opacity: number) => {
+    // Faint circle background
+    doc.setFillColor(252, 248, 235);
+    doc.circle(cx, cy, size / 2, 'F');
+    doc.setDrawColor(245, 225, 160);
+    doc.setLineWidth(0.2);
+    doc.circle(cx, cy, size / 2, 'S');
 
-  doc.setFillColor(252, 248, 235);
-  doc.circle(cx2, cy2, smallSize / 2, 'F');
-  doc.setDrawColor(245, 225, 160);
-  doc.setLineWidth(0.2);
-  doc.circle(cx2, cy2, smallSize / 2, 'S');
+    if (logoImg) {
+      // Render logo inside the circle at low opacity
+      const gState = (doc as any).GState({ opacity });
+      (doc as any).setGState(gState);
+      doc.addImage(logoImg, 'PNG', cx - size / 2 + (size * 0.1), cy - size / 2 + (size * 0.05), size * 0.8, size * 0.9);
+      // Reset opacity
+      const fullOpacity = (doc as any).GState({ opacity: 1.0 });
+      (doc as any).setGState(fullOpacity);
+    }
+  };
 
-  if (logoImg) {
-    const gState2 = (doc as any).GState({ opacity: 0.10 });
-    (doc as any).setGState(gState2);
-    doc.addImage(logoImg, 'PNG', cx2 - smallSize / 2 + 2, cy2 - smallSize / 2 + 1, smallSize - 4, smallSize - 2);
-    const fullOpacity2 = (doc as any).GState({ opacity: 1.0 });
-    (doc as any).setGState(fullOpacity2);
-  }
+  // RIGHT SIDE
+  drawWatermark(width - 50, height / 2 + 5, largeSize, 0.12);
+  drawWatermark(width - 30, height - 45, smallSize, 0.10);
+
+  // LEFT SIDE (Mirrored positions)
+  drawWatermark(50, height / 2 + 5, largeSize, 0.12);
+  drawWatermark(30, height - 45, smallSize, 0.10);
 };
 
 export const generateCertificate = async (data: CertificateData): Promise<Blob> => {
@@ -440,7 +444,8 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
       if (instSigImg) {
         const sigW = 40;
         const sigH = (instSigImg.height / instSigImg.width) * sigW;
-        doc.addImage(instSigImg, 'PNG', sigCenterX - sigW / 2, footerY - 14, sigW, sigH);
+        // Align signature bottom exactly with the underline
+        doc.addImage(instSigImg, 'PNG', sigCenterX - sigW / 2, footerY + 4 - sigH, sigW, sigH);
       }
     } catch (e) {
       console.warn('Institution signature load failed', e);
@@ -469,7 +474,8 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
       if (sigImg) {
         const sigW = 40;
         const sigH = (sigImg.height / sigImg.width) * sigW;
-        doc.addImage(sigImg, 'PNG', rightX - sigW / 2, footerY - 14, sigW, sigH);
+        // Align signature bottom exactly with the underline
+        doc.addImage(sigImg, 'PNG', rightX - sigW / 2, footerY + 4 - sigH, sigW, sigH);
       }
     } catch (e) {
       console.warn('Signature load failed', e);
@@ -524,10 +530,11 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
 
   // --- 16. Verification URL (bottom-right, subtle) ---
   if (data.verificationUrl) {
+    const verifiedUrlObj = data.verificationUrl.replace('lebanonacademy.ng', 'lighthubacademy.org');
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6);
     doc.setTextColor(...LIGHT_GRAY);
-    doc.text(`Verify: ${data.verificationUrl}`, width - 18, height - 12, { align: 'right' });
+    doc.text(`Verify: ${verifiedUrlObj}`, width - 18, height - 12, { align: 'right' });
   }
 
   // Output PDF blob

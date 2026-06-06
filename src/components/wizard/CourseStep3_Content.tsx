@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Trash2, Plus, Edit2, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader, Film, X } from 'lucide-react'
+import { Trash2, Plus, Edit2, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader, Film, X, Youtube } from 'lucide-react'
 import { VideoUploadWidget } from '../VideoUploadWidget'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -74,6 +74,7 @@ export function CourseStep3_Content({
   const [expandedModuleIndex, setExpandedModuleIndex] = useState<number | null>(0)
   const [editingModuleIndex, setEditingModuleIndex] = useState<number | null>(null)
   const [editModuleTitle, setEditModuleTitle] = useState('')
+  const [pendingYoutubeUrl, setPendingYoutubeUrl] = useState<string | null>(null)
   useEffect(() => {
     // Track module changes silently
   }, [modules])
@@ -128,6 +129,11 @@ export function CourseStep3_Content({
       }
     }
 
+    // Merge pending YouTube URL if present
+    if (pendingYoutubeUrl) {
+      videoData.youtube_url = pendingYoutubeUrl
+    }
+
     const newModules = modules.map((mod, idx) => {
       if (idx === currentModuleIndex) {
         const updatedLessons = editingLessonIndex !== null
@@ -149,6 +155,10 @@ export function CourseStep3_Content({
     // Clear pending video after it's been merged into the lesson
     if (pendingVideo && pendingVideo.moduleIdx === currentModuleIndex) {
       onClearPendingVideo?.()
+    }
+    // Clear pending YouTube URL
+    if (pendingYoutubeUrl) {
+      setPendingYoutubeUrl(null)
     }
   }
 
@@ -412,9 +422,31 @@ export function CourseStep3_Content({
                           </div>
                         )}
 
+                        {/* Pending YouTube URL indicator */}
+                        {pendingYoutubeUrl && (
+                          <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                            <Youtube className="w-4 h-4 text-red-600 flex-shrink-0" />
+                            <span className="text-sm text-green-700">
+                              ✓ YouTube video ready — it will be attached when you click "{editingLessonIndex !== null ? 'Update Lesson' : 'Add Lesson'}"
+                            </span>
+                            <button
+                              onClick={() => setPendingYoutubeUrl(null)}
+                              className="ml-auto p-1 text-gray-400 hover:text-red-500 rounded transition"
+                              title="Remove YouTube link"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+
                         <VideoUploadWidget
                           onUploadComplete={(videoData) => {
-                            // Only notify parent to start polling — no direct module mutation
+                            // YouTube path: youtube_url is set, no video_id — store locally
+                            if (videoData.youtube_url) {
+                              setPendingYoutubeUrl(videoData.youtube_url)
+                              return
+                            }
+                            // S3 upload path: notify parent to start polling
                             const videoId = videoData.video_id || videoData.video_s3
                             if (videoId && currentModuleIndex !== null && onVideoUploadComplete) {
                               const lessonIdx = editingLessonIndex ?? 0
@@ -441,6 +473,7 @@ export function CourseStep3_Content({
                               onLessonTitleChange('')
                               onLessonContentChange('')
                               onClearPendingVideo?.()
+                              setPendingYoutubeUrl(null)
                             }}
                             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                           >

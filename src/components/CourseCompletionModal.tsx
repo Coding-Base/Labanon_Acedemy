@@ -145,7 +145,7 @@ export default function CourseCompletionModal({
         completionDate: displayDate,
         certificateId: certData.certificate_id || 'PENDING',
         instructorName: courseCreator, // Generator checks for "(institution)" here
-        verificationUrl: `https://lebanonacademy.ng/verify/${certData.certificate_id}`,
+        verificationUrl: `https://lighthubacademy.org/verify/${certData.certificate_id}`,
         institutionSignatureUrl: instSignature?.url,
         institutionLogoUrl: instSignature?.logo_url,
         institutionSignerName: instSignature?.name,

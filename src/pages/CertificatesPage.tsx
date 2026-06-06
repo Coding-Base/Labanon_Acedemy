@@ -153,7 +153,7 @@ export default function CertificatesPage() {
         completionDate: dateStr,
         certificateId: cert.certificate_id,
         instructorName: creatorString,
-        verificationUrl: `https://lebanonacademy.ng/verify/${cert.certificate_id}`,
+        verificationUrl: `https://lighthubacademy.org/verify/${cert.certificate_id}`,
         institutionSignerName: instSignerName,
         institutionSignerPosition: instSignerPosition, // <--- Pass Position to Generator
         institutionSignatureUrl: instSignatureUrl,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/axiosInterceptor';
-import { Save, Loader2, Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, Loader2, Upload, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import OversizeImageModal from './OversizeImageModal';
 import { validateImageSize } from '../utils/uploadValidators';
 
@@ -11,6 +11,116 @@ const getAbsoluteUrl = (url: string | null | undefined): string => {
   const cleanPath = url.replace(/^\/api/, '');
   const baseUrl = (import.meta.env as any).VITE_API_BASE?.replace('/api', '') || 'http://localhost:8000';
   return `${baseUrl}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
+};
+
+// Target canvas dimensions for the normalized signature
+const SIG_WIDTH = 500;
+const SIG_HEIGHT = 200;
+
+/**
+ * Auto-normalize any uploaded signature image:
+ * 1. Draw the image onto a canvas
+ * 2. Detect the bounding box of non-white / non-transparent ink pixels
+ * 3. Crop to that bounding box
+ * 4. Re-center the cropped signature into a 500×200 landscape canvas,
+ *    positioned in the lower-middle portion (ideal for certificate placement)
+ * 5. Return the result as a PNG File object
+ */
+const normalizeSignatureImage = (file: File): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        // Step 1: Draw original image onto a scratch canvas
+        const srcCanvas = document.createElement('canvas');
+        srcCanvas.width = img.width;
+        srcCanvas.height = img.height;
+        const srcCtx = srcCanvas.getContext('2d')!;
+        srcCtx.drawImage(img, 0, 0);
+
+        // Step 2: Detect bounding box of ink (non-white, non-transparent pixels)
+        const imageData = srcCtx.getImageData(0, 0, img.width, img.height);
+        const pixels = imageData.data;
+        let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
+        const WHITE_THRESHOLD = 240; // pixels brighter than this are considered "background"
+        const ALPHA_THRESHOLD = 30;  // pixels more transparent than this are considered "background"
+
+        for (let y = 0; y < img.height; y++) {
+          for (let x = 0; x < img.width; x++) {
+            const i = (y * img.width + x) * 4;
+            const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2], a = pixels[i + 3];
+            // Is this pixel "ink"? (not transparent AND not near-white)
+            const isTransparent = a < ALPHA_THRESHOLD;
+            const isWhite = r > WHITE_THRESHOLD && g > WHITE_THRESHOLD && b > WHITE_THRESHOLD;
+            if (!isTransparent && !isWhite) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+
+        // If no ink found, just use the original
+        if (maxX <= minX || maxY <= minY) {
+          resolve(file);
+          return;
+        }
+
+        // Step 3: Extract the cropped region
+        const cropW = maxX - minX + 1;
+        const cropH = maxY - minY + 1;
+
+        // Step 4: Re-center into SIG_WIDTH × SIG_HEIGHT canvas
+        const outCanvas = document.createElement('canvas');
+        outCanvas.width = SIG_WIDTH;
+        outCanvas.height = SIG_HEIGHT;
+        const outCtx = outCanvas.getContext('2d')!;
+        // Transparent background (default)
+
+        // Scale the cropped region to fit within the target canvas with padding
+        const PAD = 16; // px padding on all sides
+        const availW = SIG_WIDTH - PAD * 2;
+        const availH = SIG_HEIGHT - PAD * 2;
+        const scale = Math.min(availW / cropW, availH / cropH, 1); // don't upscale
+        const drawW = cropW * scale;
+        const drawH = cropH * scale;
+
+        // Center horizontally, place in lower-middle vertically
+        // (offset 60% down so signature "sits" above the line on the certificate)
+        const drawX = (SIG_WIDTH - drawW) / 2;
+        const drawY = (SIG_HEIGHT - drawH) * 0.6;
+
+        outCtx.drawImage(
+          srcCanvas,
+          minX, minY, cropW, cropH,  // source crop
+          drawX, drawY, drawW, drawH // destination
+        );
+
+        // Step 5: Export as PNG File
+        outCanvas.toBlob((blob) => {
+          if (!blob) {
+            resolve(file); // fallback to original
+            return;
+          }
+          const normalizedFile = new File(
+            [blob],
+            file.name.replace(/\.[^.]+$/, '') + '_normalized.png',
+            { type: 'image/png' }
+          );
+          resolve(normalizedFile);
+        }, 'image/png');
+      } catch (e) {
+        console.warn('Signature normalization failed, using original:', e);
+        resolve(file); // fallback
+      }
+    };
+    img.onerror = () => {
+      console.warn('Could not load image for normalization, using original');
+      resolve(file);
+    };
+    img.src = URL.createObjectURL(file);
+  });
 };
 
 export default function InstitutionSignature({ darkMode }: { darkMode?: boolean }) {
@@ -75,9 +185,15 @@ export default function InstitutionSignature({ darkMode }: { darkMode?: boolean 
     
     try {
       setSaving(true);
-      const url = await uploadImage(file);
+      setSuccess('');
+      setError('');
+
+      // Auto-normalize: crop and re-center the signature into the ideal 500×200 layout
+      const normalizedFile = await normalizeSignatureImage(file);
+
+      const url = await uploadImage(normalizedFile);
       setFormData(prev => ({ ...prev, signature_image: url }));
-      setSuccess('Signature uploaded successfully. Don\'t forget to save.');
+      setSuccess('Signature uploaded and auto-optimized for certificates. Don\'t forget to save.');
     } catch (err) {
       setError('Failed to upload image.');
     } finally {
@@ -172,7 +288,48 @@ export default function InstitutionSignature({ darkMode }: { darkMode?: boolean 
               </div>
             )}
           </div>
-          <p className="text-xs text-gray-500 mt-2">Recommended: Transparent PNG background, dark ink.</p>
+
+          {/* Signature Format Guidance */}
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-blue-900 mb-2">
+                  Signature Image Guidelines for Best Certificate Placement
+                </p>
+                <ul className="text-xs text-blue-800 space-y-1.5 list-disc list-inside">
+                  <li>
+                    <strong>Ideal size:</strong> 500 × 200 pixels (landscape, 2.5:1 ratio).
+                    The system currently renders signatures in a <strong>40mm wide</strong> box above the
+                    signature line on the certificate, with approximately 28mm of vertical space.
+                  </li>
+                  <li>
+                    <strong>Format:</strong> PNG with a <strong>transparent background</strong> is strongly
+                    recommended so the signature blends seamlessly with the certificate's cream background.
+                  </li>
+                  <li>
+                    <strong>Ink color:</strong> Use <strong>dark ink</strong> (black or very dark color)
+                    for maximum contrast and readability.
+                  </li>
+                  <li>
+                    <strong>Positioning:</strong> The signature strokes should be <strong>centered
+                    horizontally</strong> and sit in the <strong>lower-middle portion</strong> of the
+                    image, leaving some top padding — this ensures the signature naturally "rests" above
+                    the signature line on the certificate.
+                  </li>
+                  <li>
+                    <strong>Cropping:</strong> Tightly crop the image with minimal empty space around
+                    the actual signature strokes.
+                  </li>
+                </ul>
+                <p className="text-xs text-blue-700 mt-2 italic">
+                  💡 Don't worry if your image doesn't follow this pattern exactly — the system will
+                  automatically crop, re-center, and resize your signature to fit the ideal 500×200
+                  landscape layout when you upload it.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <button

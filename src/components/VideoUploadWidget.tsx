@@ -193,16 +193,29 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
       return
     }
 
-    // Extract video ID from YouTube URL
+    // Extract video ID from a wide variety of YouTube URL formats
     let videoId = ''
     const patterns = [
-      /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+      // Standard watch URLs: youtube.com/watch?v=ID, m.youtube.com/watch?v=ID
+      /(?:www\.|m\.)?youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/,
+      // Short share URLs: youtu.be/ID or youtu.be/ID?t=123
       /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/
+      // Already-embed URLs: youtube.com/embed/ID
+      /(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+      // YouTube Shorts: youtube.com/shorts/ID
+      /(?:www\.)?youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+      // YouTube Live: youtube.com/live/ID
+      /(?:www\.)?youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
+      // YouTube Music: music.youtube.com/watch?v=ID
+      /music\.youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/,
+      // Nocookie embed: youtube-nocookie.com/embed/ID
+      /(?:www\.)?youtube-nocookie\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+      // Bare ID with v/ path: youtube.com/v/ID
+      /(?:www\.)?youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
     ]
 
     for (const pattern of patterns) {
-      const match = youtubeUrl.match(pattern)
+      const match = youtubeUrl.trim().match(pattern)
       if (match) {
         videoId = match[1]
         break
@@ -210,12 +223,15 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
     }
 
     if (!videoId) {
-      setGeneralError('Invalid YouTube URL format')
+      setGeneralError('Invalid YouTube URL. Accepted formats include:\n• youtube.com/watch?v=...\n• youtu.be/...\n• youtube.com/shorts/...\n• youtube.com/embed/...')
       return
     }
 
+    // Auto-convert to standard embed format for consistent storage
+    const embedUrl = `https://www.youtube.com/embed/${videoId}`
+
     onUploadComplete({
-      youtube_url: youtubeUrl,
+      youtube_url: embedUrl,
       status: 'ready',
       video_id: null,
       cloudfront_url: null

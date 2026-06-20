@@ -571,56 +571,9 @@ export const adminMockExamsAPI = {
   getExamWithStructure: async (examId: number) => {
     try {
       const examResponse = await api.get(`/mock-exams/admin/exams/${examId}/`);
-      const exam = examResponse.data;
-
-      // Get subjects for this exam
-      const subjectsResponse = await api.get(`/mock-exams/admin/subjects/?mock_exam=${examId}`);
-      const subjects = subjectsResponse.data.results || subjectsResponse.data || [];
-      console.log('Fetched subjects:', subjects);
-
-      // Get questions and options for each subject
-      const enrichedSubjects = await Promise.all(
-        subjects.map(async (subject: any) => {
-          try {
-            const questionsResponse = await api.get(`/mock-exams/admin/questions/?subject=${subject.id}`);
-            const questions = questionsResponse.data.results || questionsResponse.data || [];
-            console.log(`Fetched questions for subject ${subject.id}:`, questions);
-
-            // Get options for each question
-            const enrichedQuestions = await Promise.all(
-              questions.map(async (question: any) => {
-                try {
-                  const optionsResponse = await api.get(`/mock-exams/admin/options/?question=${question.id}`);
-                  const options = optionsResponse.data.results || optionsResponse.data || [];
-                  return {
-                    ...question,
-                    options,
-                  };
-                } catch (err) {
-                  console.log(`Failed to fetch options for question ${question.id}`, err);
-                  return { ...question, options: [] };
-                }
-              })
-            );
-
-            return {
-              ...subject,
-              questions: enrichedQuestions,
-            };
-          } catch (err) {
-            console.log(`Failed to fetch questions for subject ${subject.id}`, err);
-            return { ...subject, questions: [] };
-          }
-        })
-      );
-
-      console.log('Final enriched structure:', { ...exam, subjects: enrichedSubjects });
-      return {
-        ...exam,
-        subjects: enrichedSubjects,
-      };
+      return examResponse;
     } catch (error) {
-      console.error('Error fetching exam with structure:', error);
+      console.error('Failed to load exam structure:', error);
       throw error;
     }
   },

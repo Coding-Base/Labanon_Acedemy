@@ -613,7 +613,7 @@ export default function DiplomaDetail() {
                   </button>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-6 prose prose-sm max-w-none">
+                <div className="bg-gray-50 rounded-lg p-6 prose prose-sm max-w-none rich-text-content">
                   {activeTab === 'overview' && diploma.overview && (
                     <div dangerouslySetInnerHTML={{ __html: diploma.overview }} />
                   )}

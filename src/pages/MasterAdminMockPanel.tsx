@@ -567,9 +567,9 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
   })
 
   // Fetch exam structure
-  const fetchExamStructure = useCallback(async () => {
+  const fetchExamStructure = useCallback(async (showSpinner = false) => {
     try {
-      setIsLoading(true)
+      if (showSpinner) setIsLoading(true)
       console.log('Fetching exam structure for exam ID:', examId)
       const resp = await adminMockExamsAPI.getExamWithStructure(examId)
       const examData = resp?.data || resp
@@ -595,13 +595,13 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       console.error('Error fetching exam structure:', error)
       showToast('error', 'Failed to load exam structure')
     } finally {
-      setIsLoading(false)
+      if (showSpinner) setIsLoading(false)
     }
   }, [examId])
 
   useEffect(() => {
     if (open) {
-      fetchExamStructure()
+      fetchExamStructure(true)
     }
   }, [open, fetchExamStructure])
 
@@ -629,7 +629,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
         time_allocation_minutes: 20,
         marks_per_question: 1,
       })
-      await fetchExamStructure()
+      await fetchExamStructure(false)
     } catch (error: any) {
       console.error('Error adding subject:', error)
       const errorMsg = error?.response?.data?.detail || error?.response?.data || 'Failed to add subject'
@@ -659,7 +659,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
         payload.append('explanation_image_file', questionForm.explanation_image_file)
       }
 
-      await adminMockExamsAPI.addQuestion(selectedSubject.id, payload)
+      const resp = await adminMockExamsAPI.addQuestion(selectedSubject.id, payload)
       showToast('success', 'Question added successfully')
       setOpenQuestionDialog(false)
       setQuestionForm({
@@ -671,7 +671,19 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
         explanation: '',
         explanation_image_file: null,
       })
-      await fetchExamStructure()
+
+      const newQuestionId = resp?.data?.id
+      if (newQuestionId) {
+        setExpandedQuestion(newQuestionId)
+        setTimeout(() => {
+          const el = document.getElementById(`question-card-${newQuestionId}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 150)
+      }
+
+      await fetchExamStructure(false)
     } catch (error: any) {
       console.error('Error adding question:', error)
       const errorMsg = error?.response?.data?.detail || error?.response?.data || 'Failed to add question'
@@ -717,7 +729,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
         explanation: '',
         explanation_image_file: null,
       })
-      await fetchExamStructure()
+      await fetchExamStructure(false)
     } catch (error: any) {
       console.error('Error updating question:', error)
       const errorMsg = error?.response?.data?.detail || error?.response?.data || 'Failed to update question'
@@ -754,7 +766,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       setEditingOptionIsCorrect(false)
       setEditingOptionExplanation('')
       setEditingOptionImage(null)
-      await fetchExamStructure()
+      await fetchExamStructure(false)
     } catch (error: any) {
       console.error('Error updating option:', error)
       const errorMsg = error?.response?.data?.detail || error?.response?.data || 'Failed to update option'
@@ -772,7 +784,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
         explanation: option.explanation || '',
       })
       showToast('success', `Marked as ${!option.is_correct ? 'correct' : 'incorrect'}`)
-      await fetchExamStructure()
+      await fetchExamStructure(false)
     } catch (error: any) {
       console.error('Error toggling correct:', error)
       showToast('error', 'Failed to update option')
@@ -785,7 +797,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       try {
         await adminMockExamsAPI.deleteSubject(subjectId)
         showToast('success', 'Subject deleted successfully')
-        fetchExamStructure()
+        fetchExamStructure(false)
       } catch (error) {
         showToast('error', 'Failed to delete subject')
       }
@@ -798,7 +810,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       try {
         await adminMockExamsAPI.deleteQuestion(questionId)
         showToast('success', 'Question deleted successfully')
-        fetchExamStructure()
+        fetchExamStructure(false)
       } catch (error) {
         showToast('error', 'Failed to delete question')
       }
@@ -811,7 +823,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       try {
         await adminMockExamsAPI.deleteOption(optionId)
         showToast('success', 'Option deleted successfully')
-        fetchExamStructure()
+        fetchExamStructure(false)
       } catch (error) {
         showToast('error', 'Failed to delete option')
       }
@@ -958,6 +970,7 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
                             questions[subject.id]?.map((question, qIdx) => (
                               <Card
                                 key={question.id}
+                                id={`question-card-${question.id}`}
                                 sx={{
                                   mb: 1.5,
                                   backgroundColor: darkMode ? '#1E293B' : '#ffffff',

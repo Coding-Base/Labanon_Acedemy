@@ -405,7 +405,7 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
 
           <div
             ref={contentRef}
-            className={`prose prose-lg max-w-none mb-8 ${darkMode ? 'text-slate-200 prose-invert' : 'text-gray-800'} overflow-x-auto [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-gray-300 [&_td]:border [&_td]:border-gray-300 [&_th]:p-3 [&_td]:p-3 dark:[&_th]:border-slate-700 dark:[&_td]:border-slate-700`}
+            className={`prose prose-lg max-w-none mb-8 rich-text-content ${darkMode ? 'text-slate-200 prose-invert dark-content' : 'text-gray-800'} overflow-x-auto [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-gray-300 [&_td]:border [&_td]:border-gray-300 [&_th]:p-3 [&_td]:p-3 dark:[&_th]:border-slate-700 dark:[&_td]:border-slate-700`}
             dangerouslySetInnerHTML={{ __html: selectedLessonForView.content }}
           />
 

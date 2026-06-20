@@ -17,6 +17,34 @@ import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import 'katex/dist/katex.min.css'
 
+// Register SVG table icon for Quill toolbar
+const Icons = ReactQuill.Quill.import('ui/icons')
+Icons['table'] = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+  <line x1="9" y1="3" x2="9" y2="21"></line>
+  <line x1="15" y1="3" x2="15" y2="21"></line>
+  <line x1="3" y1="9" x2="21" y2="9"></line>
+  <line x1="3" y1="15" x2="21" y2="15"></line>
+</svg>`
+
+// Define and register custom Table embed blot for Quill v1 table support
+const BlockEmbed = ReactQuill.Quill.import('blots/block/embed')
+class TableEmbed extends BlockEmbed {
+  static create(value: string) {
+    const node = super.create()
+    node.innerHTML = value
+    node.setAttribute('contenteditable', 'true')
+    return node
+  }
+  static value(node: HTMLElement) {
+    return node.innerHTML
+  }
+}
+TableEmbed.blotName = 'qtable'
+TableEmbed.tagName = 'div'
+TableEmbed.className = 'quill-table-embed'
+ReactQuill.Quill.register(TableEmbed)
+
 interface Subject {
   id: string
   name: string
@@ -66,18 +94,43 @@ interface Lesson {
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
 const quillModules = {
-  toolbar: [
-    ['bold', 'italic', 'underline', 'strike'],
-    ['blockquote', 'code-block'],
-    [{ header: 1 }, { header: 2 }],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    [{ script: 'sub' }, { script: 'super' }],
-    ['image', 'link', 'formula'],
-    ['clean'],
-  ],
+  toolbar: {
+    container: [
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ header: [1, 2, 3, false] }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ script: 'sub' }, { script: 'super' }],
+      ['image', 'link', 'formula'],
+      ['table'],
+      ['clean'],
+    ],
+    handlers: {
+      table: function (this: any) {
+        const range = this.quill.getSelection()
+        if (range) {
+          this.quill.insertEmbed(
+            range.index,
+            'qtable',
+            '<table><tr><td>Header 1</td><td>Header 2</td></tr><tr><td>Cell 1</td><td>Cell 2</td></tr></table>'
+          )
+          this.quill.setSelection(range.index + 1)
+        }
+      },
+    },
+  },
+  clipboard: {
+    matchers: [
+      ['table', function (node: any, delta: any) {
+        const tableHtml = node.outerHTML
+        const Delta = ReactQuill.Quill.import('delta')
+        return new Delta().insert({ qtable: tableHtml })
+      }]
+    ]
+  }
 }
 
-const quillFormats = ['bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block', 'header', 'list', 'script', 'image', 'link', 'formula', 'table']
+const quillFormats = ['bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block', 'header', 'list', 'script', 'image', 'link', 'formula', 'table', 'qtable']
 
 const toArray = (data: any) => Array.isArray(data) ? data : (data?.results || [])
 

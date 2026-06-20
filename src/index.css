@@ -65,3 +65,84 @@ html, body, #root { height: 100%; }
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               opacity 0.3s ease;
 }
+
+/* ── Rich Text and Table Rendering Utilities ── */
+.rich-text-content h1, .rich-text-content h2, .rich-text-content h3 {
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  color: inherit !important;
+}
+.rich-text-content h1 { font-size: 2rem !important; }
+.rich-text-content h2 { font-size: 1.6rem !important; }
+.rich-text-content h3 { font-size: 1.3rem !important; }
+.rich-text-content p {
+  margin-bottom: 1rem !important;
+  line-height: 1.6 !important;
+}
+.rich-text-content ul {
+  list-style-type: disc !important;
+  margin-left: 1.5rem !important;
+  margin-bottom: 1rem !important;
+  padding-left: 0.5rem !important;
+}
+.rich-text-content ol {
+  list-style-type: decimal !important;
+  margin-left: 1.5rem !important;
+  margin-bottom: 1rem !important;
+  padding-left: 0.5rem !important;
+}
+.rich-text-content li {
+  margin-bottom: 0.35rem !important;
+}
+.rich-text-content strong { font-weight: 700 !important; }
+.rich-text-content em { font-style: italic !important; }
+.rich-text-content blockquote {
+  border-left: 4px solid #d1d5db !important;
+  padding-left: 1rem !important;
+  margin: 1.25rem 0 !important;
+  color: #6b7280 !important;
+  font-style: italic !important;
+}
+
+/* Table grid styles for editor (.ql-editor) and viewers (.rich-text-content, .ql-rendered-content) */
+.rich-text-content table, 
+.ql-rendered-content table, 
+.ql-editor table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+.rich-text-content th, .rich-text-content td,
+.ql-rendered-content th, .ql-rendered-content td,
+.ql-editor th, .ql-editor td {
+  border: 1px solid #d1d5db !important;
+  padding: 0.75rem !important;
+  min-width: 3rem !important;
+  text-align: left !important;
+}
+.rich-text-content th, 
+.ql-rendered-content th, 
+.ql-editor th {
+  background-color: #f3f4f6 !important;
+  font-weight: 600 !important;
+}
+.dark-content th, .dark-content td {
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+  background-color: transparent !important;
+}
+.dark-content th {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+.dark-content th *:not(a), .dark-content td *:not(a) {
+  color: inherit !important;
+  background-color: transparent !important;
+}
+.dark-content th a, .dark-content td a {
+  background-color: transparent !important;
+}
+

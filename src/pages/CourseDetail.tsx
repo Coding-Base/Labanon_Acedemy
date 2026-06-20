@@ -63,6 +63,38 @@ export default function CourseDetail() {
     load();
   }, [id]);
 
+  useEffect(() => {
+    if (!id) return;
+    const sessionKey = 'viewed_courses_session';
+    let viewedList: string[] = [];
+    try {
+      const stored = sessionStorage.getItem(sessionKey);
+      viewedList = stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.warn('Failed to parse sessionStorage viewed_courses_session', e);
+    }
+
+    if (!viewedList.includes(String(id))) {
+      // Synchronously mark as viewed first to block concurrent React strict mode mounts
+      viewedList.push(String(id));
+      sessionStorage.setItem(sessionKey, JSON.stringify(viewedList));
+
+      axios.post(`${API_BASE}/courses/${id}/increment_views/`)
+        .catch((err) => {
+          console.warn('Failed to increment views:', err);
+          // Rollback on error so it can be retried on next mount
+          try {
+            const currentStored = sessionStorage.getItem(sessionKey);
+            const currentList: string[] = currentStored ? JSON.parse(currentStored) : [];
+            const filtered = currentList.filter(item => item !== String(id));
+            sessionStorage.setItem(sessionKey, JSON.stringify(filtered));
+          } catch (e) {}
+        });
+    }
+  }, [id]);
+
+
+
   async function handleEnroll() {
     if (!course) return;
     const token = localStorage.getItem('access');

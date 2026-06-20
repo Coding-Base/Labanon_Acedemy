@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import useDebounce from '../utils/useDebounce'
 import axios from 'axios'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Search, ShoppingCart, ChevronLeft, ChevronRight, Loader2, BookOpen } from 'lucide-react'
+import { Search, ShoppingCart, ChevronLeft, ChevronRight, Loader2, BookOpen, Eye } from 'lucide-react'
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -28,6 +28,7 @@ type Course = {
   image?: string
   isDiploma?: boolean
   course_type?: string
+  views_count?: number
 }
 
 export default function CoursesList() {
@@ -243,9 +244,15 @@ export default function CoursesList() {
                     <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-brand-700 transition-colors">
                       {c.title}
                     </h3>
-                    <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-1">
+                    <p className="text-sm text-gray-600 line-clamp-2 mb-2 flex-1">
                       {c.description}
                     </p>
+                    {c.views_count !== undefined && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3 font-semibold">
+                        <Eye className="h-4 w-4 text-gray-400" />
+                        <span>{c.views_count.toLocaleString()} views</span>
+                      </div>
+                    )}
                     
                     <div className="pt-4 border-t border-gray-100 flex items-center justify-between mt-auto">
                       <div>

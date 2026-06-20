@@ -20,7 +20,8 @@ import {
   ArrowRight,
   Youtube,
   Facebook,
-  MessageCircle
+  MessageCircle,
+  Eye
 } from 'lucide-react';
 
 import ContactForm from '../components/ContactForm';
@@ -84,6 +85,7 @@ interface DisplayCourse {
     students: number;
     price: number;
     duration: string;
+    views?: number;
     image: string;
     imageKey?: string;
 }
@@ -160,6 +162,7 @@ export default function Home() {
             students: c.stats?.students || 0,
             price: Number(c.price),
             duration: c.stats?.duration || '0h',
+            views: c.views_count || c.stats?.views || 0,
             image: c.image || IMAGES.webDev, 
             imageKey: 'custom' 
         }));
@@ -426,11 +429,17 @@ export default function Home() {
                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-800">{course.category}</div>
                   </div>
                   <div className="p-6 flex-1 flex flex-col">
-                     <div className="flex items-center gap-1 mb-2">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="font-bold text-sm">{course.rating}</span>
-                        <span className="text-gray-400 text-sm">({course.students})</span>
-                     </div>
+                      <div className="flex items-center gap-1 mb-2 w-full">
+                         <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                         <span className="font-bold text-sm">{course.rating}</span>
+                         <span className="text-gray-400 text-sm">({course.students})</span>
+                         {course.views !== undefined && course.views > 0 && (
+                            <span className="text-gray-400 text-sm flex items-center gap-1 ml-auto" title="Views">
+                               <Eye className="w-4 h-4 text-gray-400" />
+                               <span>{course.views.toLocaleString()}</span>
+                            </span>
+                         )}
+                      </div>
                      <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-yellow-700 transition-colors">{course.title}</h3>
                      <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
                         <span className="font-bold text-xl text-yellow-700">₦{course.price.toLocaleString()}</span>

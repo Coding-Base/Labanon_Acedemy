@@ -232,8 +232,12 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [showAllSignups, setShowAllSignups] = useState(false)
   const [showBlogForm, setShowBlogForm] = useState(false)
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
-  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, image_description: '', excerpt: '', meta_title: '', meta_description: '', meta_keywords: ''})
+  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; category?: number | string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, image_description: '', excerpt: '', category: '', meta_title: '', meta_description: '', meta_keywords: ''})
   const [savingBlog, setSavingBlog] = useState(false)
+  const [blogCategories, setBlogCategories] = useState<any[]>([])
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [showAddCategoryInput, setShowAddCategoryInput] = useState(false)
+
   // Oversize image modal state for blog image validation
   const [oversizeModalOpen, setOversizeModalOpen] = useState(false)
   const [oversizeFileSize, setOversizeFileSize] = useState(0)
@@ -1215,8 +1219,33 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
   }
 
+  async function loadBlogCategories() {
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/blog/categories/`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      setBlogCategories(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []))
+    } catch (e) {}
+  }
+
+  async function handleCreateCategory() {
+    if (!newCategoryName.trim()) return
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.post(`${API_BASE}/blog/categories/`, { name: newCategoryName.trim() }, { headers: { Authorization: `Bearer ${token}` } })
+      setBlogCategories(prev => [...prev, res.data])
+      setBlogFormData(prev => ({ ...prev, category: res.data.id }))
+      setNewCategoryName('')
+      setShowAddCategoryInput(false)
+      setBlogMessage({ type: 'success', text: 'Category created and selected!' })
+      setTimeout(() => setBlogMessage(null), 3000)
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Failed to create category')
+    }
+  }
+
   async function loadBlogs(page = 1) {
     setBlogsLoading(true)
+    loadBlogCategories()
     try {
       const token = localStorage.getItem('access')
       const res = await axios.get(`${API_BASE}/blog/?page=${page}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -1238,6 +1267,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       setBlogsLoading(false)
     }
   }
+
 
   // --- Promos loader / CRUD ---
   async function loadPromos() {
@@ -1323,19 +1353,18 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         fd.append('content', blogFormData.content)
         fd.append('excerpt', excerptToSend)
         fd.append('image_description', blogFormData.image_description || '')
+        if (blogFormData.category) fd.append('category', String(blogFormData.category))
         fd.append('meta_title', blogFormData.meta_title || '')
         fd.append('meta_description', blogFormData.meta_description || '')
         fd.append('meta_keywords', blogFormData.meta_keywords || '')
         fd.append('image_file', blogFormData.image)
-        // Do NOT set Content-Type manually; let the browser/axios set the correct
-        // multipart boundary so the server can parse files correctly.
         if (editingBlog) {
           res = await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, fd, { headers })
         } else {
           res = await axios.post(`${API_BASE}/blog/`, fd, { headers })
         }
         } else {
-        const payload = {
+        const payload: any = {
           title: blogFormData.title,
           content: blogFormData.content,
           image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
@@ -1345,12 +1374,14 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           meta_description: blogFormData.meta_description || '',
           meta_keywords: blogFormData.meta_keywords || ''
         }
+        if (blogFormData.category) payload.category = blogFormData.category
         if (editingBlog) {
           res = await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, payload, { headers })
         } else {
           res = await axios.post(`${API_BASE}/blog/`, payload, { headers })
         }
       }
+
 
       // Success: close modal, reset form and reload list
       setShowBlogForm(false)
@@ -4975,6 +5006,52 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
                   />
                 </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Category</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddCategoryInput(!showAddCategoryInput)}
+                      className="text-xs font-semibold text-yellow-700 hover:text-yellow-800"
+                    >
+                      {showAddCategoryInput ? 'Cancel' : '+ Create New Category'}
+                    </button>
+                  </div>
+
+                  {showAddCategoryInput ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="New category name (e.g. Technology, Tutorials)"
+                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-yellow-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateCategory}
+                        className="px-4 py-2.5 bg-yellow-600 text-white font-semibold text-sm rounded-lg hover:bg-yellow-700 transition"
+                      >
+                        Add Category
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      value={blogFormData.category || ''}
+                      onChange={(e) => setBlogFormData((prev) => ({ ...prev, category: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none bg-white text-sm"
+                    >
+                      <option value="">Select a category...</option>
+                      {blogCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>

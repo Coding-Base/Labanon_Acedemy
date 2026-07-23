@@ -29,6 +29,8 @@ type Course = {
   isDiploma?: boolean
   course_type?: string
   views_count?: number
+  is_series?: boolean
+
 }
 
 export default function CoursesList() {
@@ -214,7 +216,8 @@ export default function CoursesList() {
               {courses.map((c) => (
                 <Link 
                   key={c.id} 
-                  to={c.isDiploma ? `/diploma/${c.id}` : `/marketplace/${c.id}`} 
+                  to={c.isDiploma ? `/diploma/${c.id}` : (c.is_series ? `/series/${c.id}` : `/marketplace/${c.id}`)}
+ 
                   className="group flex flex-col bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 >
                   {/* Image Section */}
@@ -229,8 +232,14 @@ export default function CoursesList() {
                       decoding="async"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
-                    {/* Course Type Badge */}
-                    {c.course_type && (
+                    {/* Course Type / Series Badge */}
+                    {c.is_series ? (
+                      <div className="absolute top-2 right-2">
+                        <span className="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-full shadow-sm">
+                          Series Package
+                        </span>
+                      </div>
+                    ) : c.course_type && (
                       <div className="absolute top-2 right-2">
                         <span className="px-2 py-1 bg-brand-600 text-white text-xs font-semibold rounded-full capitalize">
                           {c.course_type.replace(/_/g, ' ')}
@@ -255,36 +264,52 @@ export default function CoursesList() {
                     )}
                     
                     <div className="pt-4 border-t border-gray-100 flex items-center justify-between mt-auto">
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Price</p>
-                        <p className="text-xl font-bold text-gray-900">₦{c.price}</p>
-                      </div>
+                      {c.is_series ? (
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Series</p>
+                          <span className="inline-block font-bold text-sm text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-md border border-amber-200 mt-0.5">
+                            Series Package
+                          </span>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Price</p>
+                          <p className="text-xl font-bold text-gray-900">₦{c.price}</p>
+                        </div>
+                      )}
                       
-                      <button
-                        onClick={(e) => handleAddToCart(e, c)}
-                        disabled={addingIds.includes(c.id)}
-                        className={`
-                          flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                          ${addingIds.includes(c.id) 
-                            ? 'bg-brand-100 text-green-700 cursor-not-allowed' 
-                            : 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm hover:shadow'
-                          }
-                        `}
-                      >
-                        {addingIds.includes(c.id) ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Adding...</span>
-                          </>
-                        ) : (
-                          <>
-                            <ShoppingCart className="h-4 w-4" />
-                            <span>Add</span>
-                          </>
-                        )}
-                      </button>
+                      {c.is_series ? (
+                        <span className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 shadow-sm transition">
+                          View Series →
+                        </span>
+                      ) : (
+                        <button
+                          onClick={(e) => handleAddToCart(e, c)}
+                          disabled={addingIds.includes(c.id)}
+                          className={`
+                            flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                            ${addingIds.includes(c.id) 
+                              ? 'bg-brand-100 text-green-700 cursor-not-allowed' 
+                              : 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm hover:shadow'
+                            }
+                          `}
+                        >
+                          {addingIds.includes(c.id) ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Adding...</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingCart className="h-4 w-4" />
+                              <span>Add</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
+
                 </Link>
               ))}
             </div>

@@ -82,10 +82,45 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
   const [description, setDescription] = useState('')
   const [requiredTools, setRequiredTools] = useState('')
   const [level, setLevel] = useState<Level>(levels[0])
-  const [outcome, setOutcome] = useState('')
   const [courseCategory, setCourseCategory] = useState('other')
+  const [outcome, setOutcome] = useState('')
+
   
-  // Scheduled course fields
+  // Series course fields
+  const [isSeries, setIsSeries] = useState(false)
+  const [selectedSubCourseIds, setSelectedSubCourseIds] = useState<number[]>([])
+  const [availableCourses, setAvailableCourses] = useState<any[]>([])
+
+  useEffect(() => {
+    async function fetchAvailableCourses() {
+      try {
+        const token = localStorage.getItem('access')
+        if (!token) return
+        
+        // Fetch current user details to filter by creator
+        const me = await axios.get(`${API_BASE}/users/me/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const uid = me.data.id
+        
+        const res = await axios.get(`${API_BASE}/courses/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            creator: uid,
+            is_series: 'false',
+            page_size: 1000
+          }
+        })
+        const items = Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : [])
+        setAvailableCourses(items)
+      } catch (e) {
+        console.error('Failed to fetch available courses', e)
+      }
+    }
+    fetchAvailableCourses()
+  }, [])
+
+
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [meetingTime, setMeetingTime] = useState('')
@@ -270,6 +305,13 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
         setRequiredTools(data.required_tools || '')
         setCourseCategory(data.course_type || 'other')
 
+        setIsSeries(!!data.is_series)
+        if (data.series_items && Array.isArray(data.series_items)) {
+          const subIds = data.series_items.map((item: any) => item.course || item.course_details?.id).filter(Boolean)
+          setSelectedSubCourseIds(subIds)
+        }
+
+
         // Check if scheduled
         if (data.meeting_link || (data.start_date && data.meeting_place)) {
           setCourseType('scheduled')
@@ -377,8 +419,16 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
     }
   }
 
+  const activeStepLabels = isSeries ? ['Basic Info', 'Review'] : STEP_LABELS
+
+  useEffect(() => {
+    if (isSeries && currentStep > 2) {
+      setCurrentStep(2)
+    }
+  }, [isSeries, currentStep])
+
   const handleNextStep = () => {
-    if (currentStep < STEP_LABELS.length) {
+    if (currentStep < activeStepLabels.length) {
       navigateToStep(currentStep + 1)
     }
   }
@@ -394,6 +444,7 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
       navigateToStep(step)
     }
   }
+
 
   // Submit handler
   const handleCourseSubmit = async (publish: boolean) => {
@@ -457,6 +508,11 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
       formData.append('outcome', outcome)
       formData.append('required_tools', requiredTools)
       formData.append('course_type', courseCategory)
+      formData.append('is_series', isSeries ? 'true' : 'false')
+      if (isSeries) {
+        selectedSubCourseIds.forEach(id => formData.append('sub_course_ids', String(id)))
+      }
+
 
       if (courseType === 'scheduled') {
         formData.append('start_date', startDate)
@@ -679,10 +735,11 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
           {/* Step Progress */}
           <StepProgress
             currentStep={currentStep}
-            totalSteps={STEP_LABELS.length}
-            stepLabels={STEP_LABELS}
+            totalSteps={activeStepLabels.length}
+            stepLabels={activeStepLabels}
             onStepClick={handleStepClick}
           />
+
 
           {/* Error Messages */}
           {generalError && (
@@ -693,94 +750,153 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
 
           {/* Step Content */}
           <div className="mb-8 min-h-[400px]">
-            {currentStep === 1 && (
-              <CourseStep1_BasicInfo
-                title={title}
-                description={description}
-                level={level}
-                price={price}
-                currency={currency}
-                requiredTools={requiredTools}
-                outcome={outcome}
-                courseCategory={courseCategory}
-                errors={errors}
-                onTitleChange={setTitle}
-                onDescriptionChange={setDescription}
-                onLevelChange={setLevel}
-                onPriceChange={setPrice}
-                onCurrencyChange={setCurrency}
-                onRequiredToolsChange={setRequiredTools}
-                onOutcomeChange={setOutcome}
-                onCourseCategoryChange={setCourseCategory}
-              />
-            )}
+            {isSeries ? (
+              <>
+                {currentStep === 1 && (
+                  <CourseStep1_BasicInfo
+                    title={title}
+                    description={description}
+                    level={level}
+                    price={price}
+                    currency={currency}
+                    requiredTools={requiredTools}
+                    outcome={outcome}
+                    courseCategory={courseCategory}
+                    isSeries={isSeries}
+                    selectedSubCourseIds={selectedSubCourseIds}
+                    availableCourses={availableCourses}
+                    errors={errors}
+                    onTitleChange={setTitle}
+                    onDescriptionChange={setDescription}
+                    onLevelChange={setLevel}
+                    onPriceChange={setPrice}
+                    onCurrencyChange={setCurrency}
+                    onRequiredToolsChange={setRequiredTools}
+                    onOutcomeChange={setOutcome}
+                    onCourseCategoryChange={setCourseCategory}
+                    onIsSeriesChange={setIsSeries}
+                    onSubCourseIdsChange={setSelectedSubCourseIds}
+                  />
+                )}
+                {currentStep === 2 && (
+                  <CourseStep5_Preview
+                    title={title}
+                    description={description}
+                    price={price}
+                    currency={currency}
+                    level={level}
+                    courseType={courseType}
+                    modulesCount={0}
+                    courseImagePreview={courseImagePreview}
+                    onCourseImageInput={onCourseImageInput}
+                    isSaving={saving}
+                    isPublishing={publishing}
+                    isVerified={canPublish}
+                    verificationMessage={verificationStatus?.reason}
+                    onSaveDraft={saveDraft}
+                    onPublish={publishCourse}
+                    isSeries={isSeries}
+                    selectedSubCoursesCount={selectedSubCourseIds.length}
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                {currentStep === 1 && (
+                  <CourseStep1_BasicInfo
+                    title={title}
+                    description={description}
+                    level={level}
+                    price={price}
+                    currency={currency}
+                    requiredTools={requiredTools}
+                    outcome={outcome}
+                    courseCategory={courseCategory}
+                    isSeries={isSeries}
+                    selectedSubCourseIds={selectedSubCourseIds}
+                    availableCourses={availableCourses}
+                    errors={errors}
+                    onTitleChange={setTitle}
+                    onDescriptionChange={setDescription}
+                    onLevelChange={setLevel}
+                    onPriceChange={setPrice}
+                    onCurrencyChange={setCurrency}
+                    onRequiredToolsChange={setRequiredTools}
+                    onOutcomeChange={setOutcome}
+                    onCourseCategoryChange={setCourseCategory}
+                    onIsSeriesChange={setIsSeries}
+                    onSubCourseIdsChange={setSelectedSubCourseIds}
+                  />
+                )}
 
-            {currentStep === 2 && (
-              <CourseStep2_Structure
-                courseType={courseType}
-                startDate={startDate}
-                endDate={endDate}
-                meetingTime={meetingTime}
-                meetingPlace={meetingPlace}
-                meetingLink={meetingLink}
-                errors={errors}
-                onCourseTypeChange={setCourseType}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-                onMeetingTimeChange={setMeetingTime}
-                onMeetingPlaceChange={setMeetingPlace}
-                onMeetingLinkChange={setMeetingLink}
-              />
-            )}
+                {currentStep === 2 && (
+                  <CourseStep2_Structure
+                    courseType={courseType}
+                    startDate={startDate}
+                    endDate={endDate}
+                    meetingTime={meetingTime}
+                    meetingPlace={meetingPlace}
+                    meetingLink={meetingLink}
+                    errors={errors}
+                    onCourseTypeChange={setCourseType}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    onMeetingTimeChange={setMeetingTime}
+                    onMeetingPlaceChange={setMeetingPlace}
+                    onMeetingLinkChange={setMeetingLink}
+                  />
+                )}
 
-            {currentStep === 3 && (
-              <CourseStep3_Content
-                courseType={courseType}
-                modules={modules}
-                currentModuleIndex={currentModuleIndex}
-                moduleTitleInput={moduleTitleInput}
-                lessonTitle={lessonTitle}
-                lessonContent={lessonContent}
-                editingLessonIndex={editingLessonIndex}
-                errors={errors}
-                onModulesChange={setModules}
-                onCurrentModuleIndexChange={setCurrentModuleIndex}
-                onModuleTitleInputChange={setModuleTitleInput}
-                onLessonTitleChange={setLessonTitle}
-                onLessonContentChange={setLessonContent}
-                onEditingLessonIndexChange={setEditingLessonIndex}
-                onVideoUploadComplete={startPollingForVideo}
-                pendingVideo={pendingVideo}
-                onClearPendingVideo={() => setPendingVideo(null)}
-              />
-            )}
+                {currentStep === 3 && (
+                  <CourseStep3_Content
+                    courseType={courseType}
+                    modules={modules}
+                    currentModuleIndex={currentModuleIndex}
+                    moduleTitleInput={moduleTitleInput}
+                    lessonTitle={lessonTitle}
+                    lessonContent={lessonContent}
+                    editingLessonIndex={editingLessonIndex}
+                    errors={errors}
+                    onModulesChange={setModules}
+                    onCurrentModuleIndexChange={setCurrentModuleIndex}
+                    onModuleTitleInputChange={setModuleTitleInput}
+                    onLessonTitleChange={setLessonTitle}
+                    onLessonContentChange={setLessonContent}
+                    onEditingLessonIndexChange={setEditingLessonIndex}
+                    onVideoUploadComplete={startPollingForVideo}
+                    pendingVideo={pendingVideo}
+                    onClearPendingVideo={() => setPendingVideo(null)}
+                  />
+                )}
 
-            {currentStep === 4 && (
-              <CourseStep4_Quiz
-                courseType={courseType}
-                modules={modules}
-                onModulesChange={setModules}
-              />
-            )}
+                {currentStep === 4 && (
+                  <CourseStep4_Quiz
+                    courseType={courseType}
+                    modules={modules}
+                    onModulesChange={setModules}
+                  />
+                )}
 
-            {currentStep === 5 && (
-              <CourseStep5_Preview
-                title={title}
-                description={description}
-                price={price}
-                currency={currency}
-                level={level}
-                courseType={courseType}
-                modulesCount={modules.length}
-                courseImagePreview={courseImagePreview}
-                onCourseImageInput={onCourseImageInput}
-                isSaving={saving}
-                isPublishing={publishing}
-                isVerified={canPublish}
-                verificationMessage={verificationStatus?.reason}
-                onSaveDraft={saveDraft}
-                onPublish={publishCourse}
-              />
+                {currentStep === 5 && (
+                  <CourseStep5_Preview
+                    title={title}
+                    description={description}
+                    price={price}
+                    currency={currency}
+                    level={level}
+                    courseType={courseType}
+                    modulesCount={modules.length}
+                    courseImagePreview={courseImagePreview}
+                    onCourseImageInput={onCourseImageInput}
+                    isSaving={saving}
+                    isPublishing={publishing}
+                    isVerified={canPublish}
+                    verificationMessage={verificationStatus?.reason}
+                    onSaveDraft={saveDraft}
+                    onPublish={publishCourse}
+                  />
+                )}
+              </>
             )}
           </div>
 
@@ -796,18 +912,19 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
             </button>
 
             <div className="text-sm text-gray-600">
-              Step {currentStep} of {STEP_LABELS.length}
+              Step {currentStep} of {activeStepLabels.length}
             </div>
 
             <button
               onClick={handleNextStep}
-              disabled={currentStep === STEP_LABELS.length}
+              disabled={currentStep === activeStepLabels.length}
               className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               Next
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+
         </div>
 
         {/* Video Encoding Feedback Overlay — only shown when showEncodingModal is true */}

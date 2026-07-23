@@ -12,6 +12,7 @@ const VerifyEmailSent = lazy(() => import('./pages/VerifyEmailSent'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const Marketplace = lazy(() => import('./pages/Marketplace'))
 const CourseDetail = lazy(() => import('./pages/CourseDetail'))
+const SeriesDetail = lazy(() => import('./pages/SeriesDetail'))
 const DiplomaDetail = lazy(() => import('./pages/DiplomaDetail'))
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
 const AdminRegister = lazy(() => import('./pages/admin/AdminRegister'))
@@ -140,6 +141,7 @@ export default function App() {
             {/* other app routes */}
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/marketplace/:id" element={<CourseDetail />} /> 
+            <Route path="/series/:id" element={<SeriesDetail />} />
             <Route path="/diploma/:id" element={<DiplomaDetail />} />
             <Route path="/blog/:slug" element={<BlogDetail />} />
             <Route path="/blog" element={<Blog />} />

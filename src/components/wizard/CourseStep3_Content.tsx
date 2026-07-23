@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Trash2, Plus, Edit2, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader, Film, X, Youtube } from 'lucide-react'
+import { Trash2, Plus, Edit2, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader, Film, X, Youtube, GripVertical, ArrowUp, ArrowDown } from 'lucide-react'
 import { VideoUploadWidget } from '../VideoUploadWidget'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -75,9 +75,22 @@ export function CourseStep3_Content({
   const [editingModuleIndex, setEditingModuleIndex] = useState<number | null>(null)
   const [editModuleTitle, setEditModuleTitle] = useState('')
   const [pendingYoutubeUrl, setPendingYoutubeUrl] = useState<string | null>(null)
+  const [draggedLessonIdx, setDraggedLessonIdx] = useState<number | null>(null)
+
+  const moveLesson = (mIdx: number, fromIdx: number, toIdx: number) => {
+    const lessons = [...(modules[mIdx]?.lessons || [])]
+    if (fromIdx < 0 || fromIdx >= lessons.length || toIdx < 0 || toIdx >= lessons.length) return
+    const [item] = lessons.splice(fromIdx, 1)
+    lessons.splice(toIdx, 0, item)
+    const updatedLessons = lessons.map((l, i) => ({ ...l, order: i }))
+    const newModules = modules.map((mod, idx) => idx === mIdx ? { ...mod, lessons: updatedLessons } : mod)
+    onModulesChange(newModules)
+  }
+
   useEffect(() => {
     // Track module changes silently
   }, [modules])
+
   if (courseType === 'scheduled') {
     return (
       <div className="space-y-6">
@@ -286,55 +299,91 @@ export function CourseStep3_Content({
                 </div>
               </div>
 
-              {/* Module Content */}
-              {expandedModuleIndex === mIdx && (
-                <div className="p-4 border-t border-gray-200 space-y-4">
-                  {/* Lessons List */}
-                  {(module.lessons || []).length > 0 && (
-                    <div className="space-y-2 mb-4">
-                      <h4 className="text-sm font-semibold text-gray-700">Lessons</h4>
-                      {(module.lessons || []).map((lesson, lIdx) => {
-                        const hasVideo = !!(lesson.video_s3_url || lesson.youtube_url);
-                        return (
-                        <div
-                          key={`${mIdx}-${lIdx}-${lesson.title}`}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">{lesson.title}</p>
-                            <div className="flex gap-4 text-xs text-gray-500 mt-1">
-                              {lesson.content && <span>✓ Content</span>}
-                              {hasVideo && (
-                                <span>✓ Video</span>
-                              )}
-                            </div>
+                  {/* Module Content */}
+
+                  {expandedModuleIndex === mIdx && (
+                    <div className="p-4 border-t border-gray-200 space-y-4">
+                      {/* Lessons List */}
+                      {(module.lessons || []).length > 0 && (
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-semibold text-gray-700">Lessons</h4>
+                            <span className="text-xs text-gray-400">💡 Drag handles to reorder lessons</span>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                onCurrentModuleIndexChange(mIdx)
-                                onEditingLessonIndexChange(lIdx)
-                                onLessonTitleChange(lesson.title)
-                                onLessonContentChange(lesson.content || '')
+                          {(module.lessons || []).map((lesson, lIdx) => {
+                            const hasVideo = !!(lesson.video_s3_url || lesson.youtube_url);
+                            return (
+                            <div
+                              key={`${mIdx}-${lIdx}-${lesson.title}`}
+                              draggable
+                              onDragStart={() => setDraggedLessonIdx(lIdx)}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={() => {
+                                if (draggedLessonIdx !== null && draggedLessonIdx !== lIdx) {
+                                  moveLesson(mIdx, draggedLessonIdx, lIdx)
+                                  setDraggedLessonIdx(null)
+                                }
                               }}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
-                              title="Edit lesson"
+                              className={`flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition cursor-move ${
+                                draggedLessonIdx === lIdx ? 'opacity-40 border-dashed border-brand-500' : ''
+                              }`}
                             >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => deleteLesson(mIdx, lIdx)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded transition"
-                              title="Delete lesson"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="text-gray-400 hover:text-gray-600 p-1 cursor-grab" title="Drag to reorder">
+                                  <GripVertical className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900">{lesson.title}</p>
+                                  <div className="flex gap-4 text-xs text-gray-500 mt-1">
+                                    {lesson.content && <span>✓ Content</span>}
+                                    {hasVideo && <span>✓ Video</span>}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {lIdx > 0 && (
+                                  <button
+                                    onClick={() => moveLesson(mIdx, lIdx, lIdx - 1)}
+                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"
+                                    title="Move lesson up"
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {lIdx < (module.lessons || []).length - 1 && (
+                                  <button
+                                    onClick={() => moveLesson(mIdx, lIdx, lIdx + 1)}
+                                    className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"
+                                    title="Move lesson down"
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    onCurrentModuleIndexChange(mIdx)
+                                    onEditingLessonIndexChange(lIdx)
+                                    onLessonTitleChange(lesson.title)
+                                    onLessonContentChange(lesson.content || '')
+                                  }}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
+                                  title="Edit lesson"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => deleteLesson(mIdx, lIdx)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                                  title="Delete lesson"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                            )
+                          })}
                         </div>
-                        )
-                      })}
-                    </div>
-                  )}
+                      )}
 
                   {/* Add/Edit Lesson Form */}
                   {currentModuleIndex === mIdx && (

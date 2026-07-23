@@ -28,9 +28,10 @@ export default function MyCourses() {
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState<'courses' | 'series'>('courses');
   const navigate = useNavigate();
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, activeTab]);
 
   async function load() {
     setLoading(true);
@@ -38,7 +39,7 @@ export default function MyCourses() {
       const token = localStorage.getItem('access');
       const res = await axios.get(`${API_BASE}/enrollments/`, { 
         headers: { Authorization: `Bearer ${token}` }, 
-        params: { page, page_size: pageSize } 
+        params: { page, page_size: pageSize, is_series: activeTab === 'series' } 
       });
       setEnrollments(res.data.results || []);
       setCount(res.data.count || 0);
@@ -50,6 +51,7 @@ export default function MyCourses() {
   }
 
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
+
 
   // Enhanced image resolver with better fallback handling
   function getCourseImage(course: any, enrollmentId: number) {
@@ -97,6 +99,8 @@ export default function MyCourses() {
     );
   }
 
+  const displayedEnrollments = enrollments;
+
   return (
     <div className="h-full flex flex-col custom-scrollbar">
       {/* Header */}
@@ -114,43 +118,80 @@ export default function MyCourses() {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 dark:border-slate-700 mb-6 flex-shrink-0">
+        <button
+          className={`py-3 px-6 font-semibold text-sm border-b-2 transition-all ${
+            activeTab === 'courses'
+              ? 'border-yellow-600 text-yellow-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400'
+          }`}
+          onClick={() => {
+            setActiveTab('courses');
+            setPage(1);
+          }}
+        >
+          My Enrolled Courses
+        </button>
+        <button
+          className={`py-3 px-6 font-semibold text-sm border-b-2 transition-all ${
+            activeTab === 'series'
+              ? 'border-yellow-600 text-yellow-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400'
+          }`}
+          onClick={() => {
+            setActiveTab('series');
+            setPage(1);
+          }}
+        >
+          Saved Series
+        </button>
+      </div>
+
+
       {/* Course count and pagination info */}
       <div className="flex-shrink-0 mb-6 flex items-center justify-between">
         <p className="text-gray-700 dark:text-slate-300 text-sm">
-          <span className="font-semibold">{enrollments.length}</span> of <span className="font-semibold">{count}</span> courses
+          <span className="font-semibold">{displayedEnrollments.length}</span> {activeTab === 'courses' ? 'courses' : 'series packages'}
         </p>
-        <div className="text-sm text-gray-600 dark:text-slate-400">
-          Page <span className="font-semibold">{page}</span> of <span className="font-semibold">{totalPages}</span>
-        </div>
+        {totalPages > 1 && (
+          <div className="text-sm text-gray-600 dark:text-slate-400">
+            Page <span className="font-semibold">{page}</span> of <span className="font-semibold">{totalPages}</span>
+          </div>
+        )}
       </div>
 
       {/* Scrollable courses container */}
       <div className="flex-1 overflow-y-auto pr-2 -mr-2">
         {/* Empty State */}
-        {enrollments.length === 0 && (
+        {displayedEnrollments.length === 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-8 text-center">
             <div className="w-20 h-20 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
               <BookOpen size={32} className="text-yellow-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">No courses yet</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
+              {activeTab === 'courses' ? 'No courses yet' : 'No saved series yet'}
+            </h3>
             <p className="text-gray-600 dark:text-slate-300 mb-6 max-w-md mx-auto">
-              You haven't enrolled in any courses yet. Start your learning journey by exploring our marketplace.
+              {activeTab === 'courses' 
+                ? "You haven't enrolled in any courses yet. Start your learning journey by exploring our marketplace."
+                : "You haven't saved any specialization series packages yet. Browse our marketplace to group your learning paths."}
             </p>
             <button 
               className="px-6 py-2.5 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition-colors duration-200"
               onClick={() => navigate('/marketplace')}
             >
-              Browse Courses
+              Browse Marketplace
             </button>
           </div>
         )}
 
         {/* Courses Grid - Scrollable content */}
-        {enrollments.length > 0 && (
+        {displayedEnrollments.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pb-4">
-            {enrollments.map((enrollment) => {
+            {displayedEnrollments.map((enrollment) => {
+
               const course = enrollment.course;
-              // Use real stats if available, otherwise 0/default
               const rating = course?.stats?.rating || 0;
               const studentCount = course?.stats?.students || 0;
               const duration = course?.stats?.duration || '0h 0m';
@@ -159,18 +200,20 @@ export default function MyCourses() {
               const hasImageError = imageErrors.has(enrollment.id) || !course?.image;
               const fallbackImage = getFallbackImage(course?.id || enrollment.id);
               
-              // Determine if it's a scheduled course
               const isScheduled = !!course.meeting_link;
+              const isSeries = !!course.is_series;
 
               return (
                 <div 
                   key={enrollment.id}
                   className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 border border-gray-100 dark:border-slate-700 cursor-pointer group"
                   onClick={() => {
-                    if (isScheduled) {
-                        navigate('/student/schedule');
+                    if (isSeries) {
+                      navigate(`/series/${course?.id}`);
+                    } else if (isScheduled) {
+                      navigate('/student/schedule');
                     } else {
-                        navigate(`/student/courses/${course?.id}`);
+                      navigate(`/student/courses/${course?.id}`);
                     }
                   }}
                 >
@@ -183,19 +226,19 @@ export default function MyCourses() {
                       onError={() => handleImageError(enrollment.id)}
                       loading="lazy"
                     />
-                    {/* Overlay with "Course" text */}
+                    {/* Overlay with type text */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent flex items-end">
                       <div className="p-3 w-full">
                         <div className="bg-black/40 backdrop-blur-sm rounded-lg px-3 py-1 inline-block">
                           <span className="text-white text-xs font-semibold tracking-wider">
-                            {isScheduled ? 'LIVE CLASS' : 'COURSE'}
+                            {isSeries ? 'SPECIALIZATION SERIES' : (isScheduled ? 'LIVE CLASS' : 'COURSE')}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="absolute top-3 right-3">
                       <span className="px-2 py-1 bg-white/90 dark:bg-slate-700/80 backdrop-blur-sm rounded-full text-xs font-medium text-gray-800 dark:text-slate-100">
-                        Enrolled
+                        {isSeries ? 'Saved' : 'Enrolled'}
                       </span>
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -205,8 +248,8 @@ export default function MyCourses() {
                   <div className="p-5">
                     {/* Category Badge - Dynamic based on type */}
                     <div className="mb-2">
-                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${isScheduled ? 'bg-yellow-100 text-yellow-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {isScheduled ? 'Scheduled Session' : (course?.category || 'Professional')}
+                      <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-700">
+                        {isSeries ? 'Specialization' : (isScheduled ? 'Scheduled Session' : (course?.category || 'Professional'))}
                       </span>
                     </div>
 
@@ -221,34 +264,42 @@ export default function MyCourses() {
                     </p>
 
                     {/* Course Stats */}
-                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400 mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          <Star size={14} className="text-yellow-500 fill-current" />
-                          <span className="font-semibold">{rating}</span>
+                    {!isSeries && (
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400 mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <Star size={14} className="text-yellow-500 fill-current" />
+                              <span className="font-semibold">{rating}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users size={14} />
+                              <span>{(studentCount/1000).toFixed(1)}k</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {isScheduled ? <Calendar size={14} /> : <Clock size={14} />}
+                              <span>{isScheduled ? 'Weekly' : duration}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Users size={14} />
-                          <span>{(studentCount/1000).toFixed(1)}k</span>
-                        </div>
-                        
-                        {/* Show Clock for Normal, Calendar for Scheduled */}
-                        <div className="flex items-center gap-1">
-                          {isScheduled ? <Calendar size={14} /> : <Clock size={14} />}
-                          <span>{isScheduled ? 'Weekly' : duration}</span>
-                        </div>
-                      </div>
-                    </div>
+                    )}
 
                     {/* Price & CTA */}
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-700">
-                      <div>
-                        <span className="text-xl font-bold text-gray-900 dark:text-slate-100">₦{course?.price || '0'}</span>
-                        <span className="text-gray-500 dark:text-slate-400 text-sm ml-2 line-through">₦{((course?.price || 0) * 1.5).toFixed(0)}</span>
-                      </div>
+                      {isSeries ? (
+                        <div>
+                          <span className="text-sm font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded border border-amber-200">
+                            Series Package
+                          </span>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="text-xl font-bold text-gray-900 dark:text-slate-100">₦{course?.price || '0'}</span>
+                          <span className="text-gray-500 dark:text-slate-400 text-sm ml-2 line-through">₦{((course?.price || 0) * 1.5).toFixed(0)}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-yellow-600">
-                            {isScheduled ? 'View Schedule' : 'Continue'}
+                          {isSeries ? 'View Series' : (isScheduled ? 'View Schedule' : 'Continue')}
                         </span>
                         {isScheduled ? <Video size={18} className="text-yellow-600"/> : <PlayCircle size={18} className="text-yellow-600" />}
                       </div>
@@ -265,7 +316,7 @@ export default function MyCourses() {
       {totalPages > 1 && (
         <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-slate-700">
           <div className="text-sm text-gray-600 dark:text-slate-400">
-            Showing {((page - 1) * pageSize) + 1} to {Math.min(page * pageSize, count)} of {count} courses
+            Showing {((page - 1) * pageSize) + 1} to {Math.min(page * pageSize, displayedEnrollments.length)} of {displayedEnrollments.length} items
           </div>
           <div className="flex items-center gap-2">
             <button 

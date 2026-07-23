@@ -14,6 +14,9 @@ interface CourseStep1Props {
   requiredTools: string
   outcome: string
   courseCategory: string
+  isSeries?: boolean
+  selectedSubCourseIds?: number[]
+  availableCourses?: any[]
   errors: Record<string, any>
   onTitleChange: (value: string) => void
   onDescriptionChange: (value: string) => void
@@ -23,6 +26,8 @@ interface CourseStep1Props {
   onRequiredToolsChange: (value: string) => void
   onOutcomeChange: (value: string) => void
   onCourseCategoryChange: (value: string) => void
+  onIsSeriesChange?: (value: boolean) => void
+  onSubCourseIdsChange?: (ids: number[]) => void
 }
 
 /**
@@ -38,6 +43,9 @@ export function CourseStep1_BasicInfo({
   requiredTools,
   outcome,
   courseCategory,
+  isSeries = false,
+  selectedSubCourseIds = [],
+  availableCourses = [],
   errors,
   onTitleChange,
   onDescriptionChange,
@@ -47,8 +55,19 @@ export function CourseStep1_BasicInfo({
   onRequiredToolsChange,
   onOutcomeChange,
   onCourseCategoryChange,
+  onIsSeriesChange,
+  onSubCourseIdsChange,
 }: CourseStep1Props) {
   const isTitleValid = title.trim().length > 0
+
+  const toggleSubCourse = (courseId: number) => {
+    if (!onSubCourseIdsChange) return
+    if (selectedSubCourseIds.includes(courseId)) {
+      onSubCourseIdsChange(selectedSubCourseIds.filter(id => id !== courseId))
+    } else {
+      onSubCourseIdsChange([...selectedSubCourseIds, courseId])
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -57,10 +76,92 @@ export function CourseStep1_BasicInfo({
         <p className="text-gray-600">Start by providing essential details about your course</p>
       </div>
 
-      {/* Course Title */}
+      {/* Course Nature Selector (Singular vs Series) */}
+      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+        <label className="block text-sm font-bold text-gray-900 mb-3">Course Nature *</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              onIsSeriesChange?.(false)
+            }}
+            className={`p-4 rounded-xl border-2 text-left transition ${
+              !isSeries ? 'border-brand-600 bg-brand-50/50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <h4 className="font-semibold text-gray-900">Singular Course</h4>
+            <p className="text-xs text-gray-600 mt-1">A standalone course with its own modules, lessons, quizzes, and certificate.</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onIsSeriesChange?.(true)
+              onPriceChange('0')
+            }}
+            className={`p-4 rounded-xl border-2 text-left transition ${
+              isSeries ? 'border-brand-600 bg-brand-50/50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <h4 className="font-semibold text-gray-900">Series (Umbrella Course)</h4>
+            <p className="text-xs text-gray-600 mt-1">An umbrella course grouping multiple existing courses. Completing all awards a Series certificate!</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Sub-courses Picker for Series */}
+      {isSeries && (
+        <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-amber-950">Sub-courses in this Series *</h3>
+              <p className="text-xs text-amber-800">Select the courses that belong under this umbrella Series.</p>
+            </div>
+            <span className="text-xs font-semibold bg-amber-200 text-amber-900 px-3 py-1 rounded-full">
+              {selectedSubCourseIds.length} Selected
+            </span>
+          </div>
+
+          {availableCourses.length === 0 ? (
+            <p className="text-xs text-amber-700 italic">No existing courses found. Create standard courses first to group them into a Series.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pt-2">
+              {availableCourses.filter(c => !c.is_series).map((c) => {
+                const isSelected = selectedSubCourseIds.includes(c.id)
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => toggleSubCourse(c.id)}
+                    className={`p-3 rounded-lg border text-left flex items-start justify-between transition ${
+                      isSelected
+                        ? 'border-amber-600 bg-white shadow-sm ring-1 ring-amber-600'
+                        : 'border-amber-200 bg-white/60 hover:bg-white'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-semibold text-xs text-gray-900 line-clamp-1">{c.title}</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">{c.level} • ₦{c.price || 0}</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => {}}
+                      className="mt-0.5 rounded text-amber-600 focus:ring-amber-500 pointer-events-none"
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+
+      {/* Course/Series Title */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Course Title *
+          {isSeries ? 'Series Title *' : 'Course Title *'}
         </label>
         <input
           type="text"
@@ -117,7 +218,7 @@ export function CourseStep1_BasicInfo({
       </div>
 
       {/* Level & Price */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={isSeries ? "block" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Course Level
@@ -135,38 +236,43 @@ export function CourseStep1_BasicInfo({
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Price ({currency})
-          </label>
-          <input
-            type="number"
-            value={price}
-            onChange={(e) => onPriceChange(e.target.value)}
-            placeholder="0"
-            min="0"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-        </div>
+        {!isSeries && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Price ({currency})
+            </label>
+            <input
+              type="number"
+              value={price}
+              onChange={(e) => onPriceChange(e.target.value)}
+              placeholder="0"
+              min="0"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+        )}
       </div>
 
       {/* Currency */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Currency
-        </label>
-        <select
-          value={currency}
-          onChange={(e) => onCurrencyChange(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
-        >
-          {SUPPORTED_CURRENCIES.map((curr) => (
-            <option key={curr.code} value={curr.code}>
-              {curr.code} - {curr.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!isSeries && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Currency
+          </label>
+          <select
+            value={currency}
+            onChange={(e) => onCurrencyChange(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            {SUPPORTED_CURRENCIES.map((curr) => (
+              <option key={curr.code} value={curr.code}>
+                {curr.code} - {curr.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
 
       {/* Learning Outcome */}
       <div>

@@ -164,7 +164,8 @@ export default function Home() {
             duration: c.stats?.duration || '0h',
             views: c.views_count || c.stats?.views || 0,
             image: c.image || IMAGES.webDev, 
-            imageKey: 'custom' 
+            imageKey: 'custom',
+            is_series: !!c.is_series,
         }));
 
         const combined = [...formattedRealCourses];
@@ -416,7 +417,8 @@ export default function Home() {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {displayCourses.map((course, index) => {
-              const courseUrl = `/marketplace/${course.id}`;
+              const courseUrl = course.is_series ? `/series/${course.id}` : `/marketplace/${course.id}`;
+
               return (
               <Link 
                 key={course.id}
@@ -426,7 +428,11 @@ export default function Home() {
                 <motion.div whileHover={{ y: -10 }} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all h-full flex flex-col cursor-pointer">
                   <div className="h-48 relative overflow-hidden">
                      <img src={course.image} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" width={384} height={192} loading="lazy" decoding="async" />
-                     <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-800">{course.category}</div>
+                     {course.is_series ? (
+                       <div className="absolute top-4 left-4 bg-amber-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">Series Package</div>
+                     ) : (
+                       <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-gray-800">{course.category}</div>
+                     )}
                   </div>
                   <div className="p-6 flex-1 flex flex-col">
                       <div className="flex items-center gap-1 mb-2 w-full">
@@ -441,11 +447,20 @@ export default function Home() {
                          )}
                       </div>
                      <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-yellow-700 transition-colors">{course.title}</h3>
+                     <p className="text-gray-600 text-sm line-clamp-2 mb-4 flex-1">
+                        {course.description}
+                     </p>
                      <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-                        <span className="font-bold text-xl text-yellow-700">₦{course.price.toLocaleString()}</span>
-                        <span className="text-sm font-semibold text-yellow-600 group-hover:text-yellow-700">Details →</span>
+
+                        {course.is_series ? (
+                          <span className="font-bold text-sm text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-md border border-amber-200">Series Package</span>
+                        ) : (
+                          <span className="font-bold text-xl text-yellow-700">₦{course.price.toLocaleString()}</span>
+                        )}
+                        <span className="text-sm font-semibold text-yellow-600 group-hover:text-yellow-700">View Series →</span>
                      </div>
                   </div>
+
                 </motion.div>
               </Link>
             )})}

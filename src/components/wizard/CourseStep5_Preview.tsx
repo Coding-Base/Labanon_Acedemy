@@ -17,6 +17,8 @@ interface CourseStep5Props {
   verificationMessage?: string
   onSaveDraft: () => void
   onPublish: () => void
+  isSeries?: boolean
+  selectedSubCoursesCount?: number
 }
 
 /**
@@ -39,10 +41,13 @@ export function CourseStep5_Preview({
   verificationMessage,
   onSaveDraft,
   onPublish,
+  isSeries = false,
+  selectedSubCoursesCount = 0,
 }: CourseStep5Props) {
   const isTitleValid = title.trim().length > 0
   const isDescriptionValid = description.trim().length > 0
-  const hasContent = courseType === 'scheduled' || modulesCount > 0
+  const hasContent = isSeries ? (selectedSubCoursesCount > 0) : (courseType === 'scheduled' || modulesCount > 0)
+
 
   return (
     <div className="space-y-6">
@@ -133,7 +138,7 @@ export function CourseStep5_Preview({
           <div>
             <p className="text-xs text-gray-500 uppercase font-semibold">Price</p>
             <p className="font-medium text-gray-900 mt-1">
-              {price} {currency}
+              {isSeries ? 'Series Package' : `${price} ${currency}`}
             </p>
           </div>
         </div>
@@ -142,31 +147,53 @@ export function CourseStep5_Preview({
         <div className="pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-500 uppercase font-semibold">Course Type</p>
           <p className="font-medium text-gray-900 mt-1">
-            {courseType === 'normal' ? 'Self-Paced' : 'Scheduled Live'}
+            {isSeries ? 'Umbrella Course Series' : (courseType === 'normal' ? 'Self-Paced' : 'Scheduled Live')}
           </p>
         </div>
 
-        {/* Content Status */}
-        {courseType === 'normal' && (
+        {/* Content Status / Sub-courses Status */}
+        {isSeries ? (
           <div className="pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 uppercase font-semibold">Modules</p>
+            <p className="text-xs text-gray-500 uppercase font-semibold">Sub-Courses Linked</p>
             <div className="flex items-center gap-2 mt-1">
               {hasContent ? (
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-yellow-600" />
+                <AlertCircle className="w-5 h-5 text-red-600" />
               )}
               <p className="font-medium text-gray-900">
-                {modulesCount} module{modulesCount !== 1 ? 's' : ''} created
+                {selectedSubCoursesCount} course{selectedSubCoursesCount !== 1 ? 's' : ''} linked
               </p>
             </div>
             {!hasContent && (
-              <p className="text-xs text-yellow-600 mt-2">
-                Consider adding content modules before publishing
+              <p className="text-xs text-red-600 mt-2">
+                At least one sub-course must be selected before publishing
               </p>
             )}
           </div>
+        ) : (
+          courseType === 'normal' && (
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500 uppercase font-semibold">Modules</p>
+              <div className="flex items-center gap-2 mt-1">
+                {hasContent ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-yellow-600" />
+                )}
+                <p className="font-medium text-gray-900">
+                  {modulesCount} module{modulesCount !== 1 ? 's' : ''} created
+                </p>
+              </div>
+              {!hasContent && (
+                <p className="text-xs text-yellow-600 mt-2">
+                  Consider adding content modules before publishing
+                </p>
+              )}
+            </div>
+          )
         )}
+
       </div>
 
       {/* Verification Status Banner */}

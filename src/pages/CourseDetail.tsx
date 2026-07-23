@@ -64,6 +64,13 @@ export default function CourseDetail() {
   }, [id]);
 
   useEffect(() => {
+    if (course && course.is_series) {
+      navigate(`/series/${course.id}`, { replace: true });
+    }
+  }, [course, navigate]);
+
+
+  useEffect(() => {
     if (!id) return;
     const sessionKey = 'viewed_courses_session';
     let viewedList: string[] = [];
@@ -119,7 +126,25 @@ export default function CourseDetail() {
             navigate(`/student/courses/${course.id}`);
         }
       } catch (err: any) {
-        alert(err?.response?.data?.detail || 'Enrollment failed');
+        const errorData = err?.response?.data;
+        let msg = 'Enrollment failed';
+        if (errorData) {
+          if (typeof errorData === 'string') {
+            msg = errorData;
+          } else if (errorData.detail) {
+            msg = errorData.detail;
+          } else if (errorData.non_field_errors && errorData.non_field_errors.length > 0) {
+            msg = errorData.non_field_errors[0];
+          } else if (Array.isArray(errorData) && errorData.length > 0) {
+            msg = errorData[0];
+          } else {
+            const keys = Object.keys(errorData);
+            if (keys.length > 0 && Array.isArray(errorData[keys[0]])) {
+              msg = errorData[keys[0]][0];
+            }
+          }
+        }
+        alert(msg);
       }
     } else {
       // Show payment checkout for paid courses
@@ -356,8 +381,11 @@ export default function CourseDetail() {
               )}
             </div>
 
-            {/* Course Content Modules (Only for Normal) */}
-            {!isScheduled && (
+
+            {/* Course Content Modules (Only for Normal non-series) */}
+            {!isScheduled && !course.is_series && (
+
+
                 <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-gray-200">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
                     <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>

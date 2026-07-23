@@ -457,7 +457,11 @@ export default function Home() {
                         ) : (
                           <span className="font-bold text-xl text-yellow-700">₦{course.price.toLocaleString()}</span>
                         )}
-                        <span className="text-sm font-semibold text-yellow-600 group-hover:text-yellow-700">View Series →</span>
+                        {course.is_series ? (
+                          <span className="text-sm font-semibold text-yellow-600 group-hover:text-yellow-700">View Series →</span>
+                        ) : (
+                          <span className="text-sm font-semibold text-yellow-600 group-hover:text-yellow-700">View Details →</span>
+                        )}
                      </div>
                   </div>
 

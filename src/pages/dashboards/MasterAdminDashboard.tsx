@@ -4312,12 +4312,12 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                 whileHover={{ y: -3 }}
                                 className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
                               >
-                                <div className="flex items-start justify-between mb-4">
-                                  <div>
-                                    <h4 className="text-lg font-bold text-gray-900">{blog.title}</h4>
-                                    <p className="text-sm text-gray-500 mt-1">By {blog.author_username} • {new Date(blog.created_at).toLocaleDateString()}</p>
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-lg font-bold text-gray-900 break-words">{blog.title}</h4>
+                                    <p className="text-sm text-gray-500 mt-1 break-words">By {blog.author_username} • {new Date(blog.created_at).toLocaleDateString()}</p>
                                   </div>
-                                  <span className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold ${
+                                  <span className={`inline-flex shrink-0 items-center px-4 py-2 rounded-full text-xs font-semibold ${
                                     blog.is_published ? 'bg-yellow-100 text-yellow-800' : 'bg-yellow-100 text-yellow-800'
                                   }`}>
                                     {blog.is_published ? 'Published' : 'Draft'}
@@ -4332,9 +4332,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   ) : null
                                 })()}
 
-                                <p className="text-gray-600 mb-4 line-clamp-2">{stripHtml(blog.excerpt || blog.content)}</p>
+                                <p className="text-gray-600 mb-4 line-clamp-2 break-words">{stripHtml(blog.excerpt || blog.content)}</p>
                                  
-                                <div className="flex gap-3">
+                                <div className="flex flex-wrap gap-3">
                                   <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}

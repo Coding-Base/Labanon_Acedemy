@@ -210,13 +210,14 @@ export default function BlogDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <Navbar />
       {/* Header */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="bg-gradient-to-r from-green-600 to-yellow-600 py-8 px-4"
       >
-        <div className="max-w-4xl mx-auto">
+        <div className="w-full mx-auto px-4">
           <button
             onClick={() => navigate('/blog')}
             className="flex items-center gap-2 text-green-50 hover:text-white mb-6 font-semibold transition-colors"
@@ -228,7 +229,7 @@ export default function BlogDetailPage() {
       </motion.div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="w-full mx-auto px-4 py-12">
         <motion.article
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

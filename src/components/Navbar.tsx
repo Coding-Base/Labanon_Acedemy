@@ -7,6 +7,8 @@ import {
   ChevronDown,
   ChevronRight,
   Search,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import SearchInput from './SearchInput'
 import labanonLogo from '../pages/labanonlogo.png'
@@ -97,6 +99,41 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const exploreMenuRef = useRef<HTMLDivElement>(null)
 
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      setTheme(savedTheme)
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    } else {
+      const hour = new Date().getHours()
+      const isDarkTime = hour >= 18 || hour < 6
+      if (isDarkTime) {
+        setTheme('dark')
+        document.documentElement.classList.add('dark')
+      } else {
+        setTheme('light')
+        document.documentElement.classList.remove('dark')
+      }
+    }
+  }, [])
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }
+
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
@@ -150,7 +187,9 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white/80 backdrop-blur-sm'
+        isScrolled 
+          ? 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-lg' 
+          : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm'
       }`}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 relative">
@@ -272,6 +311,15 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
             </div>
 
             <div className="h-6 w-px bg-gray-300 hidden xl:block mx-1"></div>
+
+            {/* Theme Switcher */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 text-gray-600 hover:text-brand-600 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
 
             <Link to="/login" className="hidden md:inline px-4 py-2 text-gray-700 hover:text-brand-600 font-medium text-sm">
               Log In

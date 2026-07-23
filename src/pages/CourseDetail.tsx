@@ -1,6 +1,7 @@
 // src/pages/CourseDetails.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import axios from 'axios';
 import {
   PlayCircle,
@@ -211,6 +212,7 @@ export default function CourseDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50  custom-scrollbar">
+      <Navbar />
       {/* Back Navigation */}
       <div className="bg-white  border-b border-gray-200  sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

@@ -18,6 +18,32 @@ export default function SeriesDetail() {
   const [imageError, setImageError] = useState(false)
 
   useEffect(() => {
+    if (!id) return;
+
+    // Track views in session storage to prevent infinite loops from React StrictMode
+    const sessionKey = 'viewed_courses_session';
+    const stored = sessionStorage.getItem(sessionKey);
+    let viewedList: string[] = [];
+    
+    try {
+      viewedList = stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.warn('Failed to parse sessionStorage viewed_courses_session', e);
+    }
+    
+    if (!viewedList.includes(String(id))) {
+      // Synchronously mark as viewed first to block concurrent React strict mode mounts
+      viewedList.push(String(id));
+      sessionStorage.setItem(sessionKey, JSON.stringify(viewedList));
+      
+      axios.post(`${API_BASE}/courses/${id}/increment_views/`)
+        .catch(err => {
+          console.warn('Failed to increment views:', err);
+        });
+    }
+  }, [id]);
+
+  useEffect(() => {
     async function loadSeriesData() {
       setLoading(true)
       try {

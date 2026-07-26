@@ -46,7 +46,8 @@ import {
   Zap,
   File as FileIcon,
   BookMarked,
-  Gift
+  Gift,
+  Megaphone
 } from 'lucide-react'
 // Recharts for analytics charts
 import {
@@ -232,11 +233,30 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [showAllSignups, setShowAllSignups] = useState(false)
   const [showBlogForm, setShowBlogForm] = useState(false)
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
-  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; category?: number | string; meta_title?: string; meta_description?: string; meta_keywords?: string}>({title: '', content: '', image: null, image_description: '', excerpt: '', category: '', meta_title: '', meta_description: '', meta_keywords: ''})
+  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; category?: number | string; meta_title?: string; meta_description?: string; meta_keywords?: string; is_featured?: boolean; is_trending?: boolean; is_popular?: boolean}>({title: '', content: '', image: null, image_description: '', excerpt: '', category: '', meta_title: '', meta_description: '', meta_keywords: '', is_featured: false, is_trending: false, is_popular: false})
   const [savingBlog, setSavingBlog] = useState(false)
   const [blogCategories, setBlogCategories] = useState<any[]>([])
   const [newCategoryName, setNewCategoryName] = useState('')
   const [showAddCategoryInput, setShowAddCategoryInput] = useState(false)
+
+  // Ads management states
+  const [blogSubTab, setBlogSubTab] = useState<'posts' | 'ads'>('posts')
+  const [blogAds, setBlogAds] = useState<any[]>([])
+  const [adsLoading, setAdsLoading] = useState(false)
+  const [showAdForm, setShowAdForm] = useState(false)
+  const [editingAd, setEditingAd] = useState<any | null>(null)
+  const [adMessage, setAdMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
+  const [adFormData, setAdFormData] = useState<{title: string; description: string; badge_text: string; bullets: string; button_text: string; button_link: string; image: File | string | null; is_active: boolean}>({
+    title: '',
+    description: '',
+    badge_text: '',
+    bullets: '',
+    button_text: 'Download Free',
+    button_link: '',
+    image: null,
+    is_active: true
+  })
+  const [savingAd, setSavingAd] = useState(false)
 
   // Oversize image modal state for blog image validation
   const [oversizeModalOpen, setOversizeModalOpen] = useState(false)
@@ -832,7 +852,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     }
     if (tab === 'payments') loadPayments(paymentPage)
     if (tab === 'referrals') loadReferralAdmin()
-    if (tab === 'blog') loadBlogs(blogPage)
+    if (tab === 'blog') {
+      loadBlogs(blogPage)
+      loadAds()
+    }
     if (tab === 'promos') loadPromos()
     if (tab === 'trial') loadTrialDays()
     if (tab === 'gospel') loadGospels()
@@ -1357,6 +1380,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         fd.append('meta_title', blogFormData.meta_title || '')
         fd.append('meta_description', blogFormData.meta_description || '')
         fd.append('meta_keywords', blogFormData.meta_keywords || '')
+        fd.append('is_featured', String(!!blogFormData.is_featured))
+        fd.append('is_trending', String(!!blogFormData.is_trending))
+        fd.append('is_popular', String(!!blogFormData.is_popular))
         fd.append('image_file', blogFormData.image)
         if (editingBlog) {
           res = await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, fd, { headers })
@@ -1372,7 +1398,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           image_description: blogFormData.image_description || '',
           meta_title: blogFormData.meta_title || '',
           meta_description: blogFormData.meta_description || '',
-          meta_keywords: blogFormData.meta_keywords || ''
+          meta_keywords: blogFormData.meta_keywords || '',
+          is_featured: !!blogFormData.is_featured,
+          is_trending: !!blogFormData.is_trending,
+          is_popular: !!blogFormData.is_popular
         }
         if (blogFormData.category) payload.category = blogFormData.category
         if (editingBlog) {
@@ -1385,7 +1414,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
       // Success: close modal, reset form and reload list
       setShowBlogForm(false)
-      setBlogFormData({title: '', content: '', image: null, excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: ''})
+      setBlogFormData({title: '', content: '', image: null, excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: '', is_featured: false, is_trending: false, is_popular: false})
       setEditingBlog(null)
       // Clear any saved draft for this post
       try {
@@ -1426,6 +1455,91 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
       console.error(err)
       setBlogMessage({ type: 'error', text: 'Failed to delete blog' })
       setTimeout(() => setBlogMessage(null), 4000)
+    }
+  }
+
+  async function loadAds() {
+    setAdsLoading(true)
+    try {
+      const token = localStorage.getItem('access')
+      const res = await axios.get(`${API_BASE}/blog/ads/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+      setBlogAds(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []))
+    } catch (e) {
+      console.error('Failed to load ads', e)
+    } finally {
+      setAdsLoading(false)
+    }
+  }
+
+  async function saveAd() {
+    if (!adFormData.title.trim() || !adFormData.button_link.trim()) {
+      setAdMessage({ type: 'error', text: 'Title and link are required' })
+      return
+    }
+    setSavingAd(true)
+    try {
+      const token = localStorage.getItem('access')
+      let headers: any = { Authorization: `Bearer ${token}` }
+      let res
+
+      if (adFormData.image instanceof File) {
+        const fd = new FormData()
+        fd.append('title', adFormData.title)
+        fd.append('description', adFormData.description || '')
+        fd.append('badge_text', adFormData.badge_text || '')
+        fd.append('bullets', adFormData.bullets || '')
+        fd.append('button_text', adFormData.button_text || '')
+        fd.append('button_link', adFormData.button_link || '')
+        fd.append('is_active', String(adFormData.is_active))
+        fd.append('image_file', adFormData.image)
+
+        headers['Content-Type'] = 'multipart/form-data'
+        if (editingAd) {
+          res = await axios.patch(`${API_BASE}/blog/ads/${editingAd.id}/`, fd, { headers })
+        } else {
+          res = await axios.post(`${API_BASE}/blog/ads/`, fd, { headers })
+        }
+      } else {
+        const payload = {
+          title: adFormData.title,
+          description: adFormData.description || '',
+          badge_text: adFormData.badge_text || '',
+          bullets: adFormData.bullets || '',
+          button_text: adFormData.button_text || '',
+          button_link: adFormData.button_link || '',
+          is_active: adFormData.is_active,
+          image: typeof adFormData.image === 'string' ? adFormData.image : ''
+        }
+        if (editingAd) {
+          res = await axios.patch(`${API_BASE}/blog/ads/${editingAd.id}/`, payload, { headers })
+        } else {
+          res = await axios.post(`${API_BASE}/blog/ads/`, payload, { headers })
+        }
+      }
+
+      setShowAdForm(false)
+      setAdFormData({
+        title: '',
+        description: '',
+        badge_text: '',
+        bullets: '',
+        button_text: 'Download Free',
+        button_link: '',
+        image: null,
+        is_active: true
+      })
+      setEditingAd(null)
+      loadAds()
+      setAdMessage({ type: 'success', text: editingAd ? 'Ad updated' : 'Ad created' })
+      setTimeout(() => setAdMessage(null), 3000)
+    } catch (err: any) {
+      console.error(err)
+      setAdMessage({ type: 'error', text: 'Failed to save ad banner' })
+      setTimeout(() => setAdMessage(null), 4000)
+    } finally {
+      setSavingAd(false)
     }
   }
 
@@ -4258,161 +4372,320 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                 {tab === 'blog' && (
                   <div>
-                    {blogMessage && (
-                      <div className={`p-3 rounded-lg mb-4 ${blogMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
-                        {blogMessage.text}
-                      </div>
-                    )}
-                    {blogsLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
-                        <span className="text-gray-600">Loading blogs...</span>
-                      </div>
-                    ) : (
+                    {/* Sub-tab navigation */}
+                    <div className="flex border-b border-gray-200 mb-6">
+                      <button
+                        onClick={() => setBlogSubTab('posts')}
+                        className={`py-2.5 px-6 font-semibold text-sm transition-all border-b-2 -mb-px ${
+                          blogSubTab === 'posts'
+                            ? 'border-yellow-600 text-yellow-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        Manage Posts
+                      </button>
+                      <button
+                        onClick={() => setBlogSubTab('ads')}
+                        className={`py-2.5 px-6 font-semibold text-sm transition-all border-b-2 -mb-px ${
+                          blogSubTab === 'ads'
+                            ? 'border-yellow-600 text-yellow-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        Manage Ads
+                      </button>
+                    </div>
+
+                    {blogSubTab === 'posts' && (
                       <div>
-                        <div className="mb-6 flex items-center justify-between">
-                          <h3 className="text-lg font-semibold text-gray-900">Blog Posts</h3>
-                          <div className="flex items-center gap-3">
-                            {/* Ensure visible on desktop: duplicate CTA that is explicitly shown on md+ */}
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => {
-                                setShowBlogForm(true)
-                                setEditingBlog(null)
-                                setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: ''})
-                              }}
-                              className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg hidden md:inline-flex"
-                            >
-                              + New Blog Post
-                            </motion.button>
-
-                            {/* Also include a compact button visible on small screens */}
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => { setShowBlogForm(true); setEditingBlog(null); setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: ''}) }}
-                              className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold md:hidden"
-                            >
-                              + New
-                            </motion.button>
+                        {blogMessage && (
+                          <div className={`p-3 rounded-lg mb-4 ${blogMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+                            {blogMessage.text}
                           </div>
-                        </div>
-
-                        {blogs.length === 0 ? (
-                          <div className="text-center py-12">
-                            <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-500">No blog posts yet</p>
+                        )}
+                        {blogsLoading ? (
+                          <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+                            <span className="text-gray-600">Loading blogs...</span>
                           </div>
                         ) : (
-                          <div className="space-y-4">
-                            {blogs.map((blog) => (
-                              <motion.div
-                                key={blog.id}
-                                whileHover={{ y: -3 }}
-                                className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
-                              >
-                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="text-lg font-bold text-gray-900 break-words">{blog.title}</h4>
-                                    <p className="text-sm text-gray-500 mt-1 break-words">By {blog.author_username} • {new Date(blog.created_at).toLocaleDateString()}</p>
-                                  </div>
-                                  <span className={`inline-flex shrink-0 items-center px-4 py-2 rounded-full text-xs font-semibold ${
-                                    blog.is_published ? 'bg-yellow-100 text-yellow-800' : 'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    {blog.is_published ? 'Published' : 'Draft'}
-                                  </span>
-                                </div>
-                                 
-                                {(() => {
-                                  const firstImg = blog.image || extractFirstImageSrc(blog.content)
-                                  const imgUrl = firstImg ? getImageUrl(firstImg) : ''
-                                  return imgUrl ? (
-                                    <img src={imgUrl} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
-                                  ) : null
-                                })()}
-
-                                <p className="text-gray-600 mb-4 line-clamp-2 break-words">{stripHtml(blog.excerpt || blog.content)}</p>
-                                 
-                                <div className="flex flex-wrap gap-3">
-                                  <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => {
-                                      setEditingBlog(blog)
-                                      setBlogFormData({
-                                        title: blog.title,
-                                        content: blog.content,
-                                        image: blog.image,
-                                        excerpt: blog.excerpt,
-                                        image_description: blog.image_description || '',
-                                        meta_title: blog.meta_title || '',
-                                        meta_description: blog.meta_description || '',
-                                        meta_keywords: blog.meta_keywords || ''
-                                      })
-                                      setShowBlogForm(true)
-                                    }}
-                                    className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
-                                  >
-                                    Edit
-                                  </motion.button>
-                                  {!blog.is_published && (
-                                    <motion.button
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
-                                      onClick={() => publishBlog(blog.id)}
-                                      className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
-                                    >
-                                      Publish
-                                    </motion.button>
-                                  )}
-                                  <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => deleteBlog(blog.id)}
-                                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200"
-                                  >
-                                    Delete
-                                  </motion.button>
-                                </div>
-                              </motion.div>
-                            ))}
-
-                          {(blogPageInfo.count > 10 || blogPageInfo.next || blogPageInfo.previous) && (
-                            <div className="mt-6 flex flex-col gap-3 items-center justify-between sm:flex-row">
-                              <div className="text-sm text-gray-600">Page {blogPageInfo.current} of {Math.max(1, Math.ceil(blogPageInfo.count / 10))}</div>
-                              <div className="flex items-center gap-2">
+                          <div>
+                            <div className="mb-6 flex items-center justify-between">
+                              <h3 className="text-lg font-semibold text-gray-900">Blog Posts</h3>
+                              <div className="flex items-center gap-3">
+                                {/* Ensure visible on desktop: duplicate CTA that is explicitly shown on md+ */}
                                 <motion.button
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
-                                  onClick={() => loadBlogs(Math.max(1, blogPage - 1))}
-                                  disabled={!blogPageInfo.previous}
-                                  className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
-                                    blogPageInfo.previous
-                                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                      : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-                                  }`}
+                                  onClick={() => {
+                                    setShowBlogForm(true)
+                                    setEditingBlog(null)
+                                    setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: '', is_featured: false, is_trending: false, is_popular: false})
+                                  }}
+                                  className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg hidden md:inline-flex"
                                 >
-                                  <ChevronLeft className="w-4 h-4 mr-1" />
-                                  Previous
+                                  + New Blog Post
                                 </motion.button>
+
+                                {/* Also include a compact button visible on small screens */}
                                 <motion.button
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
-                                  onClick={() => loadBlogs(blogPage + 1)}
-                                  disabled={!blogPageInfo.next}
-                                  className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
-                                    blogPageInfo.next
-                                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                      : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-                                  }`}
+                                  onClick={() => { setShowBlogForm(true); setEditingBlog(null); setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: '', is_featured: false, is_trending: false, is_popular: false}) }}
+                                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold md:hidden"
                                 >
-                                  Next
-                                  <ChevronRight className="w-4 h-4 ml-1" />
+                                  + New
                                 </motion.button>
                               </div>
                             </div>
-                          )}
+
+                            {blogs.length === 0 ? (
+                              <div className="text-center py-12">
+                                <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-500">No blog posts yet</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                {blogs.map((blog) => (
+                                  <motion.div
+                                    key={blog.id}
+                                    whileHover={{ y: -3 }}
+                                    className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
+                                  >
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-lg font-bold text-gray-900 break-words">{blog.title}</h4>
+                                        <div className="flex flex-wrap gap-2 items-center mt-1">
+                                          <p className="text-xs text-gray-500">By {blog.author_username} • {new Date(blog.created_at).toLocaleDateString()}</p>
+                                          {blog.is_featured && <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">Featured</span>}
+                                          {blog.is_trending && <span className="bg-teal-100 text-teal-800 text-[10px] font-bold px-2 py-0.5 rounded">Trending</span>}
+                                          {blog.is_popular && <span className="bg-orange-100 text-orange-800 text-[10px] font-bold px-2 py-0.5 rounded">Popular</span>}
+                                        </div>
+                                      </div>
+                                      <span className={`inline-flex shrink-0 items-center px-4 py-2 rounded-full text-xs font-semibold ${
+                                        blog.is_published ? 'bg-yellow-100 text-yellow-800' : 'bg-yellow-100 text-yellow-800'
+                                      }`}>
+                                        {blog.is_published ? 'Published' : 'Draft'}
+                                      </span>
+                                    </div>
+                                     
+                                    {(() => {
+                                      const firstImg = blog.image || extractFirstImageSrc(blog.content)
+                                      const imgUrl = firstImg ? getImageUrl(firstImg) : ''
+                                      return imgUrl ? (
+                                        <img src={imgUrl} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
+                                      ) : null
+                                    })()}
+
+                                    <p className="text-gray-600 mb-4 line-clamp-2 break-words">{stripHtml(blog.excerpt || blog.content)}</p>
+                                     
+                                    <div className="flex flex-wrap gap-3">
+                                      <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => {
+                                          setEditingBlog(blog)
+                                          setBlogFormData({
+                                            title: blog.title,
+                                            content: blog.content,
+                                            image: blog.image,
+                                            excerpt: blog.excerpt,
+                                            image_description: blog.image_description || '',
+                                            meta_title: blog.meta_title || '',
+                                            meta_description: blog.meta_description || '',
+                                            meta_keywords: blog.meta_keywords || '',
+                                            category: blog.category || '',
+                                            is_featured: !!blog.is_featured,
+                                            is_trending: !!blog.is_trending,
+                                            is_popular: !!blog.is_popular
+                                          })
+                                          setShowBlogForm(true)
+                                        }}
+                                        className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
+                                      >
+                                        Edit
+                                      </motion.button>
+                                      {!blog.is_published && (
+                                        <motion.button
+                                          whileHover={{ scale: 1.05 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          onClick={() => publishBlog(blog.id)}
+                                          className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
+                                        >
+                                          Publish
+                                        </motion.button>
+                                      )}
+                                      <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => deleteBlog(blog.id)}
+                                        className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200"
+                                      >
+                                        Delete
+                                      </motion.button>
+                                    </div>
+                                  </motion.div>
+                                ))}
+
+                                {(blogPageInfo.count > 10 || blogPageInfo.next || blogPageInfo.previous) && (
+                                  <div className="mt-6 flex flex-col gap-3 items-center justify-between sm:flex-row">
+                                    <div className="text-sm text-gray-600">Page {blogPageInfo.current} of {Math.max(1, Math.ceil(blogPageInfo.count / 10))}</div>
+                                    <div className="flex items-center gap-2">
+                                      <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => loadBlogs(Math.max(1, blogPage - 1))}
+                                        disabled={!blogPageInfo.previous}
+                                        className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+                                          blogPageInfo.previous
+                                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                        }`}
+                                      >
+                                        <ChevronLeft className="w-4 h-4 mr-1" />
+                                        Previous
+                                      </motion.button>
+                                      <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => loadBlogs(blogPage + 1)}
+                                        disabled={!blogPageInfo.next}
+                                        className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+                                          blogPageInfo.next
+                                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                        }`}
+                                      >
+                                        Next
+                                        <ChevronRight className="w-4 h-4 ml-1" />
+                                      </motion.button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {blogSubTab === 'ads' && (
+                      <div>
+                        {adMessage && (
+                          <div className={`p-3 rounded-lg mb-4 ${adMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+                            {adMessage.text}
+                          </div>
+                        )}
+                        <div className="mb-6 flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900">Blog Ads / Banners</h3>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                              setShowAdForm(true)
+                              setEditingAd(null)
+                              setAdFormData({
+                                title: '',
+                                description: '',
+                                badge_text: '',
+                                bullets: '',
+                                button_text: 'Download Free',
+                                button_link: '',
+                                image: null,
+                                is_active: true
+                              })
+                            }}
+                            className="px-6 py-2.5 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                          >
+                            + New Ad Banner
+                          </motion.button>
+                        </div>
+
+                        {adsLoading ? (
+                          <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+                            <span className="text-gray-600">Loading Ads...</span>
+                          </div>
+                        ) : blogAds.length === 0 ? (
+                          <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col items-center">
+                            <Megaphone className="w-12 h-12 text-gray-300 mb-3" />
+                            <p className="text-gray-500 text-sm">No ad banners created yet. The website will show fallback banners.</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {blogAds.map((ad) => (
+                              <div key={ad.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-start justify-between gap-3 mb-2">
+                                    <h4 className="font-bold text-gray-900">{ad.title}</h4>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ad.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                      {ad.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                  </div>
+                                  {ad.badge_text && (
+                                    <span className="inline-block bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded mb-2">
+                                      {ad.badge_text}
+                                    </span>
+                                  )}
+                                  <p className="text-xs text-gray-600 line-clamp-2 mb-3">{ad.description || 'No description'}</p>
+                                  {ad.bullets && (
+                                    <ul className="text-[11px] text-gray-500 space-y-0.5 mb-3 list-disc list-inside">
+                                      {ad.bullets.split(',').map((b: string, idx: number) => (
+                                        <li key={idx}>{b.trim()}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                  {ad.image && (
+                                    <img src={getImageUrl(ad.image)} alt={ad.title} className="w-full h-32 object-cover rounded-lg mb-3" />
+                                  )}
+                                  <div className="text-xs text-gray-500 mb-4 bg-gray-50 p-2 rounded">
+                                    <p><strong className="text-gray-700">Button:</strong> {ad.button_text}</p>
+                                    <p className="truncate"><strong className="text-gray-700">Link:</strong> {ad.button_link}</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingAd(ad)
+                                      setAdFormData({
+                                        title: ad.title,
+                                        description: ad.description || '',
+                                        badge_text: ad.badge_text || '',
+                                        bullets: ad.bullets || '',
+                                        button_text: ad.button_text || 'Download Free',
+                                        button_link: ad.button_link || '',
+                                        image: ad.image || null,
+                                        is_active: ad.is_active ?? true
+                                      })
+                                      setShowAdForm(true)
+                                    }}
+                                    className="px-3 py-1.5 text-xs bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (!confirm('Delete this ad?')) return
+                                      try {
+                                        const token = localStorage.getItem('access')
+                                        await axios.delete(`${API_BASE}/blog/ads/${ad.id}/`, {
+                                          headers: { Authorization: `Bearer ${token}` }
+                                        })
+                                        loadAds()
+                                        setAdMessage({ type: 'success', text: 'Ad deleted' })
+                                        setTimeout(() => setAdMessage(null), 3000)
+                                      } catch (err) {
+                                        setAdMessage({ type: 'error', text: 'Failed to delete ad' })
+                                        setTimeout(() => setAdMessage(null), 3000)
+                                      }
+                                    }}
+                                    className="px-3 py-1.5 text-xs bg-red-50 text-red-700 rounded-lg hover:bg-red-100"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -5195,6 +5468,42 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   />
                   <p className="text-xs text-gray-500 mt-1">{blogFormData.image_description.length}/255 characters</p>
                 </div>
+
+                {/* Blog Page Section Flags */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Blog Page Sections</h4>
+                  <div className="flex flex-col sm:flex-row gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!blogFormData.is_featured}
+                        onChange={(e) => setBlogFormData(prev => ({ ...prev, is_featured: e.target.checked }))}
+                        className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Featured Article (only 1 active)</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!blogFormData.is_trending}
+                        onChange={(e) => setBlogFormData(prev => ({ ...prev, is_trending: e.target.checked }))}
+                        className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Trending This Week</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!blogFormData.is_popular}
+                        onChange={(e) => setBlogFormData(prev => ({ ...prev, is_popular: e.target.checked }))}
+                        className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Popular Article</span>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -5216,6 +5525,178 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               >
                 {savingBlog ? <Loader2 className="w-5 h-5 animate-spin" /> : (editingBlog ? 'Update Post' : 'Create Post')}
               </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Ad Form Modal */}
+      {showAdForm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-8"
+          onClick={() => setShowAdForm(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 flex flex-col max-h-[85vh]"
+          >
+            <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 p-6 rounded-t-2xl flex items-center justify-between flex-shrink-0">
+              <h2 className="text-xl font-bold text-white">{editingAd ? 'Edit Ad Banner' : 'Create Ad Banner'}</h2>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Badge Text (e.g. FREE DOWNLOAD)</label>
+                <input
+                  type="text"
+                  value={adFormData.badge_text}
+                  onChange={(e) => setAdFormData(prev => ({ ...prev, badge_text: e.target.value }))}
+                  placeholder="FREE DOWNLOAD"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Title *</label>
+                <input
+                  type="text"
+                  value={adFormData.title}
+                  onChange={(e) => setAdFormData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="e.g. 2026 WAEC Physics Formula Sheet"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Description / Subtitle</label>
+                <textarea
+                  value={adFormData.description}
+                  onChange={(e) => setAdFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Brief subtitle or summary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500 h-16 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Bullet Points (comma-separated, optional)</label>
+                <input
+                  type="text"
+                  value={adFormData.bullets}
+                  onChange={(e) => setAdFormData(prev => ({ ...prev, bullets: e.target.value }))}
+                  placeholder="e.g. Python, SQL, Power BI"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Button Text</label>
+                  <input
+                    type="text"
+                    value={adFormData.button_text}
+                    onChange={(e) => setAdFormData(prev => ({ ...prev, button_text: e.target.value }))}
+                    placeholder="Download Free"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Button Link (Redirect Path) *</label>
+                  <input
+                    type="text"
+                    value={adFormData.button_link}
+                    onChange={(e) => setAdFormData(prev => ({ ...prev, button_link: e.target.value }))}
+                    placeholder="e.g. /courses or https://..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Image Asset (upload)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null
+                    if (!file) {
+                      setAdFormData(prev => ({ ...prev, image: null }))
+                      return
+                    }
+                    const validation = validateImageSize(file)
+                    if (!validation.ok) {
+                      setOversizeFileSize(validation.bytes)
+                      setOversizeModalOpen(true)
+                      return
+                    }
+                    setAdFormData(prev => ({ ...prev, image: file }))
+                  }}
+                  className="w-full text-xs"
+                />
+                {typeof adFormData.image === 'string' && adFormData.image && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <img src={getImageUrl(adFormData.image)} alt="Preview" className="w-24 h-14 object-cover rounded" />
+                    <button
+                      type="button"
+                      onClick={() => setAdFormData(prev => ({ ...prev, image: '' }))}
+                      className="px-2 py-1 text-xs bg-red-50 text-red-700 rounded"
+                    >
+                      Remove image
+                    </button>
+                  </div>
+                )}
+                {adFormData.image instanceof File && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <p className="text-xs text-gray-500 truncate max-w-[200px]">Selected: {adFormData.image.name}</p>
+                    <button
+                      type="button"
+                      onClick={() => setAdFormData(prev => ({ ...prev, image: null }))}
+                      className="px-2 py-1 text-xs bg-red-50 text-red-700 rounded"
+                    >
+                      Remove selection
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="ad_is_active"
+                  checked={!!adFormData.is_active}
+                  onChange={(e) => setAdFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                  className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
+                />
+                <label htmlFor="ad_is_active" className="text-xs font-semibold text-gray-700 cursor-pointer">
+                  Activate Banner (will display on Blog page)
+                </label>
+              </div>
+            </div>
+
+            <div className="border-t p-4 flex gap-3 justify-end bg-gray-50 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAdForm(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-900 rounded-lg text-sm font-semibold hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveAd}
+                disabled={savingAd}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-semibold hover:bg-yellow-700 disabled:opacity-60 flex items-center gap-2"
+              >
+                {savingAd && <Loader2 className="w-4 h-4 animate-spin" />}
+                {editingAd ? 'Update Banner' : 'Create Banner'}
+              </button>
             </div>
           </motion.div>
         </motion.div>

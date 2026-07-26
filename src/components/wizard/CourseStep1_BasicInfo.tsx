@@ -1,6 +1,7 @@
-import React from 'react'
-import { AlertCircle } from 'lucide-react'
+import React, { useState } from 'react'
+import { AlertCircle, Search } from 'lucide-react'
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies'
+import useDebounce from '../../utils/useDebounce'
 
 const levels = ['Beginner', 'Intermediate', 'Professional'] as const
 type Level = typeof levels[number]
@@ -58,6 +59,8 @@ export function CourseStep1_BasicInfo({
   onIsSeriesChange,
   onSubCourseIdsChange,
 }: CourseStep1Props) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
   const isTitleValid = title.trim().length > 0
 
   const toggleSubCourse = (courseId: number) => {
@@ -122,36 +125,50 @@ export function CourseStep1_BasicInfo({
             </span>
           </div>
 
+          {/* Search bar inside Series selector */}
+          <div className="relative mt-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search courses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-amber-200 rounded-lg text-xs outline-none focus:ring-1 focus:ring-amber-500 bg-white"
+            />
+          </div>
+
           {availableCourses.length === 0 ? (
             <p className="text-xs text-amber-700 italic">No existing courses found. Create standard courses first to group them into a Series.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pt-2">
-              {availableCourses.filter(c => !c.is_series).map((c) => {
-                const isSelected = selectedSubCourseIds.includes(c.id)
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => toggleSubCourse(c.id)}
-                    className={`p-3 rounded-lg border text-left flex items-start justify-between transition ${
-                      isSelected
-                        ? 'border-amber-600 bg-white shadow-sm ring-1 ring-amber-600'
-                        : 'border-amber-200 bg-white/60 hover:bg-white'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-semibold text-xs text-gray-900 line-clamp-1">{c.title}</p>
-                      <p className="text-[10px] text-gray-500 mt-0.5">{c.level} • ₦{c.price || 0}</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => {}}
-                      className="mt-0.5 rounded text-amber-600 focus:ring-amber-500 pointer-events-none"
-                    />
-                  </button>
-                )
-              })}
+              {availableCourses
+                .filter(c => !c.is_series && c.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
+                .map((c) => {
+                  const isSelected = selectedSubCourseIds.includes(c.id)
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => toggleSubCourse(c.id)}
+                      className={`p-3 rounded-lg border text-left flex items-start justify-between transition ${
+                        isSelected
+                          ? 'border-amber-600 bg-white shadow-sm ring-1 ring-amber-600'
+                          : 'border-amber-200 bg-white/60 hover:bg-white'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-semibold text-xs text-gray-900 line-clamp-1">{c.title}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">{c.level} • ₦{c.price || 0}</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        className="mt-0.5 rounded text-amber-600 focus:ring-amber-500 pointer-events-none"
+                      />
+                    </button>
+                  )
+                })}
             </div>
           )}
         </div>

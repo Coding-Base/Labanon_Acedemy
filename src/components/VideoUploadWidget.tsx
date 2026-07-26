@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react'
 import axios from 'axios'
 import { Upload, AlertCircle, CheckCircle, Loader } from 'lucide-react'
 
-const MAX_VIDEO_SECONDS = 6 * 60 // 6 minutes
+const MAX_VIDEO_SECONDS = 90 * 60 // 1 hour 30 minutes
 const CHUNK_SIZE = 5 * 1024 * 1024 // 5MB chunks
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -63,7 +63,7 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
       const duration = await getVideoDuration(selectedFile)
       if (duration > MAX_VIDEO_SECONDS) {
         setDurationError(
-          `Video is ${Math.round(duration)}s long. Maximum is ${MAX_VIDEO_SECONDS}s (6 minutes). ` +
+          `Video is ${Math.round(duration / 60)} minutes long. Maximum allowed is 1 hour 30 minutes (5400s). ` +
           `Use YouTube embed for longer videos.`
         )
         setFile(null)
@@ -115,36 +115,54 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
         const chunk = file.slice(start, end)
         const partNumber = i + 1
 
-        // Get presigned URL for this part
-        const presignedRes = await axios.post(
-          `${API_BASE}/videos/get_presigned_url/`,
-          {
-            video_id,
-            part_number: partNumber,
-            content_length: chunk.size
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        let uploadSuccess = false
+        let attempts = 0
+        const maxAttempts = 3
+        let etag = ''
 
-        // Decode HTML entities in presigned URL if needed
-        let presignedUrl = presignedRes.data.presigned_url
-        if (presignedUrl.includes('&amp;')) {
-          // Replace HTML entities
-          presignedUrl = presignedUrl.replace(/&amp;/g, '&')
+        while (!uploadSuccess && attempts < maxAttempts) {
+          attempts++
+          try {
+            // Get presigned URL for this part
+            const presignedRes = await axios.post(
+              `${API_BASE}/videos/get_presigned_url/`,
+              {
+                video_id,
+                part_number: partNumber,
+                content_length: chunk.size
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
+            )
+
+            // Decode HTML entities in presigned URL if needed
+            let presignedUrl = presignedRes.data.presigned_url
+            if (presignedUrl.includes('&amp;')) {
+              // Replace HTML entities
+              presignedUrl = presignedUrl.replace(/&amp;/g, '&')
+            }
+
+            // Upload chunk using fetch (not axios) to avoid double-signing
+            const uploadRes = await fetch(presignedUrl, {
+              method: 'PUT',
+              headers: { 'Content-Type': file.type },
+              body: chunk
+            })
+
+            if (!uploadRes.ok) {
+              throw new Error(`S3 upload failed: ${uploadRes.statusText}`)
+            }
+
+            etag = uploadRes.headers.get('etag') || uploadRes.headers.get('ETag') || ''
+            uploadSuccess = true
+          } catch (e: any) {
+            console.warn(`[Chunk Upload] Attempt ${attempts} failed for part ${partNumber}:`, e)
+            if (attempts >= maxAttempts) {
+              throw new Error(`S3 upload failed after ${maxAttempts} attempts for part ${partNumber}: ${e.message}`)
+            }
+            // Sleep 2 seconds before retrying
+            await new Promise((r) => setTimeout(r, 2000))
+          }
         }
-
-        // Upload chunk using fetch (not axios) to avoid double-signing
-        const uploadRes = await fetch(presignedUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': file.type },
-          body: chunk
-        })
-
-        if (!uploadRes.ok) {
-          throw new Error(`S3 upload failed: ${uploadRes.statusText}`)
-        }
-
-        const etag = uploadRes.headers.get('etag') || uploadRes.headers.get('ETag')
         
         parts.push({
           PartNumber: partNumber,
@@ -278,7 +296,7 @@ export const VideoUploadWidget: React.FC<VideoUploadProps> = ({ onUploadComplete
           >
             <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
             <p className="text-sm text-gray-600">
-              Click to select video (max 6 minutes)
+              Click to select video (max 1 hour 30 minutes)
             </p>
             <input
               ref={fileInputRef}

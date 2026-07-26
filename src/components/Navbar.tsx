@@ -324,7 +324,7 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
             <Link to="/login" className="hidden md:inline px-4 py-2 text-gray-700 hover:text-brand-600 font-medium text-sm">
               Log In
             </Link>
-            <Link to="/register" className="px-3 py-1.5 bg-brand-700 text-white rounded-lg font-semibold text-sm hover:bg-brand-800 transition-colors shadow-md">
+            <Link to="/register" className="whitespace-nowrap px-2.5 py-1 sm:px-3 sm:py-1.5 bg-brand-700 text-white rounded-lg font-semibold text-xs sm:text-sm hover:bg-brand-800 transition-colors shadow-md">
               Join for Free
             </Link>
 

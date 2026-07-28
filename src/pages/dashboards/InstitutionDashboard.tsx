@@ -722,7 +722,7 @@ export default function InstitutionDashboard(props: { summary?: DashboardSummary
                           >
                             ← Back to Courses
                           </button>
-                          <CreateCourse darkMode={darkMode} />
+                          <CreateCourse darkMode={darkMode} onSaveSuccess={() => setCreatingCourse(false)} />
                         </div>
                       ) : (
                         <div>

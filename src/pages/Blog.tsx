@@ -325,11 +325,11 @@ export default function BlogPage() {
                           >
                             <div>
                               {imgSrc && (
-                                <div className="relative w-full aspect-video bg-gray-100 dark:bg-slate-800 overflow-hidden">
+                                <div className="relative w-full aspect-video bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center">
                                   <img
                                     src={getImageSrc(imgSrc)}
                                     alt={blog.title}
-                                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                                    className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
                                     loading="lazy"
                                   />
                                   {blog.category_name && (
@@ -379,14 +379,14 @@ export default function BlogPage() {
                         onClick={() => navigate(`/blog/${featuredPost.slug}`, { state: { blog: featuredPost } })}
                         className="group grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-gray-200 dark:border-slate-850 p-6 md:p-8 hover:shadow-xl transition-all duration-300 cursor-pointer"
                       >
-                        <div className="lg:col-span-7 relative w-full aspect-video lg:aspect-auto lg:h-[350px] bg-gray-100 dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="lg:col-span-7 relative w-full aspect-video lg:aspect-auto lg:h-[350px] bg-slate-50 dark:bg-slate-950 rounded-2xl overflow-hidden shadow-sm flex items-center justify-center">
                           {(() => {
                             const src = featuredPost.image ? getImageSrc(featuredPost.image) : extractFirstImageSrc(featuredPost.content)
                             return src ? (
                               <img
                                 src={getImageSrc(src)}
                                 alt={featuredPost.title}
-                                className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
+                                className="w-full h-full object-contain group-hover:scale-[1.01] transition-transform duration-300"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-gray-400"><BookOpen className="w-12 h-12" /></div>
@@ -440,11 +440,11 @@ export default function BlogPage() {
                             >
                               <div>
                                 {imgSrc && (
-                                  <div className="relative w-full aspect-video bg-gray-100 dark:bg-slate-800 overflow-hidden">
+                                  <div className="relative w-full aspect-video bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center">
                                     <img
                                       src={getImageSrc(imgSrc)}
                                       alt={blog.title}
-                                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                                      className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
                                       loading="lazy"
                                     />
                                     {blog.category_name && (
@@ -498,11 +498,11 @@ export default function BlogPage() {
                             >
                               <div>
                                 {imgSrc && (
-                                  <div className="relative w-full aspect-video bg-gray-100 dark:bg-slate-800 overflow-hidden">
+                                  <div className="relative w-full aspect-video bg-slate-50 dark:bg-slate-955 overflow-hidden flex items-center justify-center">
                                     <img
                                       src={getImageSrc(imgSrc)}
                                       alt={blog.title}
-                                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                                      className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
                                       loading="lazy"
                                     />
                                     {blog.category_name && (
@@ -554,11 +554,11 @@ export default function BlogPage() {
                               className="group bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-850 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col sm:flex-row gap-5 items-center"
                             >
                               {imgSrc && (
-                                <div className="relative w-full sm:w-48 shrink-0 aspect-[4/3] bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden shadow-inner">
+                                <div className="relative w-full sm:w-48 shrink-0 aspect-[4/3] bg-slate-50 dark:bg-slate-955 rounded-xl overflow-hidden shadow-inner flex items-center justify-center">
                                   <img
                                     src={getImageSrc(imgSrc)}
                                     alt={blog.title}
-                                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                                    className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
                                     loading="lazy"
                                   />
                                 </div>

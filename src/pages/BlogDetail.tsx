@@ -237,11 +237,11 @@ export default function BlogDetailPage() {
         >
           {/* Featured Image */}
           {blog.image && (
-            <div className="w-full h-96 overflow-hidden bg-gradient-to-br from-green-400 to-yellow-500">
+            <div className="w-full bg-slate-50 dark:bg-slate-900 border-b border-gray-150 dark:border-slate-800 flex justify-center items-center overflow-hidden">
               <img
                 src={getImageSrc(blog.image)}
                 alt={blog.title}
-                className="w-full h-full object-cover"
+                className="w-full h-auto max-h-[550px] object-contain"
               />
             </div>
           )}

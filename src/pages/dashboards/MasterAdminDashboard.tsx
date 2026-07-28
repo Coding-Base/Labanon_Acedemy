@@ -3098,7 +3098,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         >
                           ← Back to Courses
                         </motion.button>
-                        <CreateCourse />
+                        <CreateCourse onSaveSuccess={() => setCreatingCourse(false)} />
                       </div>
                     ) : coursesLoading ? (
                       <div className="flex items-center justify-center py-12">

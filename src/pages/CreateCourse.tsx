@@ -66,7 +66,7 @@ const STEP_LABELS = [
   'Review'
 ]
 
-export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
+export default function CreateCourse({ darkMode, onSaveSuccess }: { darkMode?: boolean; onSaveSuccess?: () => void }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { status: verificationStatus, loading: verificationLoading } = useVerificationStatus()
@@ -672,7 +672,16 @@ export default function CreateCourse({ darkMode }: { darkMode?: boolean }) {
       }
 
       alert(publish ? 'Course Published!' : 'Draft Saved!')
-      navigate('/tutor/manage')
+      if (onSaveSuccess) {
+        onSaveSuccess()
+      }
+      if (location.pathname.includes('/institution')) {
+        navigate('/institution/courses')
+      } else if (location.pathname.includes('/admin')) {
+        navigate('/admin')
+      } else {
+        navigate('/tutor/manage')
+      }
     } catch (err: any) {
       console.error(err)
       if (err?.response?.data) setErrors(err.response.data)

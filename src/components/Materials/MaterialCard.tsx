@@ -4,6 +4,7 @@ import React from 'react'
 import { FileText, Download, ShoppingCart, Lock, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../utils/axiosInterceptor'
+import CurrencySelector from '../CurrencySelector'
 
 
 interface Material {
@@ -42,6 +43,9 @@ export default function MaterialCard({
   const navigate = useNavigate()
   const [loading, setLoading] = React.useState(false)
   const [referralBalance, setReferralBalance] = React.useState(0)
+  const [selectedCurrency, setSelectedCurrency] = React.useState('NGN')
+  const [convertedAmount, setConvertedAmount] = React.useState(Number(material.price))
+  const [exchangeRate, setExchangeRate] = React.useState(1600)
 
   React.useEffect(() => {
     let mounted = true
@@ -115,12 +119,15 @@ export default function MaterialCard({
         const rawPrice = Number(material.price) || 0
         const platformFee = rawPrice * 0.05
         const finalAmount = +(rawPrice + platformFee).toFixed(2)
+        const displayAmount = selectedCurrency === 'USD'
+          ? +(finalAmount / exchangeRate).toFixed(2)
+          : finalAmount
 
         const payload: any = {
           item_type: 'material',
           item_id: material.id,
-          amount: finalAmount,
-          currency: 'NGN'
+          amount: displayAmount,
+          currency: selectedCurrency
         }
         const referralCode = localStorage.getItem('referral_code')
         if (referralCode) payload.referral_code = referralCode
@@ -244,15 +251,35 @@ export default function MaterialCard({
       <div className="border-t border-gray-200 p-4 bg-gray-50">
         
         {/* Price */}
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           {material.is_free ? (
             <span className="text-lg font-bold text-green-600">FREE</span>
           ) : (
             <span className="text-lg font-bold text-gray-900">
-              {material.currency} {Number(material.price).toLocaleString()}
+              {selectedCurrency === 'USD' ? '$' : '₦'}{' '}
+              {(selectedCurrency === 'USD'
+                ? +(Number(material.price) / exchangeRate).toFixed(2)
+                : Number(material.price)
+              ).toLocaleString()}
             </span>
           )}
         </div>
+
+        {/* Currency Selector (only if not purchased/free/admin) */}
+        {!isAdmin && !material.is_free && !material.user_has_access && (
+          <div className="mb-3 border-t border-gray-150 pt-3 dark:border-slate-700">
+            <CurrencySelector
+              baseAmountNGN={Number(material.price)}
+              selectedCurrency={selectedCurrency}
+              compact={true}
+              onCurrencyChange={(cur, converted, rate) => {
+                setSelectedCurrency(cur)
+                setConvertedAmount(converted)
+                setExchangeRate(rate)
+              }}
+            />
+          </div>
+        )}
 
         {/* Action Buttons */}
         {isAdmin ? (

@@ -5,6 +5,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Calendar, User, Loader2, Heart, MessageCircle, Share2, BookOpen, Globe } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import CommentSection from '../components/blog/CommentSection'
+import BlogAdCards from '../components/blog/BlogAdCards'
 import DOMPurify from 'dompurify'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
@@ -338,7 +339,15 @@ export default function BlogDetailPage() {
         {/* Comments Section */}
         <CommentSection blogId={blog.id} currentUserId={currentUserId} />
 
-        {/* Site footer for blog pages */}
+        {/* Recommended Ads Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="max-w-4xl mx-auto mt-12 px-4"
+        >
+          <BlogAdCards layout="horizontal" showHeader={true} />
+        </motion.div>
         <footer className="max-w-4xl mx-auto px-4 py-12">
           <div className="bg-gradient-to-tr from-white to-gray-50 rounded-lg p-8 shadow-sm border border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

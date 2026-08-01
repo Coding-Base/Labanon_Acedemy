@@ -4,6 +4,7 @@ import axios from 'axios'
 import { AlertCircle, Loader2, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PaymentMethodSelector from './PaymentMethodSelector'
+import CurrencySelector from './CurrencySelector'
 
 const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -56,6 +57,9 @@ export default function PaymentCheckout({
   const [institutionShare, setInstitutionShare] = useState<number>(95)
   const [referralBalance, setReferralBalance] = useState<number>(0)
   const [redeemingPoints, setRedeemingPoints] = useState(false)
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(currency)
+  const [convertedAmount, setConvertedAmount] = useState<number>(amount)
+  const [exchangeRate, setExchangeRate] = useState<number>(1600)
   const navigate = useNavigate()
 
   // Load Paystack script on mount
@@ -99,7 +103,10 @@ export default function PaymentCheckout({
     return () => { mounted = false }
   }, [])
 
-  const displayAmount = promoData && promoData.valid ? Number(promoData.new_total) : amount
+  const baseAmount = promoData && promoData.valid ? Number(promoData.new_total) : amount
+  const displayAmount = selectedCurrency === 'USD'
+    ? Math.round((baseAmount / exchangeRate) * 100) / 100
+    : baseAmount
   const discountAmount = promoData && promoData.valid ? Number(promoData.discount) : 0
 
   const initiatePayment = async () => {
@@ -118,8 +125,8 @@ export default function PaymentCheckout({
       const payload: any = {
         item_type: itemType,
         item_id: itemId,
-        amount: promoData && promoData.valid ? Number(promoData.new_total) : amount,
-        currency: currency,
+        amount: displayAmount,
+        currency: selectedCurrency,
       }
       const referralCode = localStorage.getItem('referral_code')
       if (referralCode) payload.referral_code = referralCode
@@ -262,56 +269,46 @@ export default function PaymentCheckout({
         </div>
       )}
 
-      <div className="bg-gradient-to-r from-yellow-50 to-yellow-50 rounded-lg p-6">
-        <div className="flex justify-between items-start mb-4">
+      <div className="bg-gradient-to-r from-yellow-50 to-yellow-50 dark:from-slate-800 dark:to-slate-800 rounded-lg p-6 border border-yellow-250 dark:border-slate-700">
+        <CurrencySelector
+          baseAmountNGN={promoData && promoData.valid ? Number(promoData.new_total) : amount}
+          selectedCurrency={selectedCurrency}
+          onCurrencyChange={(cur, converted, rate) => {
+            setSelectedCurrency(cur)
+            setConvertedAmount(converted)
+            setExchangeRate(rate)
+          }}
+        />
+
+        <div className="flex justify-between items-start mb-4 border-t border-yellow-200 dark:border-slate-750 pt-4">
           <div>
-            <p className="text-gray-600 text-sm">{itemType === 'activation' ? 'Activate access for:' : 'You\'re about to purchase:'}</p>
-            <h3 className="text-xl font-bold text-gray-900 mt-1">{itemTitle}</h3>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">{itemType === 'activation' ? 'Activate access for:' : 'You\'re about to purchase:'}</p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{itemTitle}</h3>
           </div>
         </div>
 
-        <div className="border-t border-yellow-200 pt-4 mt-4">
-          <div className="flex justify-between mb-2">
-            <span className="text-gray-600">Subtotal:</span>
-            <span className="font-semibold text-gray-900">{currencySymbol(currency)}{amount.toLocaleString()}</span>
-          </div>
+        <div className="border-t border-yellow-200 dark:border-slate-750 pt-4 mt-4 space-y-2">
           {discountAmount > 0 && (
-            <div className="flex justify-between text-sm text-green-700 mb-2">
-              <span>Discount:</span>
-              <span>- {currencySymbol(currency)}{discountAmount.toLocaleString()}</span>
-            </div>
-          )}
-          {itemType === 'activation' ? (
-            <div className="text-sm text-gray-500 flex justify-between mb-4">
-              <span>Platform receives:</span>
-              <span>{currencySymbol(currency)}{displayAmount.toLocaleString()}</span>
-            </div>
-          ) : (
             <>
-              {(() => {
-                const useAmount = displayAmount
-                const creatorShare = tutorShare
-                const platformPercent = Math.max(0, 100 - creatorShare)
-                const platformAmount = Math.round((useAmount * (platformPercent / 100)) * 100) / 100
-                const creatorAmount = Math.round((useAmount - platformAmount) * 100) / 100
-                return (
-                  <>
-                    <div className="text-sm text-gray-500 flex justify-between mb-4">
-                      <span>Platform fee ({platformPercent}%):</span>
-                      <span>{currencySymbol(currency)}{platformAmount.toLocaleString()}</span>
-                    </div>
-                    <div className="text-sm text-gray-500 flex justify-between pb-4 border-b border-yellow-200 mb-4">
-                      <span>Creator gets ({creatorShare}%):</span>
-                      <span className="font-medium text-yellow-700">{currencySymbol(currency)}{creatorAmount.toLocaleString()}</span>
-                    </div>
-                  </>
-                )
-              })()}
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-650 dark:text-gray-400 font-medium">Price:</span>
+                <span className="font-semibold text-gray-950 dark:text-gray-100">
+                  {currencySymbol(selectedCurrency)}
+                  {(selectedCurrency === 'USD'
+                    ? Math.round((amount / exchangeRate) * 100) / 100
+                    : amount
+                  ).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm text-green-700 dark:text-green-400 font-medium">
+                <span>Discount:</span>
+                <span>- {currencySymbol(selectedCurrency)}{(selectedCurrency === 'USD' ? Math.round((discountAmount / exchangeRate) * 100) / 100 : discountAmount).toLocaleString()}</span>
+              </div>
             </>
           )}
-          <div className="flex justify-between">
-            <span className="text-lg font-bold text-gray-900">Total:</span>
-            <span className="text-2xl font-bold text-yellow-600">{currencySymbol(currency)}{displayAmount.toLocaleString()}</span>
+          <div className="flex justify-between pt-1">
+            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">Total:</span>
+            <span className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{currencySymbol(selectedCurrency)}{displayAmount.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -362,7 +359,7 @@ export default function PaymentCheckout({
           </>
         ) : (
           <>
-            Proceed to Paystack
+            Proceed to Paystack ({selectedCurrency})
           </>
         )}
       </button>

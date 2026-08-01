@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import useDebounce from '../utils/useDebounce'
+import BlogAdCards from '../components/blog/BlogAdCards'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
 const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
@@ -643,56 +644,7 @@ export default function BlogPage() {
               </div>
 
               {/* Ads Banners */}
-              {(ads.length > 0 ? ads : fallbackAds).map((ad: any) => (
-                <motion.div
-                  key={ad.id}
-                  whileHover={{ y: -5 }}
-                  className="relative group bg-gradient-to-br from-yellow-50/50 to-green-50/30 dark:from-slate-900/60 dark:to-slate-900/20 border border-yellow-250 dark:border-yellow-900/35 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col justify-between transition-colors"
-                >
-                  <div>
-                    {ad.badge_text && (
-                      <span className="inline-block bg-yellow-600 dark:bg-yellow-500 text-white text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-1 rounded-full mb-4 shadow-sm">
-                        {ad.badge_text}
-                      </span>
-                    )}
-                    
-                    <h4 className="text-base font-extrabold text-slate-855 dark:text-slate-100 group-hover:text-yellow-600 dark:group-hover:text-yellow-500 transition-colors">
-                      {ad.title}
-                    </h4>
-                    
-                    {ad.description && (
-                      <p className="text-xs text-slate-650 dark:text-slate-350 mt-2 leading-relaxed">
-                        {ad.description}
-                      </p>
-                    )}
-
-                    {ad.bullets && (
-                      <ul className="my-4 space-y-2">
-                        {ad.bullets.split(',').map((bullet: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400 font-medium">
-                            <span className="text-green-600 dark:text-green-455 font-bold shrink-0 text-sm">✓</span>
-                            <span>{bullet.trim()}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {ad.image && (
-                      <div className="w-full h-32 rounded-lg overflow-hidden my-4 shadow-inner">
-                        <img src={getImageSrc(ad.image)} alt={ad.title} className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <button
-                    onClick={() => handleAdClick(ad.button_link)}
-                    className="w-full mt-2 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 dark:from-yellow-600 dark:to-yellow-500 hover:from-yellow-700 hover:to-yellow-800 text-white font-bold rounded-xl text-xs hover:shadow-md transition-all text-center flex items-center justify-center gap-2"
-                  >
-                    <span>{ad.button_text || 'Enroll Now'}</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </motion.div>
-              ))}
+              <BlogAdCards ads={ads} layout="vertical" showHeader={true} />
             </aside>
           </div>
         )}

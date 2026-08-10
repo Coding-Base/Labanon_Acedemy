@@ -152,8 +152,8 @@ export default function BlogAdCards({ ads: externalAds, layout = 'vertical', sho
               )}
 
               {ad.image && (
-                <div className="w-full h-32 rounded-lg overflow-hidden my-4 shadow-inner">
-                  <img src={getImageSrc(ad.image)} alt={ad.title} className="w-full h-full object-cover" />
+                <div className="w-full rounded-lg overflow-hidden my-4 shadow-inner">
+                  <img src={getImageSrc(ad.image)} alt={ad.title} className="w-full h-auto max-h-64 object-contain rounded-lg" />
                 </div>
               )}
             </div>

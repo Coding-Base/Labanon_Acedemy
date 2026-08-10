@@ -107,9 +107,7 @@ export default function QuestionConfigurationModal({
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-semibold text-gray-900">{config.subject_name}</h3>
-                    <p className="text-sm text-gray-500">
-                      Maximum available: {config.available_questions} questions
-                    </p>
+                    {/* Maximum available questions text hidden */}
                   </div>
                 </div>
 
@@ -125,9 +123,7 @@ export default function QuestionConfigurationModal({
                     onChange={(e) => handleConfigChange(config.subject_id, parseInt(e.target.value) || 1)}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
-                  <span className="text-sm text-gray-600 min-w-fit">
-                    / {config.available_questions}
-                  </span>
+                   {/* Max questions span hidden */}
                 </div>
               </div>
             ))}

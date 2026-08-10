@@ -5,6 +5,7 @@ import Loader from './components/Loader'
 import { setupAxiosInterceptors } from './utils/axiosInterceptor'
 import { useLocation } from 'react-router-dom'
 import { initGA, sendPageView } from './utils/googleAnalytics'
+import SEOManager from './components/SEOManager'
 
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
@@ -98,6 +99,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <SEOManager />
       <RouteListener />
       <div className="min-h-screen bg-gray-100"> 
         {isInitialLoading }

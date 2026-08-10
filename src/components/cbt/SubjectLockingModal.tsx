@@ -210,9 +210,7 @@ export default function SubjectLockingModal({
                             <div className="flex-1">
                               <h4 className="font-semibold text-gray-900 mb-1">{subject.name}</h4>
                               <p className="text-sm text-gray-600 mb-2">{subject.description}</p>
-                              <p className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded w-fit">
-                                {subject.question_count} questions
-                              </p>
+                               {/* Question count hidden from students */}
                             </div>
                             <motion.div
                               animate={{

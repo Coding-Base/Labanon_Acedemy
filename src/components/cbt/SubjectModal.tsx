@@ -81,7 +81,7 @@ export default function SubjectModal({ isOpen, onClose, exam, onSelectSubject }:
                 >
                   <h3 className="font-bold text-lg">{subject.name}</h3>
                   <p className="text-gray-600 text-sm">{subject.description}</p>
-                  <p className="text-gray-500 text-xs mt-2">{subject.question_count} questions available</p>
+                  {/* Question count hidden from students */}
                 </button>
               ))}
             </div>

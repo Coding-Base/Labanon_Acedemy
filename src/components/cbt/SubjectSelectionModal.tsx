@@ -26,6 +26,7 @@ interface SubjectSelectionModalProps {
     trial_attempts_used: number
     trial_attempts_remaining: number
     trial_available: boolean
+    trial_attempts_limit?: number
   }
 }
 
@@ -224,8 +225,8 @@ export default function SubjectSelectionModal({
                 <div className="flex-1">
                   <p className="font-bold text-amber-900">Free Trial</p>
                   <p className="text-sm text-amber-800 mt-1">
-                    {trialInfo.trial_attempts_remaining === 5 
-                      ? 'You have 5 free attempts to explore this exam. No payment required!' 
+                    {trialInfo.trial_attempts_remaining === (trialInfo.trial_attempts_limit || 5) 
+                      ? `You have ${trialInfo.trial_attempts_limit || 5} free attempts to explore this exam. No payment required!` 
                       : `${trialInfo.trial_attempts_remaining} attempt${trialInfo.trial_attempts_remaining !== 1 ? 's' : ''} remaining of your free trial`}
                   </p>
                 </div>
@@ -285,7 +286,7 @@ export default function SubjectSelectionModal({
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-lg text-gray-900">{subject.name}</h3>
                       <p className="text-gray-600 text-sm mt-1">{subject.description}</p>
-                      <p className="text-gray-500 text-xs mt-2">{subject.question_count} questions available</p>
+                      {/* Question count hidden from students */}
                     </div>
                   </button>
                 )
@@ -300,8 +301,7 @@ export default function SubjectSelectionModal({
             <span className="text-sm text-gray-600">
               {selectedSubjects.length > 0 && (
                 <>
-                  <strong className="text-gray-900">{selectedSubjects.length}</strong> subject{selectedSubjects.length !== 1 ? 's' : ''} selected • 
-                  <strong className="text-gray-900 ml-1">{totalQuestions}</strong> total questions
+                  <strong className="text-gray-900">{selectedSubjects.length}</strong> subject{selectedSubjects.length !== 1 ? 's' : ''} selected
                 </>
               )}
               {isPreLocked && selectedSubjects.length > 0 && (

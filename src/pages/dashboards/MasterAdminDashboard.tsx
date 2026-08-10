@@ -695,7 +695,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [examsManagement, setExamsManagement] = useState<any[]>([])
   const [showExamForm, setShowExamForm] = useState(false)
   const [showSubjectForm, setShowSubjectForm] = useState(false)
-  const [examFormData, setExamFormData] = useState({title: '', description: '', time_limit_minutes: 120, slug: ''})
+  const [examFormData, setExamFormData] = useState({title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20})
   const [subjectFormData, setSubjectFormData] = useState({exam: '', name: '', description: ''})
   const [selectedExamForSubjects, setSelectedExamForSubjects] = useState<any | null>(null)
   const [subjectList, setSubjectList] = useState<any[]>([])
@@ -1732,7 +1732,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         title: examFormData.title,
         description: examFormData.description,
         time_limit_minutes: parseInt(examFormData.time_limit_minutes.toString()) || 120,
-        slug: examFormData.slug || examFormData.title.toLowerCase().replace(/\s+/g, '-')
+        slug: examFormData.slug || examFormData.title.toLowerCase().replace(/\s+/g, '-'),
+        free_trial_attempts: parseInt((examFormData as any).free_trial_attempts?.toString()) ?? 5,
+        free_trial_questions_per_subject: parseInt((examFormData as any).free_trial_questions_per_subject?.toString()) ?? 20
       }
 
       if (editingExam) {
@@ -1747,7 +1749,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         setExamMessage({ type: 'success', text: 'Exam created successfully' })
       }
 
-      setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '' })
+      setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20 })
       setEditingExam(null)
       setShowExamForm(false)
       loadExamsManagement()
@@ -3429,7 +3431,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               onClick={() => {
                                 setShowExamForm(!showExamForm)
                                 setEditingExam(null)
-                                setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '' })
+                                setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20 })
                               }}
                               className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
                             >
@@ -3487,6 +3489,26 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                                   />
                                 </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Free Trial Attempts</label>
+                                  <input
+                                    type="number"
+                                    value={(examFormData as any).free_trial_attempts}
+                                    onChange={(e) => setExamFormData({ ...examFormData, free_trial_attempts: parseInt(e.target.value) ?? 5 })}
+                                    min="0"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Trial Questions Per Subject</label>
+                                  <input
+                                    type="number"
+                                    value={(examFormData as any).free_trial_questions_per_subject}
+                                    onChange={(e) => setExamFormData({ ...examFormData, free_trial_questions_per_subject: parseInt(e.target.value) ?? 20 })}
+                                    min="0"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                  />
+                                </div>
                               </div>
                               <div className="flex gap-3 mt-6">
                                 <motion.button
@@ -3502,7 +3524,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   onClick={() => {
                                     setShowExamForm(false)
                                     setEditingExam(null)
-                                    setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '' })
+                                    setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20 })
                                   }}
                                   className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-all"
                                 >
@@ -3540,7 +3562,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                             title: exam.title,
                                             description: exam.description || '',
                                             time_limit_minutes: exam.time_limit_minutes || 120,
-                                            slug: exam.slug
+                                            slug: exam.slug,
+                                            free_trial_attempts: exam.free_trial_attempts ?? 5,
+                                            free_trial_questions_per_subject: exam.free_trial_questions_per_subject ?? 20
                                           })
                                           setShowExamForm(true)
                                         }}
@@ -4636,7 +4660,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     </ul>
                                   )}
                                   {ad.image && (
-                                    <img src={getImageUrl(ad.image)} alt={ad.title} className="w-full h-32 object-cover rounded-lg mb-3" />
+                                    <img src={getImageUrl(ad.image)} alt={ad.title} className="w-full h-auto max-h-64 object-contain rounded-lg mb-3" />
                                   )}
                                   <div className="text-xs text-gray-500 mb-4 bg-gray-50 p-2 rounded">
                                     <p><strong className="text-gray-700">Button:</strong> {ad.button_text}</p>

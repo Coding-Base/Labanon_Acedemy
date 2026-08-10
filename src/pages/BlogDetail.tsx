@@ -104,9 +104,12 @@ export default function BlogDetailPage() {
       const blogs = response.data.results || response.data
       if (Array.isArray(blogs) && blogs.length > 0) {
         const blogData = blogs[0]
-        // Convert any relative src attributes in content to absolute backend URLs
+        // Convert relative or incorrect domain src attributes in content to correct absolute backend URLs
         if (blogData.content) {
-          blogData.content = blogData.content.replace(/src=(["'])(\/[^"']*)\1/g, `src="${BACKEND_ORIGIN}$2"`)
+          blogData.content = blogData.content.replace(
+            /src=(["'])(?:https?:\/\/[^"'\s]+)?(\/media\/[^"'\s]+)\1/g,
+            `src="${BACKEND_ORIGIN}$2"`
+          )
         }
         setBlog(blogData)
         setLiked(blogData.user_liked)

@@ -74,6 +74,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     trial_attempts_used: number
     trial_attempts_remaining: number
     trial_available: boolean
+    trial_attempts_limit?: number
   } | null>(null)
 
   // Handle exam selection with activation check
@@ -99,7 +100,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
           setTrialInfo({
             trial_attempts_used: data.trial_attempts_used,
             trial_attempts_remaining: data.trial_attempts_remaining,
-            trial_available: data.trial_available
+            trial_available: data.trial_available,
+            trial_attempts_limit: data.trial_attempts_limit
           })
         }
 
@@ -378,8 +380,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
             <div className="flex-1">
               <p className="font-bold text-amber-900">Free Trial Available</p>
               <p className="text-sm text-amber-800 mt-1">
-                {trialInfo.trial_attempts_remaining === 5 
-                  ? 'Start with 5 free attempts' 
+                {trialInfo.trial_attempts_remaining === (trialInfo.trial_attempts_limit || 5) 
+                  ? `Start with ${trialInfo.trial_attempts_limit || 5} free attempts` 
                   : `${trialInfo.trial_attempts_remaining} attempt${trialInfo.trial_attempts_remaining !== 1 ? 's' : ''} remaining`}
               </p>
             </div>

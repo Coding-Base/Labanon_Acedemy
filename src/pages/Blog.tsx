@@ -163,10 +163,16 @@ export default function BlogPage() {
       const processPost = (b: any) => {
         if (!b) return b
         if (b.content) {
-          b.content = b.content.replace(/src=(['"])(\/[^'"]*)\1/g, `src="${BACKEND_ORIGIN}$2"`)
+          b.content = b.content.replace(
+            /src=(['"])(?:https?:\/\/[^"'\s]+)?(\/media\/[^"'\s]+)\1/g,
+            `src="${BACKEND_ORIGIN}$2"`
+          )
         }
         if (b.excerpt) {
-          b.excerpt = b.excerpt.replace(/src=(['"])(\/[^'"]*)\1/g, `src="${BACKEND_ORIGIN}$2"`)
+          b.excerpt = b.excerpt.replace(
+            /src=(['"])(?:https?:\/\/[^"'\s]+)?(\/media\/[^"'\s]+)\1/g,
+            `src="${BACKEND_ORIGIN}$2"`
+          )
         }
         return b
       }

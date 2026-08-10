@@ -70,18 +70,32 @@ export function setSEOTags(config: SEOConfig) {
 
 /**
  * Set canonical URL for SEO
- * Helps prevent duplicate content issues
+ * Normalizes the URL: ensures https, strips trailing slashes, removes query params
  */
+
 export function setCanonicalURL(url: string) {
   let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null
-  
+
   if (!canonical) {
     canonical = document.createElement('link')
     canonical.rel = 'canonical'
     document.head.appendChild(canonical)
   }
-  
-  canonical.href = url
+
+  // Normalize: use non-www as canonical, strip trailing slash, remove query/hash
+  let normalizedUrl = url
+    .replace(/^https?:\/\/www\./, 'https://')
+    .replace(/^http:\/\//, 'https://')
+    .split('?')[0]
+    .split('#')[0]
+    .replace(/\/+$/, '')
+
+  // Ensure root path has trailing slash
+  if (normalizedUrl === 'https://lighthubacademy.org') {
+    normalizedUrl = 'https://lighthubacademy.org/'
+  }
+
+  canonical.href = normalizedUrl
 }
 
 /**

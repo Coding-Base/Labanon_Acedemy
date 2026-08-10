@@ -18,13 +18,15 @@ interface QuestionConfigurationModalProps {
   onClose: () => void
   selectedSubjects: Subject[]
   onConfigureQuestions: (config: SubjectConfig[]) => void
+  trialQuestionsLimit?: number
 }
 
 export default function QuestionConfigurationModal({
   isOpen,
   onClose,
   selectedSubjects,
-  onConfigureQuestions
+  onConfigureQuestions,
+  trialQuestionsLimit
 }: QuestionConfigurationModalProps) {
   const [configs, setConfigs] = useState<SubjectConfig[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -36,18 +38,23 @@ export default function QuestionConfigurationModal({
         selectedSubjects.map(s => ({
           subject_id: s.id,
           subject_name: s.name,
-          num_questions: Math.min(10, s.question_count || 0),
+          num_questions: Math.min(trialQuestionsLimit || 10, s.question_count || 0),
           available_questions: s.question_count || 0
         }))
       )
     }
-  }, [selectedSubjects])
+  }, [selectedSubjects, trialQuestionsLimit])
 
   const handleConfigChange = (subjectId: number, value: number) => {
     setError(null)
     const numValue = Math.max(1, parseInt(String(value)) || 1)
     const subject = configs.find(c => c.subject_id === subjectId)
     
+    if (trialQuestionsLimit !== undefined && numValue > trialQuestionsLimit) {
+      setError(`Free trial is limited to maximum ${trialQuestionsLimit} questions per subject`)
+      return
+    }
+
     if (subject && numValue > subject.available_questions) {
       return
     }
@@ -68,6 +75,10 @@ export default function QuestionConfigurationModal({
     for (const config of configs) {
       if (config.num_questions < 1) {
         setError(`${config.subject_name}: Minimum 1 question required`)
+        return
+      }
+      if (trialQuestionsLimit !== undefined && config.num_questions > trialQuestionsLimit) {
+        setError(`${config.subject_name}: Free trial is limited to maximum ${trialQuestionsLimit} questions per subject`)
         return
       }
       if (config.num_questions > config.available_questions) {
@@ -113,12 +124,12 @@ export default function QuestionConfigurationModal({
 
                 <div className="flex items-center gap-4">
                   <label className="text-sm font-medium text-gray-700 min-w-fit">
-                    Number of Questions:
+                    Number of Questions {trialQuestionsLimit !== undefined ? `(Max ${trialQuestionsLimit} for Free Trial)` : ''}:
                   </label>
                   <input
                     type="number"
                     min="1"
-                    max={config.available_questions}
+                    max={trialQuestionsLimit !== undefined ? Math.min(trialQuestionsLimit, config.available_questions) : config.available_questions}
                     value={config.num_questions}
                     onChange={(e) => handleConfigChange(config.subject_id, parseInt(e.target.value) || 1)}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"

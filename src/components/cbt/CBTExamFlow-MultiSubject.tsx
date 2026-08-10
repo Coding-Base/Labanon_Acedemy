@@ -55,6 +55,12 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
   const [examAttemptId, setExamAttemptId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Trial state
+  const [trialInfo, setTrialInfo] = useState<{
+    trial_available: boolean;
+    trial_questions_limit?: number;
+  } | null>(null)
+
   // Handle exam selection with activation check
   const handleSelectExam = (exam: Exam) => {
     setSelectedExam(exam)
@@ -72,6 +78,13 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
           headers: { Authorization: `Bearer ${token}` }
         })
         const data = await res.json()
+
+        if (data.trial_available !== undefined) {
+          setTrialInfo({
+            trial_available: data.trial_available,
+            trial_questions_limit: data.trial_questions_limit
+          })
+        }
 
         if (res.ok && (data.unlocked || data.trial_available)) {
           setFlowStep('subjects')
@@ -162,6 +175,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     setSubjectConfigs([])
     setTestName('')
     setExamAttemptId(null)
+    setTrialInfo(null)
     onClose()
   }
 
@@ -212,6 +226,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         }}
         selectedSubjects={selectedSubjects}
         onConfigureQuestions={handleConfigureQuestions}
+        trialQuestionsLimit={trialInfo?.trial_available ? trialInfo.trial_questions_limit : undefined}
       />
 
       {/* Step 4: Name Test and Set Time */}

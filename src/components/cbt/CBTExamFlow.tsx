@@ -75,6 +75,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     trial_attempts_remaining: number
     trial_available: boolean
     trial_attempts_limit?: number
+    trial_questions_limit?: number
   } | null>(null)
 
   // Handle exam selection with activation check
@@ -101,7 +102,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
             trial_attempts_used: data.trial_attempts_used,
             trial_attempts_remaining: data.trial_attempts_remaining,
             trial_available: data.trial_available,
-            trial_attempts_limit: data.trial_attempts_limit
+            trial_attempts_limit: data.trial_attempts_limit,
+            trial_questions_limit: data.trial_questions_limit
           })
         }
 
@@ -414,6 +416,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         }}
         selectedSubjects={selectedSubjects}
         onConfigureQuestions={handleConfigureQuestions}
+        trialQuestionsLimit={trialInfo?.trial_available ? trialInfo.trial_questions_limit : undefined}
       />
 
       {/* Step 4: Name Test and Set Time */}

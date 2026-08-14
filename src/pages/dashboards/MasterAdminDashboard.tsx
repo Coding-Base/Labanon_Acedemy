@@ -695,7 +695,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [examsManagement, setExamsManagement] = useState<any[]>([])
   const [showExamForm, setShowExamForm] = useState(false)
   const [showSubjectForm, setShowSubjectForm] = useState(false)
-  const [examFormData, setExamFormData] = useState({title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20})
+  const [examFormData, setExamFormData] = useState({title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20, subject_select_limit: 0})
   const [subjectFormData, setSubjectFormData] = useState({exam: '', name: '', description: ''})
   const [selectedExamForSubjects, setSelectedExamForSubjects] = useState<any | null>(null)
   const [subjectList, setSubjectList] = useState<any[]>([])
@@ -1734,7 +1734,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         time_limit_minutes: parseInt(examFormData.time_limit_minutes.toString()) || 120,
         slug: examFormData.slug || examFormData.title.toLowerCase().replace(/\s+/g, '-'),
         free_trial_attempts: parseInt((examFormData as any).free_trial_attempts?.toString()) ?? 5,
-        free_trial_questions_per_subject: parseInt((examFormData as any).free_trial_questions_per_subject?.toString()) ?? 20
+        free_trial_questions_per_subject: parseInt((examFormData as any).free_trial_questions_per_subject?.toString()) ?? 20,
+        subject_select_limit: parseInt((examFormData as any).subject_select_limit?.toString()) || 0
       }
 
       if (editingExam) {
@@ -1749,7 +1750,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         setExamMessage({ type: 'success', text: 'Exam created successfully' })
       }
 
-      setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20 })
+      setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20, subject_select_limit: 0 })
       setEditingExam(null)
       setShowExamForm(false)
       loadExamsManagement()
@@ -3509,6 +3510,17 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                                   />
                                 </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject Selection Limit</label>
+                                  <input
+                                    type="number"
+                                    value={(examFormData as any).subject_select_limit ?? 0}
+                                    onChange={(e) => setExamFormData({ ...examFormData, subject_select_limit: parseInt(e.target.value) || 0 })}
+                                    min="0"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    placeholder="e.g., 4 (0 = unlock all)"
+                                  />
+                                </div>
                               </div>
                               <div className="flex gap-3 mt-6">
                                 <motion.button
@@ -3524,7 +3536,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                   onClick={() => {
                                     setShowExamForm(false)
                                     setEditingExam(null)
-                                    setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20 })
+                                    setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20, subject_select_limit: 0 })
                                   }}
                                   className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-all"
                                 >
@@ -3564,7 +3576,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                             time_limit_minutes: exam.time_limit_minutes || 120,
                                             slug: exam.slug,
                                             free_trial_attempts: exam.free_trial_attempts ?? 5,
-                                            free_trial_questions_per_subject: exam.free_trial_questions_per_subject ?? 20
+                                            free_trial_questions_per_subject: exam.free_trial_questions_per_subject ?? 20,
+                                            subject_select_limit: exam.subject_select_limit ?? 0
                                           })
                                           setShowExamForm(true)
                                         }}

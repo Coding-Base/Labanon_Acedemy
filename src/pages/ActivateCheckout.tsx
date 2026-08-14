@@ -9,6 +9,7 @@ const API_BASE = (import.meta.env as any).VITE_API_BASE || 'http://localhost:800
 interface Exam {
   id: number
   title: string
+  subject_select_limit?: number
 }
 
 interface Subject {
@@ -73,10 +74,9 @@ export default function ActivateCheckout() {
               try {
                 const examRes = await axios.get(`${API_BASE}/cbt/exams/${exam_id}/`)
                 setExam(examRes.data)
-                // Only show subject selection for JAMB exams — other exams unlock all subjects
-                const title = String(examRes.data?.title || '').toLowerCase()
-                const slug = String(examRes.data?.slug || '').toLowerCase()
-                if (title.includes('jamb') || slug === 'jamb') {
+                // Show subject selection if the exam requires a subject select limit
+                const selectLimit = examRes.data?.subject_select_limit ?? 0
+                if (selectLimit > 0) {
                   setShowSubjectSelection(true)
                 }
               } catch (err) {

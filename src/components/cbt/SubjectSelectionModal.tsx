@@ -90,9 +90,6 @@ export default function SubjectSelectionModal({
   }
 
   const toggleSubject = (subject: Subject): void => {
-    if (isPreLocked) {
-      return
-    }
     setSelectedSubjects(prev =>
       prev.some(s => s.id === subject.id)
         ? prev.filter(s => s.id !== subject.id)
@@ -202,8 +199,8 @@ export default function SubjectSelectionModal({
           <h2 className="text-2xl font-bold mb-2">{exam.title}</h2>
           {isPreLocked ? (
             <p className="text-gray-600 flex items-center gap-2">
-              <Lock size={16} className="text-blue-600" />
-              Your selected subjects (locked during exam purchase)
+              <Lock size={16} className="text-yellow-600" />
+              Select from your unlocked subjects for this exam
             </p>
           ) : (
             <p className="text-gray-600">Select subjects to create your custom exam</p>
@@ -259,14 +256,12 @@ export default function SubjectSelectionModal({
                   <button
                     key={subject.id}
                     onClick={() => toggleSubject(subject)}
-                    disabled={isPreLocked || checkingActivation}
+                    disabled={checkingActivation}
                     className={`w-full p-4 border-2 rounded-lg text-left transition flex items-start gap-4 ${
                       isSelected
                         ? 'border-yellow-600 bg-yellow-50'
                         : 'border-gray-200 hover:border-yellow-300 bg-white'
-                    } ${isPreLocked ? 'opacity-75 cursor-not-allowed' : ''} ${
-                      checkingActivation ? 'opacity-50' : ''
-                    }`}
+                    } ${checkingActivation ? 'opacity-50' : ''}`}
                   >
                     <div className="flex-shrink-0 mt-1">
                       <div
@@ -278,8 +273,6 @@ export default function SubjectSelectionModal({
                       >
                         {isSelected ? (
                           <Check size={18} className="text-white" />
-                        ) : isPreLocked ? (
-                          <Lock size={14} className="text-gray-400" />
                         ) : null}
                       </div>
                     </div>
@@ -305,9 +298,9 @@ export default function SubjectSelectionModal({
                 </>
               )}
               {isPreLocked && selectedSubjects.length > 0 && (
-                <span className="text-blue-600 ml-2 text-xs inline-flex items-center gap-1">
+                <span className="text-yellow-600 ml-2 text-xs inline-flex items-center gap-1">
                   <Lock size={12} />
-                  Locked subjects
+                  Unlocked subjects
                 </span>
               )}
             </span>

@@ -192,36 +192,36 @@ export default function SubjectSelectionModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col shadow-xl">
+      <div className="bg-white dark:bg-slate-900 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col shadow-xl border dark:border-slate-800">
         
         {/* HEADER (Fixed) */}
-        <div className="p-6 border-b border-gray-100 flex-shrink-0">
-          <h2 className="text-2xl font-bold mb-2">{exam.title}</h2>
+        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex-shrink-0">
+          <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">{exam.title}</h2>
           {isPreLocked ? (
-            <p className="text-gray-600 flex items-center gap-2">
+            <p className="text-gray-600 dark:text-gray-300 flex items-center gap-2">
               <Lock size={16} className="text-yellow-600" />
               Select from your unlocked subjects for this exam
             </p>
           ) : (
-            <p className="text-gray-600">Select subjects to create your custom exam</p>
+            <p className="text-gray-600 dark:text-gray-300">Select subjects to create your custom exam</p>
           )}
         </div>
 
         {/* BODY (Scrollable) */}
         <div className="p-6 overflow-y-auto flex-1">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-300">
               {error}
             </div>
           )}
 
           {trialInfo && trialInfo.trial_available && !isPreLocked && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 dark:bg-amber-950/20 dark:border-amber-900/50">
               <div className="flex items-start gap-3">
                 <span className="text-2xl">🎁</span>
                 <div className="flex-1">
-                  <p className="font-bold text-amber-900">Free Trial</p>
-                  <p className="text-sm text-amber-800 mt-1">
+                  <p className="font-bold text-amber-900 dark:text-amber-200">Free Trial</p>
+                  <p className="text-sm text-amber-800 dark:text-amber-300 mt-1">
                     {trialInfo.trial_attempts_remaining === (trialInfo.trial_attempts_limit || 5) 
                       ? `You have ${trialInfo.trial_attempts_limit || 5} free attempts to explore this exam. No payment required!` 
                       : `${trialInfo.trial_attempts_remaining} attempt${trialInfo.trial_attempts_remaining !== 1 ? 's' : ''} remaining of your free trial`}
@@ -244,10 +244,10 @@ export default function SubjectSelectionModal({
           {loading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
-              <p className="text-gray-600 mt-4">Loading subjects...</p>
+              <p className="text-gray-600 dark:text-gray-400 mt-4">Loading subjects...</p>
             </div>
           ) : displayedSubjects.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No subjects available for this exam</div>
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">No subjects available for this exam</div>
           ) : (
             <div className="space-y-3">
               {displayedSubjects.map((subject) => {
@@ -259,8 +259,8 @@ export default function SubjectSelectionModal({
                     disabled={checkingActivation}
                     className={`w-full p-4 border-2 rounded-lg text-left transition flex items-start gap-4 ${
                       isSelected
-                        ? 'border-yellow-600 bg-yellow-50'
-                        : 'border-gray-200 hover:border-yellow-300 bg-white'
+                        ? 'border-yellow-600 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-500'
+                        : 'border-gray-200 hover:border-yellow-300 bg-white dark:bg-slate-800 dark:border-slate-700 dark:hover:border-yellow-500'
                     } ${checkingActivation ? 'opacity-50' : ''}`}
                   >
                     <div className="flex-shrink-0 mt-1">
@@ -268,7 +268,7 @@ export default function SubjectSelectionModal({
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center transition ${
                           isSelected
                             ? 'bg-yellow-600 border-yellow-600'
-                            : 'border-gray-300'
+                            : 'border-gray-300 dark:border-slate-600'
                         }`}
                       >
                         {isSelected ? (
@@ -277,8 +277,8 @@ export default function SubjectSelectionModal({
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg text-gray-900">{subject.name}</h3>
-                      <p className="text-gray-600 text-sm mt-1">{subject.description}</p>
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{subject.name}</h3>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">{subject.description}</p>
                       {/* Question count hidden from students */}
                     </div>
                   </button>
@@ -289,16 +289,16 @@ export default function SubjectSelectionModal({
         </div>
 
         {/* FOOTER (Fixed) */}
-        <div className="p-6 border-t border-gray-100 flex-shrink-0 bg-gray-50 rounded-b-lg">
+        <div className="p-6 border-t border-gray-100 dark:border-slate-800 flex-shrink-0 bg-gray-50 dark:bg-slate-900/50 rounded-b-lg">
           <div className="mb-4 flex items-center justify-between">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
               {selectedSubjects.length > 0 && (
                 <>
-                  <strong className="text-gray-900">{selectedSubjects.length}</strong> subject{selectedSubjects.length !== 1 ? 's' : ''} selected
+                  <strong className="text-gray-900 dark:text-gray-100">{selectedSubjects.length}</strong> subject{selectedSubjects.length !== 1 ? 's' : ''} selected
                 </>
               )}
               {isPreLocked && selectedSubjects.length > 0 && (
-                <span className="text-yellow-600 ml-2 text-xs inline-flex items-center gap-1">
+                <span className="text-yellow-600 ml-2 text-xs inline-flex items-center gap-1 font-medium">
                   <Lock size={12} />
                   Unlocked subjects
                 </span>
@@ -309,7 +309,7 @@ export default function SubjectSelectionModal({
             <button
               onClick={onClose}
               disabled={checkingActivation || loading}
-              className="flex-1 px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition disabled:opacity-50 font-medium"
+              className="flex-1 px-6 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition disabled:opacity-50 font-medium"
             >
               Cancel
             </button>

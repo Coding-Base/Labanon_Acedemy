@@ -1229,6 +1229,8 @@ export default function LessonManager() {
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Save Category
                 </button>
+              </div>
+
               {categories.length > 0 && (
                 <div className="pt-3 border-t border-gray-200">
                   <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Existing Categories</h5>

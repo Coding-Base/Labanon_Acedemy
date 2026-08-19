@@ -18,6 +18,10 @@ import {
   List as ListIcon,
   UserCircle2,
   Tags,
+  Bookmark,
+  Clock,
+  CheckCircle,
+  PlayCircle,
 } from 'lucide-react'
 import api from '../utils/axiosInterceptor'
 import showToast from '../utils/toast'
@@ -27,9 +31,20 @@ import 'katex/dist/katex.min.css'
 // @ts-ignore
 import renderMathInElement from 'katex/dist/contrib/auto-render'
 
+interface Category {
+  id: string
+  name: string
+  description?: string
+  color: string
+  order: number
+}
+
 interface Subject {
   id: string
   name: string
+  category?: string
+  category_name?: string
+  category_color?: string
   created_at: string
 }
 
@@ -73,6 +88,14 @@ interface Lesson {
   updated_at: string
 }
 
+interface Progress {
+  id: string
+  lesson: string
+  is_viewed: boolean
+  is_completed: boolean
+  time_spent_seconds: number
+}
+
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api'
 const toArray = (data: any) => Array.isArray(data) ? data : (data?.results || [])
 
@@ -81,6 +104,7 @@ interface StudentLessonsPageProps {
 }
 
 export default function StudentLessonsPage({ darkMode = false }: StudentLessonsPageProps) {
+  const [categories, setCategories] = useState<Category[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [subfolders, setSubfolders] = useState<LessonSubfolder[]>([])
   const [topics, setTopics] = useState<Topic[]>([])
@@ -94,7 +118,7 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
 
   const [globalSearch, setGlobalSearch] = useState('')
   const [lessonSearch, setLessonSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState<'All' | 'Secondary' | 'University'>('All')
+  const [categoryFilter, setCategoryFilter] = useState<string>('All')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortOrder, setSortOrder] = useState('Date')
 
@@ -102,11 +126,13 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
   const [searching, setSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<Lesson[]>([])
   const [lessonsData, setLessonsData] = useState<{ [key: string]: Lesson[] }>({})
+  const [progress, setProgress] = useState<{ [lessonId: string]: Progress }>({})
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set())
 
   const contentRef = useRef<HTMLDivElement>(null)
   const requestIdRef = useRef(0)
 
-  // Simple debounced value hook to avoid rapid-fire updates and API calls
+  // Simple debounced value hook
   const useDebouncedValue = <T,>(value: T, delay = 300) => {
     const [debounced, setDebounced] = useState<T>(value)
     useEffect(() => {
@@ -119,6 +145,33 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
   const debouncedGlobalSearch = useDebouncedValue(globalSearch, 400)
   const debouncedLessonSearch = useDebouncedValue(lessonSearch, 250)
 
+  // Initialize bookmarks
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('lesson_bookmarks')
+      if (stored) {
+        setBookmarks(new Set(JSON.parse(stored)))
+      }
+    } catch (e) {
+      console.error('Error reading bookmarks', e)
+    }
+  }, [])
+
+  const toggleBookmark = (e: React.MouseEvent, lessonId: string) => {
+    e.stopPropagation()
+    const next = new Set(bookmarks)
+    if (next.has(lessonId)) {
+      next.delete(lessonId)
+      showToast('success', 'Bookmark removed')
+    } else {
+      next.add(lessonId)
+      showToast('success', 'Lesson bookmarked!')
+    }
+    setBookmarks(next)
+    localStorage.setItem('lesson_bookmarks', JSON.stringify(Array.from(next)))
+  }
+
+  // Load SEO and Math
   useEffect(() => {
     if (selectedLessonForView && contentRef.current) {
       const metaDescription = selectedLessonForView.meta_description || generateExcerpt(selectedLessonForView.content, 160)
@@ -160,6 +213,9 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
         setLinkedLessons([])
       }
 
+      // Mark as viewed on open
+      markAsViewed(selectedLessonForView.id)
+
       setTimeout(() => {
         renderMathInElement(contentRef.current!, {
           delimiters: [
@@ -175,13 +231,13 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
 
   useEffect(() => {
     loadHierarchy()
+    loadProgress()
   }, [])
 
-  // Debounced search effect: use debouncedGlobalSearch and guard responses
+  // Debounced search effect
   useEffect(() => {
     const query = debouncedGlobalSearch.trim()
     if (!query) {
-      // clear results immediately when search cleared
       setSearchResults([])
       setSearching(false)
       return
@@ -195,7 +251,6 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
         setSearching(true)
         const response = await api.get(`${API_BASE}/lessons/lessons/search/`, { params: { q: query, page_size: 100 } })
         if (cancelled) return
-        // only set results for the latest request
         if (requestId === requestIdRef.current) setSearchResults(toArray(response.data))
       } catch (error: any) {
         if (cancelled) return
@@ -215,19 +270,34 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
   const loadHierarchy = async () => {
     try {
       setLoading(true)
-      const [subjectsRes, subfoldersRes, topicsRes] = await Promise.all([
+      const [subjectsRes, subfoldersRes, topicsRes, categoriesRes] = await Promise.all([
         api.get(`${API_BASE}/lessons/subjects/`, { params: { page_size: 100 } }),
         api.get(`${API_BASE}/lessons/subfolders/`, { params: { page_size: 100 } }),
         api.get(`${API_BASE}/lessons/topics/`, { params: { page_size: 100 } }),
+        api.get(`${API_BASE}/lessons/categories/`).catch(() => ({ data: [] }))
       ])
       setSubjects(toArray(subjectsRes.data))
       setSubfolders(toArray(subfoldersRes.data))
       setTopics(toArray(topicsRes.data))
+      setCategories(toArray(categoriesRes.data))
     } catch (error: any) {
       console.error('Error loading lesson hierarchy:', error)
       showToast('error', 'Error loading lessons')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadProgress = async () => {
+    try {
+      const response = await api.get(`${API_BASE}/lessons/progress/?page_size=1000`)
+      const progressMap: { [lessonId: string]: Progress } = {}
+      toArray(response.data).forEach((item: Progress) => {
+        progressMap[item.lesson] = item
+      })
+      setProgress(progressMap)
+    } catch (err) {
+      console.error('Error loading progress:', err)
     }
   }
 
@@ -239,6 +309,29 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
     } catch (error: any) {
       console.error('Error loading lessons:', error)
       showToast('error', 'Error loading lessons')
+    }
+  }
+
+  const markAsViewed = async (lessonId: string) => {
+    try {
+      if (progress[lessonId]?.is_viewed) return
+      const response = await api.post(`${API_BASE}/lessons/lessons/${lessonId}/mark_as_viewed/`)
+      setProgress(prev => ({ ...prev, [lessonId]: response.data }))
+    } catch (err) {
+      console.error('Error marking viewed', err)
+    }
+  }
+
+  const handleMarkAsCompleted = async (lessonId: string) => {
+    try {
+      const response = await api.post(`${API_BASE}/lessons/lessons/${lessonId}/mark_as_completed/`, {
+        time_spent_seconds: 300
+      })
+      setProgress(prev => ({ ...prev, [lessonId]: response.data }))
+      showToast('success', 'Lesson marked as completed!')
+    } catch (err) {
+      console.error('Error marking completion', err)
+      showToast('error', 'Error updating progress')
     }
   }
 
@@ -263,7 +356,7 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
     await loadLessons(topic.id)
   }
 
-  const handleSearchLessonClick = (lesson: Lesson) => {
+  const handleSearchLessonClick = async (lesson: Lesson) => {
     const topic = topics.find(t => t.id === lesson.topic) || null
     const subfolder = topic ? subfolders.find(s => s.id === topic.subfolder) || null : null
     const subject = topic ? subjects.find(s => s.id === topic.subject) || null : null
@@ -272,6 +365,9 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
     setSelectedSubfolder(subfolder)
     setSelectedTopic(topic)
     setSelectedLessonForView(lesson)
+    if (topic) {
+      await loadLessons(topic.id)
+    }
   }
 
   const getSubjectIcon = (name: string, className: string) => {
@@ -284,10 +380,12 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
     return <Folder className={className} />
   }
 
-  const getSubjectCategory = (name: string) => {
-    const lower = name.toLowerCase()
-    if (lower.includes('university') || lower.includes('engineering') || lower.includes('computer')) return 'University'
-    return 'Secondary'
+  // Reading time helper
+  const getReadingTime = (content: string) => {
+    if (!content) return '1 min read'
+    const words = content.replace(/<[^>]*>/g, '').split(/\s+/).length
+    const minutes = Math.max(1, Math.ceil(words / 200))
+    return `${minutes} min read`
   }
 
   const query = globalSearch.trim().toLowerCase()
@@ -307,7 +405,10 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
       subjectSubfolders.some(subfolder => subfolder.name.toLowerCase().includes(query)) ||
       subjectTopics.some(topic => topic.name.toLowerCase().includes(query)) ||
       searchSubjectIds.has(subject.id)
-    const matchesCategory = categoryFilter === 'All' || getSubjectCategory(subject.name) === categoryFilter
+    
+    const matchesCategory = categoryFilter === 'All' || 
+      (subject.category_name === categoryFilter)
+    
     return matchesSearch && matchesCategory
   })
 
@@ -338,6 +439,22 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
     })
     .sort((a, b) => sortOrder === 'Alphabetical' ? a.title.localeCompare(b.title) : new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
+  // Continue learning lessons: viewed but not completed
+  const continueLearningLessons = Object.values(progress)
+    .filter(p => p.is_viewed && !p.is_completed)
+    .map(p => {
+      // Find full lesson info in loaded data
+      for (const topicId of Object.keys(lessonsData)) {
+        const found = lessonsData[topicId].find(l => l.id === p.lesson)
+        if (found) return found
+      }
+      // Or in search results
+      const foundInSearch = searchResults.find(l => l.id === p.lesson)
+      if (foundInSearch) return foundInSearch
+      return null
+    })
+    .filter(Boolean) as Lesson[]
+
   const selectedBreadcrumb = selectedLessonForView
     ? `${selectedLessonForView.subject_name || selectedSubject?.name || 'Folder'} > ${selectedLessonForView.subfolder_name || selectedSubfolder?.name || 'Subfolder'} > ${selectedLessonForView.topic_name || selectedTopic?.name || 'Topic'}`
     : ''
@@ -351,6 +468,8 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
   }
 
   if (selectedLessonForView) {
+    const isCompleted = progress[selectedLessonForView.id]?.is_completed
+
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <motion.div
@@ -384,23 +503,41 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
                   </p>
                 </div>
               </div>
+
               {selectedLessonForView.tags && (
-                <p className={`text-xs mt-3 flex items-center gap-2 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
-                  <Tags className="w-4 h-4" />
-                  {selectedLessonForView.tags}
-                </p>
+                <div className="flex flex-wrap gap-1.5 mt-4">
+                  {selectedLessonForView.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
+                    <span key={tag} className="px-2.5 py-1 bg-orange-55 text-[#e8701a] dark:bg-orange-950/20 dark:text-orange-400 text-xs font-bold rounded-md">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
-            <button
-              onClick={() => setSelectedLessonForView(null)}
-              className={`px-5 py-2.5 rounded-xl font-bold transition ${
-                darkMode
-                  ? 'bg-slate-700 hover:bg-slate-600 text-slate-200'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-              }`}
-            >
-              Back to Lessons
-            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={(e) => toggleBookmark(e, selectedLessonForView.id)}
+                className={`p-2.5 rounded-xl border transition ${
+                  bookmarks.has(selectedLessonForView.id)
+                    ? 'bg-yellow-50 border-yellow-200 text-yellow-600 dark:bg-yellow-950/20 dark:border-yellow-900'
+                    : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <Bookmark className="w-5 h-5" fill={bookmarks.has(selectedLessonForView.id) ? 'currentColor' : 'none'} />
+              </button>
+
+              <button
+                onClick={() => setSelectedLessonForView(null)}
+                className={`px-5 py-2.5 rounded-xl font-bold transition ${
+                  darkMode
+                    ? 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                }`}
+              >
+                Back to Lessons
+              </button>
+            </div>
           </div>
 
           <div
@@ -409,7 +546,7 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
             dangerouslySetInnerHTML={{ __html: selectedLessonForView.content }}
           />
 
-          <div className={`pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'} flex gap-4`}>
+          <div className={`pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'} flex flex-wrap gap-4 items-center justify-between`}>
             <a
               href="/student/cbt"
               className="px-8 py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2"
@@ -417,6 +554,21 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
               <ExternalLink className="w-5 h-5" />
               Take Practice Test
             </a>
+
+            {!isCompleted ? (
+              <button
+                onClick={() => handleMarkAsCompleted(selectedLessonForView.id)}
+                className="px-6 py-3.5 border border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 rounded-xl transition font-bold flex items-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                Mark as Completed
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 text-green-600 font-bold px-4 py-2 bg-green-50 dark:bg-green-950/20 rounded-xl">
+                <CheckCircle className="w-5 h-5" />
+                Completed
+              </div>
+            )}
           </div>
 
           {linkedLessons.length > 0 && (
@@ -441,7 +593,15 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
                     <h5 className={`font-bold line-clamp-2 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
                       {lesson.title}
                     </h5>
-                    {lesson.tags && <p className={`text-xs mt-2 truncate ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Tags: {lesson.tags}</p>}
+                    {lesson.tags && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {lesson.tags.split(',').map(t => t.trim()).slice(0, 3).map(tag => (
+                          <span key={tag} className="px-1.5 py-0.5 bg-orange-100 text-[#e8701a] text-[10px] rounded">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -469,7 +629,7 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
           placeholder="Search folders, subfolders, topics, lessons, or tags..."
           value={globalSearch}
           onChange={(e) => setGlobalSearch(e.target.value)}
-          className={`w-full pl-12 pr-4 py-4 focus:outline-none ${darkMode ? 'bg-slate-800 text-white placeholder-slate-400' : 'bg-white text-gray-900 placeholder-gray-400'}`}
+          className={`w-full pl-12 pr-4 py-4 focus:outline-none ${darkMode ? 'bg-slate-800 text-white placeholder-slate-400' : 'bg-white text-gray-950 placeholder-gray-400'}`}
         />
       </div>
 
@@ -493,7 +653,15 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
                     {lesson.subject_name} &gt; {lesson.subfolder_name} &gt; {lesson.topic_name}
                   </p>
                   <h4 className={`font-extrabold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{lesson.title}</h4>
-                  {lesson.tags && <p className={`text-xs mt-2 truncate ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Tags: {lesson.tags}</p>}
+                  {lesson.tags && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {lesson.tags.split(',').map(t => t.trim()).slice(0, 3).map(tag => (
+                        <span key={tag} className="px-2 py-0.5 bg-orange-50 text-[#e8701a] text-[10px] rounded border border-orange-100">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -501,17 +669,76 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
         </section>
       )}
 
+      {/* Continue Learning Section */}
+      {continueLearningLessons.length > 0 && !query && !selectedLessonForView && (
+        <section className="space-y-3">
+          <h3 className="text-lg font-bold flex items-center gap-2">
+            <PlayCircle className="w-5 h-5 text-orange-500 animate-pulse" />
+            Continue Learning
+          </h3>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {continueLearningLessons.map(lesson => (
+              <button
+                key={lesson.id}
+                onClick={() => handleSearchLessonClick(lesson)}
+                className={`min-w-[280px] max-w-[320px] text-left p-4 rounded-xl border transition hover:shadow-md ${darkMode ? 'bg-slate-800 border-slate-700 hover:bg-slate-750' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 bg-orange-100 text-orange-850 rounded-full">In Progress</span>
+                  <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {getReadingTime(lesson.content)}
+                  </span>
+                </div>
+                <h4 className={`font-bold line-clamp-1 text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{lesson.title}</h4>
+                <p className="text-xs text-gray-500 mt-1 truncate">{lesson.subject_name} &gt; {lesson.topic_name}</p>
+                <div className="w-full bg-gray-200 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                  <div className="bg-orange-500 h-full w-[45%]" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-8">
         <aside className="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-6">
           <div>
             <h3 className="text-xl font-bold mb-4">Categories / Folders</h3>
+            
+            {/* Dynamic filter tabs from Category model */}
             <div className="mb-3">
               <span className={`text-sm font-semibold mb-2 block ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Filters</span>
               <div className="flex flex-wrap gap-2">
-                {['All', 'Secondary', 'University'].map((cat) => (
+                <button
+                  onClick={() => setCategoryFilter('All')}
+                  className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors border ${
+                    categoryFilter === 'All'
+                      ? (darkMode ? 'bg-slate-200 text-slate-900 border-slate-200' : 'bg-gray-800 text-white border-gray-800')
+                      : (darkMode ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50')
+                  }`}
+                >
+                  All
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCategoryFilter(cat.name)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors border flex items-center gap-1.5 ${
+                      categoryFilter === cat.name
+                        ? (darkMode ? 'bg-slate-200 text-slate-900 border-slate-200' : 'bg-gray-800 text-white border-gray-800')
+                        : (darkMode ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50')
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                    {cat.name}
+                  </button>
+                ))}
+                {/* Fallbacks if API is empty */}
+                {categories.length === 0 && ['Secondary', 'University'].map((cat) => (
                   <button
                     key={cat}
-                    onClick={() => setCategoryFilter(cat as any)}
+                    onClick={() => setCategoryFilter(cat)}
                     className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors border ${
                       categoryFilter === cat
                         ? (darkMode ? 'bg-slate-200 text-slate-900 border-slate-200' : 'bg-gray-800 text-white border-gray-800')
@@ -529,9 +756,8 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
               <div className="space-y-1">
                 {filteredSubjects.map(subject => {
                   const isExpanded = expandedSubjects.has(subject.id) || !!query
-                  const isUniv = getSubjectCategory(subject.name) === 'University'
                   const visibleSubfolders = getFilteredSubfolders(subject.id)
-
+                  
                   return (
                     <div key={subject.id} className="flex flex-col">
                       <button
@@ -539,13 +765,23 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
                         className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}
                       >
                         <div className="w-6 flex justify-center">
-                          {getSubjectIcon(subject.name, 'w-5 h-5 text-yellow-600')}
+                          {subject.category_color ? (
+                            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: subject.category_color }} />
+                          ) : (
+                            getSubjectIcon(subject.name, 'w-5 h-5 text-yellow-600')
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-[15px] uppercase leading-tight truncate">{subject.name}</p>
-                          <p className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                            ({isUniv ? 'University Faculty' : 'Secondary'})
-                          </p>
+                          {subject.category_name ? (
+                            <p className="text-[10px] font-semibold" style={{ color: subject.category_color || '#e8701a' }}>
+                              {subject.category_name}
+                            </p>
+                          ) : (
+                            <p className={`text-[10px] ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>
+                              General
+                            </p>
+                          )}
                         </div>
                         {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                       </button>
@@ -679,23 +915,44 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-5' : 'flex flex-col gap-4'}>
               {currentLessons.map(lesson => {
                 const isNew = new Date().getTime() - new Date(lesson.created_at).getTime() < 7 * 24 * 60 * 60 * 1000
+                const isViewed = progress[lesson.id]?.is_viewed
+                const isCompleted = progress[lesson.id]?.is_completed
 
                 return (
                   <motion.div
                     key={lesson.id}
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className={`flex ${viewMode === 'grid' ? 'flex-col' : 'flex-row items-center'} rounded-2xl border p-5 transition-shadow hover:shadow-lg ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100 shadow-sm'}`}
+                    onClick={() => setSelectedLessonForView(lesson)}
+                    className={`cursor-pointer flex ${viewMode === 'grid' ? 'flex-col' : 'flex-row items-center'} rounded-2xl border p-5 transition-all hover:shadow-lg ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100 shadow-sm'}`}
                   >
                     <div className="flex justify-between items-start mb-4 w-full">
                       <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
                         <BookOpen className="w-5 h-5 text-orange-600" />
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
                         {isNew && <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 rounded-md">New</span>}
-                        <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md ${darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-50 text-orange-700'}`}>
-                          {selectedSubject && getSubjectCategory(selectedSubject.name) === 'University' ? 'Uni' : 'Secondary'}
+                        
+                        <span 
+                          className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md"
+                          style={{
+                            backgroundColor: (selectedSubject?.category_color || '#FFEADB') + '40',
+                            color: selectedSubject?.category_color || '#e8701a'
+                          }}
+                        >
+                          {selectedSubject?.category_name || 'General'}
                         </span>
+                        
+                        <button
+                          onClick={(e) => toggleBookmark(e, lesson.id)}
+                          className={`p-1.5 rounded-lg border transition ${
+                            bookmarks.has(lesson.id)
+                              ? 'bg-yellow-50 border-yellow-200 text-yellow-600'
+                              : 'bg-white border-gray-200 text-gray-400 hover:text-gray-600'
+                          }`}
+                        >
+                          <Bookmark className="w-3.5 h-3.5" fill={bookmarks.has(lesson.id) ? 'currentColor' : 'none'} />
+                        </button>
                       </div>
                     </div>
 
@@ -703,28 +960,50 @@ export default function StudentLessonsPage({ darkMode = false }: StudentLessonsP
                       {lesson.title}
                     </h4>
 
-                    <div className="flex items-center gap-2 mb-3 mt-1">
-                      <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-                        <UserCircle2 className="w-4 h-4 text-gray-500" />
+                    <div className="flex items-center justify-between w-full mt-2 mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+                          <UserCircle2 className="w-4 h-4 text-gray-500" />
+                        </div>
+                        <p className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>By {lesson.publisher_name}</p>
                       </div>
-                      <p className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-gray-600'}`}>By {lesson.publisher_name}</p>
+
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {getReadingTime(lesson.content)}
+                      </span>
                     </div>
 
                     {lesson.tags && (
-                      <p className={`text-xs mb-5 truncate ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Tags: {lesson.tags}</p>
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {lesson.tags.split(',').map(t => t.trim()).slice(0, 3).map(tag => (
+                          <span key={tag} className="px-2 py-0.5 bg-gray-50 dark:bg-slate-700/50 text-[#e8701a] text-[10px] rounded border border-orange-100/50 dark:border-slate-600">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
                     )}
 
-                    <div className={viewMode === 'list' ? 'ml-auto' : 'mt-auto'}>
-                      <button
-                        onClick={() => setSelectedLessonForView(lesson)}
-                        className={`w-full py-2.5 rounded-lg font-bold text-sm transition-all ${
-                          darkMode
-                            ? 'bg-orange-600 hover:bg-orange-500 text-white'
-                            : 'bg-[#e8701a] hover:bg-[#d66314] text-white shadow-md hover:shadow-lg'
-                        }`}
-                      >
-                        Start Lesson
-                      </button>
+                    {/* Progress indicators */}
+                    <div className="w-full mt-auto pt-3 border-t border-gray-150 dark:border-slate-700">
+                      {isCompleted ? (
+                        <div className="flex items-center gap-1.5 text-xs text-green-600 font-bold">
+                          <CheckCircle className="w-4 h-4" />
+                          Completed
+                        </div>
+                      ) : isViewed ? (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] font-semibold text-orange-500">
+                            <span>In Progress</span>
+                            <span>45%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-slate-700 h-1 rounded-full overflow-hidden">
+                            <div className="bg-orange-500 h-full w-[45%]" />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>Not started</span>
+                      )}
                     </div>
                   </motion.div>
                 )

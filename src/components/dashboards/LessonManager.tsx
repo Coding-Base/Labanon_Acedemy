@@ -10,6 +10,7 @@ import {
   Edit,
   Save,
   Tags,
+  X,
 } from 'lucide-react'
 import api from '../../utils/axiosInterceptor'
 import showToast from '../../utils/toast'
@@ -45,9 +46,22 @@ TableEmbed.tagName = 'div'
 TableEmbed.className = 'quill-table-embed'
 ReactQuill.Quill.register(TableEmbed)
 
+interface Category {
+  id: string
+  name: string
+  description?: string
+  color: string
+  order: number
+  is_active: boolean
+  created_at: string
+}
+
 interface Subject {
   id: string
   name: string
+  category?: string
+  category_name?: string
+  category_color?: string
   created_at: string
 }
 
@@ -58,6 +72,7 @@ interface LessonSubfolder {
   name: string
   created_at: string
 }
+
 
 interface Topic {
   id: string
@@ -145,6 +160,13 @@ export default function LessonManager() {
   const [topics, setTopics] = useState<Topic[]>([])
   const [lessons, setLessons] = useState<Lesson[]>([])
 
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryDescription, setNewCategoryDescription] = useState('')
+  const [newCategoryColor, setNewCategoryColor] = useState('#22C55E')
+
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
   const [selectedSubfolder, setSelectedSubfolder] = useState<LessonSubfolder | null>(null)
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
@@ -179,7 +201,115 @@ export default function LessonManager() {
 
   useEffect(() => {
     loadSubjects()
+    loadCategories()
   }, [])
+
+  const loadCategories = async () => {
+    try {
+      const response = await api.get(`${API_BASE}/lessons/categories/`)
+      setCategories(toArray(response.data))
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    }
+  }
+
+  const addCategory = async () => {
+    if (!newCategoryName.trim()) {
+      showToast('Category name is required', 'error')
+      return
+    }
+    try {
+      setSaving(true)
+      const response = await api.post(`${API_BASE}/lessons/categories/`, {
+        name: newCategoryName.trim(),
+        description: newCategoryDescription.trim(),
+        color: newCategoryColor
+      })
+      setCategories(prev => {
+        const exists = prev.some(c => c.id === response.data.id)
+        return exists ? prev : [...prev, response.data]
+      })
+      setSelectedCategory(response.data.id)
+      if (selectedSubject) {
+        await updateSubjectCategory(selectedSubject.id, response.data.id)
+      }
+      setNewCategoryName('')
+      setNewCategoryDescription('')
+      setNewCategoryColor('#22C55E')
+      setShowCategoryModal(false)
+      showToast('Category created successfully', 'success')
+      await loadCategories()
+    } catch (error: any) {
+      console.error('Error creating category:', error)
+      showToast(getErrorMessage(error, 'Error creating category'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const deleteCategory = async (categoryId: string) => {
+    if (!window.confirm('Delete this category? Subjects in this category will become unassigned.')) return
+    try {
+      setSaving(true)
+      await api.delete(`${API_BASE}/lessons/categories/${categoryId}/`)
+      setCategories(prev => prev.filter(c => c.id !== categoryId))
+      if (selectedCategory === categoryId) setSelectedCategory('')
+      await loadSubjects()
+      showToast('Category deleted successfully', 'success')
+    } catch (error: any) {
+      console.error('Error deleting category:', error)
+      showToast('Error deleting category', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const updateSubjectCategory = async (subjectId: string, categoryId: string) => {
+    try {
+      setSaving(true)
+      const payload = { category: categoryId ? categoryId : null }
+      const response = await api.patch(`${API_BASE}/lessons/subjects/${subjectId}/`, payload)
+      const updatedSubject = response.data
+      setSelectedSubject(updatedSubject)
+      setSubjects(prev => prev.map(s => s.id === subjectId ? updatedSubject : s))
+      showToast('Folder category updated successfully', 'success')
+    } catch (error: any) {
+      console.error('Error updating folder category:', error)
+      showToast(getErrorMessage(error, 'Error updating folder category'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const [editingSubjectName, setEditingSubjectName] = useState(false)
+  const [subjectRenameInput, setSubjectRenameInput] = useState('')
+
+  const handleStartRenameSubject = (subject: Subject) => {
+    setSubjectRenameInput(subject.name)
+    setEditingSubjectName(true)
+  }
+
+  const handleSaveRenameSubject = async (subjectId: string) => {
+    if (!subjectRenameInput.trim()) return
+    try {
+      setSaving(true)
+      const response = await api.patch(`${API_BASE}/lessons/subjects/${subjectId}/`, {
+        name: subjectRenameInput.trim()
+      })
+      const updatedSubject = response.data
+      setSelectedSubject(updatedSubject)
+      setSubjects(prev => prev.map(s => s.id === subjectId ? updatedSubject : s))
+      setEditingSubjectName(false)
+      showToast('Folder renamed successfully', 'success')
+    } catch (error: any) {
+      console.error('Error renaming folder:', error)
+      showToast(getErrorMessage(error, 'Error renaming folder'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+
 
   useEffect(() => {
     if (selectedSubject) {
@@ -262,10 +392,15 @@ export default function LessonManager() {
     }
     try {
       setSaving(true)
-      const response = await api.post(`${API_BASE}/lessons/subjects/`, { name: newSubjectName.trim() })
+      const payload: any = { name: newSubjectName.trim() }
+      if (selectedCategory) {
+        payload.category = selectedCategory
+      }
+      const response = await api.post(`${API_BASE}/lessons/subjects/`, payload)
       setSelectedSubject(response.data)
       setExpandedSubjects(prev => new Set(prev).add(response.data.id))
       setNewSubjectName('')
+      setSelectedCategory('')
       setShowSubjectInput(false)
       showToast('Folder created successfully', 'success')
       await loadSubjects()
@@ -276,6 +411,7 @@ export default function LessonManager() {
       setSaving(false)
     }
   }
+
 
   const addSubfolder = async () => {
     if (!selectedSubject) {
@@ -522,7 +658,7 @@ export default function LessonManager() {
                   placeholder="Search folders..."
                   search={subjectSearch}
                   onSearch={setSubjectSearch}
-                  showInput={showSubjectInput}
+                  showInput={false}
                   onShowInput={() => setShowSubjectInput(true)}
                   inputPlaceholder="New folder name"
                   inputValue={newSubjectName}
@@ -542,22 +678,177 @@ export default function LessonManager() {
                         >
                           <span className="flex items-center gap-2 min-w-0">
                             <ChevronDown className={`w-4 h-4 transition-transform ${expandedSubjects.has(subject.id) ? '' : '-rotate-90'}`} />
-                            <FolderOpen className="w-4 h-4 text-yellow-600" />
+                            {subject.category_color ? (
+                              <span
+                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: subject.category_color }}
+                                title={subject.category_name}
+                              />
+                            ) : (
+                              <FolderOpen className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+                            )}
                             <span className="font-medium text-gray-800 truncate">{subject.name}</span>
                           </span>
                         </button>
                       </div>
                     ))}
                   </div>
+
+                  {showSubjectInput ? (
+                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Select Category</label>
+                        <div className="flex gap-2">
+                          <select
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-500 bg-white"
+                          >
+                            <option value="">-- No Category --</option>
+                            {categories.map(cat => (
+                              <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => setShowCategoryModal(true)}
+                            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-semibold"
+                          >
+                            + New
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Folder Name</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="New folder name"
+                            value={newSubjectName}
+                            onChange={(e) => setNewSubjectName(e.target.value)}
+                            className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-500 bg-white"
+                          />
+                          <button
+                            onClick={addSubject}
+                            disabled={saving}
+                            className="px-3 py-1 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 transition"
+                          >
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowSubjectInput(false)}
+                        className="w-full text-center text-xs text-red-500 hover:underline mt-1"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowSubjectInput(true)}
+                      className="mt-2 w-full px-3 py-2 border border-dashed border-yellow-300 text-yellow-600 rounded-lg hover:bg-yellow-50 flex items-center justify-center gap-2 transition"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Folder
+                    </button>
+                  )}
                 </ManagementSection>
 
                 {selectedSubject && (
-                  <SelectedCard
-                    eyebrow="Selected Folder"
-                    title={selectedSubject.name}
-                    onDelete={() => deleteSubject(selectedSubject.id)}
-                  />
+                  <div className="p-3.5 bg-yellow-50/70 border border-yellow-200 rounded-xl space-y-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-semibold text-yellow-800 uppercase tracking-wider">Selected Folder</p>
+                        {editingSubjectName ? (
+                          <div className="flex gap-1.5 mt-1">
+                            <input
+                              type="text"
+                              value={subjectRenameInput}
+                              onChange={(e) => setSubjectRenameInput(e.target.value)}
+                              className="flex-1 px-2 py-1 text-sm border border-yellow-300 rounded focus:outline-none bg-white font-semibold"
+                            />
+                            <button
+                              onClick={() => handleSaveRenameSubject(selectedSubject.id)}
+                              disabled={saving}
+                              className="px-2 py-1 bg-yellow-500 text-white rounded text-xs font-semibold hover:bg-yellow-600"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingSubjectName(false)}
+                              className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {selectedSubject.category_color ? (
+                              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedSubject.category_color }} />
+                            ) : (
+                              <FolderOpen className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+                            )}
+                            <p className="font-bold text-gray-900 truncate text-base">{selectedSubject.name}</p>
+                            <button
+                              onClick={() => handleStartRenameSubject(selectedSubject)}
+                              className="text-gray-400 hover:text-gray-600 p-1"
+                              title="Rename folder"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <button 
+                        onClick={() => deleteSubject(selectedSubject.id)} 
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Delete folder"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Folder Category Selector */}
+                    <div className="pt-2 border-t border-yellow-200/80">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                          <span>Assigned Category:</span>
+                          {selectedSubject.category_name && (
+                            <span 
+                              className="px-2 py-0.5 rounded text-[10px] font-bold text-white" 
+                              style={{ backgroundColor: selectedSubject.category_color || '#6B7280' }}
+                            >
+                              {selectedSubject.category_name}
+                            </span>
+                          )}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowCategoryModal(true)}
+                          className="text-[11px] text-yellow-700 hover:text-yellow-900 font-semibold underline"
+                        >
+                          + New Category
+                        </button>
+                      </div>
+                      <select
+                        value={selectedSubject.category || ''}
+                        onChange={(e) => updateSubjectCategory(selectedSubject.id, e.target.value)}
+                        disabled={saving}
+                        className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-500 bg-white font-medium"
+                      >
+                        <option value="">-- No Category (Unassigned) --</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 )}
+
 
                 {selectedSubject && (
                   <ManagementSection
@@ -861,9 +1152,114 @@ export default function LessonManager() {
           )}
         </div>
       </div>
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
+            <button 
+              onClick={() => setShowCategoryModal(false)}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h4 className="text-lg font-bold text-gray-800 mb-4">Create New Category</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Category Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Professional Courses"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                <textarea
+                  placeholder="Optional description..."
+                  value={newCategoryDescription}
+                  onChange={(e) => setNewCategoryDescription(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Category Color</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {[
+                    { hex: '#22C55E', name: 'Green' },
+                    { hex: '#3B82F6', name: 'Blue' },
+                    { hex: '#F97316', name: 'Orange' },
+                    { hex: '#A855F7', name: 'Purple' },
+                    { hex: '#EF4444', name: 'Red' },
+                    { hex: '#6B7280', name: 'Gray' }
+                  ].map(colorPreset => (
+                    <button
+                      key={colorPreset.hex}
+                      type="button"
+                      onClick={() => setNewCategoryColor(colorPreset.hex)}
+                      className={`w-6 h-6 rounded-full border-2 transition ${newCategoryColor === colorPreset.hex ? 'border-black scale-110 shadow-sm' : 'border-transparent'}`}
+                      style={{ backgroundColor: colorPreset.hex }}
+                      title={colorPreset.name}
+                    />
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  placeholder="#Hex code"
+                  value={newCategoryColor}
+                  onChange={(e) => setNewCategoryColor(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-xs font-mono"
+                />
+              </div>
+              <div className="flex gap-2 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={addCategory}
+                  disabled={saving || !newCategoryName.trim()}
+                  className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 text-sm font-semibold transition flex items-center gap-2"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save Category
+                </button>
+              {categories.length > 0 && (
+                <div className="pt-3 border-t border-gray-200">
+                  <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Existing Categories</h5>
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                    {categories.map(cat => (
+                      <div key={cat.id} className="flex items-center justify-between px-2.5 py-1.5 bg-gray-50 rounded-lg border border-gray-100 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                          <span className="font-semibold text-gray-800 truncate">{cat.name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => deleteCategory(cat.id)}
+                          className="text-red-400 hover:text-red-600 p-1 transition"
+                          title="Delete category"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
 
 function ManagementSection(props: {
   label: string

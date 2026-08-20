@@ -50,6 +50,11 @@ const MockExamUnlockPage = lazy(() => import('./pages/MockExamUnlockPage'))
 const MockExamInterface = lazy(() => import('./pages/MockExamInterface'))
 const MockExamResultsPage = lazy(() => import('./pages/MockExamResultsPage'))
 
+// Pro Subscription pages (lazy)
+const ProPlansPage = lazy(() => import('./pages/ProPlansPage'))
+const SubscriptionSettings = lazy(() => import('./pages/SubscriptionSettings'))
+
+
 export default function App() {
   const [isInitialLoading, setIsInitialLoading] = useState(true)
 
@@ -131,6 +136,11 @@ export default function App() {
             
             {/* Payment verification route */}
             <Route path="/payment/verify" element={<PaymentVerify />} />
+
+            {/* Pro Subscription & Plans Routes */}
+            <Route path="/student/pro" element={<ProPlansPage />} />
+            <Route path="/pro" element={<ProPlansPage />} />
+            <Route path="/subscription" element={<SubscriptionSettings />} />
 
             {/* Activation / Checkout for exam / subject unlocks */}
             <Route path="/activate" element={<ActivateCheckout />} />

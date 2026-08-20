@@ -79,11 +79,13 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         })
         const data = await res.json()
 
-        if (data.trial_available !== undefined) {
+        if (!data.unlocked && data.trial_available !== undefined) {
           setTrialInfo({
             trial_available: data.trial_available,
             trial_questions_limit: data.trial_questions_limit
           })
+        } else {
+          setTrialInfo(null)
         }
 
         if (res.ok && (data.unlocked || data.trial_available)) {

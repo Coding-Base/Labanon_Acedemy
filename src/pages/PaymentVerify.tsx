@@ -57,17 +57,20 @@ export default function PaymentVerify() {
           return
         }
 
-        // Verify payment with backend (Paystack only)
-        const res = await axios.get(
-          `${API_BASE}/payments/verify/${reference}/`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        // Verify payment with backend
+        const isSubscription = searchParams.get('type') === 'subscription'
+        const endpoint = isSubscription 
+          ? `${API_BASE}/subscriptions/verify/`
+          : `${API_BASE}/payments/verify/${reference}/`
+
+        const res = isSubscription
+          ? await axios.post(endpoint, { reference }, { headers: { Authorization: `Bearer ${token}` } })
+          : await axios.get(endpoint, { headers: { Authorization: `Bearer ${token}` } })
 
         if (mounted) {
-            // Paystack returns {status: 'success', ...} inside data
-            if (res.data.status === 'success') {
+            if (res.data.status === 'success' || res.data.success) {
               setStatus('success')
-              setMessage('Payment verified! You now have access to your content.')
+              setMessage(isSubscription ? 'Pro Subscription activated! You now have unlimited access to all exams.' : 'Payment verified! You now have access to your content.')
 
               // Decide whether to show receipt modal: only for diploma purchases
               const isDiploma = res.data.kind === 'diploma' || !!res.data.diploma
@@ -96,7 +99,9 @@ export default function PaymentVerify() {
                 sessionStorage.removeItem('paymentReturnTo')
 
                 setTimeout(() => {
-                  if (isScheduled) {
+                  if (isSubscription) {
+                    navigate('/student/subscription')
+                  } else if (isScheduled) {
                       navigate('/student/schedule')
                   } else if (itemType === 'activation') {
                     if (returnTo) navigate(returnTo)

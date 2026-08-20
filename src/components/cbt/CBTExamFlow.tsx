@@ -96,8 +96,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         })
         const data = await res.json()
 
-        // Check trial attempt info
-        if (data.trial_attempts_used !== undefined) {
+        // Check trial attempt info only if not unlocked
+        if (!data.unlocked && data.trial_attempts_used !== undefined) {
           setTrialInfo({
             trial_attempts_used: data.trial_attempts_used,
             trial_attempts_remaining: data.trial_attempts_remaining,
@@ -105,6 +105,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
             trial_attempts_limit: data.trial_attempts_limit,
             trial_questions_limit: data.trial_questions_limit
           })
+        } else {
+          setTrialInfo(null)
         }
 
         if (res.ok && data.unlocked) {

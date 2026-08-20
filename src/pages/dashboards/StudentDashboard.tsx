@@ -38,7 +38,10 @@ import {
   BookMarked,
   Gift,
   MessageSquare,
-  Copy
+  Copy,
+  Sparkles,
+  ArrowRight,
+  Settings
 } from 'lucide-react';
 import labanonLogo from '../labanonlogo.png';
 import MyCourses from '../MyCourses';
@@ -60,6 +63,7 @@ import MockExamInterface from '../MockExamInterface';
 import MockExamResultsPage from '../MockExamResultsPage';
 import { DownloadsCard } from '../../components/Materials';
 import StudentLessonsPage from '../../components/StudentLessonsPage';
+import SubscriptionSettings from '../SubscriptionSettings';
 
 // --- Types ---
 interface DashboardSummary {
@@ -115,6 +119,50 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
 
   const base = '/student';
   const loggedOutRef = useRef(false);
+
+  // Pro Popup Logic (Frequency-capped to max 2-3 times per day)
+  const [showProModal, setShowProModal] = useState(false);
+  const [isProUser, setIsProUser] = useState(false);
+
+  useEffect(() => {
+    async function checkProStatusAndTriggerPopup() {
+      try {
+        const token = localStorage.getItem('access');
+        if (!token) return;
+        const res = await api.get('/subscriptions/my-status/');
+        if (res.data?.is_pro) {
+          setIsProUser(true);
+          return;
+        }
+
+        // Frequency capping check (max 3 times in 24h, min 2.5h apart)
+        const now = Date.now();
+        const rawHistory = localStorage.getItem('lha_pro_popup_history');
+        let history: number[] = [];
+        try {
+          history = rawHistory ? JSON.parse(rawHistory) : [];
+        } catch {
+          history = [];
+        }
+
+        const recentHistory = history.filter((t: number) => now - t < 24 * 60 * 60 * 1000);
+        const lastShown = recentHistory.length > 0 ? Math.max(...recentHistory) : 0;
+        const cooldownPassed = now - lastShown > 2.5 * 60 * 60 * 1000;
+
+        if (recentHistory.length < 3 && (recentHistory.length === 0 || cooldownPassed)) {
+          const timer = setTimeout(() => {
+            setShowProModal(true);
+            const updatedHistory = [...recentHistory, now];
+            localStorage.setItem('lha_pro_popup_history', JSON.stringify(updatedHistory));
+          }, 3000);
+          return () => clearTimeout(timer);
+        }
+      } catch (err) {
+        console.error('Pro status check error', err);
+      }
+    }
+    checkProStatusAndTriggerPopup();
+  }, []);
 
   // Fetch unread direct message count
   useEffect(() => {
@@ -356,7 +404,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     { path: 'progress', label: 'Progress', icon: <TrendingUp className="w-5 h-5" /> },
     { path: 'certificates', label: 'Certificates', icon: <Award className="w-5 h-5" /> },
     { path: 'leaderboard', label: 'Leaderboard', icon: <Trophy className="w-5 h-5" /> },
-    { path: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> }
+    { path: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> },
+    { path: 'subscription', label: 'Subscription Settings', icon: <Settings className="w-5 h-5" /> }
   ];
 
   const stats = [
@@ -681,10 +730,29 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 )}
               </motion.button>
               <div className={`hidden md:flex items-center space-x-3 pl-4 border-l ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">{summary?.username?.charAt(0).toUpperCase()}</div>
+                <div className="relative">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
+                    {summary?.username?.charAt(0).toUpperCase()}
+                  </div>
+                  {isProUser && (
+                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 p-0.5 rounded-full shadow-sm" title="Pro Member">
+                      <Crown className="w-3 h-3 fill-slate-950" />
+                    </div>
+                  )}
+                </div>
                 <div>
-                  <p className={`text-sm font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</p>
-                  <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-500'}`}>Student Account</p>
+                  <div className="flex items-center space-x-1.5">
+                    <p className={`text-sm font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</p>
+                    {isProUser && (
+                      <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-sm flex items-center space-x-0.5">
+                        <Crown className="w-2.5 h-2.5 fill-slate-950" />
+                        <span>PRO</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-500'}`}>
+                    {isProUser ? 'Pro Student Account' : 'Student Account'}
+                  </p>
                 </div>
               </div>
               <motion.button onClick={() => doLogout('user clicked logout')} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all">
@@ -705,10 +773,25 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     {summary?.username.charAt(0).toUpperCase()}
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+                  {isProUser && (
+                    <div className="absolute -top-1.5 -left-1.5 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 p-1 rounded-xl shadow-md border border-yellow-300" title="Pro Student">
+                      <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <h3 className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</h3>
-                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Student</p>
+                  <div className="flex items-center space-x-1.5">
+                    <h3 className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</h3>
+                    {isProUser && (
+                      <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-sm flex items-center space-x-0.5">
+                        <Crown className="w-2.5 h-2.5 fill-slate-950" />
+                        <span>PRO</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {isProUser ? 'Pro Student' : 'Student'}
+                  </p>
                   <div className="flex items-center mt-1">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Star key={i} className={`w-3 h-3 ${i <= Math.round(calculatedRating) ? 'text-yellow-400 fill-current' : darkMode ? 'text-slate-600' : 'text-gray-300'}`} />
@@ -758,8 +841,27 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
               </div>
             </nav>
 
-            <motion.button onClick={() => doLogout()} whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="mt-6 flex-none w-full py-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all shadow-md">
-              Upgrade to Pro
+            <motion.button
+              onClick={() => navigate('/student/pro')}
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className={`relative group mt-6 flex-none w-full py-3.5 px-4 rounded-2xl font-extrabold shadow-xl transition-all overflow-hidden flex items-center justify-center space-x-2.5 ${
+                isProUser
+                  ? 'bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-yellow-500/50 text-yellow-400 hover:border-yellow-400 shadow-yellow-900/20'
+                  : 'bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 border border-yellow-300/60 text-slate-950 shadow-yellow-500/25'
+              }`}
+            >
+              <span className="absolute inset-0 w-full h-full bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              <motion.div
+                animate={{ rotate: [0, -10, 10, -10, 0] }}
+                transition={{ repeat: Infinity, duration: 3, repeatDelay: 2 }}
+              >
+                <Crown className={`w-5 h-5 ${isProUser ? 'text-yellow-400 fill-yellow-400' : 'text-slate-950 fill-slate-950'}`} />
+              </motion.div>
+              <span className="tracking-wide text-xs md:text-sm font-black">
+                {isProUser ? 'EXPLORE OTHER PLANS' : 'UPGRADE TO PRO'}
+              </span>
+              <Sparkles className={`w-4 h-4 ${isProUser ? 'text-yellow-400 animate-pulse' : 'text-amber-950 animate-pulse'}`} />
             </motion.button>
           </div>
         </motion.aside>
@@ -807,8 +909,24 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                     </button>
                   ))}
                 </nav>
-                <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-                  <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-medium hover:shadow-md">Logout</button>
+
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700 space-y-3">
+                  <button
+                    onClick={() => {
+                      navigate('/student/pro');
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full py-3 px-4 rounded-xl font-extrabold shadow-md flex items-center justify-center space-x-2 text-xs ${
+                      isProUser
+                        ? 'bg-slate-900 border border-yellow-500/60 text-yellow-400'
+                        : 'bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500 text-slate-950'
+                    }`}
+                  >
+                    <Crown className={`w-4 h-4 ${isProUser ? 'fill-yellow-400' : 'fill-slate-950'}`} />
+                    <span>{isProUser ? 'EXPLORE OTHER PLANS' : 'UPGRADE TO PRO'}</span>
+                  </button>
+
+                  <button onClick={() => doLogout('user clicked logout (mobile)')} className="w-full px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 text-xs font-semibold hover:bg-red-600 hover:text-white transition-all">Logout</button>
                 </div>
               </motion.aside>
             </>
@@ -834,6 +952,82 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                             <PlayCircle className="w-5 h-5 inline mr-2" />Continue Learning
                           </motion.button>
                         </div>
+                      </div>
+
+                      {/* PRO & PLATFORM ANNOUNCEMENTS NEWS FEED */}
+                      <div className="mb-8">
+                        {isProUser ? (
+                          <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 md:p-8 text-white border border-yellow-500/40 shadow-xl">
+                            <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none" />
+                            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                              <div className="space-y-2 max-w-2xl">
+                                <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-wider border border-yellow-500/30">
+                                  <Crown className="w-3.5 h-3.5 fill-yellow-400" />
+                                  <span>Pro Membership Active 🚀</span>
+                                </div>
+                                <h2 className="text-xl md:text-2xl font-black text-white">
+                                  Full Pro Access Unlocked across CBT Exams &amp; Mock Sessions! ✨
+                                </h2>
+                                <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+                                  You are currently on an active Pro Plan. Enjoy unlimited practice tests, custom mock exam simulations, and downloadable study guides.
+                                </p>
+                              </div>
+
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                <motion.button
+                                  whileHover={{ scale: 1.04 }}
+                                  whileTap={{ scale: 0.96 }}
+                                  onClick={() => navigate('/student/subscription')}
+                                  className="px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500 text-slate-950 font-extrabold text-xs md:text-sm shadow-xl shadow-yellow-500/20 flex items-center justify-center space-x-2 whitespace-nowrap"
+                                >
+                                  <Settings className="w-4 h-4 text-slate-950" />
+                                  <span>Manage Subscription</span>
+                                </motion.button>
+
+                                <motion.button
+                                  whileHover={{ scale: 1.04 }}
+                                  whileTap={{ scale: 0.96 }}
+                                  onClick={() => navigate('/student/pro')}
+                                  className="px-4 py-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-white font-bold text-xs border border-slate-700 flex items-center justify-center space-x-1.5 whitespace-nowrap"
+                                >
+                                  <span>Explore Other Plans</span>
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </motion.button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 md:p-8 text-white border border-yellow-500/30 shadow-xl">
+                            <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none" />
+                            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                              <div className="space-y-2 max-w-2xl">
+                                <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-wider border border-yellow-500/30">
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                  <span>News &amp; Pro Highlights</span>
+                                </div>
+                                <h2 className="text-xl md:text-2xl font-black text-white">
+                                  Ace JAMB, WAEC &amp; NECO with Unlimited CBT Practice on Pro! ⚡
+                                </h2>
+                                <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+                                  Unlock all exam past questions, custom timed mock sessions, and unlimited downloadable study guides with our flexible monthly Pro subscription.
+                                </p>
+                              </div>
+
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                <motion.button
+                                  whileHover={{ scale: 1.04 }}
+                                  whileTap={{ scale: 0.96 }}
+                                  onClick={() => navigate('/student/pro')}
+                                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-400 to-orange-500 text-slate-950 font-extrabold text-xs md:text-sm shadow-xl shadow-yellow-500/20 flex items-center justify-center space-x-2 whitespace-nowrap"
+                                >
+                                  <Crown className="w-4 h-4 fill-slate-950" />
+                                  <span>Explore Pro Tiers</span>
+                                  <ArrowRight className="w-4 h-4" />
+                                </motion.button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -930,6 +1124,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   <Route path="progress" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ProgressPage /></div>} />
                   <Route path="leaderboard" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><LeaderboardPage /></div>} />
                   <Route path="certificates" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CertificatesPage /></div>} />
+                  <Route path="subscription" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><SubscriptionSettings /></div>} />
+                  <Route path="settings" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><SubscriptionSettings /></div>} />
                   <Route path="schedule" element={
                       <div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                           <SchedulePage userRole="student" />
@@ -994,6 +1190,82 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
           </motion.div>
         </motion.div>
       )}
+
+      {/* SMART PRO UPGRADE POPUP MODAL (2-3x per day max) */}
+      <AnimatePresence>
+        {showProModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 rounded-3xl p-6 sm:p-8 max-w-lg w-full border-2 border-yellow-500/50 shadow-2xl text-white space-y-6"
+            >
+              <button
+                onClick={() => setShowProModal(false)}
+                className="absolute top-5 right-5 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/60 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-2xl text-slate-950 shadow-lg">
+                  <Crown className="w-7 h-7 fill-slate-950" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-yellow-400">Special Student Offer</span>
+                  <h3 className="text-xl sm:text-2xl font-black text-white">Supercharge Your Exam Prep!</h3>
+                </div>
+              </div>
+
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Upgrade to <strong>LightHub Pro</strong> today and unlock full access to all JAMB UTME, WAEC SSCE, and NECO past question banks, custom mock exams, and downloadable syllabus PDFs.
+              </p>
+
+              <div className="space-y-2.5 p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-200">
+                <div className="flex items-center space-x-2 text-emerald-400 font-semibold">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>Unlimited CBT Practice Attempts (No limits)</span>
+                </div>
+                <div className="flex items-center space-x-2 text-emerald-400 font-semibold">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>All Subject Combinations Unlocked</span>
+                </div>
+                <div className="flex items-center space-x-2 text-emerald-400 font-semibold">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>Custom Timed Mock Exam Simulator</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowProModal(false);
+                    navigate('/student/pro');
+                  }}
+                  className="w-full sm:flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-400 to-orange-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-yellow-500/20 hover:scale-105 transition-all text-center flex items-center justify-center space-x-2"
+                >
+                  <Sparkles className="w-4 h-4 fill-slate-950" />
+                  <span>Explore Pro Plans</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowProModal(false);
+                    // Dismiss for rest of today
+                    const now = Date.now();
+                    const history = [now, now, now];
+                    localStorage.setItem('lha_pro_popup_history', JSON.stringify(history));
+                  }}
+                  className="w-full sm:w-auto px-4 py-3.5 text-xs text-slate-400 hover:text-slate-200 font-semibold"
+                >
+                  Don't show again today
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -47,7 +47,9 @@ import {
   File as FileIcon,
   BookMarked,
   Gift,
-  Megaphone
+  Megaphone,
+  CreditCard,
+  Crown
 } from 'lucide-react'
 // Recharts for analytics charts
 import {
@@ -86,6 +88,8 @@ import QuestionManagementPage from '../questions/QuestionManagementPage'
 import MasterAdminMockPanel from '../MasterAdminMockPanel'
 import { CreateMaterialForm, MaterialsList, MaterialsActivitySection } from '../../components/Materials'
 import LessonManager from '../../components/dashboards/LessonManager'
+import SubscriptionManager from '../../components/dashboards/SubscriptionManager'
+
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -784,7 +788,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'mock-exams', label: 'Mock Exams', icon: <Zap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     { id: 'signature', label: 'Signature', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
-    { id: 'payments', label: 'Payments', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
+    { id: 'subscriptions', label: 'Subscription Manager', icon: <Crown className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
+    { id: 'payments', label: 'Payments', icon: <CreditCard className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'referrals', label: 'Referrals', icon: <Gift className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'verification', label: 'Verification', icon: <CheckCircle className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'legal-documents', label: 'Legal Documents', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
@@ -5267,6 +5272,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                 {tab === 'legal-documents' && (
                   <LegalDocumentsManagement />
+                )}
+
+                {tab === 'subscriptions' && (
+                  <SubscriptionManager />
                 )}
 
                 {tab === 'verification' && (

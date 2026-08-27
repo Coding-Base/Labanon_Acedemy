@@ -29,6 +29,18 @@ export const CHEMICAL_FORMULAS = [
 
 const CHEMICAL_LIKE_PATTERN = /^[A-Z][a-z]?\d*(?:[A-Z][a-z]?\d*)*(?:\([A-Z][a-z]?\d*\)\d*)*$/
 
+export function sanitizeEscapedLatex(text: string): string {
+  if (!text) return ''
+  return text
+    .replace(/\x0crac/g, '\\frac')
+    .replace(/\x0car/g, '\\bar')
+    .replace(/\x0c/g, '\\f')
+    .replace(/\x08ar/g, '\\bar')
+    .replace(/\x08eta/g, '\\beta')
+    .replace(/\x08/g, '\\b')
+    .replace(/\x0b/g, '\\v')
+}
+
 export function isChemicalFormula(text: string): boolean {
   const trimmed = text.trim()
   if (!trimmed || trimmed.length < 2) return false
@@ -70,6 +82,8 @@ export function convertIonicCharges(text: string): string {
 export function convertToLatex(text: string): string {
   if (!text) return text
   let result = text
+  if (result.startsWith('\\')) return result
+
   result = result.replace(/\^(\d+)/g, '^{$1}')
   result = result.replace(/\^([a-zA-Z])/g, '^{$1}')
   result = result.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
@@ -86,6 +100,13 @@ export function hasMathNotation(text: string): boolean {
     /_{/,
     /\\sqrt/,
     /\\frac/,
+    /\\bar/,
+    /\\ce/,
+    /\\text/,
+    /\\times/,
+    /\\div/,
+    /\\pm/,
+    /\\alpha|\\beta|\\gamma|\\delta|\\theta|\\pi|\\sigma|\\lambda|\\mu|\\Delta/,
     /\w\^\d/,
     /\w\^[a-zA-Z]/,
     /\w_\d/,
@@ -102,11 +123,24 @@ function wrapSegmentMath(text: string): string {
     .map((token) => {
       if (!token || /^\s+$/.test(token)) return token
 
-      const stripped = token.replace(/^[.,;:!?()[\]{}]+|[.,;:!?()[\]{}]+$/g, '')
-      const leadingMatch = token.match(/^[.,;:!?()[\]{}]+/)
-      const leading = leadingMatch ? leadingMatch[0] : ''
-      const trailingMatch = token.match(/[.,;:!?()[\]{}]+$/)
-      const trailing = trailingMatch ? trailingMatch[0] : ''
+      // Preserve curly braces {} for LaTeX commands like \frac{27}{100} and \bar{27}
+      let stripped = ''
+      let leading = ''
+      let trailing = ''
+
+      if (token.includes('\\')) {
+        stripped = token.replace(/^[.,;:!?"']+|[.,;:!?"']+$/g, '')
+        const leadMatch = token.match(/^[.,;:!?"']+/)
+        leading = leadMatch ? leadMatch[0] : ''
+        const trailMatch = token.match(/[.,;:!?"']+$/)
+        trailing = trailMatch ? trailMatch[0] : ''
+      } else {
+        stripped = token.replace(/^[.,;:!?"'()]+|[.,;:!?"'()]+$/g, '')
+        const leadMatch = token.match(/^[.,;:!?"'()]+/)
+        leading = leadMatch ? leadMatch[0] : ''
+        const trailMatch = token.match(/[.,;:!?"'()]+$/)
+        trailing = trailMatch ? trailMatch[0] : ''
+      }
 
       if (isChemicalFormula(stripped)) {
         return `${leading}$\\ce{${stripped}}${trailing}`
@@ -122,9 +156,10 @@ function wrapSegmentMath(text: string): string {
 
 export function formatMathQuestion(questionText: string): string {
   if (!questionText) return ''
-  if (questionText.includes('$')) return questionText
+  const sanitized = sanitizeEscapedLatex(questionText)
+  if (sanitized.includes('$')) return sanitized
 
-  let text = convertReactionArrows(questionText)
+  let text = convertReactionArrows(sanitized)
   text = convertScientificNotation(text)
   text = convertIonicCharges(text)
 

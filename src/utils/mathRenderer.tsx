@@ -2,6 +2,7 @@ import React from 'react'
 import { InlineMath, BlockMath } from 'react-katex'
 import 'katex/dist/katex.min.css'
 import 'katex/contrib/mhchem'
+import { formatMathQuestion, sanitizeEscapedLatex } from './mathUtils'
 
 /**
  * Renders text with LaTeX math and HTML support
@@ -9,16 +10,17 @@ import 'katex/contrib/mhchem'
  */
 export function MathText({ text }: { text?: string }): JSX.Element {
   if (!text) return <span></span>
+  const sanitizedText = formatMathQuestion(text)
 
   // Check if text contains HTML tags
-  const hasHtml = /<[^>]*>/.test(text)
+  const hasHtml = /<[^>]*>/.test(sanitizedText)
 
   if (hasHtml) {
     // If HTML is present, we need to render it safely while also handling LaTeX
     // Replace inline math markers with placeholders to protect them during HTML processing
     const mathPlaceholders: { [key: string]: string } = {}
     let counter = 0
-    let processedText = text
+    let processedText = sanitizedText
 
     // Extract inline math
     processedText = processedText.replace(/\$([^$]+?)\$/g, (match) => {
@@ -46,14 +48,14 @@ export function MathText({ text }: { text?: string }): JSX.Element {
 
   // Original logic for plain text with math
   // Split by block-level math first ($$...$$)
-  const blockParts = text.split(/(\$\$[^$]*\$\$)/g)
+  const blockParts = sanitizedText.split(/(\$\$[^$]*\$\$)/g)
 
   return (
     <span className="math-text">
       {blockParts.map((part, blockIdx) => {
         // Check if this part is block math
         if (part.match(/^\$\$.*\$\$/)) {
-          const mathContent = part.slice(2, -2) // Remove $$ delimiters
+          const mathContent = sanitizeEscapedLatex(part.slice(2, -2).trim()) // Remove $$ delimiters
           return (
             <div key={blockIdx} className="my-2 overflow-x-auto">
               <BlockMath key={blockIdx}>{mathContent}</BlockMath>
@@ -69,7 +71,7 @@ export function MathText({ text }: { text?: string }): JSX.Element {
             {inlineParts.map((inlinePart, inlineIdx) => {
               // Check if this part is inline math (starts and ends with single $)
               if (inlinePart.match(/^\$[^$]+\$$/)) {
-                const mathContent = inlinePart.slice(1, -1) // Remove $ delimiters
+                const mathContent = sanitizeEscapedLatex(inlinePart.slice(1, -1).trim()) // Remove $ delimiters
                 return <InlineMath key={`inline-${blockIdx}-${inlineIdx}`}>{mathContent}</InlineMath>
               }
               return <span key={`text-${blockIdx}-${inlineIdx}`}>{inlinePart}</span>

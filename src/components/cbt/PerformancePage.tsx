@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useNavigate, useParams } from 'react-router-dom'
 import showToast from '../../utils/toast'
-import { MathText } from '../../utils/mathRenderer'
+import MathDisplay from './MathDisplay'
 import {
   PieChart,
   Pie,
@@ -13,14 +13,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  LineChart,
-  Line
 } from 'recharts'
-import { TrendingUp, Clock, Target, Award, AlertCircle } from 'lucide-react'
+import { TrendingUp, Clock, Target, Award, AlertCircle, CheckCircle, ChevronDown, HelpCircle, ArrowLeft, BarChart3 } from 'lucide-react'
 
- 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+
 function CbtReviewForm({ performance }: { performance: any }) {
   const [rating, setRating] = useState(5)
   const [message, setMessage] = useState('')
@@ -43,32 +41,44 @@ function CbtReviewForm({ performance }: { performance: any }) {
       showToast('Thanks for your feedback — it will appear after moderation.', 'success')
     } catch (e) {
       showToast('Failed to submit review', 'error')
-    } finally { setSubmitting(false) }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div className="md:col-span-3">
         <div className="flex items-center gap-3">
-          <label className="text-sm">Rating</label>
+          <label className="text-sm text-yellow-100 font-semibold">Rating</label>
           <select
             value={rating}
             onChange={(e) => setRating(Number(e.target.value))}
-            className="p-2 rounded bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="p-2 rounded bg-slate-900 text-white border border-slate-700 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
           >
-            {[5,4,3,2,1].map(n => <option key={n} value={n}>{n}</option>)}
+            {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Star{n !== 1 ? 's' : ''}</option>)}
           </select>
         </div>
-        <textarea value={message} onChange={(e) => setMessage(e.target.value)} className="w-full mt-3 p-3 rounded text-gray-900" rows={3} placeholder="How was the exam?" />
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          className="w-full mt-3 p-3 rounded-lg bg-slate-900 text-white border border-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-yellow-400 focus:outline-none text-sm"
+          rows={3}
+          placeholder="How was the exam? Share your feedback..."
+        />
       </div>
-      <div className="md:col-span-1 flex items-center">
-        <button onClick={submit} disabled={submitting || message.trim() === ''} className="w-full bg-white text-yellow-600 font-bold py-2 rounded">{submitting ? 'Sending…' : 'Send Feedback'}</button>
+      <div className="md:col-span-1 flex items-end">
+        <button
+          onClick={submit}
+          disabled={submitting || message.trim() === ''}
+          className="w-full bg-white text-slate-900 font-bold py-2.5 px-4 rounded-lg hover:bg-yellow-50 transition disabled:opacity-50 text-sm shadow-md"
+        >
+          {submitting ? 'Sending…' : 'Send Feedback'}
+        </button>
       </div>
     </div>
   )
 }
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
 interface Performance {
   id: number
@@ -112,7 +122,9 @@ export default function PerformancePage() {
     setError(null)
     try {
       const token = localStorage.getItem('access')
-      const response = await axios.get(`${API_BASE}/cbt/attempts/${attemptId}/performance/`, { headers: { Authorization: `Bearer ${token}` } })
+      const response = await axios.get(`${API_BASE}/cbt/attempts/${attemptId}/performance/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       setPerformance(response.data)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load performance')
@@ -122,25 +134,40 @@ export default function PerformancePage() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading performance data...</div>
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4">
+        <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-500 mb-4"></div>
+        <p className="text-slate-300 font-medium">Loading your performance results...</p>
+      </div>
+    )
   }
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto p-8">
-        <div className="text-red-600 mb-4">{error}</div>
-        <button
-          onClick={() => navigate('/student')}
-          className="px-4 py-2 bg-yellow-600 text-white rounded-lg"
-        >
-          Back to Dashboard
-        </button>
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-xl p-8 text-center shadow-xl">
+          <div className="w-12 h-12 rounded-full bg-red-950/60 border border-red-800 text-red-400 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle size={24} />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Error Loading Results</h2>
+          <p className="text-slate-300 text-sm mb-6">{error}</p>
+          <button
+            onClick={() => navigate('/student')}
+            className="w-full px-6 py-2.5 bg-yellow-600 hover:bg-yellow-500 text-white font-semibold rounded-lg transition"
+          >
+            Back to Dashboard
+          </button>
+        </div>
       </div>
     )
   }
 
   if (!performance) {
-    return <div className="text-center py-8">No performance data found</div>
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+        <div className="text-center text-slate-400">No performance data found</div>
+      </div>
+    )
   }
 
   const formatTime = (seconds: number) => {
@@ -149,141 +176,153 @@ export default function PerformancePage() {
     return `${mins}m ${secs}s`
   }
 
-  const scoreColor =
-    performance.percentage_score >= 70
-      ? 'text-yellow-700'
-      : performance.percentage_score >= 50
-        ? 'text-yellow-600'
-        : 'text-red-600'
+  const isPassed = performance.percentage_score >= 50
+  const isExcellent = performance.percentage_score >= 70
 
-  const scoreBgColor =
-    performance.percentage_score >= 70
-      ? 'from-yellow-50 to-yellow-100'
-      : performance.percentage_score >= 50
-        ? 'from-yellow-50 to-yellow-100'
-        : 'from-red-50 to-red-100'
-
-  // Prepare chart data
   const answerData = [
     { name: 'Correct', value: performance.correct_count, color: '#10b981' },
-    { name: 'Wrong', value: performance.wrong_count, color: '#ef4444' }
+    { name: 'Wrong', value: performance.wrong_count, color: '#f43f5e' }
   ]
 
   const timeData = [
-    { name: 'Time Used', value: performance.time_taken_seconds / 60 },
-    { name: 'Time Remaining', value: Math.max(0, (performance.time_limit_minutes * 60 - performance.time_taken_seconds) / 60) }
+    { name: 'Time Used', value: Math.round(performance.time_taken_seconds / 60) },
+    { name: 'Time Remaining', value: Math.max(0, Math.round((performance.time_limit_minutes * 60 - performance.time_taken_seconds) / 60)) }
   ]
 
   const performanceMetrics = [
     {
-      label: 'Accuracy',
-      value: performance.percentage_score.toFixed(1),
-      unit: '%',
+      label: 'Score Accuracy',
+      value: `${performance.percentage_score.toFixed(1)}%`,
+      unit: isExcellent ? 'Mastery' : isPassed ? 'Pass' : 'Needs Practice',
       icon: Target,
-      color: 'text-yellow-700',
-      bgColor: 'bg-yellow-100'
+      color: isPassed ? 'text-emerald-400' : 'text-rose-400',
+      badgeBg: isPassed ? 'bg-emerald-950/60 border-emerald-800' : 'bg-rose-950/60 border-rose-800'
     },
     {
-      label: 'Correct Answers',
-      value: performance.correct_count,
-      unit: `/ ${performance.num_questions}`,
+      label: 'Correct Questions',
+      value: `${performance.correct_count}`,
+      unit: `/ ${performance.num_questions} total`,
       icon: Award,
-      color: 'text-yellow-700',
-      bgColor: 'bg-yellow-100'
+      color: 'text-amber-400',
+      badgeBg: 'bg-amber-950/60 border-amber-800'
     },
     {
       label: 'Time Efficiency',
-      value: ((performance.time_taken_seconds / (performance.time_limit_minutes * 60)) * 100).toFixed(1),
-      unit: '%',
+      value: `${((performance.time_taken_seconds / (performance.time_limit_minutes * 60)) * 100).toFixed(1)}%`,
+      unit: `used of ${performance.time_limit_minutes}m`,
       icon: Clock,
-      color: 'text-yellow-700',
-      bgColor: 'bg-yellow-100'
+      color: 'text-blue-400',
+      badgeBg: 'bg-blue-950/60 border-blue-800'
     },
     {
-      label: 'Speed',
-      value: (performance.num_questions / (performance.time_taken_seconds / 60)).toFixed(2),
-      unit: 'q/min',
+      label: 'Answering Speed',
+      value: (performance.num_questions / Math.max(0.1, performance.time_taken_seconds / 60)).toFixed(2),
+      unit: 'questions/min',
       icon: TrendingUp,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100'
+      color: 'text-purple-400',
+      badgeBg: 'bg-purple-950/60 border-purple-800'
     }
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-yellow-900 to-slate-900 py-8">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <div className={`bg-gradient-to-br ${scoreBgColor} rounded-2xl shadow-2xl p-8 mb-8 border border-opacity-20`}>
-          <div className="text-center">
-            <h1 className="text-4xl font-bold mb-2 text-gray-900">
+    <div className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        
+        {/* Top Navigation Bar */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate('/student/cbt')}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 rounded-lg transition font-medium text-sm"
+          >
+            <ArrowLeft size={16} />
+            <span>Back to CBT Hub</span>
+          </button>
+
+          <span className="text-xs text-slate-400">
+            Attempt #{attemptId} • {new Date(performance.submitted_at).toLocaleDateString()}
+          </span>
+        </div>
+
+        {/* Hero Score Banner */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 shadow-2xl p-8 md:p-10">
+          <div className="relative z-10 text-center max-w-3xl mx-auto">
+            <span className="inline-block px-3 py-1 bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 rounded-full text-xs font-semibold uppercase tracking-wider mb-3">
+              {performance.test_name ? 'Custom Test Results' : 'Exam Results'}
+            </span>
+
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
               {performance.test_name || performance.exam_title}
             </h1>
+
             {performance.subjects && performance.subjects.length > 0 ? (
-              <div>
-                <p className="text-gray-700 mb-2 text-base font-medium">
-                  Multi-Subject Exam • {performance.subjects.length} subject{performance.subjects.length !== 1 ? 's' : ''}
-                </p>
-                <p className="text-gray-600 text-sm mb-6">
-                  {performance.subjects.map(s => s.subject_name).join(' • ')}
-                </p>
-              </div>
+              <p className="text-slate-300 text-sm mb-6">
+                Multi-Subject Exam: <span className="text-yellow-400 font-semibold">{performance.subjects.map(s => s.subject_name).join(', ')}</span>
+              </p>
             ) : (
-              <p className="text-gray-700 mb-6 text-lg">{performance.subject_name}</p>
+              <p className="text-slate-300 text-sm mb-6">{performance.subject_name}</p>
             )}
 
-            <div className={`text-6xl font-bold ${scoreColor} mb-4 drop-shadow-lg`}>
-              {performance.percentage_score.toFixed(1)}%
+            {/* Main Score Display */}
+            <div className="my-6">
+              <div className={`text-6xl sm:text-7xl font-black tracking-tight drop-shadow-md ${
+                isExcellent ? 'text-emerald-400' : isPassed ? 'text-yellow-400' : 'text-rose-400'
+              }`}>
+                {performance.percentage_score.toFixed(1)}%
+              </div>
+              <p className="text-slate-300 font-medium mt-2 text-base">
+                {isExcellent ? '🌟 Outstanding Mastery!' : isPassed ? '👍 Good Job! You Passed.' : '📖 Needs More Practice.'}
+              </p>
             </div>
-
-            <p className="text-gray-600 text-sm">
-              {performance.percentage_score >= 70 && '🎉 Excellent Performance!'}
-              {performance.percentage_score >= 50 && performance.percentage_score < 70 && '👍 Good Attempt!'}
-              {performance.percentage_score < 50 && '📚 Keep Practicing!'}
-            </p>
           </div>
         </div>
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {performanceMetrics.map((metric, idx) => {
             const Icon = metric.icon
             return (
-              <div key={idx} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition transform hover:scale-105">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`${metric.bgColor} p-3 rounded-lg`}>
-                    <Icon className={`w-6 h-6 ${metric.color}`} />
+              <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm hover:border-slate-700 transition">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">{metric.label}</span>
+                  <div className={`p-2 rounded-lg border ${metric.badgeBg}`}>
+                    <Icon className={`w-4 h-4 ${metric.color}`} />
                   </div>
                 </div>
-                <p className="text-gray-600 text-sm font-medium">{metric.label}</p>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <p className={`text-3xl font-bold ${metric.color}`}>{metric.value}</p>
-                  <p className="text-gray-500 text-sm">{metric.unit}</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl sm:text-3xl font-extrabold text-white">{metric.value}</span>
+                  <span className="text-xs text-slate-400 font-medium">{metric.unit}</span>
                 </div>
               </div>
             )
           })}
         </div>
 
-        {/* Multi-Subject Breakdown */}
+        {/* Multi-Subject Breakdown (if applicable) */}
         {performance.subjects && performance.subjects.length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">📊 Subject-Wise Performance</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8 shadow-sm">
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-yellow-400" />
+              <span>Subject-Wise Performance</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {performance.subjects.map((subject, idx) => {
                 const subjectPercentage = (subject.correct_count / subject.num_questions) * 100
-                const subjectColor = subjectPercentage >= 70 ? 'text-yellow-700' : subjectPercentage >= 50 ? 'text-yellow-600' : 'text-red-600'
-                const subjectBgColor = subjectPercentage >= 70 ? 'bg-yellow-50' : subjectPercentage >= 50 ? 'bg-yellow-50' : 'bg-red-50'
+                const passed = subjectPercentage >= 50
                 return (
-                  <div key={idx} className={`border-2 border-gray-200 rounded-lg p-5 ${subjectBgColor}`}>
-                    <h3 className="font-semibold text-gray-900 mb-3">{subject.subject_name}</h3>
-                    <div className="flex items-baseline gap-2 mb-3">
-                      <p className={`text-3xl font-bold ${subjectColor}`}>{subjectPercentage.toFixed(1)}%</p>
-                      <p className="text-gray-600 text-sm">({subject.correct_count}/{subject.num_questions})</p>
+                  <div key={idx} className="bg-slate-850/80 bg-slate-800 border border-slate-700/80 rounded-xl p-5 shadow-xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold text-base text-white truncate">{subject.subject_name}</h3>
+                      <span className={`text-xs px-2 py-0.5 rounded font-bold ${passed ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800' : 'bg-rose-950/80 text-rose-300 border border-rose-800'}`}>
+                        {subjectPercentage.toFixed(1)}%
+                      </span>
                     </div>
-                    <div className="w-full bg-gray-300 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${subjectPercentage >= 70 ? 'bg-yellow-600' : subjectPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                        style={{ width: `${subjectPercentage}%` }}
+                    <p className="text-xs text-slate-400 mb-3">
+                      {subject.correct_count} of {subject.num_questions} questions correct
+                    </p>
+                    <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-700">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${passed ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                        style={{ width: `${Math.min(100, Math.max(5, subjectPercentage))}%` }}
                       ></div>
                     </div>
                   </div>
@@ -293,240 +332,86 @@ export default function PerformancePage() {
           </div>
         )}
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Pie Chart - Answer Distribution */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Answer Distribution</h2>
-            <div className="flex justify-center items-center">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={answerData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value, percent }) =>
-                      `${name}: ${value} (${(percent * 100).toFixed(1)}%)`
-                    }
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
+        {/* Wrong Answers Review Section (High Contrast) */}
+        {performance.wrong_answers && performance.wrong_answers.length > 0 ? (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8 shadow-sm">
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-6 pb-4 border-b border-slate-800">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
+                <span className="p-1.5 bg-rose-950/80 border border-rose-800 text-rose-400 rounded-lg">
+                  <AlertCircle className="w-5 h-5" />
+                </span>
+                <span>Questions to Review ({performance.wrong_answers.length})</span>
+              </h2>
+              <span className="text-xs text-slate-400">
+                Click any question to view its detailed solution
+              </span>
+            </div>
+
+            {/* List of Wrong Answers */}
+            <div className="space-y-4">
+              {performance.wrong_answers.map((answer, idx) => {
+                const answerKey = idx
+                const isExpanded = expandedWrongAnswer === answerKey
+
+                return (
+                  <div
+                    key={idx}
+                    className="border-l-4 border-rose-500 bg-slate-800/90 border border-slate-700/80 rounded-xl overflow-hidden shadow-xs hover:border-slate-600 transition"
                   >
-                    {answerData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Time Analysis Chart */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Time Analysis</h2>
-            <div className="flex justify-center">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={timeData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis label={{ value: 'Minutes', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#8884d8" radius={[8, 8, 0, 0]}>
-                    <Cell fill="#3b82f6" />
-                    <Cell fill="#f59e0b" />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <p className="text-gray-600 text-sm">Time Used</p>
-                <p className="text-2xl font-bold text-yellow-700">{formatTime(performance.time_taken_seconds)}</p>
-              </div>
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <p className="text-gray-600 text-sm">Time Limit</p>
-                <p className="text-2xl font-bold text-yellow-600">{performance.time_limit_minutes} min</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Exam Details */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">📋 Exam Details</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="border-l-4 border-yellow-500 pl-4">
-              <p className="text-gray-600 text-sm font-medium">Total Questions</p>
-              <p className="text-3xl font-bold text-yellow-700 mt-1">{performance.num_questions}</p>
-            </div>
-            <div className="border-l-4 border-yellow-500 pl-4">
-              <p className="text-gray-600 text-sm font-medium">Correct Answers</p>
-              <p className="text-3xl font-bold text-yellow-700 mt-1">{performance.correct_count}</p>
-            </div>
-            <div className="border-l-4 border-red-500 pl-4">
-              <p className="text-gray-600 text-sm font-medium">Wrong Answers</p>
-              <p className="text-3xl font-bold text-red-600 mt-1">{performance.wrong_count}</p>
-            </div>
-            <div className="border-l-4 border-yellow-500 pl-4">
-              <p className="text-gray-600 text-sm font-medium">Time Limit</p>
-              <p className="text-3xl font-bold text-yellow-600 mt-1">{performance.time_limit_minutes}m</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Timeline Information */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">⏱️ Timeline</h2>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
-              <div>
-                <p className="text-sm text-gray-600">Started</p>
-                <p className="font-semibold text-gray-900">{new Date(performance.started_at).toLocaleString()}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
-              <div>
-                <p className="text-sm text-gray-600">Submitted</p>
-                <p className="font-semibold text-gray-900">{new Date(performance.submitted_at).toLocaleString()}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
-              <div>
-                <p className="text-sm text-gray-600">Total Duration</p>
-                <p className="font-semibold text-gray-900">{formatTime(performance.time_taken_seconds)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Wrong Answers Section */}
-        {performance.wrong_answers && performance.wrong_answers.length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-            <h2 className="text-xl font-bold mb-6 text-red-600 flex items-center gap-2">
-              <AlertCircle className="w-6 h-6" />
-              Questions You Got Wrong ({performance.wrong_answers.length})
-            </h2>
-
-            {/* Organize by subject if multi-subject exam */}
-            {performance.subjects && performance.subjects.length > 1 ? (
-              <div className="space-y-8">
-                {performance.subjects.map((subject) => {
-                  const subjectWrongAnswers = performance.wrong_answers?.filter((answer: any) => answer.subject === subject.subject_name) || []
-                  if (subjectWrongAnswers.length === 0) return null
-                  
-                  return (
-                    <div key={subject.subject_id} className="border-l-4 border-yellow-500 pl-6">
-                      <h3 className="font-bold text-lg text-gray-900 mb-4">{subject.subject_name}</h3>
-                      <div className="space-y-4">
-                        {subjectWrongAnswers.map((answer: any, idx: number) => {
-                          const answerKey = `${subject.subject_id}-${idx}`
-                          return (
-                            <div key={idx} className="border-l-4 border-red-500 bg-red-50 rounded-lg p-6 hover:shadow-md transition">
-                              <button
-                                onClick={() =>
-                                  setExpandedWrongAnswer(expandedWrongAnswer === answerKey ? null : answerKey)
-                                }
-                                className="w-full text-left flex items-center justify-between group"
-                              >
-                                <div className="flex-1">
-                                  <div className="font-bold text-gray-900 group-hover:text-red-600 transition">
-                                    <MathText text={answer.question_text} />
-                                  </div>
-                                  <div className="mt-3 flex gap-4">
-                                    <div className="flex items-center gap-2">
-                                      <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
-                                      <p className="text-sm text-red-600">
-                                        Your answer: <strong><MathText text={answer.user_answer} /></strong>
-                                      </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
-                                      <p className="text-sm text-yellow-700">
-                                        Correct: <strong><MathText text={answer.correct_answer} /></strong>
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                                <span className={`ml-4 text-gray-600 transition transform ${expandedWrongAnswer === answerKey ? 'rotate-180' : ''}`}>
-                                  ▼
-                                </span>
-                              </button>
-
-                              {expandedWrongAnswer === answerKey && (
-                                <div className="mt-4 pt-4 border-t border-red-200 bg-white p-4 rounded">
-                                  <div className="flex items-start gap-2">
-                                    <span className="text-lg">💡</span>
-                                    <div className="text-sm text-gray-700 flex-1">
-                                      <strong>Explanation:</strong>
-                                      <div className="mt-2">
-                                        {answer.explanation ? (
-                                          <MathText text={answer.explanation} />
-                                        ) : (
-                                          <p>No explanation available</p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {performance.wrong_answers.map((answer, idx) => (
-                  <div key={idx} className="border-l-4 border-red-500 bg-red-50 rounded-lg p-6 hover:shadow-md transition">
                     <button
-                      onClick={() =>
-                        setExpandedWrongAnswer(expandedWrongAnswer === idx ? null : idx)
-                      }
-                      className="w-full text-left flex items-center justify-between group"
+                      onClick={() => setExpandedWrongAnswer(isExpanded ? null : answerKey)}
+                      className="w-full text-left p-5 flex items-start justify-between gap-4 cursor-pointer group"
                     >
-                      <div className="flex-1">
-                        <div className="font-bold text-gray-900 group-hover:text-red-600 transition">
-                          <MathText text={answer.question_text} />
+                      <div className="flex-1 min-w-0">
+                        {/* Subject Badge */}
+                        {answer.subject && (
+                          <span className="inline-block px-2 py-0.5 bg-slate-900 border border-slate-700 text-yellow-400 text-xs font-semibold rounded mb-2">
+                            {answer.subject}
+                          </span>
+                        )}
+
+                        {/* Question Text with LaTeX */}
+                        <div className="font-bold text-base text-slate-100 group-hover:text-yellow-300 transition break-words">
+                          <MathDisplay content={answer.question_text || ''} />
                         </div>
-                        <div className="mt-3 flex gap-4">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
-                            <p className="text-sm text-red-600">
-                              Your answer: <strong><MathText text={answer.user_answer} /></strong>
-                            </p>
+
+                        {/* User Answer vs Correct Answer Badges */}
+                        <div className="mt-3.5 flex flex-wrap items-center gap-3">
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-950/70 border border-rose-800 text-rose-200 text-xs font-medium">
+                            <span className="text-rose-400 font-bold">Your answer:</span>
+                            <span className="font-semibold"><MathDisplay content={answer.user_answer || 'Unanswered'} /></span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
-                            <p className="text-sm text-yellow-700">
-                              Correct: <strong><MathText text={answer.correct_answer} /></strong>
-                            </p>
+
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/70 border border-emerald-800 text-emerald-200 text-xs font-medium">
+                            <span className="text-emerald-400 font-bold">Correct:</span>
+                            <span className="font-semibold"><MathDisplay content={answer.correct_answer || ''} /></span>
                           </div>
                         </div>
                       </div>
-                      <span className={`ml-4 text-gray-600 transition transform ${expandedWrongAnswer === idx ? 'rotate-180' : ''}`}>
-                        ▼
-                      </span>
+
+                      <div className="flex-shrink-0 mt-1">
+                        <span className={`p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 flex items-center justify-center transition transform ${isExpanded ? 'rotate-180 text-yellow-400' : ''}`}>
+                          <ChevronDown size={18} />
+                        </span>
+                      </div>
                     </button>
 
-                    {expandedWrongAnswer === idx && (
-                      <div className="mt-4 pt-4 border-t border-red-200 bg-white p-4 rounded">
-                        <div className="flex items-start gap-2">
-                          <span className="text-lg">💡</span>
-                          <div className="text-sm text-gray-700 flex-1">
-                            <strong>Explanation:</strong>
-                            <div className="mt-2">
+                    {/* Expandable Explanation Area */}
+                    {isExpanded && (
+                      <div className="p-5 border-t border-slate-700 bg-slate-900/95 text-slate-200">
+                        <div className="flex items-start gap-3">
+                          <div className="p-1.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex-shrink-0 mt-0.5">
+                            <HelpCircle size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0 text-sm">
+                            <p className="font-bold text-yellow-400 mb-1.5 uppercase tracking-wider text-xs">
+                              Explanation & Solution:
+                            </p>
+                            <div className="text-slate-200 bg-slate-950/60 p-3.5 rounded-lg border border-slate-800 overflow-x-auto leading-relaxed">
                               {answer.explanation ? (
-                                <MathText text={answer.explanation} />
+                                <MathDisplay content={answer.explanation} />
                               ) : (
-                                <p>No explanation available</p>
+                                <p className="text-slate-400 italic">No explanation available for this question.</p>
                               )}
                             </div>
                           </div>
@@ -534,138 +419,43 @@ export default function PerformancePage() {
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Performance Feedback */}
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-8 mb-8 text-white">
-          <h2 className="text-xl font-bold mb-4">📊 Performance Insights</h2>
-          <div className="space-y-3">
-            {performance.percentage_score >= 70 && (
-              <p>✅ Excellent work! You've demonstrated strong mastery of the material. Keep up this momentum!</p>
-            )}
-            {performance.percentage_score >= 50 && performance.percentage_score < 70 && (
-              <p>📚 Good effort! You've understood most of the material. Focus on the areas where you struggled to improve further.</p>
-            )}
-            {performance.percentage_score < 50 && (
-              <p>💪 Keep practicing! Review the incorrect answers and study the related topics to improve your understanding.</p>
-            )}
-            <p>• Time used: {formatTime(performance.time_taken_seconds)} ({((performance.time_taken_seconds / (performance.time_limit_minutes * 60)) * 100).toFixed(1)}% of allocated time)</p>
-            <p>• Accuracy rate: {performance.percentage_score.toFixed(1)}%</p>
-            <p>• Questions attempted: {performance.num_questions}</p>
-          </div>
-        </div>
-
-        {/* CBT Review Submission Card (appears after exam completion) */}
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 mb-8 text-white">
-          <h3 className="text-lg font-bold mb-2">How was this exam?</h3>
-          <p className="text-sm mb-4">Share a short review about this CBT exam. Your feedback helps us improve.</p>
-          <CbtReviewForm performance={performance} />
-        </div>
-
-        {/* All Answers Section */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-          <h2 className="text-xl font-bold mb-6 text-gray-900">📝 All Answers Review</h2>
-
-          {performance.subjects && performance.subjects.length > 1 ? (
-            <div className="space-y-8">
-              {performance.subjects.map((subject) => {
-                const subjectAnswers = performance.student_answers?.filter((answer: any) => answer.subject === subject.subject_name) || []
-                if (subjectAnswers.length === 0) return null
-                
-                return (
-                  <div key={subject.subject_id} className="border-l-4 border-yellow-400 pl-6">
-                    <h3 className="font-bold text-lg text-gray-900 mb-4">{subject.subject_name}</h3>
-                    <div className="space-y-3">
-                      {subjectAnswers.map((answer: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className={`border-l-4 rounded-lg p-4 transition transform hover:scale-102 ${
-                            answer.is_correct
-                              ? 'border-green-500 bg-green-50'
-                              : 'border-red-500 bg-red-50'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <span
-                                  className={`flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm ${
-                                    answer.is_correct ? 'bg-green-600' : 'bg-red-600'
-                                  }`}
-                                >
-                                  {answer.is_correct ? '✓' : '✗'}
-                                </span>
-                                <div className="font-semibold text-gray-900">
-                                  <MathText text={answer.question_text} />
-                                </div>
-                              </div>
-                              <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-green-700' : 'text-red-700'}`}>
-                                Your answer: <strong><MathText text={answer.selected_choice_text ?? (typeof answer.selected_choice === 'number' ? 'Choice #' + answer.selected_choice : answer.selected_choice)} /></strong>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 )
               })}
             </div>
-          ) : (
-            <div className="space-y-3">
-              {performance.student_answers?.map((answer, idx) => (
-                <div
-                  key={idx}
-                  className={`border-l-4 rounded-lg p-4 transition transform hover:scale-102 ${
-                    answer.is_correct
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-red-500 bg-red-50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm ${
-                            answer.is_correct ? 'bg-green-600' : 'bg-red-600'
-                          }`}
-                        >
-                          {answer.is_correct ? '✓' : '✗'}
-                        </span>
-                        <div className="font-semibold text-gray-900">
-                          <MathText text={answer.question_text} />
-                        </div>
-                      </div>
-                      <p className={`text-sm mt-2 ml-11 ${answer.is_correct ? 'text-green-700' : 'text-red-700'}`}>
-                        Your answer: <strong><MathText text={answer.selected_choice_text ?? (typeof answer.selected_choice === 'number' ? 'Choice #' + answer.selected_choice : answer.selected_choice)} /></strong>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          </div>
+        ) : (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center shadow-sm">
+            <div className="w-14 h-14 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-400 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle size={28} />
             </div>
-          )}
+            <h3 className="text-xl font-bold text-white mb-1">Perfect Score!</h3>
+            <p className="text-slate-400 text-sm">You answered all questions correctly in this exam.</p>
+          </div>
+        )}
+
+        {/* Exam Review Feedback Submission */}
+        <div className="bg-gradient-to-r from-yellow-600 via-amber-600 to-yellow-600 rounded-2xl p-6 md:p-8 text-slate-900 shadow-xl">
+          <h3 className="text-xl font-extrabold text-slate-950 mb-1">How was this exam?</h3>
+          <p className="text-sm text-yellow-950 mb-4 font-medium">Share your experience to help us keep improving question quality.</p>
+          <CbtReviewForm performance={performance} />
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-4 mb-8">
+        {/* Bottom Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-2">
           <button
-            onClick={() => navigate('/student/overview')}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
+            onClick={() => navigate('/student/cbt')}
+            className="flex-1 py-3.5 px-6 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-xl shadow-lg transition text-center text-sm"
           >
-            ← Back to Dashboard
+            ← Practice Another Exam
           </button>
           <button
             onClick={() => navigate('/student/progress')}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-lg hover:shadow-lg font-semibold transition transform hover:scale-105"
+            className="flex-1 py-3.5 px-6 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold rounded-xl shadow-lg transition text-center text-sm"
           >
-            📊 View All Results
+            📊 View All History & Progress
           </button>
         </div>
+
       </div>
     </div>
   )

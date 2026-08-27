@@ -2,7 +2,7 @@ import React from 'react'
 import { InlineMath, BlockMath } from 'react-katex'
 import 'katex/dist/katex.min.css'
 import 'katex/contrib/mhchem' // Enable \ce{} chemistry commands
-import { formatMathQuestion } from '../../utils/mathUtils'
+import { formatMathQuestion, sanitizeEscapedLatex } from '../../utils/mathUtils'
 
 interface MathDisplayProps {
   content: string
@@ -190,13 +190,15 @@ function renderMathElement(
   key: string | number
 ): React.ReactNode {
   if (!formula) return null
+  const cleanFormula = sanitizeEscapedLatex(formula).trim()
+  if (!cleanFormula) return null
 
   try {
     if (type === 'block') {
       return (
         <div key={key} className="my-2 overflow-x-auto w-full flex justify-start">
           <div className="inline-block min-w-fit">
-            <BlockMath math={formula} />
+            <BlockMath math={cleanFormula} />
           </div>
         </div>
       )
@@ -204,14 +206,14 @@ function renderMathElement(
 
     return (
       <span key={key} className="inline-block max-w-full overflow-x-auto">
-        <InlineMath math={formula} />
+        <InlineMath math={cleanFormula} />
       </span>
     )
   } catch (e) {
-    console.error(`Failed to render ${type} math:`, formula, e)
+    console.warn(`Failed to render ${type} math:`, cleanFormula, e)
     return (
-      <span key={key} className="break-words text-red-600 bg-red-50 dark:bg-red-950/40 px-1 rounded text-sm">
-        Math Error: {formula}
+      <span key={key} className="break-words font-mono text-xs px-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+        {cleanFormula}
       </span>
     )
   }

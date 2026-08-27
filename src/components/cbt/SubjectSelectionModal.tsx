@@ -62,14 +62,10 @@ export default function SubjectSelectionModal({
         // ignore
       }
     })()
-  }, [isOpen, exam])
 
-  useEffect(() => {
-    if (isPreLocked && subjects.length > 0) {
-      const allowedSubs = subjects.filter(s => allowedSubjectIds?.includes(s.id))
-      setSelectedSubjects(allowedSubs)
-    }
-  }, [subjects, isPreLocked, allowedSubjectIds])
+    // Reset selected subjects whenever modal opens for an exam so none are pre-ticked
+    setSelectedSubjects([])
+  }, [isOpen, exam])
 
   const fetchSubjects = async (): Promise<void> => {
     if (!exam) return
@@ -78,9 +74,7 @@ export default function SubjectSelectionModal({
     try {
       const response = await axios.get<Subject[]>(`${API_BASE}/cbt/exams/${exam.id}/subjects/`)
       setSubjects(response.data)
-      if (!isPreLocked) {
-        setSelectedSubjects([])
-      }
+      setSelectedSubjects([])
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load subjects')
       console.error('Error fetching subjects:', err)
@@ -250,6 +244,29 @@ export default function SubjectSelectionModal({
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">No subjects available for this exam</div>
           ) : (
             <div className="space-y-3">
+              <div className="flex items-center justify-between pb-1 px-1 text-xs text-gray-600 dark:text-gray-400">
+                <span>
+                  <strong>{selectedSubjects.length}</strong> of {displayedSubjects.length} subjects selected
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSubjects(displayedSubjects)}
+                    className="text-yellow-600 dark:text-yellow-400 hover:underline font-semibold"
+                  >
+                    Select All
+                  </button>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSubjects([])}
+                    disabled={selectedSubjects.length === 0}
+                    className="text-gray-500 hover:underline disabled:opacity-40"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
               {displayedSubjects.map((subject) => {
                 const isSelected = selectedSubjects.some(s => s.id === subject.id)
                 return (

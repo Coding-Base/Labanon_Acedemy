@@ -53,6 +53,7 @@ import { adminMockExamsAPI, CustomMockExam } from '../api/mock_exams_api'
 import showToast from '../utils/toast'
 import OversizeImageModal from '../components/OversizeImageModal'
 import { validateImageSize } from '../utils/uploadValidators'
+import MathFormulaToolbar from '../components/cbt/MathFormulaToolbar'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -1336,6 +1337,18 @@ const ExamStructureModal: React.FC<ExamStructureModalProps> = ({
       >
         <DialogTitle>{selectedQuestion ? 'Edit Question' : `Add Question to ${selectedSubject?.subject_name}`}</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
+          <Box sx={{ mb: 2 }}>
+            <MathFormulaToolbar
+              onInsert={(snippet) =>
+                setQuestionForm((prev) => ({
+                  ...prev,
+                  question_text: prev.question_text ? `${prev.question_text} ${snippet}` : snippet,
+                }))
+              }
+              currentValue={questionForm.question_text}
+              label="Math & Chemistry Formula Helper"
+            />
+          </Box>
           <TextField
             fullWidth
             label="Question"

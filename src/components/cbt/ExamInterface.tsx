@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import MathDisplay from './MathDisplay'
 import { Menu, X } from 'lucide-react'
+import useTokenRefresher from '../../utils/useTokenRefresher'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -48,6 +49,9 @@ export default function ExamInterface({
 }: ExamInterfaceProps) {
   const navigate = useNavigate()
   const [currentSubjectIndex, setCurrentSubjectIndex] = useState(0)
+
+  // Proactively refresh JWT token every 45 minutes to prevent logout during long exams
+  useTokenRefresher(45)
   const [questions, setQuestions] = useState<Question[]>([])
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number | null }>({})
   const [loading, setLoading] = useState(false)

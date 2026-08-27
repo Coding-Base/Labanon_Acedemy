@@ -8,6 +8,7 @@ import { validateImageSize } from '../../utils/uploadValidators'
 import axios from 'axios'
 import showToast from '../../utils/toast'
 import useTokenRefresher from '../../utils/useTokenRefresher'
+import MathFormulaToolbar from '../../components/cbt/MathFormulaToolbar'
 import { initGA, sendPageView } from '../../utils/googleAnalytics'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -5150,11 +5151,17 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">
                         <h4 className="font-semibold">Add Single Question</h4>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Question Text</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
+                          <MathFormulaToolbar
+                            onInsert={(snippet) => setManualQuestion(prev => ({ ...prev, text: (prev.text || '') + ' ' + snippet }))}
+                            currentValue={manualQuestion.text}
+                            label="Math & Chemistry Formula Helper"
+                          />
                           <textarea 
                             value={manualQuestion.text}
                             onChange={e => setManualQuestion({...manualQuestion, text: e.target.value})}
                             className="w-full mt-1 p-2 border rounded-lg"
+                            placeholder="Enter question text or math formulas (e.g., $x^2 + y^2 = r^2$ or \ce{H2SO4})..."
                             rows={3}
                           />
                         </div>

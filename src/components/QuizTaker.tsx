@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { motion } from 'framer-motion'
 import { CheckCircle, XCircle, Loader2, Clock, AlertCircle } from 'lucide-react'
+import MathDisplay from './cbt/MathDisplay'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
 
@@ -210,14 +211,19 @@ export default function QuizTaker({ quizId, onComplete, onClose }: QuizTakerProp
                       <XCircle className="w-5 h-5 text-red-600 mt-1 flex-shrink-0" />
                     )}
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 mb-1">{question?.text}</p>
-                      <p className="text-sm text-gray-600 mb-2">
-                        Your answer: <strong>{answer.selected_option?.text}</strong>
-                      </p>
+                      <div className="font-medium text-gray-900 mb-1">
+                        <MathDisplay content={question?.text || ''} />
+                      </div>
+                      <div className="text-sm text-gray-600 mb-2 flex items-center gap-1 flex-wrap">
+                        <span>Your answer:</span>
+                        <span className="font-semibold inline-block">
+                          <MathDisplay content={answer.selected_option?.text || ''} />
+                        </span>
+                      </div>
                       {question?.explanation && (
-                        <p className="text-sm text-gray-700 italic border-t border-current pt-2 mt-2">
-                          {question.explanation}
-                        </p>
+                        <div className="text-sm text-gray-700 italic border-t border-current pt-2 mt-2">
+                          <MathDisplay content={question.explanation} />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -313,9 +319,9 @@ export default function QuizTaker({ quizId, onComplete, onClose }: QuizTakerProp
         animate={{ opacity: 1, y: 0 }}
         className="bg-white border border-gray-200 rounded-lg p-6"
       >
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          {currentQuestion?.text || 'Question'}
-        </h3>
+        <div className="text-lg font-semibold text-gray-900 mb-4">
+          <MathDisplay content={currentQuestion?.text || 'Question'} />
+        </div>
 
         <div className="space-y-3">
           {(currentQuestion.options || []).map((option) => {
@@ -341,7 +347,9 @@ export default function QuizTaker({ quizId, onComplete, onClose }: QuizTakerProp
                   }
                   className="w-4 h-4 text-green-600"
                 />
-                <span className="ml-3 text-gray-900">{option.text}</span>
+                <span className="ml-3 text-gray-900 flex-1 overflow-x-auto">
+                  <MathDisplay content={option.text} />
+                </span>
               </label>
             )
           })}

@@ -151,7 +151,8 @@ export default function QuestionCard({
                       : 'bg-gray-50 border-gray-200 text-gray-700'
                   }`}
                 >
-                  <span className="font-semibold">{choiceLabel})</span> {choice.text}
+                  <span className="font-semibold mr-1">{choiceLabel})</span>
+                  <MathText text={choice.text} />
                 </div>
               )
             })}

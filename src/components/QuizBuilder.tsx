@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Trash2, Plus, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import MathFormulaToolbar from './cbt/MathFormulaToolbar'
 
 type QuizOption = {
   id?: number | string
@@ -265,13 +266,18 @@ export function QuizBuilder({ quiz, onQuizChange }: QuizBuilderProps) {
         </h3>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Question Text *
           </label>
+          <MathFormulaToolbar
+            onInsert={(snippet) => setQuestionText((prev) => (prev ? `${prev} ${snippet}` : snippet))}
+            currentValue={questionText}
+            label="Math & Chemistry Formula Helper"
+          />
           <textarea
             value={questionText}
             onChange={(e) => setQuestionText(e.target.value)}
-            placeholder="What is the main topic of this lesson?"
+            placeholder="e.g. Calculate the value of $x^2 + 2x = 0$ or \ce{H2SO4}..."
             rows={2}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
           />

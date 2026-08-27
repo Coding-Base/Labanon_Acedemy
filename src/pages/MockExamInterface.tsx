@@ -17,6 +17,7 @@ import { Clock, ChevronLeft, ChevronRight, AlertCircle, Flag, Calculator, X } fr
 import { studentMockExamsAPI, MockExamQuestion, MockExamOption, MockExamAttempt } from '../api/mock_exams_api';
 import showToast from '../utils/toast';
 import { MathText } from '../utils/mathRenderer';
+import useTokenRefresher from '../utils/useTokenRefresher';
 
 interface Answer {
   [key: number]: string | number | null;
@@ -48,6 +49,9 @@ function shuffleArray<T>(arr: T[]): T[] {
 const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false }) => {
   const { attemptId } = useParams<{ attemptId: string }>();
   const navigate = useNavigate();
+
+  // Proactively refresh JWT token every 45 minutes to prevent logout during long exams
+  useTokenRefresher(45);
 
   const muiTheme = React.useMemo(() => createTheme({
     palette: {

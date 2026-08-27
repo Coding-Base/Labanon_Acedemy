@@ -5,6 +5,7 @@ import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import axios from 'axios'
 import showToast from '../utils/toast'
+import MathFormulaToolbar from './cbt/MathFormulaToolbar'
 
 interface Choice {
   text: string
@@ -272,6 +273,26 @@ export default function QuestionEditModal({
               <label className="block text-sm font-semibold text-gray-900 mb-2">
                 Question Text *
               </label>
+              
+              <MathFormulaToolbar
+                onInsert={(snippet) => {
+                  if (quillRef.current) {
+                    const editor = quillRef.current.getEditor()
+                    const range = editor.getSelection(true)
+                    const index = range ? range.index : (editor.getLength() - 1)
+                    editor.insertText(index, snippet)
+                    editor.setSelection(index + snippet.length)
+                    // Sync state immediately so live preview and save reflect the inserted snippet
+                    const newHtml = editor.root.innerHTML
+                    setFormData(prev => ({ ...prev, text: newHtml }))
+                  } else {
+                    setFormData(prev => ({ ...prev, text: (prev.text || '') + ' ' + snippet }))
+                  }
+                }}
+                currentValue={formData.text}
+                label="Math & Chemistry Formula Helper"
+              />
+
               <div className="border border-gray-300 rounded-lg overflow-hidden">
                 <ReactQuill
                   ref={quillRef}

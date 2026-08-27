@@ -1,211 +1,143 @@
 /**
- * Math Notation Utilities
+ * Math & Chemistry Notation Utilities
  * 
- * Provides helper functions for working with mathematical formulas
+ * Provides helper functions for working with mathematical and chemical formulas
  * in the CBT exam system.
  */
 
-/**
- * Convert simple math notation to LaTeX format
- * 
- * Examples:
- * - "3x^2" -> "3x^{2}"
- * - "sqrt(x)" -> "\sqrt{x}"
- * - "1/2" -> "\frac{1}{2}"
- * - "x_1" -> "x_{1}"
- * 
- * @param text - The text to convert
- * @returns Formatted text with LaTeX notation
- */
-export function convertToLatex(text: string): string {
-  if (!text) return text
+// Common chemical formulas for auto-detection
+export const CHEMICAL_FORMULAS = [
+  'Ca(OH)2', 'Mg(OH)2', 'Al(OH)3', 'Fe(OH)3', 'Cu(OH)2',
+  'Na2CO3', 'CaCO3', 'NaHCO3', 'K2CO3', 'MgCO3',
+  'H2SO4', 'Na2SO4', 'CuSO4', 'FeSO4', 'MgSO4', 'ZnSO4', 'K2SO4', 'BaSO4',
+  'HNO3', 'NaNO3', 'KNO3', 'AgNO3', 'Ca(NO3)2',
+  'Na2O', 'CaO', 'MgO', 'Al2O3', 'Fe2O3', 'Fe3O4', 'CO2', 'SO2', 'SO3', 'NO2', 'P2O5',
+  'NaCl', 'KCl', 'CaCl2', 'HCl', 'FeCl3', 'FeCl2', 'AlCl3', 'MgCl2', 'NH4Cl', 'ZnCl2',
+  'NaOH', 'KOH',
+  'H2O2', 'H2O',
+  'NH3', 'NH4',
+  'CH3COOH', 'C2H5OH', 'CH3OH', 'C6H12O6', 'C12H22O11', 'C2H4', 'C2H2', 'CH4',
+  'C6H6', 'C3H8', 'C4H10', 'C2H6',
+  'KMnO4', 'K2Cr2O7', 'K2MnO4',
+  'PbO2', 'PbO', 'MnO2', 'SiO2', 'TiO2',
+  'Na2S', 'H2S', 'FeS', 'FeS2', 'ZnS', 'CuS', 'PbS',
+  'NaF', 'KF', 'CaF2', 'HF',
+  'KBr', 'NaBr', 'HBr',
+  'KI', 'NaI', 'HI',
+  'O2', 'N2', 'H2', 'F2', 'Cl2', 'Br2', 'I2',
+]
 
+const CHEMICAL_LIKE_PATTERN = /^[A-Z][a-z]?\d*(?:[A-Z][a-z]?\d*)*(?:\([A-Z][a-z]?\d*\)\d*)*$/
+
+export function isChemicalFormula(text: string): boolean {
+  const trimmed = text.trim()
+  if (!trimmed || trimmed.length < 2) return false
+  if (CHEMICAL_FORMULAS.includes(trimmed)) return true
+  return CHEMICAL_LIKE_PATTERN.test(trimmed) && /\d/.test(trimmed)
+}
+
+export function convertReactionArrows(text: string): string {
   let result = text
-
-  // Convert powers: x^2 -> x^{2}, x^n -> x^{n}
-  result = result.replace(/\^(\d+)/g, '^{$1}')
-  result = result.replace(/\^([a-zA-Z])/g, '^{$1}')
-
-  // Convert square root: sqrt(x) -> \sqrt{x}
-  result = result.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
-
-  // Convert fractions: 1/2 -> \frac{1}{2}
-  result = result.replace(/(\d+)\/(\d+)/g, '\\frac{$1}{$2}')
-
-  // Convert subscripts: x_1 -> x_{1}, x_n -> x_{n}
-  result = result.replace(/_(\d+)/g, '_{$1}')
-  result = result.replace(/_([a-zA-Z])/g, '_{$1}')
-
+  result = result.replace(/\s*<\s*=\s*>\s*/g, ' $\\rightleftharpoons$ ')
+  result = result.replace(/\s*<\s*-\s*>\s*/g, ' $\\rightleftharpoons$ ')
+  result = result.replace(/\s*⇌\s*/g, ' $\\rightleftharpoons$ ')
+  result = result.replace(/\s*-\s*-\s*>\s*/g, ' $\\rightarrow$ ')
+  result = result.replace(/\s*-\s*>\s*/g, ' $\\rightarrow$ ')
+  result = result.replace(/\s*→\s*/g, ' $\\rightarrow$ ')
   return result
 }
 
-/**
- * Check if text contains mathematical notation
- * 
- * @param text - The text to check
- * @returns true if text contains math notation
- */
+export function convertScientificNotation(text: string): string {
+  let result = text
+  result = result.replace(
+    /(\d+\.?\d*)\s*[x×\*]\s*10\s*\^\s*\{?\s*(-?\d+)\s*\}?/g,
+    '$$$1 \\times 10^{$2}$$'
+  )
+  result = result.replace(
+    /(\d+\.?\d*)\s*[eE]\s*(-?\d+)/g,
+    '$$$1 \\times 10^{$2}$$'
+  )
+  return result
+}
+
+export function convertIonicCharges(text: string): string {
+  return text.replace(
+    /\b([A-Z][a-z]?(?:\d*))\s*\^\s*(\d*[+-])/g,
+    '$\\text{$1}^{$2}$'
+  )
+}
+
+export function convertToLatex(text: string): string {
+  if (!text) return text
+  let result = text
+  result = result.replace(/\^(\d+)/g, '^{$1}')
+  result = result.replace(/\^([a-zA-Z])/g, '^{$1}')
+  result = result.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
+  result = result.replace(/(\d+)\/(\d+)/g, '\\frac{$1}{$2}')
+  result = result.replace(/_(\d+)/g, '_{$1}')
+  result = result.replace(/_([a-zA-Z])/g, '_{$1}')
+  return result
+}
+
 export function hasMathNotation(text: string): boolean {
   if (!text) return false
-
-  // Check for common math patterns
   const mathPatterns = [
-    /\^/, // Power
-    /sqrt\(/, // Square root
-    /\//, // Fraction
-    /_/, // Subscript
-    /\\/, // LaTeX command
-    /\$/, // LaTeX delimiters
+    /\^{/,
+    /_{/,
+    /\\sqrt/,
+    /\\frac/,
+    /\w\^\d/,
+    /\w\^[a-zA-Z]/,
+    /\w_\d/,
+    /sqrt\(/,
+    /\d+\/\d+/,
+    /\\[a-z]+{/,
   ]
-
   return mathPatterns.some((pattern) => pattern.test(text))
 }
 
-/**
- * Wrap text in LaTeX inline math delimiters if needed
- * 
- * @param text - The text to wrap
- * @returns Text wrapped in $ delimiters if it contains math notation
- */
-export function wrapInMath(text: string): string {
-  if (!text || (text.startsWith('$') && text.endsWith('$'))) {
-    return text
-  }
+function wrapSegmentMath(text: string): string {
+  const tokens = text.split(/(\s+)/)
+  return tokens
+    .map((token) => {
+      if (!token || /^\s+$/.test(token)) return token
 
-  if (hasMathNotation(text)) {
-    return `$${text}$`
-  }
+      const stripped = token.replace(/^[.,;:!?()[\]{}]+|[.,;:!?()[\]{}]+$/g, '')
+      const leadingMatch = token.match(/^[.,;:!?()[\]{}]+/)
+      const leading = leadingMatch ? leadingMatch[0] : ''
+      const trailingMatch = token.match(/[.,;:!?()[\]{}]+$/)
+      const trailing = trailingMatch ? trailingMatch[0] : ''
 
-  return text
+      if (isChemicalFormula(stripped)) {
+        return `${leading}$\\ce{${stripped}}${trailing}`
+      }
+      if (hasMathNotation(stripped)) {
+        const converted = convertToLatex(stripped)
+        return `${leading}$${converted}$${trailing}`
+      }
+      return token
+    })
+    .join('')
 }
 
-/**
- * Extract all mathematical expressions from text
- * 
- * @param text - The text to search
- * @returns Array of math expressions found
- */
-export function extractMathExpressions(text: string): string[] {
-  if (!text) return []
-
-  const expressions: string[] = []
-
-  // Extract inline math: $...$
-  const inlineMath = text.match(/\$([^$]+)\$/g) || []
-  expressions.push(...inlineMath.map((m) => m.slice(1, -1)))
-
-  // Extract block math: $$...$$
-  const blockMath = text.match(/\$\$([^$]+)\$\$/g) || []
-  expressions.push(...blockMath.map((m) => m.slice(2, -2)))
-
-  // Extract LaTeX commands: \(...\), \[...\]
-  const latexInline = text.match(/\\\(([^\)]+)\\\)/g) || []
-  expressions.push(...latexInline.map((m) => m.slice(2, -2)))
-
-  const latexBlock = text.match(/\\\[([^\]]+)\\\]/g) || []
-  expressions.push(...latexBlock.map((m) => m.slice(2, -2)))
-
-  return expressions
-}
-
-/**
- * Validate LaTeX syntax (basic check)
- * 
- * @param latex - LaTeX string to validate
- * @returns true if LaTeX appears to be valid
- */
-export function isValidLatex(latex: string): boolean {
-  if (!latex) return false
-
-  // Check for balanced braces
-  let braceCount = 0
-  for (const char of latex) {
-    if (char === '{') braceCount++
-    if (char === '}') braceCount--
-    if (braceCount < 0) return false
-  }
-
-  return braceCount === 0
-}
-
-/**
- * Format a mathematical question for display
- * 
- * Combines multiple utilities to prepare a question for rendering
- * 
- * @param questionText - The question text
- * @returns Formatted question text ready for KaTeX rendering
- */
 export function formatMathQuestion(questionText: string): string {
   if (!questionText) return ''
+  if (questionText.includes('$')) return questionText
 
-  let formatted = convertToLatex(questionText)
-  formatted = wrapInMath(formatted)
+  let text = convertReactionArrows(questionText)
+  text = convertScientificNotation(text)
+  text = convertIonicCharges(text)
 
-  return formatted
+  const parts = text.split(/(\$[^$]+\$|\$\$[^$]+\$\$)/g)
+  return parts
+    .map((part) => {
+      if (!part) return ''
+      if (part.startsWith('$')) return part
+      return wrapSegmentMath(part)
+    })
+    .join('')
 }
 
-/**
- * Format an array of answer choices
- * 
- * @param choices - Array of choice texts
- * @returns Array of formatted choice texts
- */
 export function formatMathChoices(choices: string[]): string[] {
   return choices.map((choice) => formatMathQuestion(choice))
-}
-
-/**
- * Common mathematical constants and symbols
- */
-export const MATH_SYMBOLS = {
-  pi: '\\pi',
-  PI: '\\pi',
-  pi_value: '3.14159',
-  sqrt2: '\\sqrt{2}',
-  sqrt3: '\\sqrt{3}',
-  infinity: '\\infty',
-  infinity_symbol: '∞',
-  alpha: '\\alpha',
-  beta: '\\beta',
-  gamma: '\\gamma',
-  delta: '\\delta',
-  theta: '\\theta',
-  lambda: '\\lambda',
-  mu: '\\mu',
-  sigma: '\\sigma',
-  sum: '\\sum',
-  product: '\\prod',
-  integral: '\\int',
-  partial: '\\partial',
-  nabla: '\\nabla',
-  approx: '\\approx',
-  not_equal: '\\neq',
-  less_equal: '\\leq',
-  greater_equal: '\\geq',
-  approximately_equal: '\\approx',
-  plus_minus: '\\pm',
-  degree: '^\\circ',
-}
-
-/**
- * Replace common symbol names with LaTeX equivalents
- * 
- * Example: "pi" -> "\pi"
- * 
- * @param text - Text containing symbol names
- * @returns Text with symbols replaced by LaTeX
- */
-export function replaceSymbols(text: string): string {
-  if (!text) return text
-
-  let result = text
-
-  // Replace symbol names with LaTeX
-  Object.entries(MATH_SYMBOLS).forEach(([name, latex]) => {
-    const regex = new RegExp(`\\b${name}\\b`, 'gi')
-    result = result.replace(regex, latex)
-  })
-
-  return result
 }

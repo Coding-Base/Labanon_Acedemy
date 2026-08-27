@@ -4,6 +4,7 @@ import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion';
 // 1. USE SECURE API INSTANCE
 import api from '../../utils/axiosInterceptor';
+import useTokenRefresher from '../../utils/useTokenRefresher';
 import {
   Home,
   BookOpen,
@@ -92,6 +93,9 @@ interface LeaderboardUser {
 export default function StudentDashboard(props: { summary?: DashboardSummary }) {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Proactively refresh JWT token every 50 minutes (same as other dashboards)
+  useTokenRefresher(50);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showInbox, setShowInbox] = useState(false);

@@ -41,7 +41,8 @@ export default function BlogDetailPage() {
   const navigate = useNavigate()
   const { slug } = useParams<{ slug: string }>()
   const location = useLocation()
-  const [blog, setBlog] = useState<BlogPost | null>(location.state?.blog || null)
+  const stateData = location.state?.blog
+  const [blog, setBlog] = useState<BlogPost | null>(stateData?.slug === slug ? stateData : null)
   const [loading, setLoading] = useState(!blog)
   const [liked, setLiked] = useState(blog?.user_liked || false)
   const [likesCount, setLikesCount] = useState(blog?.likes_count || 0)
@@ -51,10 +52,10 @@ export default function BlogDetailPage() {
   const [currentUserId, setCurrentUserId] = useState<number | undefined>()
 
   useEffect(() => {
-    if (!blog && slug) {
+    if (slug && (!blog || blog.slug !== slug)) {
       loadBlog()
     }
-  }, [slug, blog])
+  }, [slug])
 
   // Update page title and meta tags for SEO (helps crawlers that render JS)
   useEffect(() => {
@@ -103,7 +104,8 @@ export default function BlogDetailPage() {
       const response = await publicApi.get(`/blog/?slug=${slug}`)
       const blogs = response.data.results || response.data
       if (Array.isArray(blogs) && blogs.length > 0) {
-        const blogData = blogs[0]
+        // Find the blog matching the requested slug (safety net)
+        const blogData = blogs.find((b: any) => b.slug === slug) || blogs[0]
         // Convert relative or incorrect domain src attributes in content to correct absolute backend URLs
         if (blogData.content) {
           blogData.content = blogData.content.replace(
@@ -116,9 +118,12 @@ export default function BlogDetailPage() {
         setLikesCount(blogData.likes_count)
         setCommentsCount(blogData.comments_count)
         setSharesCount(blogData.shares_count)
+      } else {
+        setBlog(null)
       }
     } catch (err) {
       console.error('Failed to load blog:', err)
+      setBlog(null)
     } finally {
       setLoading(false)
     }

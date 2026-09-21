@@ -201,3 +201,53 @@ export async function deleteQuestionsInBulk(questionIds: number[]): Promise<void
   const promises = questionIds.map(id => deleteQuestion(id))
   await Promise.all(promises)
 }
+
+export interface AutoAssignResult {
+  message: string
+  subject_id?: number
+  subject_name?: string
+  total_processed: number
+  updated_count: number
+  breakdown: Record<string, number>
+  remaining_unassigned: number
+}
+
+/**
+ * Automatically assign years to all unassigned questions for a subject
+ */
+export async function autoAssignSubjectYears(subjectId: number): Promise<AutoAssignResult> {
+  const response = await axios.post(
+    `${API_BASE}/cbt/subjects/${subjectId}/auto_assign_years/`,
+    {},
+    getAuthHeaders()
+  )
+  return response.data
+}
+
+/**
+ * Automatically assign years to all unassigned questions across the entire platform
+ */
+export async function autoAssignAllQuestionYears(): Promise<AutoAssignResult> {
+  const response = await axios.post(
+    `${API_BASE}/cbt/questions/auto_assign_all_years/`,
+    {},
+    getAuthHeaders()
+  )
+  return response.data
+}
+
+/**
+ * Bulk assign a specific year to a list of question IDs
+ */
+export async function bulkAssignQuestionYear(
+  questionIds: number[],
+  year: string
+): Promise<{ message: string; updated_count: number; year: string }> {
+  const response = await axios.post(
+    `${API_BASE}/cbt/questions/bulk_assign_year/`,
+    { question_ids: questionIds, year },
+    getAuthHeaders()
+  )
+  return response.data
+}
+

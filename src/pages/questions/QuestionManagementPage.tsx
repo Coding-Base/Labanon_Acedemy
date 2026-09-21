@@ -6,7 +6,9 @@ import {
   Search,
   Loader2,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  Calendar
 } from 'lucide-react'
 import QuestionCard from '../../components/QuestionCard'
 import QuestionEditModal from '../../components/QuestionEditModal'
@@ -15,7 +17,9 @@ import {
   fetchQuestionsForSubject,
   updateQuestionAndChoices,
   deleteQuestion,
-  deleteQuestionsInBulk
+  deleteQuestionsInBulk,
+  autoAssignSubjectYears,
+  bulkAssignQuestionYear
 } from '../../utils/questionAPI'
 
 interface Subject {
@@ -97,6 +101,9 @@ export default function QuestionManagementPage({
   const [availableYears, setAvailableYears] = useState<{ year: string; question_count: number }[]>([])
   const [unassignedCount, setUnassignedCount] = useState<number>(0)
   const [loadingYears, setLoadingYears] = useState(false)
+  const [autoAssigning, setAutoAssigning] = useState(false)
+  const [bulkYearInput, setBulkYearInput] = useState('')
+  const [bulkAssigning, setBulkAssigning] = useState(false)
   const searchDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const PAGE_SIZE = 10
@@ -270,6 +277,57 @@ export default function QuestionManagementPage({
     }
   }
 
+  // Auto-assign years to unassigned questions for this subject
+  const handleAutoAssignYears = async () => {
+    setAutoAssigning(true)
+    try {
+      const res = await autoAssignSubjectYears(subject.id)
+      const breakdownText = Object.entries(res.breakdown || {})
+        .map(([yr, cnt]) => `${yr}: ${cnt}`)
+        .join(', ')
+      showToast(
+        `Assigned ${res.updated_count} questions (${breakdownText || 'Done'})`,
+        'success'
+      )
+      await loadAvailableYears()
+      setSelectedYearFilter('')
+      loadQuestions(1, searchQuery, '')
+    } catch (err: any) {
+      console.error('Failed to auto-assign years:', err)
+      showToast(err.response?.data?.detail || 'Failed to auto-assign years', 'error')
+    } finally {
+      setAutoAssigning(false)
+    }
+  }
+
+  // Bulk assign specific year to selected questions
+  const handleBulkAssignYear = async () => {
+    if (selectedQuestionIds.size === 0) {
+      showToast('Please select at least one question', 'error')
+      return
+    }
+    const yearToSet = bulkYearInput.trim()
+    if (!yearToSet) {
+      showToast('Please enter a year to assign', 'error')
+      return
+    }
+
+    setBulkAssigning(true)
+    try {
+      const res = await bulkAssignQuestionYear(Array.from(selectedQuestionIds), yearToSet)
+      showToast(res.message || `Assigned year ${yearToSet} to selected questions`, 'success')
+      setSelectedQuestionIds(new Set())
+      setBulkYearInput('')
+      await loadAvailableYears()
+      loadQuestions(currentPage, searchQuery, selectedYearFilter)
+    } catch (err: any) {
+      console.error('Bulk assign year failed:', err)
+      showToast(err.response?.data?.detail || 'Failed to assign year', 'error')
+    } finally {
+      setBulkAssigning(false)
+    }
+  }
+
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
   return (
@@ -306,12 +364,32 @@ export default function QuestionManagementPage({
               </p>
             </div>
           </div>
-          <button
-            onClick={() => handleYearFilterChange(selectedYearFilter === 'unassigned' ? '' : 'unassigned')}
-            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition whitespace-nowrap"
-          >
-            {selectedYearFilter === 'unassigned' ? 'Show All Questions' : 'Filter & Edit Unassigned Questions'}
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleAutoAssignYears}
+              disabled={autoAssigning}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition whitespace-nowrap flex items-center gap-1.5 shadow-sm"
+              title="Automatically detect upload dates and text patterns to assign proper years"
+            >
+              {autoAssigning ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Auto-Assigning...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Auto-Assign Years
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => handleYearFilterChange(selectedYearFilter === 'unassigned' ? '' : 'unassigned')}
+              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition whitespace-nowrap"
+            >
+              {selectedYearFilter === 'unassigned' ? 'Show All Questions' : 'Filter & Edit Unassigned Questions'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -357,7 +435,7 @@ export default function QuestionManagementPage({
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between"
+            className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
           >
             <div className="flex items-center gap-3">
               <input
@@ -370,25 +448,49 @@ export default function QuestionManagementPage({
                 {selectedQuestionIds.size} selected
               </span>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleBulkDelete}
-              disabled={deleting}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all disabled:opacity-50 flex items-center gap-2"
-            >
-              {deleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-4 h-4" />
-                  Delete Selected
-                </>
-              )}
-            </motion.button>
+            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  placeholder="e.g. 2024"
+                  value={bulkYearInput}
+                  onChange={e => setBulkYearInput(e.target.value)}
+                  className="w-24 px-2 py-1.5 text-xs border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <button
+                  onClick={handleBulkAssignYear}
+                  disabled={bulkAssigning || !bulkYearInput.trim()}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition whitespace-nowrap flex items-center gap-1.5 shadow-sm"
+                >
+                  {bulkAssigning ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Calendar className="w-3.5 h-3.5" />
+                  )}
+                  Assign Year
+                </button>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleBulkDelete}
+                disabled={deleting}
+                className="px-4 py-1.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all disabled:opacity-50 flex items-center gap-2 text-xs"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete Selected
+                  </>
+                )}
+              </motion.button>
+            </div>
           </motion.div>
         )}
       </div>

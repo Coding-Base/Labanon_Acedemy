@@ -7,10 +7,31 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 interface UploadResponse {
   success: number
   total: number
-  created: Array<{ id: number; text: string }>
+  created: Array<{ id: number; text: string; year?: string; subject?: string }>
+  years_summary?: Record<string, number>
   errors: string[] | null
   exam: string
-  year: number
+  year?: number | string
+  default_subject?: string
+}
+
+function parseCSVLine(line: string): string[] {
+  const result: string[] = []
+  let current = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"' || char === "'") {
+      inQuotes = !inQuotes
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim().replace(/^["']|["']$/g, ''))
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  result.push(current.trim().replace(/^["']|["']$/g, ''))
+  return result
 }
 
 export default function BulkUploadPage() {
@@ -29,38 +50,71 @@ export default function BulkUploadPage() {
         const content = event.target?.result as string
         // Handle JSON or CSV formats
         if (file.name.toLowerCase().endsWith('.csv')) {
-          // Basic CSV validation: check headers
-          const lines = content.split('\n').map(l => l.trim()).filter(Boolean)
+          const lines = content.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
           if (lines.length === 0) {
             setParseError('CSV appears empty')
             return
           }
-          const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
-          const required = ['id', 'question_text', 'optiona', 'optionb', 'optionc', 'optiond', 'correct_answer', 'subject']
-          const missing = required.filter(r => !headers.includes(r))
-          if (missing.length > 0) {
-            setParseError(`CSV missing required columns: ${missing.join(', ')}`)
+          const rawHeaders = parseCSVLine(lines[0])
+          const normalizedHeaders = rawHeaders.map(h => h.toLowerCase().replace(/[\s_-]+/g, ''))
+          
+          const qTextIdx = normalizedHeaders.findIndex(h => h === 'questiontext' || h === 'question' || h === 'text')
+          const optAIdx = normalizedHeaders.findIndex(h => h === 'optiona' || h === 'a')
+          const optBIdx = normalizedHeaders.findIndex(h => h === 'optionb' || h === 'b')
+          const ansIdx = normalizedHeaders.findIndex(h => h === 'correctanswer' || h === 'answer' || h === 'correct')
+
+          if (qTextIdx === -1 || optAIdx === -1 || optBIdx === -1 || ansIdx === -1) {
+            setParseError('CSV missing required columns. Ensure question_text, option_a, option_b, and correct_answer exist.')
             return
           }
-          // If CSV looks OK, convert to internal JSON structure for preview/upload
+
+          const optCIdx = normalizedHeaders.findIndex(h => h === 'optionc' || h === 'c')
+          const optDIdx = normalizedHeaders.findIndex(h => h === 'optiond' || h === 'd')
+          const idIdx = normalizedHeaders.findIndex(h => h === 'id' || h === 'qid')
+          const expIdx = normalizedHeaders.findIndex(h => h === 'explanation' || h === 'solution')
+          const subjIdx = normalizedHeaders.findIndex(h => h === 'subject' || h === 'subjectname')
+          const yearIdx = normalizedHeaders.findIndex(h => h === 'year' || h === 'examyear' || h === 'session')
+
           try {
-            const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()))
-            // Find year column index (optional)
-            const yearIdx = headers.indexOf('year')
-            const questions = rows.map(cols => ({
-              id: cols[0],
-              question_text: cols[1],
-              options: { A: cols[2], B: cols[3], C: cols[4], D: cols[5] },
-              correct_answer: cols[6],
-              explanation: cols[7] || '',
-              subject: cols[8] || '',
-              year: yearIdx >= 0 && cols[yearIdx] ? cols[yearIdx] : ''
-            }))
-            const json = JSON.stringify({ exam_id: 'CSV_IMPORT', year: new Date().getFullYear(), questions }, null, 2)
+            const rows = lines.slice(1).map(parseCSVLine)
+            let detectedSubject = ''
+            let detectedYear = ''
+
+            const questions = rows.map((cols, rowIdx) => {
+              const rowYear = yearIdx >= 0 && cols[yearIdx] ? cols[yearIdx] : ''
+              const rowSubj = subjIdx >= 0 && cols[subjIdx] ? cols[subjIdx] : ''
+              if (!detectedSubject && rowSubj) detectedSubject = rowSubj
+              if (!detectedYear && rowYear) detectedYear = rowYear
+
+              const options: Record<string, string> = {
+                A: optAIdx >= 0 ? cols[optAIdx] || '' : '',
+                B: optBIdx >= 0 ? cols[optBIdx] || '' : ''
+              }
+              if (optCIdx >= 0 && cols[optCIdx]) options['C'] = cols[optCIdx]
+              if (optDIdx >= 0 && cols[optDIdx]) options['D'] = cols[optDIdx]
+
+              return {
+                id: (idIdx >= 0 && cols[idIdx]) ? cols[idIdx] : `Q_${rowIdx + 1}`,
+                question_text: cols[qTextIdx] || '',
+                options,
+                correct_answer: cols[ansIdx] || '',
+                explanation: expIdx >= 0 ? cols[expIdx] || '' : '',
+                subject: rowSubj,
+                year: rowYear
+              }
+            })
+
+            const json = JSON.stringify({
+              exam_id: 'JAMB',
+              subject: detectedSubject || 'Chemistry',
+              year: detectedYear || new Date().getFullYear(),
+              questions
+            }, null, 2)
+
             setJsonInput(json)
             setParseError(null)
           } catch (e) {
-            setParseError('Failed to parse CSV. Ensure it uses commas and has the correct columns.')
+            setParseError('Failed to parse CSV rows. Ensure it is properly comma-separated.')
           }
         } else {
           // Treat as JSON
@@ -103,6 +157,7 @@ export default function BulkUploadPage() {
       const uploadData = {
         exam_id: jsonData.exam_id,
         year: jsonData.year,
+        subject: jsonData.subject || jsonData.questions?.[0]?.subject || '',
         questions: jsonData.questions
       }
 
@@ -138,30 +193,30 @@ export default function BulkUploadPage() {
             <Upload className="w-8 h-8 text-yellow-600" />
             Bulk Upload Questions
           </h1>
-          <p className="text-gray-600 mt-2">Upload questions in JSON format for exams and subjects</p>
+          <p className="text-gray-600 mt-2">Upload questions in JSON or CSV format for exams and subjects</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Upload Section */}
           <div>
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Upload JSON Data</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Upload Questions (JSON or CSV)</h2>
 
               {/* File Upload */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Select JSON File
+                  Select JSON or CSV File
                 </label>
                 <div className="flex items-center justify-center w-full">
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
                       <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                      <p className="text-xs text-gray-500">JSON files only</p>
+                      <p className="text-xs text-gray-500">.json, .csv files supported</p>
                     </div>
                     <input
                       type="file"
-                      accept=".json"
+                      accept=".json,.csv"
                       onChange={handleFileSelect}
                       className="hidden"
                     />
@@ -345,6 +400,20 @@ export default function BulkUploadPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Year Breakdown Summary */}
+                  {response.years_summary && Object.keys(response.years_summary).length > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-amber-900 mb-2">Categorized by Year:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(response.years_summary).map(([yr, count]) => (
+                          <span key={yr} className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded text-xs font-bold border border-amber-300">
+                            Year {yr}: {count} question{count > 1 ? 's' : ''}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Created Questions */}
                   {response.created.length > 0 && (

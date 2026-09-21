@@ -74,8 +74,14 @@ export default function QuestionCard({
           <div className="font-semibold text-gray-900 text-sm break-words line-clamp-2">
             Q{question.id}. <MathText text={question.text} />
           </div>
-          {question.year && (
-            <p className="text-xs text-gray-500 mt-0.5">Year: {question.year}</p>
+          {question.year ? (
+            <p className="text-xs font-medium text-slate-600 mt-1 inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded">
+              📅 Year: {question.year}
+            </p>
+          ) : (
+            <p className="text-xs font-semibold text-amber-800 mt-1 inline-flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+              ⚠️ No Year Assigned (Defaults to 2021 for students)
+            </p>
           )}
         </div>
 

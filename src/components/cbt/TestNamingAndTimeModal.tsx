@@ -71,18 +71,18 @@ export default function TestNamingAndTimeModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col shadow-xl">
+      <div className="bg-white dark:bg-slate-900 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col shadow-xl border dark:border-slate-700">
         
         {/* HEADER (Fixed) */}
-        <div className="p-6 border-b border-gray-100 flex-shrink-0">
-          <h2 className="text-2xl font-bold mb-2">Name Your Test & Set Time Limit</h2>
-          <p className="text-gray-600">Give your exam a name and set how long you have to complete it</p>
+        <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex-shrink-0">
+          <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-slate-100">Name Your Test & Set Time Limit</h2>
+          <p className="text-gray-600 dark:text-slate-400">Give your exam a name and set how long you have to complete it</p>
         </div>
 
         {/* BODY (Scrollable) */}
         <div className="p-6 overflow-y-auto flex-1">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-4">
               {error}
             </div>
           )}
@@ -90,10 +90,10 @@ export default function TestNamingAndTimeModal({
           <div className="space-y-6">
             {/* Test Name Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Test Name <span className="text-red-500">*</span>
               </label>
-              <label className="block text-xs text-gray-500 mb-3">
+              <label className="block text-xs text-gray-500 dark:text-slate-400 mb-3">
                 Example: "MY JAMB MOCK", "PHYSICS QUIZ", "COMBINED EXAM 2026"
               </label>
               <input
@@ -102,19 +102,19 @@ export default function TestNamingAndTimeModal({
                 onChange={(e) => setTestName(e.target.value)}
                 placeholder="Enter a name for your test"
                 maxLength={100}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 placeholder:text-gray-400"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500"
               />
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
                 {testName.length}/100 characters
               </p>
             </div>
 
             {/* Time Limit Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Time Limit (minutes) <span className="text-red-500">*</span>
               </label>
-              <label className="block text-xs text-gray-500 mb-3">
+              <label className="block text-xs text-gray-500 dark:text-slate-400 mb-3">
                 Suggested: {Math.ceil(totalQuestions * 2.5)} - {Math.ceil(totalQuestions * 3)} minutes
               </label>
               <input
@@ -123,53 +123,53 @@ export default function TestNamingAndTimeModal({
                 max="1440"
                 value={timeLimitMinutes}
                 onChange={(e) => setTimeLimitMinutes(Math.max(1, parseInt(e.target.value) || 180))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-slate-100"
               />
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
                 {Math.floor(timeLimitMinutes / 60)}h {timeLimitMinutes % 60}m total
               </p>
             </div>
 
             {/* Test Summary */}
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-5">
-              <h3 className="font-semibold text-gray-900 mb-3">Test Summary</h3>
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950/20 dark:to-yellow-900/30 border border-yellow-200 dark:border-yellow-900/50 rounded-lg p-5">
+              <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-3">Test Summary</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-700">
+                  <span className="text-gray-700 dark:text-slate-300">
                     <strong>Test Name:</strong>
                   </span>
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-gray-900 dark:text-slate-100 font-medium">
                     {testName.trim() || '(Not set yet)'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-700">
+                  <span className="text-gray-700 dark:text-slate-300">
                     <strong>Total Subjects:</strong>
                   </span>
-                  <span className="text-gray-900 font-medium">{subjectConfigs.length}</span>
+                  <span className="text-gray-900 dark:text-slate-100 font-medium">{subjectConfigs.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-700">
+                  <span className="text-gray-700 dark:text-slate-300">
                     <strong>Total Questions:</strong>
                   </span>
-                  <span className="text-gray-900 font-medium">{totalQuestions}</span>
+                  <span className="text-gray-900 dark:text-slate-100 font-medium">{totalQuestions}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-700">
+                  <span className="text-gray-700 dark:text-slate-300">
                     <strong>Time Limit:</strong>
                   </span>
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-gray-900 dark:text-slate-100 font-medium">
                     {Math.floor(timeLimitMinutes / 60)}h {timeLimitMinutes % 60}m
                   </span>
                 </div>
               </div>
 
               {/* Subjects Breakdown */}
-              <div className="mt-4 pt-4 border-t border-yellow-200">
-                <p className="text-xs font-medium text-gray-700 mb-2">Subjects:</p>
+              <div className="mt-4 pt-4 border-t border-yellow-200 dark:border-yellow-900/50">
+                <p className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-2">Subjects:</p>
                 <div className="space-y-1">
                   {subjectConfigs.map((cfg) => (
-                    <div key={cfg.subject_id} className="text-xs text-gray-600 flex justify-between">
+                    <div key={cfg.subject_id} className="text-xs text-gray-600 dark:text-slate-400 flex justify-between">
                       <span>{cfg.subject_name}</span>
                       <span className="font-medium">{cfg.num_questions} questions</span>
                     </div>
@@ -181,12 +181,12 @@ export default function TestNamingAndTimeModal({
         </div>
 
         {/* FOOTER (Fixed) */}
-        <div className="p-6 border-t border-gray-100 flex-shrink-0 bg-gray-50 rounded-b-lg">
+        <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex-shrink-0 bg-gray-50 dark:bg-slate-900/50 rounded-b-lg">
           <div className="flex gap-3">
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition disabled:opacity-50 font-medium"
+              className="flex-1 px-6 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition disabled:opacity-50 font-medium"
             >
               Back
             </button>

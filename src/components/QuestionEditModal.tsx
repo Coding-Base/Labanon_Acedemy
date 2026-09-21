@@ -56,6 +56,9 @@ export default function QuestionEditModal({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const quillRef = useRef<any>(null)
 
+  const [availableYears, setAvailableYears] = useState<string[]>([])
+  const [customYearInput, setCustomYearInput] = useState('')
+
   const getImageUrl = (imageUrl: string | null) => {
     if (!imageUrl) return ''
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
@@ -84,6 +87,26 @@ export default function QuestionEditModal({
         imageUrl: question.image || ''
       })
       setImagePreview(getImageUrl(question.image))
+      setCustomYearInput('')
+
+      if (question.subject) {
+        const fetchYears = async () => {
+          try {
+            const token = localStorage.getItem('access')
+            const res = await fetch(`${API_BASE}/cbt/subjects/${question.subject}/available_years/`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined
+            })
+            if (res.ok) {
+              const data = await res.json()
+              const yearsList = (data.years || []).map((y: any) => String(y.year))
+              setAvailableYears(yearsList)
+            }
+          } catch (e) {
+            console.error('Failed to fetch years for subject', e)
+          }
+        }
+        fetchYears()
+      }
     }
   }, [isOpen, question])
 
@@ -309,15 +332,79 @@ export default function QuestionEditModal({
             {/* Year */}
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Year
+                Exam Year
               </label>
-              <input
-                type="text"
-                value={formData.year}
-                onChange={e => setFormData(prev => ({ ...prev, year: e.target.value }))}
-                placeholder="e.g., 2023, 2024"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  value={formData.year}
+                  onChange={e => {
+                    const val = e.target.value
+                    if (val === '__custom__') {
+                      setFormData(prev => ({ ...prev, year: '' }))
+                    } else {
+                      setFormData(prev => ({ ...prev, year: val }))
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                >
+                  <option value="">No Year Assigned (Defaults to 2021 for students)</option>
+                  {availableYears.map(y => (
+                    <option key={y} value={y}>
+                      📅 Year {y}
+                    </option>
+                  ))}
+                  {formData.year && !availableYears.includes(formData.year) && (
+                    <option value={formData.year}>
+                      📅 Year {formData.year} (Current)
+                    </option>
+                  )}
+                  <option value="__custom__">➕ Type a new year...</option>
+                </select>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customYearInput}
+                    onChange={e => setCustomYearInput(e.target.value)}
+                    placeholder="New year (e.g. 2025)"
+                    className="w-36 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        const val = customYearInput.trim()
+                        if (val) {
+                          if (!availableYears.includes(val)) {
+                            setAvailableYears(prev => [val, ...prev].sort().reverse())
+                          }
+                          setFormData(prev => ({ ...prev, year: val }))
+                          setCustomYearInput('')
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = customYearInput.trim()
+                      if (val) {
+                        if (!availableYears.includes(val)) {
+                          setAvailableYears(prev => [val, ...prev].sort().reverse())
+                        }
+                        setFormData(prev => ({ ...prev, year: val }))
+                        setCustomYearInput('')
+                      }
+                    }}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition"
+                  >
+                    Set
+                  </button>
+                </div>
+              </div>
+              {formData.year && (
+                <p className="text-xs text-blue-600 mt-1">
+                  Selected year for this question: <strong>{formData.year}</strong>
+                </p>
+              )}
             </div>
 
             {/* Image Section */}

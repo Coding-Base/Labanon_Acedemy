@@ -32,6 +32,7 @@ interface ExamInterfaceProps {
     num_questions: number
   }>
   timeLimitMinutes: number
+  initialTimeRemainingSeconds?: number
   onSubmitComplete: () => void
   isTrialAttempt?: boolean
   trialMessage?: string | null
@@ -42,6 +43,7 @@ export default function ExamInterface({
   testName,
   subjectConfigs,
   timeLimitMinutes,
+  initialTimeRemainingSeconds,
   onSubmitComplete,
   isTrialAttempt = false,
   trialMessage = null
@@ -55,7 +57,7 @@ export default function ExamInterface({
   const [questionsBySubject, setQuestionsBySubject] = useState<{ [subjectId: number]: Question[] }>({})
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number | null }>({})
   const [loading, setLoading] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState(timeLimitMinutes * 60)
+  const [timeRemaining, setTimeRemaining] = useState(initialTimeRemainingSeconds ?? timeLimitMinutes * 60)
   const [submitting, setSubmitting] = useState(false)
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [subjectProgress, setSubjectProgress] = useState<SubjectProgress[]>([])

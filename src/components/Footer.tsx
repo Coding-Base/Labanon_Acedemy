@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Youtube, Facebook, MessageCircle } from 'lucide-react'
+import { Youtube, Facebook, Linkedin, MessageCircle } from 'lucide-react'
 import whitelogo from '../pages/labanonlogo.png'
 import seunSponsor from './SeunP Media.png'
 
@@ -28,7 +28,16 @@ export default function Footer() {
             <p className="text-sm text-gray-400 max-w-sm">Africa's premier digital learning ecosystem, transforming education through technology.</p>
             <div className="flex items-center gap-4 mt-6">
               <a 
-                href="https://www.youtube.com/channel/UCtBGZVHuNLRl-nPLVvzxFnQ" 
+                href="https://www.facebook.com/profile.php?id=61587344120717" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-gray-400 hover:text-blue-500 transition-colors" 
+                aria-label="Follow us on Facebook"
+              >
+                <Facebook className="w-5 h-5 sm:w-6 sm:h-6" />
+              </a>
+              <a 
+                href="https://www.youtube.com/@LightHubConcepts" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-gray-400 hover:text-red-500 transition-colors" 
@@ -37,13 +46,13 @@ export default function Footer() {
                 <Youtube className="w-5 h-5 sm:w-6 sm:h-6" />
               </a>
               <a 
-                href="https://www.facebook.com/profile.php?id=61587344120717" 
+                href="https://www.linkedin.com/company/light-hub-academy/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-gray-400 hover:text-yellow-500 transition-colors" 
-                aria-label="Follow us on Facebook"
+                className="text-gray-400 hover:text-blue-400 transition-colors" 
+                aria-label="Follow us on LinkedIn"
               >
-                <Facebook className="w-5 h-5 sm:w-6 sm:h-6" />
+                <Linkedin className="w-5 h-5 sm:w-6 sm:h-6" />
               </a>
             </div>
           </div>

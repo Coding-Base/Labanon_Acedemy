@@ -6,6 +6,7 @@ import QuestionConfigurationModal from './QuestionConfigurationModal'
 import TestNamingAndTimeModal from './TestNamingAndTimeModal'
 import ExamInterface from './ExamInterface-MultiSubject'
 import { useNavigate, useLocation } from 'react-router-dom'
+import showToast from '../../utils/toast'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -29,22 +30,44 @@ interface SubjectConfig {
   subject_name: string
   num_questions: number
   available_questions: number
+  year?: string
 }
 
 type FlowStep = 'exam' | 'subjects' | 'questions-config' | 'naming-time' | 'exam-interface'
 
-export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
+interface CBTExamFlowProps {
+  onClose: () => void
+  initialExam?: Exam | null
+  initialSelectedSubjects?: Subject[]
+  initialTrialInfo?: {
+    trial_attempts_used: number
+    trial_attempts_remaining: number
+    trial_available: boolean
+    trial_attempts_limit?: number
+    trial_questions_limit?: number
+  } | null
+  initialAllowedSubjectIds?: number[]
+}
+
+export default function CBTExamFlow({ 
+  onClose,
+  initialExam,
+  initialSelectedSubjects,
+  initialTrialInfo,
+}: CBTExamFlowProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const queryParams = new URLSearchParams(location.search)
   const startAfterActivation = queryParams.get('start_after_activation') === '1' || queryParams.get('start_after_activation') === 'true'
-  const [flowStep, setFlowStep] = useState<FlowStep>('exam')
+  
+  const hasPreSelected = Boolean(initialExam && initialSelectedSubjects && initialSelectedSubjects.length > 0)
+  const [flowStep, setFlowStep] = useState<FlowStep>(hasPreSelected ? 'questions-config' : 'exam')
 
   // Exam selection state
-  const [selectedExam, setSelectedExam] = useState<Exam | null>(null)
+  const [selectedExam, setSelectedExam] = useState<Exam | null>(initialExam || null)
 
   // Multi-subject selection state
-  const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([])
+  const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>(initialSelectedSubjects || [])
   const [allowedSubjects, setAllowedSubjects] = useState<Subject[]>([])  // NEW: subjects the student has unlocked
 
   // Question configuration state
@@ -76,7 +99,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     trial_available: boolean
     trial_attempts_limit?: number
     trial_questions_limit?: number
-  } | null>(null)
+  } | null>(initialTrialInfo || null)
 
   // Handle exam selection with activation check
   const handleSelectExam = (exam: Exam) => {
@@ -206,7 +229,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
         exam: selectedExam.id,
         subjects_config: subjectConfigs.map(cfg => ({
           subject_id: cfg.subject_id,
-          num_questions: cfg.num_questions
+          num_questions: cfg.num_questions,
+          year: cfg.year || 'simulate'
         })),
         time_limit_minutes: timeLimit,
         test_name: name
@@ -226,9 +250,11 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
       
       // Handle trial exhausted error
       if (errorData?.detail === 'You have exhausted your free trial attempts for this exam.') {
+        const msg = `You've used all ${errorData.trial_attempts_limit || 5} free attempts. Unlock this exam to continue practicing.`
+        showToast(msg, 'error')
         setError({
           title: '🎁 Free Trial Exhausted',
-          message: `You've used all ${errorData.trial_attempts_limit || 5} free attempts. Unlock this exam to continue practicing.`,
+          message: msg,
           action: 'Upgrade now to unlock unlimited attempts',
           nextStep: 'Unlock Exam'
         })
@@ -237,15 +263,18 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
       else if (errorData) {
         if (errorData.available_subjects && errorData.available_subjects.length > 0) {
           // User tried to access subjects they don't have access to
+          const msg = errorData.message || 'You cannot access all the subjects you selected.'
+          showToast(msg, 'error')
           setError({
             title: 'Subject Access Restricted',
-            message: errorData.message || 'You cannot access all the subjects you selected.',
+            message: msg,
             available_subjects: errorData.available_subjects,
             action: errorData.action || 'Please go back and reselect your subjects.',
             nextStep: 'Back'
           })
         } else if (errorData.detail === 'You have not unlocked this exam yet.') {
           // User hasn't unlocked the exam
+          showToast(errorData.detail, 'error')
           setError({
             title: 'Exam Not Unlocked',
             message: errorData.detail,
@@ -254,13 +283,16 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
           })
         } else {
           // Generic error
+          const msg = errorData.detail || errorData.message || 'Could not start exam. Please try again.'
+          showToast(msg, 'error')
           setError({
             title: 'Error Starting Exam',
-            message: errorData.detail || 'Could not start exam. Please try again.',
+            message: msg,
             action: 'If the problem persists, contact support.'
           })
         }
       } else {
+        showToast('Could not start exam. Please try again.', 'error')
         setError({
           title: 'Error Starting Exam',
           message: 'Could not start exam. Please try again.',
@@ -274,9 +306,8 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
 
   // Handle completion and navigate to performance
   const handleExamComplete = () => {
-    if (examAttemptId) {
-      navigate(`/performance/${examAttemptId}`)
-    }
+    // Refresh parent CBT dashboard
+    onComplete?.()
   }
 
   // Handle cancel/close
@@ -316,16 +347,16 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
     <>
       {/* Error Dialog */}
       {error && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
             <div className="p-6">
-              <h3 className="text-lg font-bold text-red-600 mb-2">{error.title}</h3>
-              <p className="text-gray-700 mb-4">{error.message}</p>
+              <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">{error.title}</h3>
+              <p className="text-gray-700 dark:text-slate-300 mb-4">{error.message}</p>
               
               {error.available_subjects && error.available_subjects.length > 0 && (
-                <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
-                  <p className="text-sm font-semibold text-blue-900 mb-2">Your Unlocked Subjects:</p>
-                  <ul className="text-sm text-blue-800">
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">Your Unlocked Subjects:</p>
+                  <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                     {error.available_subjects.map((subject, i) => (
                       <li key={i}>• {subject}</li>
                     ))}
@@ -334,7 +365,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
               )}
               
               {error.action && (
-                <p className="text-sm text-gray-600 mb-4 p-2 bg-gray-50 rounded">
+                <p className="text-sm text-gray-600 dark:text-slate-400 mb-4 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg border border-gray-100 dark:border-slate-700">
                   {error.action}
                 </p>
               )}
@@ -348,7 +379,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
                       setSelectedSubjects([])
                     }
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-900 rounded font-semibold hover:bg-gray-400"
+                  className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                 >
                   {error.nextStep === 'Back' ? 'Go Back' : 'Dismiss'}
                 </button>
@@ -358,7 +389,7 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
                       setError(null)
                       window.location.href = `/activate?type=exam&exam_id=${selectedExam?.id}&exam_title=${selectedExam?.title}`
                     }}
-                    className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded font-semibold hover:bg-yellow-700"
+                    className="flex-1 px-4 py-2.5 bg-primary-600 dark:bg-primary-500 text-white rounded-lg font-semibold hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors shadow-sm"
                   >
                     Unlock Exam
                   </button>
@@ -413,8 +444,12 @@ export default function CBTExamFlow({ onClose }: { onClose: () => void }) {
       <QuestionConfigurationModal
         isOpen={flowStep === 'questions-config'}
         onClose={() => {
-          setFlowStep('subjects')
-          setSelectedSubjects([])
+          if (initialExam) {
+            onClose()
+          } else {
+            setFlowStep('subjects')
+            setSelectedSubjects([])
+          }
         }}
         selectedSubjects={selectedSubjects}
         onConfigureQuestions={handleConfigureQuestions}

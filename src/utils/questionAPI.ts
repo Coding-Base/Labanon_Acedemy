@@ -43,7 +43,8 @@ export async function fetchQuestionsForSubject(
   subjectId: number,
   page: number = 1,
   pageSize: number = 10,
-  search?: string
+  search?: string,
+  year?: string
 ): Promise<PaginatedQuestions> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -52,6 +53,10 @@ export async function fetchQuestionsForSubject(
 
   if (search) {
     params.append('search', search)
+  }
+
+  if (year) {
+    params.append('year', year)
   }
 
   const response = await axios.get(

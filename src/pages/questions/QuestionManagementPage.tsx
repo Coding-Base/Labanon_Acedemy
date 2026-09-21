@@ -93,19 +93,49 @@ export default function QuestionManagementPage({
     new Set()
   )
   const [deleting, setDeleting] = useState(false)
+  const [selectedYearFilter, setSelectedYearFilter] = useState<string>('')
+  const [availableYears, setAvailableYears] = useState<{ year: string; question_count: number }[]>([])
+  const [unassignedCount, setUnassignedCount] = useState<number>(0)
+  const [loadingYears, setLoadingYears] = useState(false)
   const searchDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const PAGE_SIZE = 10
 
-  // Fetch questions with search and pagination
-  const loadQuestions = useCallback(async (page: number = 1, search: string = '') => {
+  // Fetch available years & unassigned count for subject
+  const loadAvailableYears = useCallback(async () => {
+    setLoadingYears(true)
+    try {
+      const token = localStorage.getItem('access')
+      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+      const res = await fetch(`${API_BASE}/cbt/subjects/${subject.id}/available_years/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAvailableYears(data.years || [])
+        setUnassignedCount(data.unassigned_count || 0)
+      }
+    } catch (err) {
+      console.error('Failed to fetch available years:', err)
+    } finally {
+      setLoadingYears(false)
+    }
+  }, [subject.id])
+
+  useEffect(() => {
+    loadAvailableYears()
+  }, [loadAvailableYears])
+
+  // Fetch questions with search, pagination, and year filter
+  const loadQuestions = useCallback(async (page: number = 1, search: string = '', year: string = selectedYearFilter) => {
     setLoading(true)
     try {
       const result = await fetchQuestionsForSubject(
         subject.id,
         page,
         PAGE_SIZE,
-        search
+        search,
+        year || undefined
       )
 
       setQuestions(result.results || [])
@@ -118,12 +148,12 @@ export default function QuestionManagementPage({
     } finally {
       setLoading(false)
     }
-  }, [subject.id])
+  }, [subject.id, selectedYearFilter])
 
   // Initial load
   useEffect(() => {
-    loadQuestions(1, '')
-  }, [loadQuestions])
+    loadQuestions(1, searchQuery, selectedYearFilter)
+  }, [loadQuestions, selectedYearFilter])
 
   // Handle search with debounce
   const handleSearch = (query: string) => {
@@ -135,8 +165,14 @@ export default function QuestionManagementPage({
 
     searchDebounceTimer.current = setTimeout(() => {
       setCurrentPage(1)
-      loadQuestions(1, query)
+      loadQuestions(1, query, selectedYearFilter)
     }, DEBOUNCE_DELAY)
+  }
+
+  // Handle year filter change
+  const handleYearFilterChange = (year: string) => {
+    setSelectedYearFilter(year)
+    setCurrentPage(1)
   }
 
   // Handle edit
@@ -256,9 +292,32 @@ export default function QuestionManagementPage({
         </div>
       </div>
 
-      {/* Search and bulk actions */}
+      {/* Unassigned Questions Notification Alert Banner */}
+      {unassignedCount > 0 && (
+        <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⚠️</span>
+            <div>
+              <h4 className="font-semibold text-amber-900 text-sm">
+                Unassigned Questions Detected
+              </h4>
+              <p className="text-xs text-amber-800">
+                <strong>{unassignedCount}</strong> question{unassignedCount !== 1 ? 's' : ''} in this subject {unassignedCount !== 1 ? 'have' : 'has'} no year assigned. These will automatically default to year <strong>2021</strong> for students.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => handleYearFilterChange(selectedYearFilter === 'unassigned' ? '' : 'unassigned')}
+            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition whitespace-nowrap"
+          >
+            {selectedYearFilter === 'unassigned' ? 'Show All Questions' : 'Filter & Edit Unassigned Questions'}
+          </button>
+        </div>
+      )}
+
+      {/* Search and Filter actions */}
       <div className="mb-6 space-y-4">
-        <div className="flex gap-3 items-center">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -266,8 +325,30 @@ export default function QuestionManagementPage({
               value={searchQuery}
               onChange={e => handleSearch(e.target.value)}
               placeholder="Search questions by text..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
+          </div>
+
+          {/* Year Filter Dropdown */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter Year:</label>
+            <select
+              value={selectedYearFilter}
+              onChange={(e) => handleYearFilterChange(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white text-gray-800 font-medium"
+            >
+              <option value="">All Years ({totalCount})</option>
+              {unassignedCount > 0 && (
+                <option value="unassigned" className="text-amber-700 font-semibold">
+                  ⚠️ Unassigned Questions ({unassignedCount})
+                </option>
+              )}
+              {availableYears.map((y) => (
+                <option key={y.year} value={y.year}>
+                  📅 Year {y.year} ({y.question_count})
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

@@ -158,6 +158,11 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [selectedExam, setSelectedExam] = useState<string>('')
   const [selectedSubject, setSelectedSubject] = useState<string>('')
   const [subjects, setSubjects] = useState<any[]>([])
+  const [adminBulkYear, setAdminBulkYear] = useState<string>('')
+  const [customBulkYear, setCustomBulkYear] = useState<string>('')
+  const [availableYearsForSubject, setAvailableYearsForSubject] = useState<{ year: string; question_count: number }[]>([])
+  const [unassignedCountForSubject, setUnassignedCountForSubject] = useState<number>(0)
+  const [loadingSubjectYears, setLoadingSubjectYears] = useState<boolean>(false)
   const [loadingSummary, setLoadingSummary] = useState(!summary)
   const [deleteConfirmation, setDeleteConfirmation] = useState<{open: boolean; userId: number | null; userName: string}>({open: false, userId: null, userName: ''})
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -4993,7 +4998,35 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </label>
                         <select
                           value={selectedSubject}
-                          onChange={(e) => setSelectedSubject(e.target.value)}
+                          onChange={async (e) => {
+                            const subjName = e.target.value
+                            setSelectedSubject(subjName)
+                            setAdminBulkYear('')
+                            setCustomBulkYear('')
+                            setAvailableYearsForSubject([])
+                            setUnassignedCountForSubject(0)
+
+                            if (subjName) {
+                              const foundSubj = subjects.find(s => s.name === subjName)
+                              if (foundSubj) {
+                                setLoadingSubjectYears(true)
+                                try {
+                                  const token = localStorage.getItem('access')
+                                  const res = await axios.get(`${API_BASE}/cbt/subjects/${foundSubj.id}/available_years/`, {
+                                    headers: token ? { Authorization: `Bearer ${token}` } : undefined
+                                  })
+                                  if (res.data) {
+                                    setAvailableYearsForSubject(res.data.years || [])
+                                    setUnassignedCountForSubject(res.data.unassigned_count || 0)
+                                  }
+                                } catch (err) {
+                                  console.error('Failed to load years for subject:', err)
+                                } finally {
+                                  setLoadingSubjectYears(false)
+                                }
+                              }
+                            }
+                          }}
                           disabled={!selectedExamId}
                           className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
@@ -5006,6 +5039,23 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         </select>
                       </div>
                     </div>
+
+                    {/* Unassigned Questions Notification Alert for Master Admin */}
+                    {selectedSubject && unassignedCountForSubject > 0 && (
+                      <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-xl flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">⚠️</span>
+                          <div>
+                            <h4 className="font-semibold text-amber-900 text-sm">
+                              Notice: Unassigned Question Years in {selectedSubject}
+                            </h4>
+                            <p className="text-xs text-amber-800">
+                              <strong>{unassignedCountForSubject}</strong> question(s) currently have no year assigned and will default to year <strong>2021</strong> for students during practice exams.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                      
                     {uploadMode === 'json' && (
                     <>
@@ -5094,6 +5144,47 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                         <p className="text-sm text-gray-600 mb-4">
                           File should have columns: question_text, option_a, option_b, option_c, option_d, correct_answer, explanation.
                         </p>
+                        {/* Year Selection for CSV/Excel File */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Exam Year for this File
+                          </label>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <select
+                              value={adminBulkYear}
+                              onChange={(e) => setAdminBulkYear(e.target.value)}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm bg-white"
+                            >
+                              <option value="">Choose Year (or type below)</option>
+                              {availableYearsForSubject.map((y) => (
+                                <option key={y.year} value={y.year}>
+                                  📅 Year {y.year} ({y.question_count} questions)
+                                </option>
+                              ))}
+                              {customBulkYear && !availableYearsForSubject.some(y => y.year === customBulkYear) && (
+                                <option value={customBulkYear}>
+                                  📅 Year {customBulkYear} (New)
+                                </option>
+                              )}
+                            </select>
+                            <input
+                              type="text"
+                              value={customBulkYear}
+                              onChange={(e) => {
+                                setCustomBulkYear(e.target.value)
+                                setAdminBulkYear(e.target.value)
+                              }}
+                              placeholder="Or type new year (e.g. 2025)"
+                              className="w-48 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm"
+                            />
+                          </div>
+                          {adminBulkYear && (
+                            <p className="text-xs text-yellow-700 mt-1">
+                              Will tag questions with year: <strong>{adminBulkYear}</strong>
+                            </p>
+                          )}
+                        </div>
+
                         <input 
                           type="file" 
                           accept=".csv, .xlsx, .xls"
@@ -5113,7 +5204,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             formData.append('file', bulkFile)
                             formData.append('exam_id', selectedExam)
                             formData.append('subject', selectedSubject)
-                            formData.append('year', new Date().getFullYear().toString())
+                            const effectiveYear = adminBulkYear.trim() || customBulkYear.trim() || new Date().getFullYear().toString()
+                            formData.append('year', effectiveYear)
                              
                             try {
                               const token = localStorage.getItem('access')
@@ -5203,8 +5295,58 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Year (Optional)</label>
-                            <input type="text" placeholder="e.g., 2014" value={manualQuestion.year} onChange={e => setManualQuestion({...manualQuestion, year: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+                            <label className="block text-sm font-medium text-gray-700">Exam Year</label>
+                            <div className="flex gap-2 mt-1">
+                              <select
+                                value={manualQuestion.year}
+                                onChange={e => {
+                                  const val = e.target.value
+                                  if (val !== '__custom__') {
+                                    setManualQuestion({ ...manualQuestion, year: val })
+                                  }
+                                }}
+                                className="flex-1 p-2 border rounded-lg text-sm bg-white"
+                              >
+                                <option value="">No Year (Defaults to 2021 for students)</option>
+                                {availableYearsForSubject.map(y => (
+                                  <option key={y.year} value={y.year}>
+                                    📅 Year {y.year}
+                                  </option>
+                                ))}
+                                {manualQuestion.year && !availableYearsForSubject.some(y => y.year === manualQuestion.year) && (
+                                  <option value={manualQuestion.year}>
+                                    📅 Year {manualQuestion.year} (New)
+                                  </option>
+                                )}
+                              </select>
+                              <input
+                                type="text"
+                                placeholder="Or type year"
+                                className="w-28 p-2 border rounded-lg text-sm"
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    const val = (e.target as HTMLInputElement).value.trim()
+                                    if (val) {
+                                      setManualQuestion({ ...manualQuestion, year: val })
+                                      ;(e.target as HTMLInputElement).value = ''
+                                    }
+                                  }
+                                }}
+                                onBlur={e => {
+                                  const val = e.target.value.trim()
+                                  if (val) {
+                                    setManualQuestion({ ...manualQuestion, year: val })
+                                    e.target.value = ''
+                                  }
+                                }}
+                              />
+                            </div>
+                            {manualQuestion.year && (
+                              <p className="text-xs text-yellow-700 mt-1">
+                                Assigned year: <strong>{manualQuestion.year}</strong>
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div>

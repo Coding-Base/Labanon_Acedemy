@@ -80,19 +80,6 @@ export default function CBTPage() {
     }
   }
 
-  const handleHeroTakeTest = () => {
-    if (exams.length > 0) {
-      const primaryExam = exams.find(e => e.title.toLowerCase().includes('jamb')) || exams[0]
-      setSelectedExam(primaryExam)
-      setSelectedSubjects([])
-      setTrialInfo(null)
-      setAllowedSubjectIds([])
-      setCurrentView('exam-flow')
-    } else {
-      handleScrollToCategories()
-    }
-  }
-
   const fetchHubData = useCallback(async () => {
     setLoading(true)
     try {
@@ -275,7 +262,7 @@ export default function CBTPage() {
           </div>
 
           <button
-            onClick={handleHeroTakeTest}
+            onClick={handleScrollToCategories}
             className="self-start sm:self-auto px-6 py-2.5 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
           >
             <Play className="w-4 h-4 fill-current" />

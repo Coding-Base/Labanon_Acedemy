@@ -47,6 +47,7 @@ interface CBTExamFlowProps {
     trial_questions_limit?: number
   } | null
   initialAllowedSubjectIds?: number[]
+  onComplete?: () => void
 }
 
 export default function CBTExamFlow({ 
@@ -54,6 +55,8 @@ export default function CBTExamFlow({
   initialExam,
   initialSelectedSubjects,
   initialTrialInfo,
+  initialAllowedSubjectIds,
+  onComplete,
 }: CBTExamFlowProps) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -61,14 +64,20 @@ export default function CBTExamFlow({
   const startAfterActivation = queryParams.get('start_after_activation') === '1' || queryParams.get('start_after_activation') === 'true'
   
   const hasPreSelected = Boolean(initialExam && initialSelectedSubjects && initialSelectedSubjects.length > 0)
-  const [flowStep, setFlowStep] = useState<FlowStep>(hasPreSelected ? 'questions-config' : 'exam')
+  const [flowStep, setFlowStep] = useState<FlowStep>(
+    hasPreSelected 
+      ? 'questions-config' 
+      : initialExam 
+        ? 'subjects' 
+        : 'exam'
+  )
 
   // Exam selection state
   const [selectedExam, setSelectedExam] = useState<Exam | null>(initialExam || null)
 
   // Multi-subject selection state
   const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>(initialSelectedSubjects || [])
-  const [allowedSubjects, setAllowedSubjects] = useState<Subject[]>([])  // NEW: subjects the student has unlocked
+  const [allowedSubjects, setAllowedSubjects] = useState<Subject[]>([])  // subjects the student has unlocked
 
   // Question configuration state
   const [subjectConfigs, setSubjectConfigs] = useState<SubjectConfig[]>([])
@@ -306,8 +315,12 @@ export default function CBTExamFlow({
 
   // Handle completion and navigate to performance
   const handleExamComplete = () => {
-    // Refresh parent CBT dashboard
     onComplete?.()
+    if (examAttemptId) {
+      window.location.href = `/performance/${examAttemptId}`
+    } else {
+      window.location.href = '/student/cbt'
+    }
   }
 
   // Handle cancel/close
@@ -387,7 +400,7 @@ export default function CBTExamFlow({
                   <button
                     onClick={() => {
                       setError(null)
-                      window.location.href = `/activate?type=exam&exam_id=${selectedExam?.id}&exam_title=${selectedExam?.title}`
+                      window.location.href = `/activate?type=exam&exam_id=${selectedExam?.id}&exam_title=${encodeURIComponent(selectedExam?.title || '')}`
                     }}
                     className="flex-1 px-4 py-2.5 bg-primary-600 dark:bg-primary-500 text-white rounded-lg font-semibold hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors shadow-sm"
                   >
@@ -444,7 +457,7 @@ export default function CBTExamFlow({
       <QuestionConfigurationModal
         isOpen={flowStep === 'questions-config'}
         onClose={() => {
-          if (initialExam) {
+          if (hasPreSelected) {
             onClose()
           } else {
             setFlowStep('subjects')

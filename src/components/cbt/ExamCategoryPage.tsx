@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { 
   Search, ChevronRight, ChevronLeft, Home, 
-  ArrowUpDown, Clock, BookOpen, Users 
+  ArrowUpDown, Clock, BookOpen, Users, Layers, Lock, Play
 } from 'lucide-react';
 import SubjectExamCard from './SubjectExamCard';
 
@@ -210,11 +210,33 @@ export default function ExamCategoryPage({ exam, onBack, onStartExam }: ExamCate
   };
 
   const handleStartExam = (subject: Subject) => {
+    const { isLocked, isTrialAvailable } = checkLockStatus(subject.id);
+    if (isLocked && !isTrialAvailable) {
+      handleUnlockExam();
+      return;
+    }
     const rawAllowed = activationStatus?.allowed_subjects || [];
     const allowedSubjectIds = rawAllowed.map((s: any) => 
       typeof s === 'number' ? s : s?.id
     ).filter(Boolean);
     onStartExam(exam, [subject], getTrialInfo(), allowedSubjectIds);
+  };
+
+  const handleStartMultiSubjectExam = () => {
+    if (activationStatus && !activationStatus.unlocked && !activationStatus.trial_available) {
+      handleUnlockExam();
+      return;
+    }
+    const rawAllowed = activationStatus?.allowed_subjects || [];
+    const allowedSubjectIds = rawAllowed.map((s: any) => 
+      typeof s === 'number' ? s : s?.id
+    ).filter(Boolean);
+    // Passing empty array opens the SubjectSelectionModal so student can pick multiple subjects
+    onStartExam(exam, [], getTrialInfo(), allowedSubjectIds);
+  };
+
+  const handleUnlockExam = () => {
+    window.location.href = `/activate?type=exam&exam_id=${exam.id}&exam_title=${encodeURIComponent(exam.title)}`;
   };
 
   if (loading) {
@@ -266,17 +288,64 @@ export default function ExamCategoryPage({ exam, onBack, onStartExam }: ExamCate
         <p className="text-gray-600 dark:text-gray-300 max-w-3xl mb-6 leading-relaxed">
           {exam.description}
         </p>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <div className="flex items-center bg-gray-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-full">
-            <BookOpen className="w-4 h-4 mr-2 text-blue-500" />
-            <span>{exam.subject_count || subjects.length} Subjects</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-gray-100 dark:border-slate-700 pt-5 mt-5">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center bg-gray-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-full">
+              <BookOpen className="w-4 h-4 mr-2 text-blue-500" />
+              <span>{exam.subject_count || subjects.length} Subjects</span>
+            </div>
+            <div className="flex items-center bg-gray-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-full">
+              <Clock className="w-4 h-4 mr-2 text-green-500" />
+              <span>{exam.time_limit_minutes} mins default duration</span>
+            </div>
           </div>
-          <div className="flex items-center bg-gray-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-full">
-            <Clock className="w-4 h-4 mr-2 text-green-500" />
-            <span>{exam.time_limit_minutes} mins default duration</span>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {activationStatus && !activationStatus.unlocked && !activationStatus.trial_available && (
+              <button
+                onClick={handleUnlockExam}
+                className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Lock className="w-4 h-4" />
+                Unlock Full Exam
+              </button>
+            )}
+            <button
+              onClick={handleStartMultiSubjectExam}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              <Layers className="w-4 h-4" />
+              Practice Multiple Subjects
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Locked / Trial Exhausted Alert Banner */}
+      {activationStatus && !activationStatus.unlocked && !activationStatus.trial_available && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-amber-900 dark:text-amber-200">
+                Free Trial Exhausted for {exam.title}
+              </h3>
+              <p className="text-sm text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                You have used your free trial attempts. Unlock this exam now to enjoy unlimited practice across all subjects.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleUnlockExam}
+            className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white text-sm font-bold rounded-xl shadow hover:shadow-md transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+          >
+            <Lock className="w-4 h-4" />
+            Unlock Exam Now
+          </button>
+        </div>
+      )}
 
       {/* Search and Sort Bar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm">
@@ -322,6 +391,7 @@ export default function ExamCategoryPage({ exam, onBack, onStartExam }: ExamCate
                 isLocked={isLocked}
                 isTrialAvailable={isTrialAvailable}
                 onStartExam={() => handleStartExam(subject)}
+                onUnlock={handleUnlockExam}
               />
             );
           })}

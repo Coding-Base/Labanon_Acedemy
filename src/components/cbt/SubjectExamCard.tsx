@@ -14,6 +14,7 @@ interface SubjectExamCardProps {
   isLocked: boolean;
   isTrialAvailable: boolean;
   onStartExam: () => void;
+  onUnlock?: () => void;
 }
 
 const COLORS = [
@@ -35,6 +36,7 @@ const SubjectExamCard: React.FC<SubjectExamCardProps> = ({
   isLocked,
   isTrialAvailable,
   onStartExam,
+  onUnlock,
 }) => {
   const color = COLORS[colorIndex % COLORS.length];
 
@@ -44,11 +46,26 @@ const SubjectExamCard: React.FC<SubjectExamCardProps> = ({
       <div className={`absolute left-0 top-0 bottom-0 w-1 ${color.bg}`} />
       
       {isLocked && !isTrialAvailable && (
-        <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 z-10 flex flex-col items-center justify-center backdrop-blur-[1px]">
-          <div className="p-3 bg-white dark:bg-slate-800 rounded-full shadow-lg mb-2">
-            <Lock className="w-6 h-6 text-gray-400 dark:text-slate-500" />
+        <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-10 flex flex-col items-center justify-center p-4 backdrop-blur-[2px]">
+          <div className="p-3 bg-amber-100 dark:bg-amber-900/40 rounded-full shadow-md mb-2">
+            <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
           </div>
-          <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">Premium Content</span>
+          <span className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-1">Premium Content</span>
+          <p className="text-xs text-center text-gray-500 dark:text-slate-400 mb-4">
+            Trial expired or access restricted
+          </p>
+          {onUnlock && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onUnlock();
+              }}
+              className="px-4 py-2 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white text-xs font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              Unlock Exam
+            </button>
+          )}
         </div>
       )}
 

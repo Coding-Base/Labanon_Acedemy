@@ -50,7 +50,8 @@ import {
   Gift,
   Megaphone,
   CreditCard,
-  Crown
+  Crown,
+  FolderOpen
 } from 'lucide-react'
 // Recharts for analytics charts
 import {
@@ -86,6 +87,7 @@ import InstitutionsManagement from './InstitutionsManagement'
 import AdminsManagement from './AdminsManagement'
 import VerificationDashboard from '../../components/VerificationDashboard'
 import QuestionManagementPage from '../questions/QuestionManagementPage'
+import ExamLibraryManagement from '../../components/cbt/ExamLibraryManagement'
 import MasterAdminMockPanel from '../MasterAdminMockPanel'
 import { CreateMaterialForm, MaterialsList, MaterialsActivitySection } from '../../components/Materials'
 import LessonManager from '../../components/dashboards/LessonManager'
@@ -138,6 +140,7 @@ type PermissionKey =
   | 'can_manage_subadmins'
   | 'can_manage_promos'
   | 'can_manage_materials'
+  | 'can_manage_exams'
 
 export default function MasterAdminDashboard({ summary: propSummary }: MasterProps) {
   const location = useLocation()
@@ -804,6 +807,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'gospel', label: 'Gospel', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
     { id: 'messages', label: 'Messages', icon: <Mail className="w-5 h-5" />, permission: 'can_view_messages' as PermissionKey },
     { id: 'exams', label: 'Exams & Subjects', icon: <GraduationCap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
+    { id: 'exam-library', label: 'Exam Library', icon: <FolderOpen className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
     // Bulk upload tied to course management permission usually
     { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'promos', label: 'Promos', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_promos' as PermissionKey },
@@ -814,6 +818,9 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const tabs = subadminPermissions
     ? allTabs.filter(tab => {
         if (!tab.permission) return true
+        if (tab.id === 'exams' || tab.id === 'exam-library') {
+          return subadminPermissions.can_manage_cbt === true || subadminPermissions.can_manage_exams === true
+        }
         return subadminPermissions[tab.permission] === true
       })
     : allTabs
@@ -3403,6 +3410,15 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                   <MasterAdminMockPanel darkMode={darkMode} />
                 )}
 
+                {tab === 'exam-library' && (
+                  <ExamLibraryManagement onManageExam={(exam) => {
+                    setSelectedExamForSubjects({ id: exam.id, title: exam.title })
+                    setShowSubjectForm(false)
+                    loadSubjectsForExam(exam.id)
+                    setTab('exams')
+                  }} />
+                )}
+
                 {tab === 'exams' && (
                   <div>
                     {/* Show Question Management Page if selected */}
@@ -3443,7 +3459,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               onClick={() => {
                                 setShowExamForm(!showExamForm)
                                 setEditingExam(null)
-                                setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20 })
+                                 setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20, subject_select_limit: 0 })
                               }}
                               className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
                             >

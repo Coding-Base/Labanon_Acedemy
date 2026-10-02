@@ -5,6 +5,8 @@ interface ExamFolderCardProps {
   title?: string;
   description?: string;
   subjectCount?: number;
+  count?: number;
+  countLabel?: string;
   colorIndex?: number;
   onClick?: () => void;
   exam?: {
@@ -30,13 +32,16 @@ const ExamFolderCard: React.FC<ExamFolderCardProps> = ({
   title,
   description,
   subjectCount,
+  count,
+  countLabel,
   colorIndex = 0,
   onClick,
   exam,
 }) => {
   const displayTitle = title || exam?.title || '';
   const displayDesc = description ?? exam?.description ?? '';
-  const displayCount = subjectCount ?? exam?.subject_count ?? 0;
+  const displayCount = count ?? subjectCount ?? exam?.subject_count ?? 0;
+  const displayCountLabel = countLabel ?? (exam ? 'Subject' : 'Exam');
   const color = FOLDER_COLORS[Math.abs(colorIndex) % FOLDER_COLORS.length];
 
   return (
@@ -69,7 +74,7 @@ const ExamFolderCard: React.FC<ExamFolderCardProps> = ({
       {/* Bottom: Subject / Exam count badge */}
       <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-700/60 mt-auto">
         <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-md">
-          {displayCount} {displayCount === 1 ? 'Subject' : 'Subjects'}
+          {displayCount} {displayCountLabel}{displayCount === 1 ? '' : 's'}
         </span>
         <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
           Explore <ChevronRight className="w-3.5 h-3.5" />

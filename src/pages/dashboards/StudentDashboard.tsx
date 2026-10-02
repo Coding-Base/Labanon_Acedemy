@@ -1116,7 +1116,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   
                   <Route path="lessons" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><StudentLessonsPage darkMode={darkMode} /></div>} />
                   
-                  <Route path="cbt" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CBTPage /></div>} />
+                  <Route path="cbt/*" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><CBTPage /></div>} />
                   <Route path="mock-exams" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><StudentMockExamsPage /></div>} />
                   <Route path="mock-exams/attempt/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamInterface darkMode={darkMode} /></div>} />
                   <Route path="mock-exams/results/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamResultsPage darkMode={darkMode} /></div>} />

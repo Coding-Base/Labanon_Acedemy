@@ -11,7 +11,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 export interface Exam {
   id: number;
   title: string;
-  slug: string;
+  slug?: string;
   description: string;
   time_limit_minutes: number;
   subject_count?: number;

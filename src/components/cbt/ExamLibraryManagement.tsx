@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 import {
+  AlertTriangle,
   Archive,
   BookOpen,
   Check,
@@ -86,6 +87,10 @@ export default function ExamLibraryManagement({ onManageExam }: { onManageExam?:
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewExam, setPreviewExam] = useState<Exam | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+
+  /* delete confirmation modal */
+  const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   /* messages */
   const [msg, setMsg] = useState<{ text: string; type: 'ok' | 'err' | 'info' } | null>(null)
@@ -187,10 +192,19 @@ export default function ExamLibraryManagement({ onManageExam }: { onManageExam?:
     try { await axios.post(`${API_BASE}/cbt/folders/${f.id}/${action}/`, {}, { headers: hdr() }); flash(`Folder ${action}ed.`, 'ok'); await load() }
     catch (e: any) { flash(fmtErr(e, `Could not ${action} folder.`), 'err') }
   }
-  const deleteFolder = async (f: Folder) => {
-    if (!window.confirm(`Delete "${f.name}"? Exams and subjects remain in the system.`)) return
-    try { await axios.delete(`${API_BASE}/cbt/folders/${f.id}/`, { headers: hdr() }); flash('Folder deleted.', 'ok'); await load() }
-    catch (e: any) { flash(fmtErr(e, 'Could not delete folder.'), 'err') }
+  const confirmDeleteFolder = async () => {
+    if (!folderToDelete) return
+    setDeleting(true)
+    try {
+      await axios.delete(`${API_BASE}/cbt/folders/${folderToDelete.id}/`, { headers: hdr() })
+      flash(`"${folderToDelete.name}" deleted.`, 'ok')
+      setFolderToDelete(null)
+      await load()
+    } catch (e: any) {
+      flash(fmtErr(e, 'Could not delete folder.'), 'err')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   /* attach / detach */
@@ -335,7 +349,7 @@ export default function ExamLibraryManagement({ onManageExam }: { onManageExam?:
                       {f.status === 'archived'
                         ? <TinyBtn onClick={() => folderAction('unarchive', f)} tip="Unarchive"><RotateCcw className="w-3.5 h-3.5" /></TinyBtn>
                         : <TinyBtn onClick={() => folderAction('archive', f)} tip="Archive"><Archive className="w-3.5 h-3.5" /></TinyBtn>}
-                      <TinyBtn onClick={() => deleteFolder(f)} tip="Delete"><Trash2 className="w-3.5 h-3.5 text-red-500" /></TinyBtn>
+                      <TinyBtn onClick={() => setFolderToDelete(f)} tip="Delete"><Trash2 className="w-3.5 h-3.5 text-red-500" /></TinyBtn>
                     </div>
                   </div>
                 ))}
@@ -343,6 +357,44 @@ export default function ExamLibraryManagement({ onManageExam }: { onManageExam?:
             )}
           </section>
         </>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {folderToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" onClick={() => !deleting && setFolderToDelete(null)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl transition-all" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <div className="p-3 bg-red-50 rounded-xl">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Delete Folder</h3>
+                <p className="text-xs text-gray-500">This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed mb-6">
+              Are you sure you want to delete <span className="font-semibold text-gray-900">"{folderToDelete.name}"</span>? Attached exams and subjects will remain safe in the system.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setFolderToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={confirmDeleteFolder}
+                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm transition-colors shadow-sm disabled:opacity-50 inline-flex items-center gap-2"
+              >
+                {deleting ? 'Deleting...' : 'Yes, Delete Folder'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* preview modal (preserved) */}

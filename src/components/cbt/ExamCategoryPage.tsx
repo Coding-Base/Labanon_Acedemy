@@ -301,13 +301,13 @@ export default function ExamCategoryPage({ exam, onBack, onStartExam }: ExamCate
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {activationStatus && !activationStatus.unlocked && !activationStatus.trial_available && (
+            {activationStatus && !activationStatus.unlocked && (
               <button
                 onClick={handleUnlockExam}
                 className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer active:scale-95"
               >
                 <Lock className="w-4 h-4" />
-                Unlock Full Exam
+                {activationStatus.trial_available ? 'Skip Trial - Pay Now' : 'Unlock Full Exam'}
               </button>
             )}
             <button

@@ -37,6 +37,7 @@ export default function CBTPage() {
   const navigate = useNavigate()
   const [view, setView] = useState<View>('hub')
   const [countries, setCountries] = useState<Country[]>([])
+  const [directFolders, setDirectFolders] = useState<Folder[]>([])
   const [fallbackExams, setFallbackExams] = useState<Exam[]>([])
   const [unlockedExamIds, setUnlockedExamIds] = useState<Set<number>>(new Set())
   const [recentAttempts, setRecentAttempts] = useState<ExamAttempt[]>([])
@@ -52,19 +53,25 @@ export default function CBTPage() {
   const [examTypeFilter, setExamTypeFilter] = useState('')
   const [examFilter, setExamFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [countryFilter, setCountryFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [examPage, setExamPage] = useState(1)
   const categoriesSectionRef = useRef<HTMLElement>(null)
 
   const allExams = useMemo(() => {
     const nested = flattenExams(countries)
-    return Array.from(new Map([...fallbackExams, ...nested].map(exam => [exam.id, exam])).values())
-  }, [countries, fallbackExams])
+    const directNested = directFolders.flatMap(f => flattenFolders([f])).flatMap(f => f.exams || [])
+    return Array.from(new Map([...fallbackExams, ...nested, ...directNested].map(exam => [exam.id, exam])).values())
+  }, [countries, fallbackExams, directFolders])
   const sortedAllExams = useMemo(() => [...allExams].sort((a, b) => {
     const unlockedDelta = Number(unlockedExamIds.has(b.id)) - Number(unlockedExamIds.has(a.id))
     return unlockedDelta || String(a.title || '').localeCompare(String(b.title || ''))
   }), [allExams, unlockedExamIds])
-  const allFolders = useMemo(() => countries.flatMap(country => flattenFolders(country.folders || [])), [countries])
+  const allFolders = useMemo(() => {
+    const fromCountries = countries.flatMap(country => flattenFolders(country.folders || []))
+    const fromDirect = directFolders.flatMap(folder => flattenFolders([folder]))
+    return Array.from(new Map([...fromDirect, ...fromCountries].map(f => [f.id, f])).values())
+  }, [countries, directFolders])
 
   const loadHubData = useCallback(async () => {
     setLoading(true)
@@ -95,10 +102,11 @@ export default function CBTPage() {
       const library = tags.map((country: Omit<Country, 'folders'>) => ({
         ...country,
         folders: libraryFolders
-          .filter((folder: Folder) => (folder.country_tags || []).includes(country.id))
+          .filter((folder: Folder) => (folder.country_tags || []).includes(country.id) || folder.country === country.id)
           .map((folder: Folder) => ({ ...folder, country: country.id })),
       })) as Country[]
       const rawExams = Array.isArray(examsRes.data) ? examsRes.data : (examsRes.data?.results || [])
+      setDirectFolders(libraryFolders)
       setCountries(library)
       setFallbackExams(rawExams)
       if (token && rawExams.length) {
@@ -123,7 +131,7 @@ export default function CBTPage() {
   }, [])
 
   useEffect(() => { loadHubData() }, [loadHubData])
-  useEffect(() => { setExamPage(1) }, [searchQuery, yearFilter, examTypeFilter, examFilter, categoryFilter])
+  useEffect(() => { setExamPage(1) }, [searchQuery, yearFilter, examTypeFilter, examFilter, categoryFilter, countryFilter])
 
   const examRouteValue = location.pathname.match(/\/student\/cbt\/exam\/([^/]+)/)?.[1]
   const folderRouteValue = location.pathname.match(/\/student\/cbt\/folder\/([^/]+)/)?.[1]
@@ -164,9 +172,20 @@ export default function CBTPage() {
   const search = searchQuery.trim().toLowerCase()
   const examMatches = (exam: Exam) => [exam.title, exam.description, exam.institution, exam.provider, exam.exam_type, exam.year, exam.difficulty, ...(exam.subjects || []).map(subject => subject.name)].some(value => String(value || '').toLowerCase().includes(search)) && (!yearFilter || exam.year === yearFilter) && (!examTypeFilter || exam.exam_type === examTypeFilter) && (!examFilter || String(exam.id) === examFilter)
   const folderMatchesCategory = (folder: Folder) => !categoryFilter || String(folder.id) === categoryFilter || String(folder.parent) === categoryFilter
+  const folderMatchesCountry = (folder: Folder) => {
+    if (!countryFilter) return true
+    const cid = Number(countryFilter)
+    return (folder.country_tags || []).includes(cid) || folder.country === cid || (folder.country_tag_details || []).some(t => t.id === cid)
+  }
   const matchingExams = sortedAllExams.filter(examMatches)
-  const matchingFolders = allFolders.filter(folder => folderMatchesCategory(folder) && (`${folder.name} ${folder.description} ${(folder.country_tag_details || []).map(tag => tag.name).join(' ')}`.toLowerCase().includes(search) || folder.exams.some(examMatches) || (folder.subject_entries || []).some(entry => examMatches(entry.exam) || entry.subject.name.toLowerCase().includes(search))))
-  const roots = Array.from(new Map((routeCountry ? routeCountry.folders : countries.flatMap(country => country.folders)).filter(folder => !folder.parent).map(folder => [folder.id, folder])).values())
+  const matchingFolders = allFolders.filter(folder => folderMatchesCategory(folder) && folderMatchesCountry(folder) && (`${folder.name} ${folder.description} ${(folder.country_tag_details || []).map(tag => tag.name).join(' ')}`.toLowerCase().includes(search) || folder.exams.some(examMatches) || (folder.subject_entries || []).some(entry => examMatches(entry.exam) || entry.subject.name.toLowerCase().includes(search))))
+  const roots = useMemo(() => {
+    if (routeCountry) {
+      return routeCountry.folders.filter(f => !f.parent)
+    }
+    const pool = directFolders.length ? directFolders : countries.flatMap(c => c.folders)
+    return Array.from(new Map(pool.filter(folder => !folder.parent).map(folder => [folder.id, folder])).values())
+  }, [routeCountry, directFolders, countries])
   const childFolders = routeFolder?.children || roots
   const folderExams = routeFolder?.exams || []
   const folderSubjects = routeFolder?.subject_entries || []
@@ -181,8 +200,9 @@ export default function CBTPage() {
   const examTypes = Array.from(new Set(allExams.map(exam => exam.exam_type).filter(Boolean))) as string[]
   const examOptions = Array.from(new Map(allExams.map(exam => [exam.id, exam])).values()).sort((a, b) => String(a.title).localeCompare(String(b.title)))
   const categoryOptions = Array.from(new Map(allFolders.map(f => [f.id, f])).values()).sort((a, b) => String(a.name).localeCompare(String(b.name)))
+  const countryOptions = Array.from(new Map(countries.map(c => [c.id, c])).values()).sort((a, b) => String(a.name).localeCompare(String(b.name)))
 
-  const isFiltered = Boolean(search || yearFilter || examTypeFilter || examFilter || categoryFilter)
+  const isFiltered = Boolean(search || yearFilter || examTypeFilter || examFilter || categoryFilter || countryFilter)
   const examPageSize = 12
   const paginatedAllExams = sortedAllExams.slice((examPage - 1) * examPageSize, examPage * examPageSize)
   const examTotalPages = Math.max(1, Math.ceil(sortedAllExams.length / examPageSize))
@@ -205,7 +225,12 @@ export default function CBTPage() {
           <input value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder="Search folders, countries, exams, subjects, institutions or years..." className="block w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <select value={countryFilter} onChange={event => setCountryFilter(event.target.value)} aria-label="Filter by country" className="border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 truncate">
+            <option value="">All countries</option>
+            {countryOptions.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+          </select>
+
           <select value={yearFilter} onChange={event => setYearFilter(event.target.value)} aria-label="Filter by year" className="border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
             <option value="">All years</option>
             {years.map(year => <option key={year} value={year}>{year}</option>)}
@@ -221,7 +246,7 @@ export default function CBTPage() {
             {categoryOptions.map(cat => <option key={cat.id} value={String(cat.id)}>{cat.name}</option>)}
           </select>
 
-          <select value={examTypeFilter} onChange={event => setExamTypeFilter(event.target.value)} aria-label="Filter by exam type" className="border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 truncate">
+          <select value={examTypeFilter} onChange={event => setExamTypeFilter(event.target.value)} aria-label="Filter by exam type" className="border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 truncate col-span-2 sm:col-span-1">
             <option value="">All exam types</option>
             {examTypes.map(type => <option key={type} value={type}>{type}</option>)}
           </select>

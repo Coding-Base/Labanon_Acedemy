@@ -165,10 +165,6 @@ export default function CBTPage() {
   const openExam = (exam: Exam) => { rememberExam(exam); setSelectedExam(exam); setView('hub'); navigate(`/student/cbt/exam/${exam.id}-${exam.slug}`) }
   const startExam = (exam: Exam, subjects: Subject[], trial: TrialInfo | null, allowedIds: number[]) => { setSelectedExam(exam); setSelectedSubjects(subjects); setTrialInfo(trial); setAllowedSubjectIds(allowedIds); setView('exam-flow') }
 
-  if (view === 'exam-interface' && resumeData) return <ExamInterface examAttemptId={resumeData.exam_attempt_id} testName={resumeData.test_name} subjectConfigs={resumeData.subject_configs || []} timeLimitMinutes={resumeData.time_limit_minutes} initialTimeRemainingSeconds={resumeData.time_remaining_seconds} onSubmitComplete={() => { window.location.href = `/performance/${resumeData.exam_attempt_id}` }} isTrialAttempt={resumeData.is_trial_attempt} />
-  if (view === 'exam-flow' && selectedExam) return <CBTExamFlow onClose={() => setView('hub')} onComplete={() => { setView('hub'); navigate('/student/cbt'); loadHubData() }} initialExam={selectedExam} initialSelectedSubjects={selectedSubjects} initialTrialInfo={trialInfo} initialAllowedSubjectIds={allowedSubjectIds} />
-  if (examRouteValue && selectedExam) return <div className="min-h-screen p-6 bg-gray-50 dark:bg-slate-900"><ExamCategoryPage exam={selectedExam} onBack={() => navigate('/student/cbt')} onStartExam={startExam} /></div>
-
   const search = searchQuery.trim().toLowerCase()
   const examMatches = (exam: Exam) => [exam.title, exam.description, exam.institution, exam.provider, exam.exam_type, exam.year, exam.difficulty, ...(exam.subjects || []).map(subject => subject.name)].some(value => String(value || '').toLowerCase().includes(search)) && (!yearFilter || exam.year === yearFilter) && (!examTypeFilter || exam.exam_type === examTypeFilter) && (!examFilter || String(exam.id) === examFilter)
   const folderMatchesCategory = (folder: Folder) => !categoryFilter || String(folder.id) === categoryFilter || String(folder.parent) === categoryFilter
@@ -190,6 +186,11 @@ export default function CBTPage() {
   const folderExams = routeFolder?.exams || []
   const folderSubjects = routeFolder?.subject_entries || []
   const folderPath = (folder: Folder) => `/student/cbt/folder/${folder.id}-${folder.slug}`
+
+  // Early returns are safely placed here AFTER all React hooks are executed
+  if (view === 'exam-interface' && resumeData) return <ExamInterface examAttemptId={resumeData.exam_attempt_id} testName={resumeData.test_name} subjectConfigs={resumeData.subject_configs || []} timeLimitMinutes={resumeData.time_limit_minutes} initialTimeRemainingSeconds={resumeData.time_remaining_seconds} onSubmitComplete={() => { window.location.href = `/performance/${resumeData.exam_attempt_id}` }} isTrialAttempt={resumeData.is_trial_attempt} />
+  if (view === 'exam-flow' && selectedExam) return <CBTExamFlow onClose={() => setView('hub')} onComplete={() => { setView('hub'); navigate('/student/cbt'); loadHubData() }} initialExam={selectedExam} initialSelectedSubjects={selectedSubjects} initialTrialInfo={trialInfo} initialAllowedSubjectIds={allowedSubjectIds} />
+  if (examRouteValue && selectedExam) return <div className="min-h-screen p-6 bg-gray-50 dark:bg-slate-900"><ExamCategoryPage exam={selectedExam} onBack={() => navigate('/student/cbt')} onStartExam={startExam} /></div>
 
   // Options for dropdown filters
   const currentYear = new Date().getFullYear()

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -49,7 +49,23 @@ export default function Register() {
   const params = new URLSearchParams(location.search);
   const nextParam = params.get('next') || '';
   const pendingDownload = params.get('pendingDownload') || '';
-  const referralCode = params.get('ref') || params.get('referral_code') || localStorage.getItem('referral_code') || '';
+  const urlRef = params.get('ref') || params.get('referral_code') || '';
+  const urlExam = params.get('exam') || '';
+
+  // Detect whether the visitor followed a referral link
+  const isReferralSignup = Boolean(urlRef || params.get('ref') || params.get('referral_code'));
+
+  useEffect(() => {
+    if (urlRef) {
+      try { localStorage.setItem('referral_code', urlRef); } catch (_) {}
+    }
+    if (urlExam) {
+      try { localStorage.setItem('referral_exam_id', urlExam); } catch (_) {}
+    }
+  }, [urlRef, urlExam]);
+
+  const referralCode = urlRef || localStorage.getItem('referral_code') || '';
+  const examParam = urlExam || localStorage.getItem('referral_exam_id') || '';
   const fromInstitutions = params.get('from') === 'institutions'; // Check if coming from institutions page
 
   const [username, setUsername] = useState('');
@@ -64,7 +80,16 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState(1);
+  // Direct to student registration unless visitor explicitly came from the institutions page
+  const shouldDirectToStudent = isReferralSignup || !fromInstitutions;
+  const [step, setStep] = useState(shouldDirectToStudent ? 2 : 1);
+
+  useEffect(() => {
+    if (shouldDirectToStudent) {
+      setStep(2);
+      setRole('student');
+    }
+  }, [shouldDirectToStudent]);
 
   // Institution-specific fields (Step 1.5)
   const [institutionType, setInstitutionType] = useState('');
@@ -117,7 +142,8 @@ export default function Register() {
     }
   ];
 
-  const visibleRoles = roles;
+  // Show all account types only if coming from the institutions page; otherwise show only Student
+  const visibleRoles = fromInstitutions && !isReferralSignup ? roles : roles.filter(r => r.id === 'student');
 
   const institutionTypes = [
     { value: 'university', label: 'University' },
@@ -258,6 +284,28 @@ export default function Register() {
         registrationData.purpose = purpose.join(',');
       }
 
+      if (examParam && referralCode && role === 'student') {
+        // Streamlined exam referral registration (auto-verifies email and logs in directly)
+        const resp = await api.post('/courses/exam-referrals/register/', {
+          username,
+          email,
+          password,
+          first_name: firstName,
+          last_name: lastName,
+          referral_code: referralCode,
+          exam_id: examParam,
+        });
+        const { access, refresh } = resp.data;
+        if (access) localStorage.setItem('access', access);
+        if (refresh) localStorage.setItem('refresh', refresh);
+        try { localStorage.removeItem('referral_exam_id'); } catch (_) {}
+        setTimeout(() => {
+          const targetRoute = resp.data?.exam_target_route || examParam;
+          navigate('/student/cbt/exam/' + encodeURIComponent(targetRoute), { replace: true });
+        }, 500);
+        return;
+      }
+
       await register(registrationData);
       if (referralCode) localStorage.setItem('referral_code', referralCode);
 
@@ -381,7 +429,8 @@ export default function Register() {
               <p className="text-gray-600">Start your learning journey today</p>
             </div>
 
-            {/* Progress Steps */}
+            {/* Progress Steps (only shown when choosing between account types from institutions page) */}
+            {fromInstitutions && !isReferralSignup && (
             <div className="flex items-center justify-center mb-8">
               <div className="flex items-center space-x-2">
                 {role === 'institution' ? (
@@ -425,9 +474,10 @@ export default function Register() {
                 )}
               </div>
             </div>
+            )}
 
             {/* Step 1: Role Selection */}
-            {step === 1 && (
+            {step === 1 && fromInstitutions && !isReferralSignup && (
               <motion.div
                 variants={fadeInUp}
                 initial="hidden"
@@ -695,21 +745,23 @@ export default function Register() {
                 onSubmit={handleSubmit}
                 className="space-y-6"
               >
-                {/* Back button */}
-                <button
-                  type="button"
-                  onClick={() => role === 'institution' ? setStep(1.5) : setStep(1)}
-                  className="flex items-center text-brand-700 hover:text-brand-800 font-medium mb-4"
-                >
-                  <ChevronRight className="w-5 h-5 rotate-180 mr-1" />
-                  Back to {role === 'institution' ? 'institution details' : 'account type'}
-                </button>
+                {/* Back button (only shown when coming from institutions page with multiple account types) */}
+                {fromInstitutions && !isReferralSignup && (
+                  <button
+                    type="button"
+                    onClick={() => role === 'institution' ? setStep(1.5) : setStep(1)}
+                    className="flex items-center text-brand-700 hover:text-brand-800 font-medium mb-4"
+                  >
+                    <ChevronRight className="w-5 h-5 rotate-180 mr-1" />
+                    Back to {role === 'institution' ? 'institution details' : 'account type'}
+                  </button>
+                )}
 
                 {/* Selected Role Display */}
                 <div className="flex items-center justify-center mb-6">
                   <div className="inline-flex items-center space-x-2 px-4 py-2 bg-brand-100 text-brand-700 rounded-full">
                     {roles.find(r => r.id === role)?.icon}
-                    <span className="font-medium">{roles.find(r => r.id === role)?.label}</span>
+                    <span className="font-medium">{!fromInstitutions ? 'Student Account' : roles.find(r => r.id === role)?.label}</span>
                   </div>
                 </div>
 

@@ -26,6 +26,7 @@ import {
 
 import ContactForm from '../components/ContactForm';
 import Navbar from '../components/Navbar';
+import HomeReferralBanner from '../components/home/HomeReferralBanner';
 import { setSEOTags, setCanonicalURL, addStructuredData, getOrganizationSchema, getEducationalOrganizationSchema } from '../utils/seoUtils';
 
 import labanonLogo from './labanonlogo.png';
@@ -275,9 +276,12 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section ref={heroSectionRef} className="relative pt-24 pb-16 md:pt-40 md:pb-32 overflow-hidden">
+      <section ref={heroSectionRef} className="relative pt-20 pb-16 md:pt-28 md:pb-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-brand-500/5" />
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 relative">
+          {/* Coursera-style Announcement Banner (Just under the Nav Bar) */}
+          <HomeReferralBanner />
+
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Hero Content - Updated for Mobile Centering */}
             <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-8 text-center md:text-left order-2 lg:order-1">

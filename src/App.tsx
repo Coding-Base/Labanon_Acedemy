@@ -84,6 +84,8 @@ export default function App() {
         const params = new URLSearchParams(location.search || '')
         const ref = params.get('ref') || params.get('referral_code')
         if (ref) localStorage.setItem('referral_code', ref)
+        const exam = params.get('exam')
+        if (exam) localStorage.setItem('referral_exam_id', exam)
         sendPageView(location.pathname + (location.search || ''))
         // also notify backend about referrer and UTM data
         // sendServerPageView is fire-and-forget

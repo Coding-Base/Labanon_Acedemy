@@ -42,8 +42,12 @@ import {
   Copy,
   Sparkles,
   ArrowRight,
-  Settings
+  Settings,
+  Banknote,
 } from 'lucide-react';
+import { ExamReferralBanner } from '../../components/exam-referral/ExamReferralBanner';
+import { ExamReferralPromoModal } from '../../components/exam-referral/ExamReferralPromoModal';
+import { ExamReferralPage } from '../exam-referral/ExamReferralPage';
 import labanonLogo from '../labanonlogo.png';
 import MyCourses from '../MyCourses';
 import CBTPage from '../CBT';
@@ -120,6 +124,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   const [referralData, setReferralData] = useState<any | null>(null);
   const [referralLoading, setReferralLoading] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
+  const [examReferralCampaigns, setExamReferralCampaigns] = useState<any[]>([]);
+  const [examReferralPromoConfig, setExamReferralPromoConfig] = useState<any>(null);
 
   const base = '/student';
   const loggedOutRef = useRef(false);
@@ -367,7 +373,13 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
   const loadReferralData = useCallback(async () => {
     setReferralLoading(true);
     try {
-      const res = await api.get('/referrals/me/');
+      const [res, campRes, promoRes] = await Promise.all([
+        api.get('/referrals/me/'),
+        api.get('/courses/exam-referrals/campaigns/').catch(() => ({ data: [] })),
+        api.get('/courses/exam-referrals/promo-config/').catch(() => ({ data: null }))
+      ]);
+      setExamReferralCampaigns(campRes.data || []);
+      setExamReferralPromoConfig(promoRes.data || null);
       // normalize points_balance to string/number for display
       const data = res.data || {};
       setReferralData({
@@ -401,7 +413,7 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
     { path: 'lessons', label: 'Lessons', icon: <BookMarked className="w-5 h-5" /> },
     { path: 'cbt', label: 'CBT & Exams', icon: <FileText className="w-5 h-5" /> },
     { path: 'mock-exams', label: 'Mock Exams', icon: <Zap className="w-5 h-5" /> },
-    { path: 'referrer', label: 'Referrer', icon: <Gift className="w-5 h-5" /> },
+    { path: 'referrer', label: 'Refer & Earn', icon: <Gift className="w-5 h-5 text-amber-500" /> },
     { path: 'cart', label: 'Shopping Cart', icon: <ShoppingCart className="w-5 h-5" /> },
     { path: 'schedule', label: 'Schedule', icon: <Calendar className="w-5 h-5" /> }, 
     { path: 'payments', label: 'Payments', icon: <CreditCard className="w-5 h-5" /> },
@@ -946,6 +958,22 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                 <Routes>
                   <Route path="overview" element={
                     <div className="w-full min-h-full">
+                      {examReferralPromoConfig && (
+                        <>
+                          <ExamReferralBanner
+                            campaigns={examReferralCampaigns}
+                            config={examReferralPromoConfig}
+                            onNavigate={() => navigate('/student/exam-referrals')}
+                            dark={darkMode}
+                          />
+                          <ExamReferralPromoModal
+                            campaigns={examReferralCampaigns}
+                            config={examReferralPromoConfig}
+                            onNavigate={() => navigate('/student/exam-referrals')}
+                            dark={darkMode}
+                          />
+                        </>
+                      )}
                       <div className="mb-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           <div>
@@ -1121,7 +1149,8 @@ export default function StudentDashboard(props: { summary?: DashboardSummary }) 
                   <Route path="mock-exams/attempt/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamInterface darkMode={darkMode} /></div>} />
                   <Route path="mock-exams/results/:attemptId" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><MockExamResultsPage darkMode={darkMode} /></div>} />
                   
-                  <Route path="referrer" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><RealReferrerPage /></div>} />
+                  <Route path="exam-referrals" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ExamReferralPage dark={darkMode} /></div>} />
+                  <Route path="referrer" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><ExamReferralPage dark={darkMode} /></div>} />
                   <Route path="cart" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Cart /></div>} />
                   <Route path="payments" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><PaymentsPage /></div>} />
                   <Route path="profile" element={<div className={`w-full min-h-full ${darkMode ? 'text-white' : 'text-gray-900'}`}><Profile /></div>} />

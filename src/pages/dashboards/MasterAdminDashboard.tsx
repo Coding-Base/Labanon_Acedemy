@@ -92,6 +92,8 @@ import MasterAdminMockPanel from '../MasterAdminMockPanel'
 import { CreateMaterialForm, MaterialsList, MaterialsActivitySection } from '../../components/Materials'
 import LessonManager from '../../components/dashboards/LessonManager'
 import SubscriptionManager from '../../components/dashboards/SubscriptionManager'
+import { AdminExamReferralPanel } from '../../components/admin/AdminExamReferralPanel'
+import { Banknote } from 'lucide-react'
 
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
@@ -148,7 +150,32 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const navSummary = (location.state as any)?.summary
   const [summary, setSummary] = useState<any | null>(propSummary ?? navSummary ?? null)
 
-  const [tab, setTab] = useState<string>('overview')
+  const getTabFromPath = (pathname: string): string => {
+    const parts = pathname.replace(/^\/+|\/+$/g, '').split('/')
+    if (parts.length >= 2 && parts[0] === 'admin') {
+      const sub = parts[1]
+      if (sub === 'exam-referrals') return 'referrals'
+      return sub
+    }
+    return 'overview'
+  }
+
+  const [tab, setTabState] = useState<string>(() => getTabFromPath(location.pathname))
+
+  const setTab = useCallback((newTab: string) => {
+    setTabState(newTab)
+    const targetPath = newTab === 'overview' ? '/admin' : `/admin/${newTab}`
+    if (location.pathname !== targetPath) {
+      navigate(targetPath, { replace: false, state: location.state })
+    }
+  }, [location.pathname, location.state, navigate])
+
+  useEffect(() => {
+    const tabFromUrl = getTabFromPath(location.pathname)
+    if (tabFromUrl && tabFromUrl !== tab) {
+      setTabState(tabFromUrl)
+    }
+  }, [location.pathname])
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any | null>(null)
@@ -799,7 +826,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'subscriptions', label: 'Subscription Manager', icon: <Crown className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'payments', label: 'Payments', icon: <CreditCard className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
-    { id: 'referrals', label: 'Referrals', icon: <Gift className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
+    { id: 'referrals', label: 'Exam Referrals', icon: <Banknote className="w-5 h-5 text-amber-500" />, permission: 'can_view_payments' as PermissionKey },
     { id: 'verification', label: 'Verification', icon: <CheckCircle className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'legal-documents', label: 'Legal Documents', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
     { id: 'broadcast', label: 'Email Broadcast', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
@@ -3999,6 +4026,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 )}
 
                 {tab === 'referrals' && (
+                  <AdminExamReferralPanel />
+                )}
+
+                {tab === 'legacy-referrals' && (
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div>

@@ -452,11 +452,22 @@ export default function ExamInterface({
                   </div>
 
                   {currentQuestion.image && (
-                    <div className="mb-6">
+                    <div className="mb-6 max-w-2xl">
                       <img
-                        src={currentQuestion.image.startsWith('http') ? currentQuestion.image : `${API_BASE.replace('/api', '')}${currentQuestion.image}`}
-                        alt="Question"
-                        className="max-w-full h-auto rounded-lg border border-gray-200"
+                        src={
+                          currentQuestion.image.startsWith('//')
+                            ? `https:${currentQuestion.image}`
+                            : currentQuestion.image.startsWith('http://')
+                            ? currentQuestion.image.replace('http://', 'https://')
+                            : currentQuestion.image.startsWith('https://')
+                            ? currentQuestion.image
+                            : `${API_BASE.replace(/\/api\/?$/, '')}${currentQuestion.image.startsWith('/') ? '' : '/'}${currentQuestion.image}`
+                        }
+                        alt="Question diagram"
+                        className="max-h-96 w-auto max-w-full rounded-lg border border-gray-200 shadow-sm object-contain"
+                        onError={(e) => {
+                          ;(e.target as HTMLImageElement).style.display = 'none'
+                        }}
                       />
                     </div>
                   )}

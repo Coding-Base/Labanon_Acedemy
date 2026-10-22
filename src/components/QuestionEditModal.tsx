@@ -210,9 +210,8 @@ export default function QuestionEditModal({
         choices
       }
 
-      await onSave(updatePayload)
-
-      // Upload image if changed
+      // 1. Upload image first if a new file was chosen
+      let imageUploadFailed = false
       if (formData.image) {
         try {
           setImageUploading(true)
@@ -220,21 +219,32 @@ export default function QuestionEditModal({
           formDataImg.append('image', formData.image)
 
           const token = localStorage.getItem('access')
-          await axios.patch(`${API_BASE}/cbt/questions/${question.id}/`, formDataImg, {
+          // Note: Do NOT explicitly set 'Content-Type': 'multipart/form-data'.
+          // Letting Axios/browser set it preserves the required multipart boundary.
+          const imgRes = await axios.patch(`${API_BASE}/cbt/questions/${question.id}/`, formDataImg, {
             headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
+              Authorization: `Bearer ${token}`
             }
           })
+          if (imgRes.data?.image) {
+            updatePayload.image = imgRes.data.image
+          }
         } catch (err) {
           console.error('Image upload failed:', err)
-          // Don't fail the whole save just because image upload failed
+          imageUploadFailed = true
         } finally {
           setImageUploading(false)
         }
       }
 
-      showToast('Question updated successfully', 'success')
+      // 2. Persist text, explanation, and choices
+      await onSave(updatePayload)
+
+      if (imageUploadFailed) {
+        showToast('Question text saved, but image upload failed', 'error')
+      } else {
+        showToast('Question updated successfully', 'success')
+      }
       onClose()
     } catch (err) {
       console.error('Save failed:', err)

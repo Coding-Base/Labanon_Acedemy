@@ -321,6 +321,7 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
 
+                        
             <Link to="/login" className="hidden md:inline px-4 py-2 text-gray-700 hover:text-brand-600 font-medium text-sm">
               Log In
             </Link>
@@ -410,9 +411,8 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
                     {item.label}
                   </Link>
                 ))}
-                <Link
-                  to="/login"
-                  className="block text-brand-700 font-medium"
+                                
+                <Link to="/login" className="block text-brand-700 font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Log In

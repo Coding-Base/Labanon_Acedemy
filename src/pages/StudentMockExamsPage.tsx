@@ -114,7 +114,7 @@ const StudentMockExamsPage: React.FC = () => {
         
         // Start exam immediately
         const attemptResponse = await studentMockExamsAPI.startMockExamAttempt(exam.id);
-        navigate(`attempt/${attemptResponse.data.id}`);
+        navigate(`/student/mock-exams/attempt/${attemptResponse.data.id}`);
       } else {
         // Need to unlock with payment - redirect to payment page
         navigate(`/mock-exam-unlock/${exam.id}`);
@@ -254,15 +254,15 @@ const StudentMockExamsPage: React.FC = () => {
                       <div
                         key={attempt.id}
                         className="p-4 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/50"
-                        onClick={() => navigate(`results/${attempt.id}`)}
+                        onClick={() => navigate(`/student/mock-exams/results/${attempt.id}`)}
                       >
                         <p className="font-bold text-sm text-gray-800 dark:text-slate-100 mb-1 line-clamp-1">
-                          {attempt.custom_mock_exam?.title}
+                          {attempt.mock_exam_title || attempt.custom_mock_exam?.title || attempt.mock_exam?.title || 'Mock Exam'}
                         </p>
                         <div className="flex justify-between items-center mt-2">
                             <Chip 
                                 size="small" 
-                                label={`Score: ${attempt.total_marks_obtained}/${attempt.custom_mock_exam?.total_marks}`} 
+                                label={`Score: ${attempt.obtained_marks ?? attempt.total_marks_obtained ?? 0}/${attempt.total_marks || attempt.custom_mock_exam?.total_marks || 0}`} 
                                 color={attempt.passed ? "success" : "default"}
                                 variant={attempt.passed ? "filled" : "outlined"}
                                 className="font-semibold text-xs"

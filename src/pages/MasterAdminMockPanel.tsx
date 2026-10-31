@@ -48,6 +48,7 @@ import {
   ChevronRight,
   Check,
   X,
+  RefreshCw,
 } from 'lucide-react'
 import { adminMockExamsAPI, CustomMockExam } from '../api/mock_exams_api'
 import showToast from '../utils/toast'
@@ -380,7 +381,7 @@ const MasterAdminMockPanel: React.FC<{ darkMode?: boolean }> = ({ darkMode = fal
 
           {/* Platform Integration Tab */}
           <TabPanel value={activeTab} index={3}>
-            <PlatformIntegrationTab darkMode={darkMode} />
+            <PlatformIntegrationTab darkMode={darkMode} onExamsUpdated={fetchExams} />
           </TabPanel>
         </Card>
       </Container>
@@ -1723,7 +1724,14 @@ const FeeManagementTab: React.FC<FeeManagementTabProps> = ({ exams, darkMode = f
 }
 
 // ============ PLATFORM INTEGRATION TAB ============
-const PlatformIntegrationTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = false }) => {
+interface PlatformIntegrationTabProps {
+  darkMode?: boolean
+  onExamsUpdated?: () => void
+}
+
+const PlatformIntegrationTab: React.FC<PlatformIntegrationTabProps> = ({ darkMode = false, onExamsUpdated }) => {
+  const [testingPlatformId, setTestingPlatformId] = useState<number | null>(null)
+  const [syncingPlatformId, setSyncingPlatformId] = useState<number | null>(null)
   const [platforms, setPlatforms] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [openDialog, setOpenDialog] = useState(false)
@@ -1833,10 +1841,31 @@ const PlatformIntegrationTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = f
 
   const handleTestConnection = async (platformId: number) => {
     try {
-      // This would call a test endpoint on the backend
-      showToast('success', 'Connection test successful!')
-    } catch (error) {
-      showToast('error', 'Connection test failed')
+      setTestingPlatformId(platformId)
+      const response = await adminMockExamsAPI.testPlatformConnection(platformId)
+      showToast('success', response.data?.message || 'Connection test successful!')
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Connection test failed'
+      showToast('error', errMsg)
+    } finally {
+      setTestingPlatformId(null)
+    }
+  }
+
+  const handleSyncPlatform = async (platformId: number) => {
+    try {
+      setSyncingPlatformId(platformId)
+      const response = await adminMockExamsAPI.syncPlatformExams(platformId)
+      showToast('success', response.data?.message || 'Exams synced successfully!')
+      fetchPlatforms()
+      if (onExamsUpdated) {
+        onExamsUpdated()
+      }
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Sync failed'
+      showToast('error', errMsg)
+    } finally {
+      setSyncingPlatformId(null)
     }
   }
 
@@ -1944,13 +1973,30 @@ const PlatformIntegrationTab: React.FC<{ darkMode?: boolean }> = ({ darkMode = f
                       : 'Never'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 items-center">
                       <IconButton
                         size="small"
                         onClick={() => handleTestConnection(platform.id)}
                         title="Test Connection"
+                        disabled={testingPlatformId === platform.id}
                       >
-                        <Check size={18} className="text-green-500" />
+                        {testingPlatformId === platform.id ? (
+                          <CircularProgress size={16} />
+                        ) : (
+                          <Check size={18} className="text-green-500" />
+                        )}
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleSyncPlatform(platform.id)}
+                        title="Sync Exams"
+                        disabled={syncingPlatformId === platform.id || !platform.sync_enabled || !platform.is_active}
+                      >
+                        {syncingPlatformId === platform.id ? (
+                          <CircularProgress size={16} />
+                        ) : (
+                          <RefreshCw size={18} className="text-blue-500" />
+                        )}
                       </IconButton>
                       <IconButton
                         size="small"

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import DOMPurify from 'dompurify'
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils'
 import axios from 'axios'
 import { motion } from 'framer-motion'
 import { Search, Loader2, Calendar, User, ChevronRight, ChevronLeft, BookOpen, Megaphone, ArrowRight } from 'lucide-react'
@@ -28,18 +29,8 @@ function getEffectiveBackendOrigin(): string {
 const BACKEND_ORIGIN = getEffectiveBackendOrigin()
 const BLOG_PAGE_SIZE = 10
 
-function getImageSrc(img?: string) {
-  if (!img) return undefined
-  if (img.startsWith('data:')) return img
-  if (img.startsWith('http')) {
-    if (img.includes('localhost:8000') && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
-      return img.replace(/^https?:\/\/localhost:8000/i, getEffectiveBackendOrigin())
-    }
-    return img
-  }
-  const origin = getEffectiveBackendOrigin()
-  const clean = img.startsWith('/') ? img : `/${img}`
-  return `${origin}${clean}`
+function getImageSrc(img?: string): string {
+  return resolveImageUrl(img)
 }
 
 function extractFirstImageSrc(content?: string) {
@@ -360,7 +351,7 @@ export default function BlogPage() {
                                     alt={blog.title}
                                     className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
                                     loading="lazy"
-                                  />
+                                  onError={(e) => handleImageError(e)} />
                                   {blog.category_name && (
                                     <span className="absolute top-3 left-3 bg-yellow-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase shadow">
                                       {blog.category_name}
@@ -416,7 +407,7 @@ export default function BlogPage() {
                                 src={getImageSrc(src)}
                                 alt={featuredPost.title}
                                 className="w-full h-full object-contain group-hover:scale-[1.01] transition-transform duration-300"
-                              />
+                              onError={(e) => handleImageError(e)} />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-gray-400"><BookOpen className="w-12 h-12" /></div>
                             )
@@ -475,7 +466,7 @@ export default function BlogPage() {
                                       alt={blog.title}
                                       className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
                                       loading="lazy"
-                                    />
+                                    onError={(e) => handleImageError(e)} />
                                     {blog.category_name && (
                                       <span className="absolute top-3 left-3 bg-yellow-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase shadow">
                                         {blog.category_name}
@@ -533,7 +524,7 @@ export default function BlogPage() {
                                       alt={blog.title}
                                       className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
                                       loading="lazy"
-                                    />
+                                    onError={(e) => handleImageError(e)} />
                                     {blog.category_name && (
                                       <span className="absolute top-3 left-3 bg-yellow-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase shadow">
                                         {blog.category_name}
@@ -589,7 +580,7 @@ export default function BlogPage() {
                                     alt={blog.title}
                                     className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
                                     loading="lazy"
-                                  />
+                                  onError={(e) => handleImageError(e)} />
                                 </div>
                               )}
                               <div className="flex-1 flex flex-col justify-between py-1">

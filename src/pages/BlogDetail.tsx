@@ -7,6 +7,7 @@ import Navbar from '../components/Navbar'
 import CommentSection from '../components/blog/CommentSection'
 import BlogAdCards from '../components/blog/BlogAdCards'
 import DOMPurify from 'dompurify'
+import { resolveImageUrl, formatRichContentImages, handleImageError } from '../utils/imageUtils'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
 
@@ -26,35 +27,13 @@ function getEffectiveBackendOrigin(): string {
 
 const BACKEND_ORIGIN = getEffectiveBackendOrigin()
 
-function getImageSrc(img?: string) {
-  if (!img) return undefined
-  if (img.startsWith('data:')) return img
-  if (img.startsWith('http')) {
-    if (img.includes('localhost:8000') && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
-      return img.replace(/^https?:\/\/localhost:8000/i, getEffectiveBackendOrigin())
-    }
-    return img
-  }
-  const origin = getEffectiveBackendOrigin()
-  const clean = img.startsWith('/') ? img : `/${img}`
-  return `${origin}${clean}`
+function getImageSrc(img?: string): string {
+  return resolveImageUrl(img)
 }
 
 function formatBlogContent(content?: string): string {
   if (!content) return ''
-  const origin = getEffectiveBackendOrigin()
-  let formatted = content
-  if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
-    formatted = formatted.replace(
-      /src=(["'])https?:\/\/localhost:8000(\/media\/[^"'\s]+)\1/gi,
-      `src="$1${origin}$2$1"`
-    )
-  }
-  formatted = formatted.replace(
-    /src=(["'])(\/media\/[^"'\s]+)\1/gi,
-    `src="$1${origin}$2$1"`
-  )
-  return formatted
+  return formatRichContentImages(content)
 }
 
 interface BlogPost {
@@ -81,7 +60,15 @@ export default function BlogDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const location = useLocation()
   const stateData = location.state?.blog
-  const [blog, setBlog] = useState<BlogPost | null>(stateData?.slug === slug ? stateData : null)
+  const [blog, setBlog] = useState<BlogPost | null>(() => {
+    if (stateData && stateData.slug === slug) {
+      return {
+        ...stateData,
+        content: formatBlogContent(stateData.content)
+      }
+    }
+    return null
+  })
   const [loading, setLoading] = useState(!blog)
   const [liked, setLiked] = useState(blog?.user_liked || false)
   const [likesCount, setLikesCount] = useState(blog?.likes_count || 0)
@@ -91,7 +78,7 @@ export default function BlogDetailPage() {
   const [currentUserId, setCurrentUserId] = useState<number | undefined>()
 
   useEffect(() => {
-    if (slug && (!blog || blog.slug !== slug)) {
+    if (slug) {
       loadBlog()
     }
   }, [slug])
@@ -225,6 +212,40 @@ export default function BlogDetailPage() {
     })
   }
 
+  // Auto-heal or gracefully handle embedded images inside blog content
+  useEffect(() => {
+    const container = document.querySelector('.blog-content')
+    if (!container) return
+
+    const handleImgErr = (e: Event) => {
+      const img = e.target as HTMLImageElement
+      if (!img) return
+      const count = Number(img.dataset.retryCount || '0')
+      if (count >= 2) {
+        img.style.display = 'none'
+        return
+      }
+      img.dataset.retryCount = String(count + 1)
+      const src = img.src || ''
+      if (src.includes('res.cloudinary.com') && !/\.(jpg|jpeg|png|webp|gif|svg)$/i.test(src)) {
+        img.src = `${src}.jpg`
+        return
+      }
+      if (src.startsWith('http://')) {
+        img.src = src.replace('http://', 'https://')
+        return
+      }
+      img.style.display = 'none'
+    }
+
+    const imgs = container.querySelectorAll('img')
+    imgs.forEach(i => i.addEventListener('error', handleImgErr))
+
+    return () => {
+      imgs.forEach(i => i.removeEventListener('error', handleImgErr))
+    }
+  }, [blog?.content])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
@@ -287,6 +308,7 @@ export default function BlogDetailPage() {
                 src={getImageSrc(blog.image)}
                 alt={blog.title}
                 className="w-full h-auto max-h-[550px] object-contain"
+                onError={(e) => handleImageError(e)}
               />
             </div>
           )}

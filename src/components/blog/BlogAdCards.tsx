@@ -3,15 +3,13 @@ import axios from 'axios'
 import { motion } from 'framer-motion'
 import { ChevronRight, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { resolveImageUrl, handleImageError } from '../../utils/imageUtils'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
 const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
 
 function getImageSrc(img?: string) {
-  if (!img) return undefined
-  if (img.startsWith('http') || img.startsWith('data:')) return img
-  if (img.startsWith('/')) return `${BACKEND_ORIGIN}${img}`
-  return `${BACKEND_ORIGIN}/${img}`
+  return resolveImageUrl(img)
 }
 
 interface BlogAd {
@@ -153,7 +151,12 @@ export default function BlogAdCards({ ads: externalAds, layout = 'vertical', sho
 
               {ad.image && (
                 <div className="w-full rounded-lg overflow-hidden my-4 shadow-inner">
-                  <img src={getImageSrc(ad.image)} alt={ad.title} className="w-full h-auto max-h-64 object-contain rounded-lg" />
+                  <img
+                    src={getImageSrc(ad.image)}
+                    alt={ad.title}
+                    onError={(e) => handleImageError(e)}
+                    className="w-full h-auto max-h-64 object-contain rounded-lg"
+                  />
                 </div>
               )}
             </div>

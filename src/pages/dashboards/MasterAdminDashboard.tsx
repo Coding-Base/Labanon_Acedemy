@@ -78,6 +78,8 @@ import { SUPPORTED_CURRENCIES } from '../../constants/currencies'
 import SubAdminForm from '../../components/dashboards/SubAdminForm'
 import PermissionManager from '../../components/dashboards/PermissionManager'
 import AdminMessages from '../../components/AdminMessages'
+import AdminProfileManagement from './AdminProfileManagement'
+import { resolveImageUrl } from '../../utils/imageUtils'
 import AnalyticsDrillModal from '../../components/AnalyticsDrillModal'
 import AdminCourseDetail from '../../pages/AdminCourseDetail'
 import LegalDocumentsManagement from './LegalDocumentsManagement'
@@ -310,6 +312,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
   const [promoFormData, setPromoFormData] = useState<{code?: string; amount: string; is_percentage: boolean; max_uses?: string; expires_at?: string; applicable_to?: string; applicable_id?: string; active: boolean}>({code: '', amount: '', is_percentage: false, max_uses: '', expires_at: '', applicable_to: 'all', applicable_id: '', active: true})
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
+  const [blogSearch, setBlogSearch] = useState('')
+  const [blogCategoryFilter, setBlogCategoryFilter] = useState('all')
   const quillRef = useRef<any>(null)
   const broadcastQuillRef = useRef<any>(null)
   
@@ -838,7 +842,8 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     // Bulk upload tied to course management permission usually
     { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
     { id: 'promos', label: 'Promos', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_promos' as PermissionKey },
-    { id: 'trial', label: 'Trial Period', icon: <Clock className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
+    { id: 'trial', label: 'Trial Period', icon: <Clock className="w-5 h-5" />, permission: 'can_manage_trial' as PermissionKey },
+    { id: 'profile', label: 'Profile', icon: <UserCog className="w-5 h-5" />, permission: undefined as any },
   ]
 
   // Filter tabs based on permissions. Tabs with no `permission` are shown to all.
@@ -846,7 +851,36 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     ? allTabs.filter(tab => {
         if (!tab.permission) return true
         if (tab.id === 'exams' || tab.id === 'exam-library') {
-          return subadminPermissions.can_manage_cbt === true || subadminPermissions.can_manage_exams === true
+          return subadminPermissions.can_manage_cbt === true || 
+                 subadminPermissions.can_manage_exams === true || 
+                 subadminPermissions.can_manage_exam_library === true
+        }
+        if (tab.id === 'materials') {
+          return subadminPermissions.can_manage_materials === true || subadminPermissions.can_manage_courses === true
+        }
+        if (tab.id === 'lessons') {
+          return subadminPermissions.can_manage_lessons === true || subadminPermissions.can_manage_courses === true
+        }
+        if (tab.id === 'mock-exams') {
+          return subadminPermissions.can_manage_mock_exams === true || subadminPermissions.can_manage_cbt === true
+        }
+        if (tab.id === 'signature' || tab.id === 'verification' || tab.id === 'legal-documents') {
+          return subadminPermissions[tab.permission] === true || subadminPermissions.can_manage_institutions === true
+        }
+        if (tab.id === 'subscriptions' || tab.id === 'referrals') {
+          return subadminPermissions[tab.permission] === true || subadminPermissions.can_view_payments === true
+        }
+        if (tab.id === 'broadcast') {
+          return subadminPermissions.can_manage_broadcast === true || subadminPermissions.can_manage_users === true
+        }
+        if (tab.id === 'gospel') {
+          return subadminPermissions.can_manage_gospel === true || subadminPermissions.can_manage_blog === true
+        }
+        if (tab.id === 'bulk') {
+          return subadminPermissions.can_manage_bulk_upload === true || subadminPermissions.can_manage_courses === true
+        }
+        if (tab.id === 'trial') {
+          return subadminPermissions.can_manage_trial === true || subadminPermissions.can_manage_users === true
         }
         return subadminPermissions[tab.permission] === true
       })
@@ -883,7 +917,10 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     if (tab === 'users') loadUsers()
     if (tab === 'bulk') loadExams()
     if (tab === 'courses') loadCourses()
-    if (tab === 'cbt') loadCbtAnalytics()
+    if (tab === 'cbt') {
+      loadCbtAnalytics()
+      loadExams()
+    }
     if (tab === 'analytics') {
       loadAdminAnalytics()
       try {
@@ -2011,14 +2048,26 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
         .dashboard-root.dark .bg-white { background-color: #0f1724 !important; }
         .dashboard-root.dark .bg-gray-50 { background-color: #071028 !important; }
+        .dashboard-root.dark .bg-gray-100 { background-color: #1e293b !important; color: #e2e8f0 !important; }
+        .dashboard-root.dark .bg-gray-200 { background-color: #334155 !important; color: #f1f5f9 !important; }
+        .dashboard-root.dark .bg-gray-300 { background-color: #475569 !important; color: #f8fafc !important; }
         .dashboard-root.dark .bg-yellow-50 { background-color: #0f1724 !important; }
         .dashboard-root.dark .text-gray-900, .dashboard-root.dark .text-gray-800 { color: #e6eef8 !important; }
         .dashboard-root.dark .text-gray-700, .dashboard-root.dark .text-gray-600, .dashboard-root.dark .text-gray-500 { color: #9ca3af !important; }
-        .dashboard-root.dark .border-gray-200, .dashboard-root.dark .border-gray-100 { border-color: #1f2a3a !important; }
+        .dashboard-root.dark .border-gray-200, .dashboard-root.dark .border-gray-100, .dashboard-root.dark .border-gray-300 { border-color: #1f2a3a !important; }
         .dashboard-root.dark .shadow-lg { box-shadow: 0 6px 18px rgba(2,6,23,0.6) !important; }
         .dashboard-root.dark .bg-yellow-100 { background-color: #1b2a3a !important; color: #f8fafc !important; }
         .dashboard-root.dark .bg-yellow-500 { background-color: #b45309 !important; }
         .dashboard-root.dark input, .dashboard-root.dark select, .dashboard-root.dark textarea { background-color: #071026 !important; color: #e6eef8 !important; border-color: #1f2a3a !important; }
+        .dashboard-root.dark button.bg-white, .dashboard-root.dark a.bg-white { background-color: #1e293b !important; color: #f1f5f9 !important; border-color: #334155 !important; }
+        .dashboard-root.dark button.bg-white:hover, .dashboard-root.dark a.bg-white:hover { background-color: #334155 !important; }
+        .dashboard-root.dark button.bg-gray-100, .dashboard-root.dark a.bg-gray-100 { background-color: #1e293b !important; color: #e2e8f0 !important; border-color: #334155 !important; }
+        .dashboard-root.dark button.bg-gray-100:hover, .dashboard-root.dark a.bg-gray-100:hover { background-color: #334155 !important; color: #f8fafc !important; }
+        .dashboard-root.dark button.bg-gray-200, .dashboard-root.dark a.bg-gray-200 { background-color: #334155 !important; color: #f8fafc !important; }
+        .dashboard-root.dark button.border:not([class*="bg-yellow-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-blue-"]) { border-color: #334155 !important; color: #e2e8f0 !important; background-color: #1e293b !important; }
+        .dashboard-root.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; color: #f8fafc !important; }
+        .dashboard-root.dark .hover\:bg-gray-50:hover { background-color: #1e293b !important; }
+        .dashboard-root.dark .hover\:bg-gray-200:hover { background-color: #475569 !important; }
       `}</style>
       <div className={`dashboard-root min-h-screen ${darkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-gradient-to-br from-gray-50 to-yellow-50 text-gray-900'}`}>
       {/* Header */}
@@ -2040,11 +2089,23 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
               <div className="flex items-center space-x-4">
                 <div className="hidden md:flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold">
-                  {summary.username?.charAt(0).toUpperCase() || 'A'}
+                <div
+                  className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer overflow-hidden shadow-sm"
+                  onClick={() => setTab('profile')}
+                  title="View Profile"
+                >
+                  {summary?.profile_image ? (
+                    <img
+                      src={resolveImageUrl(summary.profile_image)}
+                      alt={summary.username || 'Admin'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    summary?.username?.charAt(0).toUpperCase() || 'A'
+                  )}
                 </div>
-                <div>
-                  <p className={`text-sm font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary.username}</p>
+                <div className="cursor-pointer" onClick={() => setTab('profile')} title="View Profile">
+                  <p className={`text-sm font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</p>
                   <p className={`text-xs ${darkMode ? 'text-slate-300' : 'text-gray-500'}`}>
                     {subadminPermissions ? 'Restricted Access' : 'Master Administrator'}
                   </p>
@@ -2052,7 +2113,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               </div>
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg lg:hidden transition-colors"
+                className={`p-2 rounded-lg lg:hidden transition-colors ${darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'}`}
                 title="Toggle menu"
               >
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -2092,20 +2153,34 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
               {/* Admin Profile */}
               <div className="mb-8">
                 <div className="flex items-center space-x-4 mb-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
-                      {summary.username?.charAt(0).toUpperCase() || 'A'}
+                  <div
+                    className="relative cursor-pointer group"
+                    onClick={() => setTab('profile')}
+                    title="Click to view/edit profile"
+                  >
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold overflow-hidden shadow-md">
+                      {summary?.profile_image ? (
+                        <img
+                          src={resolveImageUrl(summary.profile_image)}
+                          alt={summary.username || 'Admin'}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        summary?.username?.charAt(0).toUpperCase() || 'A'
+                      )}
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full border-2 border-white"></div>
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-xs">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900">{summary.username}</h3>
-                    <p className="text-sm text-gray-500">
+                    <h3 className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</h3>
+                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                       {subadminPermissions ? 'Sub-Admin' : 'Master Administrator'}
                     </p>
                     <div className="flex items-center mt-1 text-xs">
                       <Database className="w-3 h-3 text-yellow-500 mr-1" />
-                      <span className="font-medium">
+                      <span className={`font-medium ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                         {subadminPermissions ? 'Limited Access' : 'Full System Access'}
                       </span>
                     </div>
@@ -2252,7 +2327,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs mt-1`}>Weekly: {registrations?.weekly ?? '-'} • Monthly: {registrations?.monthly ?? '-'}</div>
                       <div className="mt-3 flex gap-2">
                         <button onClick={()=>openModal('registrations')} className="px-2 py-1 text-xs bg-yellow-600 text-white rounded">View details</button>
-                        <button onClick={()=>{ setAnalyticsActivePanel('registrations'); setTab('analytics'); }} className="px-2 py-1 text-xs border rounded">Open in analytics</button>
+                        <button onClick={()=>{ setAnalyticsActivePanel('registrations'); setTab('analytics'); }} className={`px-2 py-1 text-xs border rounded transition-colors ${darkMode ? 'border-slate-600 text-slate-200 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Open in analytics</button>
                       </div>
                     </div>
 
@@ -2268,7 +2343,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs mt-1`}>Top: {downloads?.top?.[0]?.full_url ? (downloads.top[0].full_url.length > 40 ? downloads.top[0].full_url.slice(0,40)+'...' : downloads.top[0].full_url) : '-'}</div>
                       <div className="mt-3 flex gap-2">
                         <button onClick={()=>openModal('downloads')} className="px-2 py-1 text-xs bg-yellow-600 text-white rounded">View details</button>
-                        <button onClick={()=>{ setAnalyticsActivePanel('downloads'); setTab('analytics'); }} className="px-2 py-1 text-xs border rounded">Open in analytics</button>
+                        <button onClick={()=>{ setAnalyticsActivePanel('downloads'); setTab('analytics'); }} className={`px-2 py-1 text-xs border rounded transition-colors ${darkMode ? 'border-slate-600 text-slate-200 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Open in analytics</button>
                       </div>
                     </div>
                   </div>
@@ -2827,7 +2902,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           {trialSaving ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
                           Save
                         </motion.button>
-                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={loadTrialDays} disabled={trialLoading} className="px-3 py-2 bg-gray-100 text-gray-800 rounded-lg border border-gray-200">
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={loadTrialDays} disabled={trialLoading} className={`px-3 py-2 rounded-lg border transition-colors ${darkMode ? 'bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600' : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'}`}>
                           {trialLoading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
                           Load From Server
                         </motion.button>
@@ -3224,7 +3299,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     <motion.button
                                       whileHover={{ scale: 1.05 }}
                                       whileTap={{ scale: 0.95 }}
-                                      className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
+                                      className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${darkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                                     >
                                       Edit
                                     </motion.button>
@@ -3260,7 +3335,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               </div>
                             </div>
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Total Exams</h3>
-                            <p className="text-3xl font-bold text-yellow-900">{exams.length}</p>
+                            <p className="text-3xl font-bold text-yellow-900">{cbtAnalytics?.total_exams ?? exams.length}</p>
                           </motion.div>
 
                           <motion.div
@@ -3329,7 +3404,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                                     const subjects = cbtAnalytics?.subjects || [];
                                     if (!subjects || subjects.length === 0) return 'N/A';
                                     // subjects may be [{name, attempts}]
-                                    const top = subjects.reduce((a: any, b: any) => ( (b.attempts||0) > (a.attempts||0) ? b : a), subjects[0]);
+                                    const top = subjects.reduce((a: any, b: any) => ( ((b.attempt_count ?? b.attempts) || 0) > ((a.attempt_count ?? a.attempts) || 0) ? b : a), subjects[0]);
                                     return top.name || top.title || 'N/A';
                                   })()
                                 }</div>
@@ -4534,6 +4609,76 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               </div>
                             </div>
 
+                            {/* Search and Filters Bar */}
+                            <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div className="sm:col-span-2 relative">
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                  type="text"
+                                  value={blogSearch}
+                                  onChange={(e) => setBlogSearch(e.target.value)}
+                                  placeholder="Search blog posts by title, author, keyword, or excerpt..."
+                                  className="w-full pl-10 pr-9 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 shadow-sm"
+                                />
+                                {blogSearch && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setBlogSearch('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="relative">
+                                <select
+                                  value={blogCategoryFilter}
+                                  onChange={(e) => setBlogCategoryFilter(e.target.value)}
+                                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 shadow-sm appearance-none"
+                                >
+                                  <option value="all">All Categories ({blogs.length})</option>
+                                  {blogCategories.map((c: any) => (
+                                    <option key={c.id} value={String(c.id)}>
+                                      {c.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                              </div>
+                            </div>
+
+                            {/* Active search filter indicators */}
+                            {(blogSearch || blogCategoryFilter !== 'all') && (
+                              <div className="mb-4 flex items-center justify-between text-xs text-gray-600 bg-amber-50 px-3.5 py-2 rounded-lg border border-amber-200">
+                                <span>
+                                  Found {
+                                    (blogs || []).filter((b: any) => {
+                                      const term = blogSearch.toLowerCase().trim()
+                                      const matchSearch = !term ||
+                                        (b.title || '').toLowerCase().includes(term) ||
+                                        (b.author_username || '').toLowerCase().includes(term) ||
+                                        (b.category_name || '').toLowerCase().includes(term) ||
+                                        (b.excerpt || '').toLowerCase().includes(term) ||
+                                        (b.slug || '').toLowerCase().includes(term)
+                                      const matchCat = blogCategoryFilter === 'all' || 
+                                        String(b.category) === blogCategoryFilter || 
+                                        b.category_slug === blogCategoryFilter ||
+                                        b.category_name === blogCategoryFilter
+                                      return matchSearch && matchCat
+                                    }).length
+                                  } of {blogs.length} posts matching criteria
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => { setBlogSearch(''); setBlogCategoryFilter('all') }}
+                                  className="text-amber-700 font-semibold hover:underline"
+                                >
+                                  Reset filters
+                                </button>
+                              </div>
+                            )}
+
                             {blogs.length === 0 ? (
                               <div className="text-center py-12">
                                 <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -4541,7 +4686,20 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                               </div>
                             ) : (
                               <div className="space-y-4">
-                                {blogs.map((blog) => (
+                                {blogs.filter((blog: any) => {
+                                  const term = blogSearch.toLowerCase().trim()
+                                  const matchSearch = !term ||
+                                    (blog.title || '').toLowerCase().includes(term) ||
+                                    (blog.author_username || '').toLowerCase().includes(term) ||
+                                    (blog.category_name || '').toLowerCase().includes(term) ||
+                                    (blog.excerpt || '').toLowerCase().includes(term) ||
+                                    (blog.slug || '').toLowerCase().includes(term)
+                                  const matchCat = blogCategoryFilter === 'all' || 
+                                    String(blog.category) === blogCategoryFilter || 
+                                    blog.category_slug === blogCategoryFilter ||
+                                    blog.category_name === blogCategoryFilter
+                                  return matchSearch && matchCat
+                                }).map((blog) => (
                                   <motion.div
                                     key={blog.id}
                                     whileHover={{ y: -3 }}
@@ -5001,13 +5159,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                     {/* Upload Mode Selection */}
                     <div className="flex space-x-4 mb-6">
-                      <button onClick={() => setUploadMode('json')} className={`px-4 py-2 rounded-lg font-medium ${uploadMode === 'json' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
+                      <button onClick={() => setUploadMode('json')} className={`px-4 py-2 rounded-lg font-medium transition-colors ${uploadMode === 'json' ? 'bg-yellow-100 text-yellow-700' : (darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}>
                         JSON Paste
                       </button>
-                      <button onClick={() => setUploadMode('file')} className={`px-4 py-2 rounded-lg font-medium ${uploadMode === 'file' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
+                      <button onClick={() => setUploadMode('file')} className={`px-4 py-2 rounded-lg font-medium transition-colors ${uploadMode === 'file' ? 'bg-yellow-100 text-yellow-700' : (darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}>
                         CSV/Excel File
                       </button>
-                      <button onClick={() => setUploadMode('manual')} className={`px-4 py-2 rounded-lg font-medium ${uploadMode === 'manual' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
+                      <button onClick={() => setUploadMode('manual')} className={`px-4 py-2 rounded-lg font-medium transition-colors ${uploadMode === 'manual' ? 'bg-yellow-100 text-yellow-700' : (darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}>
                         Manual Entry
                       </button>
                     </div>
@@ -5477,6 +5635,19 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 {tab === 'verification' && (
                   <VerificationDashboard />
                 )}
+
+                {tab === 'profile' && (
+                  <AdminProfileManagement
+                    darkMode={darkMode}
+                    summary={summary}
+                    onProfileUpdated={(updated) => {
+                      setSummary((prev: any) => ({
+                        ...prev,
+                        ...updated
+                      }))
+                    }}
+                  />
+                )}
               </div>
               </>
               )}
@@ -5492,21 +5663,36 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-8"
-          onClick={() => setShowBlogForm(false)}
+          className="fixed inset-0 z-50 bg-white flex flex-col w-screen h-screen overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
         >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 flex flex-col max-h-[85vh]"
-          >
-            <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 p-6 rounded-t-2xl flex items-center justify-between flex-shrink-0">
-              <h2 className="text-2xl font-bold text-white">{editingBlog ? 'Edit Blog Post' : 'Create Blog Post'}</h2>
+          {/* Full Page Header */}
+          <div className="bg-gradient-to-r from-yellow-600 via-amber-600 to-yellow-700 px-6 py-4 flex items-center justify-between flex-shrink-0 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  {editingBlog ? `Edit Blog Post: ${editingBlog.title || ''}` : 'Create New Blog Post'}
+                </h2>
+                <p className="text-xs text-yellow-100">Full-page workspace with rich media editor and autosave</p>
+              </div>
             </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowBlogForm(false)}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-sm font-medium transition flex items-center gap-1.5"
+              >
+                <X className="w-4 h-4" />
+                Close Full Page
+              </button>
+            </div>
+          </div>
 
-            <div className="p-8 overflow-y-auto flex-1 min-h-0">
+          <div className="p-6 md:p-10 overflow-y-auto flex-1 min-h-0 bg-slate-50/70">
+            <div className="max-w-5xl mx-auto space-y-6 bg-white p-6 md:p-10 rounded-2xl border border-gray-200/80 shadow-sm">
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
@@ -5580,7 +5766,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                    <div className="w-full">
+                    <div className="w-full [&_.ql-editor]:min-h-[380px] [&_.ql-editor]:text-base">
                       {/* Quill editor with custom image upload handler */}
                       <ReactQuill
                         ref={quillRef as any}
@@ -5748,13 +5934,20 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="border-t p-6 flex gap-4 justify-end bg-gray-50 flex-shrink-0">
+          {/* Full Page Pinned Bottom Actions Bar */}
+          <div className="border-t border-gray-200 px-8 py-4 flex items-center justify-between bg-white flex-shrink-0 shadow-lg">
+            <div className="text-xs text-gray-500 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Full page editor active • Draft autosaved locally
+            </div>
+            <div className="flex gap-3">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowBlogForm(false)}
-                className="px-6 py-3 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-medium text-sm transition-colors"
               >
                 Cancel
               </motion.button>
@@ -5763,12 +5956,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                 whileTap={{ scale: 0.98 }}
                 onClick={saveBlog}
                 disabled={savingBlog}
-                className={`px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow ${savingBlog ? 'opacity-60 cursor-not-allowed' : ''}`}
+                className={`px-7 py-2.5 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-semibold text-sm hover:shadow-lg transition-all flex items-center gap-2 ${savingBlog ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                {savingBlog ? <Loader2 className="w-5 h-5 animate-spin" /> : (editingBlog ? 'Update Post' : 'Create Post')}
+                {savingBlog ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {editingBlog ? 'Update Post' : 'Create Post'}
               </motion.button>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       )}
 

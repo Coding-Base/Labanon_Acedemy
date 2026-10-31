@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { resolveImageUrl } from '../utils/imageUtils'
 import { motion } from 'framer-motion'
 import { Edit2, Trash2, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react'
 import { MathText, stripHtmlKeepMath } from '../utils/mathRenderer'
@@ -39,18 +40,7 @@ export default function QuestionCard({
     ? ['A', 'B', 'C', 'D', 'E', 'F'][question.choices.findIndex(c => c.is_correct)] || 'Unknown'
     : 'Unknown'
 
-  const handleImageUrl = (imageUrl?: string) => {
-    if (!imageUrl) return ''
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return imageUrl
-    }
-    if (imageUrl.startsWith('/')) {
-      const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
-      const baseUrl = apiBase.replace(/\/api\/?$/, '')
-      return baseUrl + imageUrl
-    }
-    return imageUrl
-  }
+  const handleImageUrl = (imageUrl?: string) => resolveImageUrl(imageUrl)
 
   return (
     <motion.div

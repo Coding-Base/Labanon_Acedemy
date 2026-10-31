@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { resolveImageUrl } from '../utils/imageUtils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Upload, Loader2 } from 'lucide-react'
 import ReactQuill from 'react-quill'
@@ -59,17 +60,7 @@ export default function QuestionEditModal({
   const [availableYears, setAvailableYears] = useState<string[]>([])
   const [customYearInput, setCustomYearInput] = useState('')
 
-  const getImageUrl = (imageUrl: string | null) => {
-    if (!imageUrl) return ''
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return imageUrl
-    }
-    if (imageUrl.startsWith('/')) {
-      const baseUrl = API_BASE.replace(/\/api\/?$/, '')
-      return baseUrl + imageUrl
-    }
-    return imageUrl
-  }
+  const getImageUrl = (imageUrl: string | null) => resolveImageUrl(imageUrl)
 
   // Initialize form when modal opens or question changes
   useEffect(() => {

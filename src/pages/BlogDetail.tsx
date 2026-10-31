@@ -9,13 +9,52 @@ import BlogAdCards from '../components/blog/BlogAdCards'
 import DOMPurify from 'dompurify'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
-const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
+
+function getEffectiveBackendOrigin(): string {
+  const envApi = (import.meta.env.VITE_API_BASE as string) || ''
+  if (envApi && !envApi.includes('localhost')) {
+    return envApi.replace(/\/api\/?$/, '')
+  }
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:8000'
+    }
+    return 'https://api.lighthubacademy.org'
+  }
+  return 'https://api.lighthubacademy.org'
+}
+
+const BACKEND_ORIGIN = getEffectiveBackendOrigin()
 
 function getImageSrc(img?: string) {
   if (!img) return undefined
-  if (img.startsWith('http') || img.startsWith('data:')) return img
-  if (img.startsWith('/')) return `${BACKEND_ORIGIN}${img}`
-  return `${BACKEND_ORIGIN}/${img}`
+  if (img.startsWith('data:')) return img
+  if (img.startsWith('http')) {
+    if (img.includes('localhost:8000') && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+      return img.replace(/^https?:\/\/localhost:8000/i, getEffectiveBackendOrigin())
+    }
+    return img
+  }
+  const origin = getEffectiveBackendOrigin()
+  const clean = img.startsWith('/') ? img : `/${img}`
+  return `${origin}${clean}`
+}
+
+function formatBlogContent(content?: string): string {
+  if (!content) return ''
+  const origin = getEffectiveBackendOrigin()
+  let formatted = content
+  if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+    formatted = formatted.replace(
+      /src=(["'])https?:\/\/localhost:8000(\/media\/[^"'\s]+)\1/gi,
+      `src="$1${origin}$2$1"`
+    )
+  }
+  formatted = formatted.replace(
+    /src=(["'])(\/media\/[^"'\s]+)\1/gi,
+    `src="$1${origin}$2$1"`
+  )
+  return formatted
 }
 
 interface BlogPost {
@@ -108,10 +147,7 @@ export default function BlogDetailPage() {
         const blogData = blogs.find((b: any) => b.slug === slug) || blogs[0]
         // Convert relative or incorrect domain src attributes in content to correct absolute backend URLs
         if (blogData.content) {
-          blogData.content = blogData.content.replace(
-            /src=(["'])(?:https?:\/\/[^"'\s]+)?(\/media\/[^"'\s]+)\1/g,
-            `src="${BACKEND_ORIGIN}$2"`
-          )
+          blogData.content = formatBlogContent(blogData.content)
         }
         setBlog(blogData)
         setLiked(blogData.user_liked)
@@ -285,7 +321,7 @@ export default function BlogDetailPage() {
             <div className="prose prose-lg max-w-none">
               <div className="text-gray-700 leading-relaxed blog-content">
                 <div
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blog.content || '') }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatBlogContent(blog.content || '')) }}
                 />
               </div>
             </div>

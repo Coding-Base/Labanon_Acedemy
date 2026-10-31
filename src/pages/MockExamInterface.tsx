@@ -1,5 +1,6 @@
 // src/pages/MockExamInterface.tsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { resolveImageUrl } from '../utils/imageUtils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -146,7 +147,7 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
                 difficulty: q.difficulty || q.difficulty_level || 'medium',
                 options: normalizedOptions,
                 explanation: q.explanation || '',
-                question_image: q.question_image || null,
+                question_image: q.question_image || q.image || null,
                 _subjectName: subjectName,
               } as EnrichedQuestion;
             };
@@ -431,9 +432,12 @@ const MockExamInterface: React.FC<MockExamInterfaceProps> = ({ darkMode = false 
 
                     {currentQuestion.question_image && (
                       <img
-                        src={currentQuestion.question_image}
+                        src={resolveImageUrl(currentQuestion.question_image)}
                         alt="Question"
                         className="max-w-2xl w-full object-contain mb-8 rounded-lg border border-gray-200 dark:border-slate-700"
+                        onError={(e) => {
+                          ;(e.target as HTMLImageElement).style.display = 'none'
+                        }}
                       />
                     )}
 

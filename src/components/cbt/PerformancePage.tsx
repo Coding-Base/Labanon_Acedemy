@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useNavigate, useParams } from 'react-router-dom'
 import showToast from '../../utils/toast'
 import MathDisplay from './MathDisplay'
+import { resolveImageUrl } from '../../utils/imageUtils'
 import {
   PieChart,
   Pie,
@@ -374,6 +375,20 @@ export default function PerformancePage() {
                         <div className="font-bold text-base text-slate-100 group-hover:text-yellow-300 transition break-words">
                           <MathDisplay content={answer.question_text || ''} />
                         </div>
+
+                        {/* Question Image (if present) */}
+                        {(answer.question_image || answer.image) && (
+                          <div className="mt-3 max-w-xl">
+                            <img
+                              src={resolveImageUrl(answer.question_image || answer.image)}
+                              alt="Question diagram"
+                              className="max-h-72 w-auto max-w-full rounded-lg border border-slate-700 shadow-sm object-contain bg-slate-950/40 p-1"
+                              onError={(e) => {
+                                ;(e.target as HTMLImageElement).style.display = 'none'
+                              }}
+                            />
+                          </div>
+                        )}
 
                         {/* User Answer vs Correct Answer Badges */}
                         <div className="mt-3.5 flex flex-wrap items-center gap-3">

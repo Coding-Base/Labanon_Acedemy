@@ -10,14 +10,36 @@ import useDebounce from '../utils/useDebounce'
 import BlogAdCards from '../components/blog/BlogAdCards'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
-const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
+
+function getEffectiveBackendOrigin(): string {
+  const envApi = (import.meta.env.VITE_API_BASE as string) || ''
+  if (envApi && !envApi.includes('localhost')) {
+    return envApi.replace(/\/api\/?$/, '')
+  }
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:8000'
+    }
+    return 'https://api.lighthubacademy.org'
+  }
+  return 'https://api.lighthubacademy.org'
+}
+
+const BACKEND_ORIGIN = getEffectiveBackendOrigin()
 const BLOG_PAGE_SIZE = 10
 
 function getImageSrc(img?: string) {
   if (!img) return undefined
-  if (img.startsWith('http') || img.startsWith('data:')) return img
-  if (img.startsWith('/')) return `${BACKEND_ORIGIN}${img}`
-  return `${BACKEND_ORIGIN}/${img}`
+  if (img.startsWith('data:')) return img
+  if (img.startsWith('http')) {
+    if (img.includes('localhost:8000') && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+      return img.replace(/^https?:\/\/localhost:8000/i, getEffectiveBackendOrigin())
+    }
+    return img
+  }
+  const origin = getEffectiveBackendOrigin()
+  const clean = img.startsWith('/') ? img : `/${img}`
+  return `${origin}${clean}`
 }
 
 function extractFirstImageSrc(content?: string) {

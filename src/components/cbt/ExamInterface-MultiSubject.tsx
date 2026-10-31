@@ -3,6 +3,7 @@ import axios from 'axios'
 import MathDisplay from './MathDisplay'
 import { Calculator, Menu, X } from 'lucide-react'
 import useTokenRefresher from '../../utils/useTokenRefresher'
+import { resolveImageUrl } from '../../utils/imageUtils'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -10,6 +11,7 @@ interface Question {
   id: number
   text: string
   image?: string
+  question_image?: string
   choices: { id: number; text: string }[]
   user_answer_id: number | null
   is_answered: boolean
@@ -451,18 +453,10 @@ export default function ExamInterface({
                     )}
                   </div>
 
-                  {currentQuestion.image && (
+                  {(currentQuestion.image || currentQuestion.question_image) && (
                     <div className="mb-6 max-w-2xl">
                       <img
-                        src={
-                          currentQuestion.image.startsWith('//')
-                            ? `https:${currentQuestion.image}`
-                            : currentQuestion.image.startsWith('http://')
-                            ? currentQuestion.image.replace('http://', 'https://')
-                            : currentQuestion.image.startsWith('https://')
-                            ? currentQuestion.image
-                            : `${API_BASE.replace(/\/api\/?$/, '')}${currentQuestion.image.startsWith('/') ? '' : '/'}${currentQuestion.image}`
-                        }
+                        src={resolveImageUrl(currentQuestion.image || currentQuestion.question_image)}
                         alt="Question diagram"
                         className="max-h-96 w-auto max-w-full rounded-lg border border-gray-200 shadow-sm object-contain"
                         onError={(e) => {

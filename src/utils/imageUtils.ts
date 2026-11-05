@@ -5,6 +5,8 @@
  * and production mixed-content prevention.
  */
 
+export const DEFAULT_AVATAR_FALLBACK = '/labanonlogo.png'
+
 export const resolveImageUrl = (url?: string | null): string => {
   if (!url) return ''
   let trimmed = url.trim()
@@ -79,23 +81,23 @@ export const formatRichContentImages = (content?: string): string => {
 
 /**
  * Generic image error handler for React img elements.
- * Attempts self-healing (e.g. adding .jpg extension for Cloudinary, upgrading http to https)
- * and hides the broken 16px icon if the image cannot be loaded.
+ * Handles Cloudinary connection resets (ERR_CONNECTION_RESET), ad-blocker blocking,
+ * and falls back gracefully to a designated fallback or hides the broken element.
  */
 export const handleImageError = (
   e: React.SyntheticEvent<HTMLImageElement, Event>,
-  fallbackSrc?: string
+  fallbackSrc: string = DEFAULT_AVATAR_FALLBACK
 ) => {
   const target = e.currentTarget
   if (!target) return
 
-  // Prevent infinite retry loops
   const retryCount = Number(target.dataset.retryCount || '0')
-  if (retryCount >= 2) {
-    if (fallbackSrc && target.src !== fallbackSrc) {
+  if (retryCount >= 1) {
+    if (fallbackSrc && target.src !== fallbackSrc && !target.src.endsWith(fallbackSrc)) {
       target.src = fallbackSrc
       return
     }
+    // If fallback also fails, hide broken icon and reveal parent placeholder if any
     target.style.display = 'none'
     return
   }
@@ -103,20 +105,24 @@ export const handleImageError = (
   target.dataset.retryCount = String(retryCount + 1)
   const currentSrc = target.src || ''
 
-  // Attempt 1: If Cloudinary without extension, try appending .jpg
-  if (currentSrc.includes('res.cloudinary.com') && !/\.(jpg|jpeg|png|webp|gif|svg)$/i.test(currentSrc)) {
-    target.src = `${currentSrc}.jpg`
+  // If Cloudinary connection was reset or failed, switch to fallback avatar directly
+  if (currentSrc.includes('res.cloudinary.com')) {
+    if (fallbackSrc) {
+      target.src = fallbackSrc
+      return
+    }
+    target.style.display = 'none'
     return
   }
 
-  // Attempt 2: If HTTP, upgrade to HTTPS
+  // Attempt: If HTTP, upgrade to HTTPS
   if (currentSrc.startsWith('http://')) {
     target.src = currentSrc.replace('http://', 'https://')
     return
   }
 
-  // Attempt 3: If fallback provided
-  if (fallbackSrc && target.src !== fallbackSrc) {
+  // If fallback provided
+  if (fallbackSrc && target.src !== fallbackSrc && !target.src.endsWith(fallbackSrc)) {
     target.src = fallbackSrc
     return
   }

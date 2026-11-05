@@ -16,7 +16,7 @@ import {
   KeyRound,
   UserCheck
 } from 'lucide-react'
-import { resolveImageUrl } from '../../utils/imageUtils'
+import { resolveImageUrl, handleImageError, DEFAULT_AVATAR_FALLBACK } from '../../utils/imageUtils'
 import showToast from '../../utils/toast'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
@@ -269,6 +269,7 @@ export default function AdminProfileManagement({
                     src={currentAvatarUrl}
                     alt={username || 'Admin avatar'}
                     className="w-full h-full object-cover"
+                    onError={(e) => handleImageError(e, DEFAULT_AVATAR_FALLBACK)}
                   />
                 ) : (
                   (username?.charAt(0) || 'A').toUpperCase()

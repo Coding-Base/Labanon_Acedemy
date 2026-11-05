@@ -9,6 +9,11 @@ export function initGA(measurementId: string | undefined) {
   const script = document.createElement('script')
   script.async = true
   script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
+  // Gracefully handle ad-blockers or network firewall blocks
+  script.onerror = () => {
+    w.gtagInitialized = true
+    w.gtagBlocked = true
+  }
   document.head.appendChild(script)
 
   const inline = document.createElement('script')
@@ -20,14 +25,22 @@ export function initGA(measurementId: string | undefined) {
 
 export function sendPageView(path: string) {
   const w = window as any
-  if (!w.gtagInitialized || typeof w.gtag !== 'function') return
-  w.gtag('event', 'page_view', { page_path: path })
+  if (!w.gtagInitialized || w.gtagBlocked || typeof w.gtag !== 'function') return
+  try {
+    w.gtag('event', 'page_view', { page_path: path })
+  } catch (e) {
+    // Ignore analytics errors
+  }
 }
 
 export function sendEvent(name: string, params?: Record<string, any>) {
   const w = window as any
-  if (!w.gtagInitialized || typeof w.gtag !== 'function') return
-  w.gtag('event', name, params || {})
+  if (!w.gtagInitialized || w.gtagBlocked || typeof w.gtag !== 'function') return
+  try {
+    w.gtag('event', name, params || {})
+  } catch (e) {
+    // Ignore analytics errors
+  }
 }
 
 export async function sendServerPageView(path: string) {

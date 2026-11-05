@@ -79,7 +79,7 @@ import SubAdminForm from '../../components/dashboards/SubAdminForm'
 import PermissionManager from '../../components/dashboards/PermissionManager'
 import AdminMessages from '../../components/AdminMessages'
 import AdminProfileManagement from './AdminProfileManagement'
-import { resolveImageUrl } from '../../utils/imageUtils'
+import { resolveImageUrl, handleImageError, DEFAULT_AVATAR_FALLBACK } from '../../utils/imageUtils'
 import AnalyticsDrillModal from '../../components/AnalyticsDrillModal'
 import AdminCourseDetail from '../../pages/AdminCourseDetail'
 import LegalDocumentsManagement from './LegalDocumentsManagement'
@@ -2099,6 +2099,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                       src={resolveImageUrl(summary.profile_image)}
                       alt={summary.username || 'Admin'}
                       className="w-full h-full object-cover"
+                      onError={(e) => handleImageError(e, DEFAULT_AVATAR_FALLBACK)}
                     />
                   ) : (
                     summary?.username?.charAt(0).toUpperCase() || 'A'
@@ -2164,6 +2165,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
                           src={resolveImageUrl(summary.profile_image)}
                           alt={summary.username || 'Admin'}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          onError={(e) => handleImageError(e, DEFAULT_AVATAR_FALLBACK)}
                         />
                       ) : (
                         summary?.username?.charAt(0).toUpperCase() || 'A'

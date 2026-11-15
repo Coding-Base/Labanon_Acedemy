@@ -846,10 +846,23 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
     { id: 'profile', label: 'Profile', icon: <UserCog className="w-5 h-5" />, permission: undefined as any },
   ]
 
-  // Filter tabs based on permissions. Tabs with no `permission` are shown to all.
+  // Filter tabs based on permissions. Subadmins ONLY see tabs they are strictly granted access to.
   const tabs = subadminPermissions
     ? allTabs.filter(tab => {
-        if (!tab.permission) return true
+        // Subadmins can NEVER access the Admins management tab
+        if (tab.id === 'admins') return false
+        // Profile tab is accessible for managing own credentials
+        if (tab.id === 'profile') return true
+        // Overview requires can_view_overview permission
+        if (tab.id === 'overview') {
+          return subadminPermissions.can_view_overview === true
+        }
+        if (tab.id === 'students') {
+          return subadminPermissions.can_manage_students === true || subadminPermissions.can_manage_users === true
+        }
+        if (tab.id === 'tutors') {
+          return subadminPermissions.can_manage_tutors === true || subadminPermissions.can_manage_users === true
+        }
         if (tab.id === 'exams' || tab.id === 'exam-library') {
           return subadminPermissions.can_manage_cbt === true || 
                  subadminPermissions.can_manage_exams === true || 
@@ -882,7 +895,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
         if (tab.id === 'trial') {
           return subadminPermissions.can_manage_trial === true || subadminPermissions.can_manage_users === true
         }
-        return subadminPermissions[tab.permission] === true
+        return tab.permission ? subadminPermissions[tab.permission] === true : false
       })
     : allTabs
 
@@ -2461,13 +2474,13 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
               {/* Drill modal */}
               <AnalyticsDrillModal open={modalOpen} type={modalType} onClose={closeModal} apiBase={API_BASE} token={token} darkMode={darkMode} />
-              {/* No Permissions Message */}
-              {!tab || tabs.length === 0 ? (
+              {/* No Permissions or Unauthorized Tab Access Guard */}
+              {!tab || tabs.length === 0 || !tabs.some(t => t.id === tab) ? (
                 <div className="flex flex-col items-center justify-center py-20">
-                  <Shield className="w-16 h-16 text-red-300 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h3>
+                  <Shield className="w-16 h-16 text-red-400 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Restricted</h3>
                   <p className="text-gray-600 max-w-md text-center">
-                    You don't have any permissions assigned. Please contact your administrator to grant you access to the dashboard features.
+                    You do not have permission to access this section. Please contact your master administrator if you require access.
                   </p>
                 </div>
               ) : (

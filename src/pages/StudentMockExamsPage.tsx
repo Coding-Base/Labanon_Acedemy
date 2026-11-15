@@ -103,12 +103,12 @@ const StudentMockExamsPage: React.FC = () => {
       if (data.unlocked) {
         // Exam is unlocked - show appropriate message
         let message = '';
-        if (data.reason === 'global_unlock') {
-          message = '✓ You have full access to all mock exams';
-        } else if (data.reason === 'existing_unlock') {
-          message = '✓ Great! You\'ve unlocked CBT exams before, so mock exams are FREE for you';
-        } else if (data.reason === 'free_exam') {
-          message = '✓ This is a free exam';
+        if (data.reason === 'free_exam') {
+          message = '✓ This is a free mock exam';
+        } else if (data.reason === 'mock_exam_unlock') {
+          message = '✓ Mock exam unlocked';
+        } else {
+          message = data.message || '✓ Access granted';
         }
         showToast('success', message);
         

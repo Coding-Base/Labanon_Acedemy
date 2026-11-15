@@ -32,6 +32,7 @@ export default function Login() {
       tutor: '/tutor/overview',
       admin: '/admin',
       superadmin: '/admin',
+      subadmin: '/admin',
     }
     return roleMap[role] || '/student'
   }

@@ -1642,6 +1642,59 @@ const FeeManagementTab: React.FC<FeeManagementTabProps> = ({ exams, darkMode = f
   const [feeAmount, setFeeAmount] = useState('0')
   const [discountPercent, setDiscountPercent] = useState('0')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [examFees, setExamFees] = useState<Record<number, any>>({})
+  const [loadingFees, setLoadingFees] = useState(false)
+
+  const fetchFees = useCallback(async () => {
+    try {
+      setLoadingFees(true)
+      const res = await adminMockExamsAPI.getMockExamFees()
+      const feeList = Array.isArray(res.data) ? res.data : (res.data?.results || [])
+      const map: Record<number, any> = {}
+      feeList.forEach((f: any) => {
+        const examId = f.mock_exam || f.mock_exam_id
+        if (examId) {
+          map[examId] = f
+        }
+      })
+      setExamFees(map)
+    } catch (err) {
+      console.error('Failed to load mock exam fees:', err)
+    } finally {
+      setLoadingFees(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchFees()
+  }, [fetchFees])
+
+  // When selected exam changes, auto-fill current fee & discount
+  const handleExamChange = (examId: number | null) => {
+    setSelectedExamId(examId)
+    if (!examId) {
+      setFeeAmount('0')
+      setDiscountPercent('0')
+      return
+    }
+
+    const currentFee = examFees[examId]
+    if (currentFee) {
+      setFeeAmount((currentFee.fee_amount ?? 0).toString())
+      setDiscountPercent((currentFee.discount_percentage ?? 0).toString())
+    } else {
+      // Check if embedded in exam object
+      const foundExam = exams.find(e => e.id === examId)
+      const embeddedFee = (foundExam as any)?.fee
+      if (embeddedFee) {
+        setFeeAmount((embeddedFee.fee_amount ?? 0).toString())
+        setDiscountPercent((embeddedFee.discount_percentage ?? 0).toString())
+      } else {
+        setFeeAmount('0')
+        setDiscountPercent('0')
+      }
+    }
+  }
 
   const handleSetFee = async () => {
     if (!selectedExamId) {
@@ -1649,17 +1702,23 @@ const FeeManagementTab: React.FC<FeeManagementTabProps> = ({ exams, darkMode = f
       return
     }
 
+    const parsedFee = parseFloat(feeAmount)
+    const parsedDiscount = parseInt(discountPercent) || 0
+
+    if (isNaN(parsedFee) || parsedFee < 0) {
+      showToast('error', 'Please enter a valid fee amount')
+      return
+    }
+
     try {
       setIsSubmitting(true)
       await adminMockExamsAPI.setMockExamFee(selectedExamId, {
-        fee_amount: parseFloat(feeAmount),
-        discount_percentage: parseInt(discountPercent),
+        fee_amount: parsedFee,
+        discount_percentage: parsedDiscount,
         currency: 'NGN',
       })
-      showToast('success', 'Fee updated successfully')
-      setFeeAmount('0')
-      setDiscountPercent('0')
-      setSelectedExamId(null)
+      showToast('success', 'Exam fee updated successfully')
+      await fetchFees()
     } catch (error) {
       showToast('error', 'Failed to set fee')
     } finally {
@@ -1669,21 +1728,37 @@ const FeeManagementTab: React.FC<FeeManagementTabProps> = ({ exams, darkMode = f
 
   return (
     <div className="space-y-6">
+      {/* Set / Update Fee Card */}
       <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
         <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className={`font-bold text-lg ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+              Mock Exam Fee Configuration
+            </h3>
+            {loadingFees && (
+              <span className="text-xs text-amber-500 animate-pulse font-medium">Syncing fees...</span>
+            )}
+          </div>
+          <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+            Set ₦0 for free exams. Paid exams require a one-time unlock payment per exam by students.
+          </p>
           <TextField
             fullWidth
             select
             label="Select Exam"
             value={selectedExamId || ''}
-            onChange={(e) => setSelectedExamId(parseInt(e.target.value) || null)}
+            onChange={(e) => handleExamChange(parseInt(e.target.value) || null)}
             variant="outlined"
           >
-            {exams.map((exam) => (
-              <MenuItem key={exam.id} value={exam.id}>
-                {exam.title}
-              </MenuItem>
-            ))}
+            {exams.map((exam) => {
+              const f = examFees[exam.id] || (exam as any).fee
+              const isFree = !f || Number(f.fee_amount) <= 0
+              return (
+                <MenuItem key={exam.id} value={exam.id}>
+                  {exam.title} {isFree ? '(Currently Free)' : `(Currently ₦${Number(f.fee_amount).toLocaleString()})`}
+                </MenuItem>
+              )
+            })}
           </TextField>
           <TextField
             fullWidth
@@ -1707,16 +1782,92 @@ const FeeManagementTab: React.FC<FeeManagementTabProps> = ({ exams, darkMode = f
             fullWidth
             variant="contained"
             onClick={handleSetFee}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !selectedExamId}
             sx={{
               backgroundColor: '#FBBF24',
               color: '#1F2937',
+              fontWeight: 'bold',
+              py: 1.5,
               '&:hover': { backgroundColor: '#F59E0B' },
               '&:disabled': { opacity: 0.6 },
             }}
           >
-            {isSubmitting ? 'Saving...' : 'Set Fee'}
+            {isSubmitting ? 'Saving Fee...' : 'Set Fee'}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Configured Fees Overview Table */}
+      <Card className={darkMode ? '!bg-slate-800 !border-slate-700' : ''}>
+        <CardContent>
+          <h3 className={`font-bold text-lg mb-3 ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+            Current Fee Rates Overview ({exams.length} Exams)
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className={`border-b ${darkMode ? 'border-slate-700 text-slate-300' : 'border-gray-200 text-gray-600'} text-xs uppercase font-semibold`}>
+                  <th className="py-3 px-4">Exam Title</th>
+                  <th className="py-3 px-4 text-right">Fee (NGN)</th>
+                  <th className="py-3 px-4 text-center">Discount</th>
+                  <th className="py-3 px-4 text-right">Final Amount</th>
+                  <th className="py-3 px-4 text-center">Access Status</th>
+                  <th className="py-3 px-4 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                {exams.map((exam) => {
+                  const fee = examFees[exam.id] || (exam as any).fee
+                  const baseAmount = fee ? Number(fee.fee_amount || 0) : 0
+                  const discount = fee ? Number(fee.discount_percentage || 0) : 0
+                  const finalAmount = discount > 0 ? baseAmount * (1 - discount / 100) : baseAmount
+                  const isFree = baseAmount <= 0
+
+                  return (
+                    <tr
+                      key={exam.id}
+                      className={`hover:bg-gray-50/70 dark:hover:bg-slate-700/50 transition ${
+                        selectedExamId === exam.id ? 'bg-amber-50/50 dark:bg-amber-900/20' : ''
+                      }`}
+                    >
+                      <td className="py-3 px-4 font-medium text-gray-900 dark:text-slate-100">
+                        {exam.title}
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-gray-700 dark:text-slate-300">
+                        ₦{baseAmount.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-center text-gray-600 dark:text-slate-400">
+                        {discount > 0 ? `${discount}%` : '-'}
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-gray-900 dark:text-slate-100">
+                        ₦{finalAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            isFree
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                              : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                          }`}
+                        >
+                          {isFree ? 'FREE' : 'PAID'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleExamChange(exam.id)}
+                          className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium transition shadow-sm"
+                        >
+                          Configure
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
     </div>

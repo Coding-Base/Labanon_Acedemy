@@ -1,6453 +1,13025 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react'
+
 import { ThemeProvider, createTheme } from '@mui/material/styles'
+
 import { CssBaseline, Switch, FormControlLabel } from '@mui/material'
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded'
+import AlignVerticalCenterRoundedIcon from '@mui/icons-material/AlignVerticalCenterRounded'
+import AlignVerticalBottomRoundedIcon from '@mui/icons-material/AlignVerticalBottomRounded'
+import ViewStreamRoundedIcon from '@mui/icons-material/ViewStreamRounded'
+import BlockRoundedIcon from '@mui/icons-material/BlockRounded'
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
+import AdsClickRoundedIcon from '@mui/icons-material/AdsClickRounded'
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
+import PostAddRoundedIcon from '@mui/icons-material/PostAddRounded'
+
 import ReactQuill from 'react-quill'
+
 import 'react-quill/dist/quill.snow.css'
+
 import OversizeImageModal from '../../components/OversizeImageModal'
+
 import { validateImageSize } from '../../utils/uploadValidators'
+
 import axios from 'axios'
+
 import showToast from '../../utils/toast'
+
 import useTokenRefresher from '../../utils/useTokenRefresher'
+
 import MathFormulaToolbar from '../../components/cbt/MathFormulaToolbar'
+
 import { initGA, sendPageView } from '../../utils/googleAnalytics'
+
 import { useLocation, useNavigate } from 'react-router-dom'
+
 import { motion, AnimatePresence } from 'framer-motion'
+
 import {
+
   Users,
+
   Building,
+
   BookOpen,
+
   FileText,
+
   Upload,
+
   Search,
+
   Filter,
+
   Eye,
+
   Trash2,
+
   ChevronLeft,
+
   ChevronRight,
+
   Shield,
+
   Settings,
+
   BarChart3,
+
   User,
+
   Mail,
+
   GraduationCap,
+
   Briefcase,
+
   Building2,
+
   UserCog,
+
   AlertCircle,
+
   CheckCircle,
+
   XCircle,
+
   Loader2,
+
   Database,
+
   Globe,
+
   LogOut,
+
   Clock,
+
   Menu,
+
   X,
+
   RefreshCw,
+
   Zap,
+
   File as FileIcon,
+
   BookMarked,
+
   Gift,
+
   Megaphone,
+
   CreditCard,
+
   Crown,
+
   FolderOpen
+
 } from 'lucide-react'
+
 // Recharts for analytics charts
+
 import {
+
   ResponsiveContainer,
+
   LineChart,
+
   Line,
+
   XAxis,
+
   YAxis,
+
   CartesianGrid,
+
   Tooltip,
+
   BarChart,
+
   Bar,
+
   PieChart,
+
   Pie,
+
   Cell,
+
   Legend,
+
 } from 'recharts'
+
 import labanonLogo from '../labanonlogo.png'
+
 import { getTrialDaysLocal, fetchTrialDaysServer, saveTrialDaysServer } from '../../utils/trialConfig'
+
 import CreateCourse from '../CreateCourse'
+
 import InstitutionSignature from './InstitutionSignature'
+
 import MasterSignature from './MasterSignature'
+
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies'
+
 import SubAdminForm from '../../components/dashboards/SubAdminForm'
+
 import PermissionManager from '../../components/dashboards/PermissionManager'
+
 import AdminMessages from '../../components/AdminMessages'
+
 import AdminProfileManagement from './AdminProfileManagement'
+
 import { resolveImageUrl, handleImageError, DEFAULT_AVATAR_FALLBACK } from '../../utils/imageUtils'
+
 import AnalyticsDrillModal from '../../components/AnalyticsDrillModal'
+
 import AdminCourseDetail from '../../pages/AdminCourseDetail'
+
 import LegalDocumentsManagement from './LegalDocumentsManagement'
+
 import StudentsManagement from './StudentsManagement'
+
 import TutorsManagement from './TutorsManagement'
+
 import InstitutionsManagement from './InstitutionsManagement'
+
 import AdminsManagement from './AdminsManagement'
+
 import VerificationDashboard from '../../components/VerificationDashboard'
+
 import QuestionManagementPage from '../questions/QuestionManagementPage'
+
 import ExamLibraryManagement from '../../components/cbt/ExamLibraryManagement'
+
 import MasterAdminMockPanel from '../MasterAdminMockPanel'
+
 import { CreateMaterialForm, MaterialsList, MaterialsActivitySection } from '../../components/Materials'
+
 import LessonManager from '../../components/dashboards/LessonManager'
+
 import SubscriptionManager from '../../components/dashboards/SubscriptionManager'
+
 import { AdminExamReferralPanel } from '../../components/admin/AdminExamReferralPanel'
+
 import { Banknote } from 'lucide-react'
+
+
+
 
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
+
+
 // Utility: strip HTML tags to plain text for excerpts
+
 function stripHtml(html?: string) {
+
   if (!html) return ''
+
   try {
+
     const d = document.createElement('div')
+
     d.innerHTML = html
+
     return d.textContent || d.innerText || ''
+
   } catch (e) {
+
     return html.replace(/<[^>]*>/g, '')
+
   }
+
 }
+
+
 
 // Utility: extract first image src from HTML content or markdown image syntax
+
 function extractFirstImageSrc(content?: string) {
+
   if (!content) return undefined
+
   try {
+
     // HTML img src
+
     const m = content.match(/<img[^>]+(?:src|data-src)=["']([^"']+)["']/i)
+
     if (m) return m[1]
+
     // Markdown image ![alt](url)
+
     const mm = content.match(/!\[[^\]]*\]\(([^)]+)\)/)
+
     if (mm) return mm[1]
+
     return undefined
+
   } catch (err) {
+
     return undefined
+
   }
+
 }
+
+
 
 interface MasterProps {
+
   summary?: any
+
 }
 
+
+
 // Define permission keys strictly to match backend
+
 type PermissionKey = 
+
+  | 'can_view_overview'
+
   | 'can_manage_users'
+
+  | 'can_manage_students'
+
+  | 'can_manage_tutors'
+
   | 'can_manage_institutions'
+
+  | 'can_manage_admins'
+
   | 'can_manage_courses'
-  | 'can_manage_cbt'
-  | 'can_view_payments'
-  | 'can_manage_blog'
-  | 'can_view_messages'
-  | 'can_manage_subadmins'
-  | 'can_manage_promos'
+
   | 'can_manage_materials'
+
+  | 'can_manage_lessons'
+
+  | 'can_manage_cbt'
+
+  | 'can_manage_mock_exams'
+
+  | 'can_manage_signature'
+
+  | 'can_view_analytics'
+
+  | 'can_manage_subscriptions'
+
+  | 'can_view_payments'
+
+  | 'can_manage_referrals'
+
+  | 'can_manage_verification'
+
+  | 'can_manage_legal_documents'
+
+  | 'can_manage_broadcast'
+
+  | 'can_manage_blog'
+
+  | 'can_manage_gospel'
+
+  | 'can_view_messages'
+
   | 'can_manage_exams'
 
+  | 'can_manage_exam_library'
+
+  | 'can_manage_bulk_upload'
+
+  | 'can_manage_promos'
+
+  | 'can_manage_trial'
+
+  | 'can_manage_subadmins'
+
+  | 'can_manage_permissions'
+
+
+
 export default function MasterAdminDashboard({ summary: propSummary }: MasterProps) {
+
   const location = useLocation()
+
   const navigate = useNavigate()
+
   const navSummary = (location.state as any)?.summary
+
   const [summary, setSummary] = useState<any | null>(propSummary ?? navSummary ?? null)
 
+
+
   const getTabFromPath = (pathname: string): string => {
+
     const parts = pathname.replace(/^\/+|\/+$/g, '').split('/')
+
     if (parts.length >= 2 && parts[0] === 'admin') {
+
       const sub = parts[1]
+
       if (sub === 'exam-referrals') return 'referrals'
+
       return sub
+
     }
+
     return 'overview'
+
   }
+
+
 
   const [tab, setTabState] = useState<string>(() => getTabFromPath(location.pathname))
 
+
+
   const setTab = useCallback((newTab: string) => {
+
     setTabState(newTab)
+
     const targetPath = newTab === 'overview' ? '/admin' : `/admin/${newTab}`
+
     if (location.pathname !== targetPath) {
+
       navigate(targetPath, { replace: false, state: location.state })
+
     }
+
   }, [location.pathname, location.state, navigate])
 
+
+
   useEffect(() => {
+
     const tabFromUrl = getTabFromPath(location.pathname)
+
     if (tabFromUrl && tabFromUrl !== tab) {
+
       setTabState(tabFromUrl)
+
     }
+
   }, [location.pathname])
+
   const [users, setUsers] = useState<any[]>([])
+
   const [loading, setLoading] = useState(false)
+
   const [selectedUser, setSelectedUser] = useState<any | null>(null)
+
   const [pageInfo, setPageInfo] = useState<{count: number; next: string | null; previous: string | null; current: number}>({count:0,next:null,previous:null,current:1})
+
   const [searchTerm, setSearchTerm] = useState('')
+
   const [roleFilter, setRoleFilter] = useState('')
+
   const [bulkData, setBulkData] = useState('')
+
   const [exams, setExams] = useState<any[]>([])
+
   const [selectedExamId, setSelectedExamId] = useState<string>('')
+
   const [selectedExam, setSelectedExam] = useState<string>('')
+
   const [selectedSubject, setSelectedSubject] = useState<string>('')
+
   const [subjects, setSubjects] = useState<any[]>([])
+
   const [adminBulkYear, setAdminBulkYear] = useState<string>('')
+
   const [customBulkYear, setCustomBulkYear] = useState<string>('')
+
   const [availableYearsForSubject, setAvailableYearsForSubject] = useState<{ year: string; question_count: number }[]>([])
+
   const [unassignedCountForSubject, setUnassignedCountForSubject] = useState<number>(0)
+
   const [loadingSubjectYears, setLoadingSubjectYears] = useState<boolean>(false)
+
   const [loadingSummary, setLoadingSummary] = useState(!summary)
+
   const [deleteConfirmation, setDeleteConfirmation] = useState<{open: boolean; userId: number | null; userName: string}>({open: false, userId: null, userName: ''})
+
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
   const [creatingCourse, setCreatingCourse] = useState(false)
+
   const [showSubAdminForm, setShowSubAdminForm] = useState(false)
 
+
+
   const [courses, setCourses] = useState<any[]>([])
+
   const [coursesLoading, setCoursesLoading] = useState(false)
+
   const [cbtAnalytics, setCbtAnalytics] = useState<any>(null)
+
   const [cbtLoading, setCbtLoading] = useState(false)
+
   const [payments, setPayments] = useState<any[]>([])
+
   const [paymentStats, setPaymentStats] = useState<any>(null)
+
   const [paymentsLoading, setPaymentsLoading] = useState(false)
+
   const [institutionsCount, setInstitutionsCount] = useState(0)
+
   const [administratorsCount, setAdministratorsCount] = useState(0)
+
   const [adminLoading, setAdminLoading] = useState(false)
+
   const [gaSummary, setGaSummary] = useState<any | null>(null)
+
   const [utmSources, setUtmSources] = useState<any[] | null>(null)
+
   const [topReferrers, setTopReferrers] = useState<any[] | null>(null)
+
   const [referrersLoading, setReferrersLoading] = useState(false)
+
   const filteredReferrers = useMemo(() => {
+
     if (!topReferrers || typeof window === 'undefined') return []
+
     const origin = window.location.origin
+
     return (topReferrers || []).filter((r:any) => {
+
       const ref = r.referrer || ''
+
       if (!ref) return true // keep direct
+
       // exclude path-only internal refs
+
       if (ref.startsWith('/')) return false
+
       try {
+
         const url = new URL(ref)
+
         // exclude same-origin referrers
+
         if (url.origin === origin) return false
+
         // exclude hostname matches (covers subdomains if desired)
+
         if (url.hostname === window.location.hostname) return false
+
         return true
+
       } catch (e) {
+
         return false
+
       }
+
     }).map((r:any) => {
+
       const ref = r.referrer || '(direct)'
+
       let display = ref
+
       try {
+
         const url = new URL(ref)
+
         display = url.hostname + (url.pathname && url.pathname !== '/' ? url.pathname : '')
+
       } catch (e) { /* keep raw */ }
+
       return { ...r, display }
+
     })
+
   }, [topReferrers])
+
   const [dailyAnalytics, setDailyAnalytics] = useState<any[] | null>(null)
+
   const [dailyTotals, setDailyTotals] = useState<any | null>(null)
+
   const [dailyLoading, setDailyLoading] = useState(false)
+
   const [registrations, setRegistrations] = useState<any | null>(null)
+
   const [registrationsLoading, setRegistrationsLoading] = useState(false)
+
   const [downloads, setDownloads] = useState<any | null>(null)
+
   const [downloadsLoading, setDownloadsLoading] = useState(false)
+
   const [modalOpen, setModalOpen] = useState(false)
+
   const [modalType, setModalType] = useState<'registrations' | 'downloads' | null>(null)
+
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null)
+
   const [analyticsActivePanel, setAnalyticsActivePanel] = useState<string | null>(null)
+
   const [dateRangeStart, setDateRangeStart] = useState<string>('')
+
   const [dateRangeEnd, setDateRangeEnd] = useState<string>('')
+
   const [paymentPage, setPaymentPage] = useState(1)
+
   const [paymentPageInfo, setPaymentPageInfo] = useState<{count: number; next: string | null; previous: string | null}>({count: 0, next: null, previous: null})
+
   const [activationFees, setActivationFees] = useState<any[]>([])
+
   const [activationLoading, setActivationLoading] = useState(false)
+
   const [showActivationForm, setShowActivationForm] = useState(false)
+
   const [activationForm, setActivationForm] = useState({ id: null as number | null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '', activation_tutor_amount: '', activation_institution_amount: '' })
+
   const [activationMessage, setActivationMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
+
   const [splitConfig, setSplitConfig] = useState<{tutor_share: string; institution_share: string} | null>(null)
+
   const [splitLoading, setSplitLoading] = useState(false)
+
   const [splitMessage, setSplitMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
+
   const [showSettings, setShowSettings] = useState(false)
+
   const [showPermissionManager, setShowPermissionManager] = useState(false)
+
   const [blogs, setBlogs] = useState<any[]>([])
+
   const [blogsLoading, setBlogsLoading] = useState(false)
+
   const [blogPage, setBlogPage] = useState(1)
+
   const [blogPageInfo, setBlogPageInfo] = useState<{count: number; next: string | null; previous: string | null; current: number}>({count: 0, next: null, previous: null, current: 1})
+
   const [showAllSignups, setShowAllSignups] = useState(false)
+
   const [showBlogForm, setShowBlogForm] = useState(false)
+
   const [blogMessage, setBlogMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
-  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; category?: number | string; meta_title?: string; meta_description?: string; meta_keywords?: string; is_featured?: boolean; is_trending?: boolean; is_popular?: boolean}>({title: '', content: '', image: null, image_description: '', excerpt: '', category: '', meta_title: '', meta_description: '', meta_keywords: '', is_featured: false, is_trending: false, is_popular: false})
+
+  const [blogFormData, setBlogFormData] = useState<{title: string; content: string; image: File | string | null; image_description: string; excerpt: string; category?: number | string; meta_title?: string; meta_description?: string; meta_keywords?: string; is_featured?: boolean; is_trending?: boolean; is_popular?: boolean; ad_display_location?: 'middle' | 'bottom' | 'both' | 'none' | 'custom'; selected_ad?: number | string | null}>({title: '', content: '', image: null, image_description: '', excerpt: '', category: '', meta_title: '', meta_description: '', meta_keywords: '', is_featured: false, is_trending: false, is_popular: false, ad_display_location: 'bottom', selected_ad: null})
+
   const [savingBlog, setSavingBlog] = useState(false)
+
   const [blogCategories, setBlogCategories] = useState<any[]>([])
+
   const [newCategoryName, setNewCategoryName] = useState('')
+
   const [showAddCategoryInput, setShowAddCategoryInput] = useState(false)
 
+
+
   // Ads management states
+
   const [blogSubTab, setBlogSubTab] = useState<'posts' | 'ads'>('posts')
+
   const [blogAds, setBlogAds] = useState<any[]>([])
+
   const [adsLoading, setAdsLoading] = useState(false)
+
   const [showAdForm, setShowAdForm] = useState(false)
+
   const [editingAd, setEditingAd] = useState<any | null>(null)
+
   const [adMessage, setAdMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
+
   const [adFormData, setAdFormData] = useState<{title: string; description: string; badge_text: string; bullets: string; button_text: string; button_link: string; image: File | string | null; is_active: boolean}>({
+
     title: '',
+
     description: '',
+
     badge_text: '',
+
     bullets: '',
+
     button_text: 'Download Free',
+
     button_link: '',
+
     image: null,
+
     is_active: true
+
   })
+
   const [savingAd, setSavingAd] = useState(false)
 
+
+
   // Oversize image modal state for blog image validation
+
   const [oversizeModalOpen, setOversizeModalOpen] = useState(false)
+
   const [oversizeFileSize, setOversizeFileSize] = useState(0)
+
   // Promo codes management
+
   const [promos, setPromos] = useState<any[]>([])
+
   const [promosLoading, setPromosLoading] = useState(false)
+
   const [adminReviews, setAdminReviews] = useState<any[] | null>(null)
+
   const [showPromoForm, setShowPromoForm] = useState(false)
+
   const [editingPromo, setEditingPromo] = useState<any | null>(null)
+
   const [promoFormData, setPromoFormData] = useState<{code?: string; amount: string; is_percentage: boolean; max_uses?: string; expires_at?: string; applicable_to?: string; applicable_id?: string; active: boolean}>({code: '', amount: '', is_percentage: false, max_uses: '', expires_at: '', applicable_to: 'all', applicable_id: '', active: true})
+
   const [subadminPermissions, setSubadminPermissions] = useState<Record<string, boolean> | null>(null)
+
   const [editingBlog, setEditingBlog] = useState<any | null>(null)
+
   const [blogSearch, setBlogSearch] = useState('')
+
   const [blogCategoryFilter, setBlogCategoryFilter] = useState('all')
+
   const quillRef = useRef<any>(null)
+
   const broadcastQuillRef = useRef<any>(null)
+
   
+
   // Email Broadcast State
+
   const [broadcastAudience, setBroadcastAudience] = useState('all')
+
   const [broadcastSubject, setBroadcastSubject] = useState('')
+
   const [broadcastContent, setBroadcastContent] = useState('')
+
   const [isBroadcasting, setIsBroadcasting] = useState(false)
+
   const [broadcastMessage, setBroadcastMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
 
+
+
   // Dark / Light mode (persisted)
+
   const [darkMode, setDarkMode] = useState<boolean>(() => {
+
     try { return localStorage.getItem('master_dark_mode') === 'true' } catch (e) { return false }
+
   })
+
+
 
   const theme = useMemo(() => createTheme({ palette: { mode: darkMode ? 'dark' : 'light' } }), [darkMode])
 
+
+
   useEffect(() => {
+
     try { localStorage.setItem('master_dark_mode', darkMode ? 'true' : 'false') } catch (e) { /* ignore */ }
+
   }, [darkMode])
+
+
 
   // Sync Tailwind's `dark` class for class-based dark mode and set html/body classes
+
   useEffect(() => {
+
     try {
+
       if (darkMode) {
+
         document.documentElement.classList.add('dark')
+
         document.body.classList.add('bg-slate-900', 'text-slate-100')
+
       } else {
+
         document.documentElement.classList.remove('dark')
+
         document.body.classList.remove('bg-slate-900', 'text-slate-100')
+
       }
+
     } catch (e) {
+
       // ignore in environments without DOM
+
     }
+
   }, [darkMode])
 
+
+
   // --- Referrer / UTM stats loader ---
+
   const loadReferrerStats = async () => {
+
     setReferrersLoading(true)
+
     try {
+
       const res = await axios.get(`${API_BASE}/analytics/referrers/`)
+
       if (res && res.data) {
+
         setUtmSources(res.data.utm_sources || [])
+
         setTopReferrers(res.data.referrers || [])
+
       }
+
     } catch (e) {
+
       console.warn('Failed to load referrer stats', e)
+
       setUtmSources([])
+
       setTopReferrers([])
+
     } finally {
+
       setReferrersLoading(false)
+
     }
+
   }
+
+
 
   // --- Overview stats loader ---
+
   const loadOverviewStats = async () => {
+
     try {
+
       const token = localStorage.getItem('access')
+
       if (!token) return
+
       // Try to fetch dashboard summary which often contains platform-wide counts
+
       const res = await axios.get(`${API_BASE}/dashboard/`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null)
+
       if (res && res.data) {
+
         setSummary(res.data)
+
       }
+
+
 
       // Try a dedicated registrations endpoint first (if available), fallback to gaSummary/dailyTotals
+
       try {
+
         setRegistrationsLoading(true)
+
         const regRes = await axios.get(`${API_BASE}/analytics/registrations/`, { headers: { Authorization: `Bearer ${token}` } })
+
         if (regRes?.data) {
+
           // expected { daily, weekly, monthly, timeseries }
+
           setRegistrations(regRes.data)
+
           setDailyTotals((prev:any) => ({ ...(prev || {}), new_registrations: regRes.data.daily }))
+
         }
+
       } catch (e) {
+
         console.warn('registrations endpoint not available', e)
+
       } finally {
+
         setRegistrationsLoading(false)
+
       }
+
+
 
       // Try downloads analytics
+
       try {
+
         setDownloadsLoading(true)
+
         const dlRes = await axios.get(`${API_BASE}/analytics/downloads/`, { headers: { Authorization: `Bearer ${token}` } })
+
         if (dlRes?.data) {
+
           setDownloads(dlRes.data)
+
         }
+
       } catch (e) {
+
         console.warn('downloads endpoint not available', e)
+
       } finally {
+
         setDownloadsLoading(false)
+
       }
+
+
 
       // Ensure daily analytics used by overview activity chart are loaded
+
       try {
+
         await loadDailyAnalytics()
+
       } catch (e) {
+
         console.warn('failed to load daily analytics for overview', e)
+
       }
+
+
 
       // populate institutions, courses and users lists for accurate counts
+
       try { await loadCourses() } catch (e) { /* ignore */ }
+
       try { await loadPayments(1) } catch (e) { /* ignore */ }
+
       try { await loadUsers(1) } catch (e) { /* ignore */ }
+
       try { await loadInstitutions() } catch (e) { /* ignore */ }
+
       try { await loadAdministrators() } catch (e) { /* ignore */ }
+
     } catch (err) {
+
       console.warn('Failed to load overview stats', err)
+
     }
+
   }
+
+
 
   // --- Daily analytics loader ---
+
   const loadDailyAnalytics = async () => {
+
     setDailyLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const params = new URLSearchParams()
+
       if (dateRangeStart) params.append('start', dateRangeStart)
+
       if (dateRangeEnd) params.append('end', dateRangeEnd)
+
       const res = await axios.get(`${API_BASE}/analytics/daily/?${params.toString()}`, {
+
         headers: { Authorization: `Bearer ${token}` }
+
       })
+
       if (res && res.data) {
+
         setDailyAnalytics(res.data.daily || [])
+
         setDailyTotals(res.data.totals || {})
+
       }
+
     } catch (e) {
+
       console.warn('Failed to load daily analytics', e)
+
       setDailyAnalytics([])
+
       setDailyTotals(null)
+
     } finally {
+
       setDailyLoading(false)
+
     }
+
   }
+
+
 
   async function loadAdminReviews() {
+
     setAdminLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/admin/reviews/`, { headers: { Authorization: `Bearer ${token}` } })
+
       const payload = res.data
+
       const items = Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload) ? payload : [])
+
       setAdminReviews(items)
+
     } catch (e) {
+
       console.warn('Failed to load admin reviews', e)
+
       setAdminReviews([])
+
     } finally { setAdminLoading(false) }
+
   }
+
+
 
   async function approveReview(id: number) {
+
     if (!confirm('Approve this review?')) return
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.patch(`${API_BASE}/admin/reviews/${id}/`, { is_approved: true }, { headers: { Authorization: `Bearer ${token}` } })
+
       showToast('Review approved', 'success')
+
       loadAdminReviews()
+
     } catch (e) { showToast('Failed to approve review', 'error') }
+
   }
+
+
 
   async function deleteReview(id: number) {
+
     if (!confirm('Delete this review? This cannot be undone.')) return
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.delete(`${API_BASE}/admin/reviews/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+
       showToast('Review deleted', 'success')
+
       loadAdminReviews()
+
     } catch (e) { showToast('Failed to delete review', 'error') }
+
   }
+
+
 
   // Autosave draft support (localStorage)
+
   const draftKey = (id?: number | null) => `admin_blog_draft_${id ?? 'new'}`;
+
   const autosaveTimer = useRef<number | null>(null);
 
+
+
   // Load draft when opening the blog form
+
   useEffect(() => {
+
     if (!showBlogForm) return;
+
     const key = draftKey(editingBlog?.id ?? null);
+
     try {
+
       const raw = localStorage.getItem(key);
+
       if (raw) {
+
         const parsed = JSON.parse(raw);
+
         // Only load fields we persisted (no File objects)
+
         setBlogFormData((prev) => ({
+
           title: parsed.title || prev.title,
+
           content: parsed.content || prev.content,
+
           image: parsed.image || prev.image,
+
           image_description: parsed.image_description || prev.image_description,
+
           excerpt: parsed.excerpt || prev.excerpt,
+
           meta_title: parsed.meta_title || prev.meta_title,
+
           meta_description: parsed.meta_description || prev.meta_description,
+
           meta_keywords: parsed.meta_keywords || prev.meta_keywords
+
         }));
+
       }
+
     } catch (e) {
+
       // ignore parse errors
+
     }
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [showBlogForm, editingBlog?.id]);
 
+
+
   // Autosave blogFormData to localStorage (debounced)
+
   useEffect(() => {
+
     if (!showBlogForm) return;
+
     if (autosaveTimer.current) {
+
       window.clearTimeout(autosaveTimer.current as any);
+
     }
+
     autosaveTimer.current = window.setTimeout(() => {
+
       try {
+
         const key = draftKey(editingBlog?.id ?? null);
+
         const toSave: any = {
+
           title: blogFormData.title || '',
+
           content: blogFormData.content || '',
+
           // only persist string image URLs, not File objects
+
           image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
+
           image_description: blogFormData.image_description || '',
+
           excerpt: blogFormData.excerpt || '',
+
           meta_title: blogFormData.meta_title || '',
+
           meta_description: blogFormData.meta_description || '',
+
           meta_keywords: blogFormData.meta_keywords || ''
+
         };
+
         localStorage.setItem(key, JSON.stringify(toSave));
+
       } catch (e) {
+
         // ignore storage errors
+
       }
+
     }, 2000);
+
     return () => {
+
       if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current as any);
+
     };
+
   }, [blogFormData, showBlogForm, editingBlog?.id]);
+
   
+
   // Memoize Quill modules to prevent re-initialization on every render
+
   const quillModules = useMemo(() => ({
+
     toolbar: {
+
       container: [
+
         [{ 'header': [1, 2, 3, false] }],
+
         ['bold', 'italic', 'underline', 'strike'],
+
         ['blockquote', 'code-block'],
+
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+
         ['link', 'image'],
+
         ['clean']
+
       ],
+
       handlers: {
+
         image: function () {
+
           const input = document.createElement('input')
+
           input.setAttribute('type', 'file')
+
           input.setAttribute('accept', 'image/*')
+
           input.click()
+
           input.onchange = async () => {
+
             const file = input.files?.[0]
+
             if (!file) return
+
             try {
+
               const token = localStorage.getItem('access')
+
               const fd = new FormData()
+
               fd.append('image', file)
+
               const res = await axios.post(`${API_BASE}/blog/upload-image/`, fd, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+
               const url = res.data.url
+
               // Convert relative backend paths to absolute URLs so the editor preview resolves correctly
+
               const backendOrigin = API_BASE.replace(/\/api\/?$/, '')
+
               let absUrl = url
+
               if (url && url.startsWith('/')) {
+
                 absUrl = `${backendOrigin}${url}`
+
               } else if (url && !/^https?:\/\//i.test(url)) {
+
                 absUrl = `${backendOrigin}/${url}`
+
               }
+
               // Debug log removed for production
+
               const quill = (quillRef as any).current?.getEditor()
+
                 if (quill) {
+
                 const range = quill.getSelection(true)
+
                 quill.insertEmbed(range.index, 'image', absUrl)
+
                 quill.setSelection(range.index + 1)
+
                 // Ensure React state reflects the inserted content so the preview and save include the image
+
                 try {
+
                   const html = quill.root.innerHTML
+
                   setBlogFormData((prev) => ({ ...prev, content: html }))
+
                 } catch (e) {
+
                   // ignore
+
                 }
+
               }
+
             } catch (err) {
+
               console.error('Image upload failed', err)
+
             }
+
           }
+
         }
+
       }
+
     }
+
   }), [setBlogFormData])
 
+
+
   // Separate Quill modules for the broadcast editor with its own image upload handler
+
   const broadcastQuillModules = useMemo(() => ({
+
     toolbar: {
+
       container: [
+
         [{ 'header': [1, 2, 3, false] }],
+
         ['bold', 'italic', 'underline', 'strike'],
+
         ['blockquote', 'code-block'],
+
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+
         ['link', 'image'],
+
         ['clean']
+
       ],
+
       handlers: {
+
         image: function () {
+
           const input = document.createElement('input')
+
           input.setAttribute('type', 'file')
+
           input.setAttribute('accept', 'image/*')
+
           input.click()
+
           input.onchange = async () => {
+
             const file = input.files?.[0]
+
             if (!file) return
+
             try {
+
               const token = localStorage.getItem('access')
+
               const fd = new FormData()
+
               fd.append('file', file)
+
               const res = await axios.post(`${API_BASE}/courses/upload-image/`, fd, { headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'multipart/form-data' } })
+
               const url = res.data.url
+
               const backendOrigin = API_BASE.replace(/\/api\/?$/, '')
+
               let absUrl = url
+
               if (url && url.startsWith('/')) {
+
                 absUrl = `${backendOrigin}${url}`
+
               } else if (url && !/^https?:\/\//i.test(url)) {
+
                 absUrl = `${backendOrigin}/${url}`
+
               }
+
               const quill = (broadcastQuillRef as any).current?.getEditor()
+
               if (quill) {
+
                 const range = quill.getSelection(true)
+
                 quill.insertEmbed(range.index, 'image', absUrl)
+
                 quill.setSelection(range.index + 1)
+
               }
+
             } catch (err) {
+
               console.error('Broadcast image upload failed', err)
+
             }
+
           }
+
         }
+
       }
+
     }
+
   }), [])
+
   
+
   // Memoize the onChange handler for Quill
+
   const handleQuillChange = useCallback((val: string) => {
+
     setBlogFormData((prev) => ({...prev, content: val}))
+
   }, [])
+
   
+
   const [settingsData, setSettingsData] = useState({firstName: '', lastName: '', email: ''})
+
   const [passwordData, setPasswordData] = useState({old_password: '', new_password: '', confirm_password: ''})
+
   const [settingsSaving, setSettingsSaving] = useState(false)
+
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+
   const [trialDays, setTrialDays] = useState<number | ''>(getTrialDaysLocal() || 30)
+
   const [trialLoading, setTrialLoading] = useState(false)
+
   const [trialSaving, setTrialSaving] = useState(false)
 
+
+
   async function loadTrialDays() {
+
     setTrialLoading(true)
+
     try {
+
       const days = await fetchTrialDaysServer()
+
       setTrialDays(days)
+
       setSettingsMessage({ type: 'success', text: 'Loaded trial days from server' })
+
       setTimeout(() => setSettingsMessage(null), 2500)
+
     } catch (e) {
+
       // ignore - fallback to local/env
+
     } finally {
+
       setTrialLoading(false)
+
     }
+
   }
+
+
 
   async function saveTrialDays() {
+
     if (!trialDays || Number(trialDays) <= 0) {
+
       setSettingsMessage({ type: 'error', text: 'Please enter a valid number of days' })
+
       setTimeout(() => setSettingsMessage(null), 2500)
+
       return
+
     }
+
     setTrialSaving(true)
+
     try {
+
       const saved = await saveTrialDaysServer(Number(trialDays))
+
       setTrialDays(saved)
+
       setSettingsMessage({ type: 'success', text: 'Trial days updated' })
+
       setTimeout(() => setSettingsMessage(null), 2500)
+
     } catch (err) {
+
       // fallback: save locally
+
       try { localStorage.setItem('trial_days', String(trialDays)); } catch {}
+
       setSettingsMessage({ type: 'success', text: 'Saved trial days locally (server unavailable)' })
+
       setTimeout(() => setSettingsMessage(null), 2500)
+
     } finally {
+
       setTrialSaving(false)
+
     }
+
   }
+
    
+
   // Helper function to construct absolute image URLs for media files
+
   const getImageUrl = (imageUrl: string | null) => {
+
     if (!imageUrl) return ''
+
     // If already absolute URL, return as-is
+
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+
       return imageUrl
+
     }
+
     // If relative path starting with /, prepend API base URL (without /api path)
+
     if (imageUrl.startsWith('/')) {
+
       const apiBaseWithoutPath = API_BASE.replace(/\/api\/?$/, '')
+
       return apiBaseWithoutPath + imageUrl
+
     }
+
     return imageUrl
+
   }
+
+
 
   // Manual Question Upload State
+
   const [manualQuestion, setManualQuestion] = useState({
+
     text: '',
+
     optionA: '', optionB: '', optionC: '', optionD: '',
+
     correctAnswer: 'A',
+
     explanation: '',
+
     year: '',
+
     image: null as File | null
+
   })
+
   const [bulkFile, setBulkFile] = useState<File | null>(null)
+
   const [manualLoading, setManualLoading] = useState(false)
+
   const [manualMessage, setManualMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+
   const [bulkMessage, setBulkMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
+
   const [usersMessage, setUsersMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
+
   const [uploadMode, setUploadMode] = useState<'json' | 'file' | 'manual'>('json')
 
+
+
   // User Profile - Courses & Modules State
+
   const [userCourses, setUserCourses] = useState<any[]>([])
+
   const [selectedUserCourse, setSelectedUserCourse] = useState<any | null>(null)
+
   const [userCourseModules, setUserCourseModules] = useState<any[]>([])
+
   const [loadingUserCourses, setLoadingUserCourses] = useState(false)
+
   const [loadingModules, setLoadingModules] = useState(false)
 
+
+
   // Exam & Subject Management State
+
   const [examsManagement, setExamsManagement] = useState<any[]>([])
+
   const [showExamForm, setShowExamForm] = useState(false)
+
   const [showSubjectForm, setShowSubjectForm] = useState(false)
+
   const [examFormData, setExamFormData] = useState({title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20, subject_select_limit: 0})
+
   const [subjectFormData, setSubjectFormData] = useState({exam: '', name: '', description: ''})
+
   const [selectedExamForSubjects, setSelectedExamForSubjects] = useState<any | null>(null)
+
   const [subjectList, setSubjectList] = useState<any[]>([])
+
   const [examManagementLoading, setExamManagementLoading] = useState(false)
+
   const [savingExam, setSavingExam] = useState(false)
+
   const [savingSubject, setSavingSubject] = useState(false)
+
   const [examMessage, setExamMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+
   const [editingExam, setEditingExam] = useState<any | null>(null)
+
   const [editingSubject, setEditingSubject] = useState<any | null>(null)
 
+
+
   // Question Management State
+
   const [selectedSubjectForQuestions, setSelectedSubjectForQuestions] = useState<any | null>(null)
+
   const [showQuestionManagement, setShowQuestionManagement] = useState(false)
 
+
+
   // Gospel Video State
+
   const [gospelVideos, setGospelVideos] = useState<any[]>([])
+
   const [gospelLoading, setGospelLoading] = useState(false)
+
   const [showGospelForm, setShowGospelForm] = useState(false)
+
   const [gospelFormData, setGospelFormData] = useState({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
+
   const [editingGospel, setEditingGospel] = useState<any | null>(null)
+
   const [gospelMessage, setGospelMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
 
+
+
   // Materials Management State
+
   const [materialsRefreshKey, setMaterialsRefreshKey] = useState(0)
 
+
+
   const sendBroadcast = async () => {
+
     if (!broadcastSubject.trim() || !broadcastContent.trim()) {
+
       setBroadcastMessage({ type: 'error', text: 'Subject and message are required.' })
+
       return
+
     }
+
     setIsBroadcasting(true)
+
     setBroadcastMessage(null)
+
     try {
+
       // Ensure images are responsive in email clients by adding inline styles
+
       let finalMessage = broadcastContent;
+
       try {
+
         const parser = new DOMParser();
+
         const doc = parser.parseFromString(broadcastContent, 'text/html');
+
         const images = doc.querySelectorAll('img');
+
         images.forEach(img => {
+
           img.style.maxWidth = '100%';
+
           img.style.height = 'auto';
+
         });
+
         finalMessage = doc.body.innerHTML;
+
       } catch (e) {
+
         console.error("Failed to make images responsive", e);
+
       }
+
+
 
       const token = localStorage.getItem('access')
+
       await axios.post(`${API_BASE}/messages/broadcast-email/`, {
+
         audience: broadcastAudience,
+
         subject: broadcastSubject,
+
         message: finalMessage
+
       }, {
+
         headers: { Authorization: `Bearer ${token}` }
+
       })
+
       setBroadcastMessage({ type: 'success', text: 'Broadcast queued successfully.' })
+
       setBroadcastSubject('')
+
       setBroadcastContent('')
+
       setTimeout(() => setBroadcastMessage(null), 3000)
+
     } catch (e) {
+
       console.error(e)
+
       setBroadcastMessage({ type: 'error', text: 'Failed to queue broadcast.' })
+
     } finally {
+
       setIsBroadcasting(false)
+
     }
+
   }
 
+
+
   const [referralAdminData, setReferralAdminData] = useState<any | null>(null)
+
   const [referralAdminLoading, setReferralAdminLoading] = useState(false)
+
   const [referralPercentInput, setReferralPercentInput] = useState('')
+
   const [referralMessage, setReferralMessage] = useState<{type: 'success'|'error', text: string} | null>(null)
 
-  // Define tabs
+
+
+  // Define tabs with exact matching permission keys
+
   const allTabs = [
-    { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-5 h-5" />, permission: undefined as any },
+
+    { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_overview' as PermissionKey },
+
     { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
-    { id: 'students', label: 'Students', icon: <GraduationCap className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
-    { id: 'tutors', label: 'Tutors', icon: <Briefcase className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
+
+    { id: 'students', label: 'Students', icon: <GraduationCap className="w-5 h-5" />, permission: 'can_manage_students' as PermissionKey },
+
+    { id: 'tutors', label: 'Tutors', icon: <Briefcase className="w-5 h-5" />, permission: 'can_manage_tutors' as PermissionKey },
+
     { id: 'institutions', label: 'Institutions', icon: <Building className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
-    { id: 'admins', label: 'Admins', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
+
+    { id: 'admins', label: 'Admins', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_admins' as PermissionKey },
+
     { id: 'courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
+
     { id: 'materials', label: 'Materials', icon: <FileIcon className="w-5 h-5" />, permission: 'can_manage_materials' as PermissionKey },
-    { id: 'lessons', label: 'Lesson Panel', icon: <BookMarked className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
+
+    { id: 'lessons', label: 'Lesson Panel', icon: <BookMarked className="w-5 h-5" />, permission: 'can_manage_lessons' as PermissionKey },
+
     { id: 'cbt', label: 'CBT / Exams', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
-    { id: 'mock-exams', label: 'Mock Exams', icon: <Zap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
-    { id: 'signature', label: 'Signature', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
-    { id: 'subscriptions', label: 'Subscription Manager', icon: <Crown className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
+
+    { id: 'mock-exams', label: 'Mock Exams', icon: <Zap className="w-5 h-5" />, permission: 'can_manage_mock_exams' as PermissionKey },
+
+    { id: 'signature', label: 'Signature', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_signature' as PermissionKey },
+
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, permission: 'can_view_analytics' as PermissionKey },
+
+    { id: 'subscriptions', label: 'Subscription Manager', icon: <Crown className="w-5 h-5" />, permission: 'can_manage_subscriptions' as PermissionKey },
+
     { id: 'payments', label: 'Payments', icon: <CreditCard className="w-5 h-5" />, permission: 'can_view_payments' as PermissionKey },
-    { id: 'referrals', label: 'Exam Referrals', icon: <Banknote className="w-5 h-5 text-amber-500" />, permission: 'can_view_payments' as PermissionKey },
-    { id: 'verification', label: 'Verification', icon: <CheckCircle className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
-    { id: 'legal-documents', label: 'Legal Documents', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_institutions' as PermissionKey },
-    { id: 'broadcast', label: 'Email Broadcast', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_users' as PermissionKey },
+
+    { id: 'referrals', label: 'Exam Referrals', icon: <Banknote className="w-5 h-5 text-amber-500" />, permission: 'can_manage_referrals' as PermissionKey },
+
+    { id: 'verification', label: 'Verification', icon: <CheckCircle className="w-5 h-5" />, permission: 'can_manage_verification' as PermissionKey },
+
+    { id: 'legal-documents', label: 'Legal Documents', icon: <FileText className="w-5 h-5" />, permission: 'can_manage_legal_documents' as PermissionKey },
+
+    { id: 'broadcast', label: 'Email Broadcast', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_broadcast' as PermissionKey },
+
     { id: 'blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
-    { id: 'gospel', label: 'Gospel', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_blog' as PermissionKey },
+
+    { id: 'gospel', label: 'Gospel', icon: <Mail className="w-5 h-5" />, permission: 'can_manage_gospel' as PermissionKey },
+
     { id: 'messages', label: 'Messages', icon: <Mail className="w-5 h-5" />, permission: 'can_view_messages' as PermissionKey },
-    { id: 'exams', label: 'Exams & Subjects', icon: <GraduationCap className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
-    { id: 'exam-library', label: 'Exam Library', icon: <FolderOpen className="w-5 h-5" />, permission: 'can_manage_cbt' as PermissionKey },
-    // Bulk upload tied to course management permission usually
-    { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_courses' as PermissionKey },
+
+    { id: 'exams', label: 'Exams & Subjects', icon: <GraduationCap className="w-5 h-5" />, permission: 'can_manage_exams' as PermissionKey },
+
+    { id: 'exam-library', label: 'Exam Library', icon: <FolderOpen className="w-5 h-5" />, permission: 'can_manage_exam_library' as PermissionKey },
+
+    { id: 'bulk', label: 'Bulk Upload', icon: <Upload className="w-5 h-5" />, permission: 'can_manage_bulk_upload' as PermissionKey },
+
     { id: 'promos', label: 'Promos', icon: <Shield className="w-5 h-5" />, permission: 'can_manage_promos' as PermissionKey },
+
     { id: 'trial', label: 'Trial Period', icon: <Clock className="w-5 h-5" />, permission: 'can_manage_trial' as PermissionKey },
+
     { id: 'profile', label: 'Profile', icon: <UserCog className="w-5 h-5" />, permission: undefined as any },
+
   ]
 
+
+
   // Filter tabs based on permissions. Subadmins ONLY see tabs they are strictly granted access to.
+
+  // Profile is the ONLY default page accessible to every sub admin account.
+
   const tabs = subadminPermissions
+
     ? allTabs.filter(tab => {
+
         // Subadmins can NEVER access the Admins management tab
+
         if (tab.id === 'admins') return false
-        // Profile tab is accessible for managing own credentials
+
+        // Profile tab is the ONLY default page accessible to every sub admin
+
         if (tab.id === 'profile') return true
-        // Overview requires can_view_overview permission
-        if (tab.id === 'overview') {
-          return subadminPermissions.can_view_overview === true
-        }
-        if (tab.id === 'students') {
-          return subadminPermissions.can_manage_students === true || subadminPermissions.can_manage_users === true
-        }
-        if (tab.id === 'tutors') {
-          return subadminPermissions.can_manage_tutors === true || subadminPermissions.can_manage_users === true
-        }
-        if (tab.id === 'exams' || tab.id === 'exam-library') {
-          return subadminPermissions.can_manage_cbt === true || 
-                 subadminPermissions.can_manage_exams === true || 
-                 subadminPermissions.can_manage_exam_library === true
-        }
-        if (tab.id === 'materials') {
-          return subadminPermissions.can_manage_materials === true || subadminPermissions.can_manage_courses === true
-        }
-        if (tab.id === 'lessons') {
-          return subadminPermissions.can_manage_lessons === true || subadminPermissions.can_manage_courses === true
-        }
-        if (tab.id === 'mock-exams') {
-          return subadminPermissions.can_manage_mock_exams === true || subadminPermissions.can_manage_cbt === true
-        }
-        if (tab.id === 'signature' || tab.id === 'verification' || tab.id === 'legal-documents') {
-          return subadminPermissions[tab.permission] === true || subadminPermissions.can_manage_institutions === true
-        }
-        if (tab.id === 'subscriptions' || tab.id === 'referrals') {
-          return subadminPermissions[tab.permission] === true || subadminPermissions.can_view_payments === true
-        }
-        if (tab.id === 'broadcast') {
-          return subadminPermissions.can_manage_broadcast === true || subadminPermissions.can_manage_users === true
-        }
-        if (tab.id === 'gospel') {
-          return subadminPermissions.can_manage_gospel === true || subadminPermissions.can_manage_blog === true
-        }
-        if (tab.id === 'bulk') {
-          return subadminPermissions.can_manage_bulk_upload === true || subadminPermissions.can_manage_courses === true
-        }
-        if (tab.id === 'trial') {
-          return subadminPermissions.can_manage_trial === true || subadminPermissions.can_manage_users === true
-        }
-        return tab.permission ? subadminPermissions[tab.permission] === true : false
+
+        // For every other tab, require the exact permission to be strictly true
+
+        return Boolean(tab.permission && subadminPermissions[tab.permission] === true)
+
       })
+
     : allTabs
 
+
+
   // Load sub-admin permissions from summary
+
   useEffect(() => {
+
     if (summary?.subadmin_profile) {
+
       setSubadminPermissions(summary.subadmin_profile)
+
     }
+
   }, [summary])
 
-  // Ensure current tab is accessible and handle zero-permission subadmins
+
+
+  // Ensure current tab is accessible and handle default tab for subadmin
+
   useEffect(() => {
-    if (subadminPermissions) {
-      // Check if subadmin has NO permissions at all
-      const hasAnyPermission = Object.values(subadminPermissions).some(v => v === true);
-      if (!hasAnyPermission && tabs.length === 0) {
-        // No permissions and no accessible tabs - show error or redirect
-        console.warn('Subadmin has no permissions assigned');
-        setTab(''); // Clear tab - will show "no access" message
-        return;
-      }
-      
+
+    if (subadminPermissions && tabs.length > 0) {
+
       const currentTabAllowed = tabs.some(t => t.id === tab);
+
       if (!currentTabAllowed) {
-        setTab(tabs.length > 0 ? tabs[0].id : ''); // Default to first allowed tab or empty
+
+        // Default to first allowed tab (or 'profile')
+
+        const defaultTab = tabs[0].id;
+
+        setTab(defaultTab);
+
       }
+
     }
-  }, [subadminPermissions, tabs, tab])
+
+  }, [subadminPermissions, tabs, tab, setTab])
+
+
 
   // Data Loading Effects
+
   useEffect(() => {
+
     if (tab === 'users') loadUsers()
+
     if (tab === 'bulk') loadExams()
+
     if (tab === 'courses') loadCourses()
+
     if (tab === 'cbt') {
+
       loadCbtAnalytics()
+
       loadExams()
+
     }
+
     if (tab === 'analytics') {
+
       loadAdminAnalytics()
+
       try {
+
         loadReferrerStats()
+
       } catch (e) {
+
         // ignore
+
       }
+
     }
+
     if (tab === 'overview') {
+
       loadOverviewStats()
+
     }
+
     if (tab === 'payments') loadPayments(paymentPage)
+
     if (tab === 'referrals') loadReferralAdmin()
+
     if (tab === 'blog') {
+
       loadBlogs(blogPage)
+
       loadAds()
+
     }
+
     if (tab === 'promos') loadPromos()
+
     if (tab === 'trial') loadTrialDays()
+
     if (tab === 'gospel') loadGospels()
+
     if (tab === 'exams') {
+
       loadExamsManagement()
+
       try { loadActivationFees(); loadSplitConfig() } catch (e) { /* ignore */ }
+
     }
+
     if (tab === 'cbt') {
+
       loadAdminReviews()
+
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [tab])
+
+
 
   useTokenRefresher(50)
 
+
+
   // Initialize Google Analytics (if measurement id provided)
+
   useEffect(() => {
+
     try {
+
       const measurementId = (import.meta as any).env.VITE_GA_MEASUREMENT_ID
+
       if (measurementId) {
+
         initGA(measurementId)
+
         sendPageView(window.location.pathname)
+
       }
+
     } catch (e) {
+
       // ignore in environments where import.meta is unavailable
+
     }
+
   }, [])
+
+
 
   const token = localStorage.getItem('access')
 
+
+
   function openModal(type:'registrations'|'downloads'){
+
     setModalType(type)
+
     setModalOpen(true)
+
   }
+
+
 
   function closeModal(){
+
     setModalOpen(false)
+
     setModalType(null)
+
   }
 
+
+
   // fetch summary if not provided
+
   useEffect(() => {
+
     let mounted = true
+
     async function loadSummary() {
+
       if (summary) {
+
         setLoadingSummary(false)
+
         return
+
       }
+
       const token = localStorage.getItem('access')
+
       if (!token) {
+
         window.location.href = '/login'
+
         return
+
       }
+
       setLoadingSummary(true)
+
       try {
+
         const res = await axios.get(`${API_BASE}/dashboard/`, { headers: { Authorization: `Bearer ${token}` } })
+
         if (!mounted) return
+
         setSummary(res.data)
+
         // Also populate profile form
+
         setSettingsData({
+
             firstName: res.data.first_name || '',
+
             lastName: res.data.last_name || '',
+
             email: res.data.email || ''
+
         })
+
       } catch (err) {
+
         console.error('Failed to load admin summary:', err)
+
       } finally {
+
         if (mounted) setLoadingSummary(false)
+
       }
+
     }
+
     loadSummary()
+
     return () => { mounted = false }
+
   }, [propSummary, navSummary, summary])
+
+
 
   // --- API Functions ---
 
+
+
   async function loadUsers(page = 1) {
+
     setLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const params: any = { page }
+
       if (searchTerm) params.search = searchTerm
+
       if (roleFilter) params.role = roleFilter
+
       // Use the users endpoint (registered under users router in backend)
+
       const res = await axios.get(`${API_BASE}/users/`, { params, headers: { Authorization: `Bearer ${token}` } })
+
       const data = res.data
+
       const items = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : [])
+
       setUsers(items)
+
       setPageInfo({ count: data.count || items.length, next: data.next || null, previous: data.previous || null, current: page })
+
     } catch (err) {
+
       console.error(err)
+
     }
+
     setLoading(false)
+
   }
+
+
 
   async function loadInstitutions() {
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/users/?role=institution`, { headers: { Authorization: `Bearer ${token}` } })
+
       const data = res.data
+
       const count = data.count || (Array.isArray(data.results) ? data.results.length : 0)
+
       setInstitutionsCount(count)
+
     } catch (err) {
+
       console.error('Failed to load institutions count', err)
+
       setInstitutionsCount(0)
+
     }
+
   }
+
+
 
   async function loadAdministrators() {
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/users/?role=admin`, { headers: { Authorization: `Bearer ${token}` } })
+
       const data = res.data
+
       const count = data.count || (Array.isArray(data.results) ? data.results.length : 0)
+
       setAdministratorsCount(count)
+
     } catch (err) {
+
       console.error('Failed to load administrators count', err)
+
       setAdministratorsCount(0)
+
     }
+
   }
+
+
 
   async function loadExams() {
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/cbt/exams/`, { headers: { Authorization: `Bearer ${token}` } })
+
       const payload = res.data
+
       const items = Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload) ? payload : [])
+
       setExams(items)
+
     } catch (err) { console.error(err) }
+
   }
+
+
 
   // Helper for Bulk Upload to load subjects
+
   async function loadSubjects(examId: string) {
+
       try {
+
           const token = localStorage.getItem('access')
+
           const res = await axios.get(`${API_BASE}/cbt/exams/${examId}/subjects/`, { headers: { Authorization: `Bearer ${token}` } })
+
           const payload = res.data
+
           const items = Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload) ? payload : [])
+
           setSubjects(items)
+
       } catch (err) {
+
           console.error('Failed to load subjects', err)
+
           setSubjects([])
+
       }
+
   }
+
+
 
   async function loadCourses() {
+
     setCoursesLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/courses/`, { headers: { Authorization: `Bearer ${token}` } })
+
       const data = res.data.results || res.data
+
       setCourses(Array.isArray(data) ? data : [])
+
     } catch (err) { 
+
       console.error(err)
+
       setCourses([])
+
     } finally {
+
       setCoursesLoading(false)
+
     }
+
   }
+
+
 
   async function loadCbtAnalytics() {
+
     setCbtLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/cbt/analytics/`, { headers: { Authorization: `Bearer ${token}` } })
+
       setCbtAnalytics(res.data)
+
     } catch (err) { 
+
       console.error(err)
+
       setCbtAnalytics({
+
         total_attempts: 0,
+
         total_exams: exams.length,
+
         average_score: 0,
+
         subjects: []
+
       })
+
     } finally {
+
       setCbtLoading(false)
+
     }
+
   }
+
+
 
   async function loadPayments(page: number = 1) {
+
     setPaymentsLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const [paymentsRes, statsRes] = await Promise.all([
+
         axios.get(`${API_BASE}/payments/admin_list/`, { params: { page }, headers: { Authorization: `Bearer ${token}` } }),
+
         axios.get(`${API_BASE}/payments/stats/`, { headers: { Authorization: `Bearer ${token}` } })
+
       ])
+
       const paymentData = paymentsRes.data.results || paymentsRes.data
+
       setPayments(Array.isArray(paymentData) ? paymentData : [])
+
       setPaymentPageInfo({
+
         count: paymentsRes.data.count || 0,
+
         next: paymentsRes.data.next,
+
         previous: paymentsRes.data.previous
+
       })
+
       setPaymentStats(statsRes.data)
+
       setPaymentPage(page)
+
     } catch (err) { 
+
       console.error(err)
+
       setPayments([])
+
       setPaymentPageInfo({count: 0, next: null, previous: null})
+
       setPaymentStats({
+
         total_revenue: 0,
+
         total_transactions: 0,
+
         platform_commission: 0,
+
         pending_payouts: 0
+
       })
+
     } finally {
+
       setPaymentsLoading(false)
+
       try { loadActivationFees() } catch (e) { /* ignore */ }
+
     }
+
   }
+
+
 
   async function loadReferralAdmin() {
+
     setReferralAdminLoading(true)
+
     setReferralMessage(null)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const [eventsRes, settingsRes] = await Promise.all([
+
         axios.get(`${API_BASE}/referrals/admin/events/`, { headers: { Authorization: `Bearer ${token}` } }),
+
         axios.get(`${API_BASE}/referrals/admin/settings/`, { headers: { Authorization: `Bearer ${token}` } })
+
       ])
+
       setReferralAdminData(eventsRes.data)
+
       setReferralPercentInput(String(settingsRes.data.referral_percent ?? 0.05))
+
     } catch (err) {
+
       console.error('Failed to load referrals', err)
+
       setReferralAdminData({ summary: {}, results: [] })
+
     } finally {
+
       setReferralAdminLoading(false)
+
     }
+
   }
+
+
 
   async function saveReferralSettings() {
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.patch(`${API_BASE}/referrals/admin/settings/`, { 
+
         referral_percent: Number(referralPercentInput || 0.05)
+
       }, { headers: { Authorization: `Bearer ${token}` } })
+
       setReferralMessage({ type: 'success', text: 'Referral settings updated successfully' })
+
       await loadReferralAdmin()
+
     } catch (err: any) {
+
       setReferralMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to update referral settings' })
+
     }
+
   }
+
+
 
   async function loadAdminAnalytics() {
+
     setAdminLoading(true)
+
     try {
+
       // Reuse existing loaders to populate analytics data and fetch GA summary
+
       await Promise.all([loadCbtAnalytics(), loadPayments(1), loadGaSummary(), loadDailyAnalytics()])
+
     } catch (err) {
+
       console.error('Failed to load admin analytics', err)
+
     } finally {
+
       setAdminLoading(false)
+
     }
+
   }
+
+
 
   async function loadGaSummary() {
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/analytics/admin/summary/`, { headers: { Authorization: `Bearer ${token}` } })
+
       setGaSummary(res.data || null)
+
     } catch (err) {
+
       console.error('Failed to load GA summary', err)
+
       setGaSummary(null)
+
     }
+
   }
+
+
 
   async function loadActivationFees() {
+
     setActivationLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/payments/admin/activation-fees/`, { headers: { Authorization: `Bearer ${token}` } })
+
       const data = res.data?.results || res.data || []
+
       setActivationFees(Array.isArray(data) ? data : [])
+
     } catch (err) {
+
       console.error('Failed to load activation fees', err)
+
       setActivationFees([])
+
     } finally {
+
       setActivationLoading(false)
+
     }
+
   }
+
+
 
   async function loadSplitConfig() {
+
     setSplitLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/payments/admin/split-config/`, { headers: { Authorization: `Bearer ${token}` } })
+
       setSplitConfig({ tutor_share: String(res.data.tutor_share), institution_share: String(res.data.institution_share) })
+
     } catch (err) {
+
       console.error('Failed to load split config', err)
+
       setSplitConfig(null)
+
     } finally {
+
       setSplitLoading(false)
+
     }
+
   }
+
+
 
   async function saveSplitConfig() {
+
     if (!splitConfig) return
+
     try {
+
       setSplitLoading(true)
+
       const token = localStorage.getItem('access')
+
       const payload = { tutor_share: Number(splitConfig.tutor_share), institution_share: Number(splitConfig.institution_share) }
+
       await axios.post(`${API_BASE}/payments/admin/split-config/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+
       setSplitMessage({ type: 'success', text: 'Split configuration updated' })
+
       loadSplitConfig()
+
       setTimeout(() => setSplitMessage(null), 3000)
+
     } catch (err: any) {
+
       console.error('Failed to save split config', err)
+
       setSplitMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to save split config' })
+
     } finally {
+
       setSplitLoading(false)
+
     }
+
   }
+
+
 
   async function saveActivationFee() {
+
     try {
+
       const token = localStorage.getItem('access')
+
       // Handle account_tutor / account_institution as role-specific single-fee entries
+
       if (activationForm.type === 'account_tutor' || activationForm.type === 'account_institution') {
+
         if (!activationForm.amount || Number(activationForm.amount) <= 0) {
+
           setActivationMessage({ type: 'error', text: 'Amount must be greater than 0' })
+
           return
+
         }
+
         const role = activationForm.type === 'account_tutor' ? 'tutor' : 'institution'
+
         // Check existing entry for this role
+
         const existing = activationFees.find((f: any) => f.type === 'account' && f.account_role === role)
+
         const payload: any = {
+
           type: 'account',
+
           account_role: role,
+
           currency: activationForm.currency,
+
           amount: Number(activationForm.amount)
+
         }
+
         if (existing && existing.id) payload.id = existing.id
+
         await axios.post(`${API_BASE}/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+
         setActivationMessage({ type: 'success', text: 'Account activation fee saved' })
+
         setShowActivationForm(false)
+
         setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '' , activation_tutor_amount: '', activation_institution_amount: ''})
+
         loadActivationFees()
+
         setTimeout(() => setActivationMessage(null), 3000)
+
         return
+
       }
+
+
 
       // Legacy 'account' selected: require explicit role
+
       
 
+
+
       // Non-account types: single amount handling (create/update)
+
       if (!activationForm.amount || Number(activationForm.amount) <= 0) {
+
         setActivationMessage({ type: 'error', text: 'Amount must be greater than 0' })
+
         return
+
       }
+
+
 
       const payload: any = {
+
         type: activationForm.type,
+
         exam_identifier: activationForm.exam_identifier || null,
+
         subject_id: activationForm.subject_id || null,
+
         account_role: activationForm.account_role || null,
+
         currency: activationForm.currency,
+
         amount: Number(activationForm.amount)
+
       }
+
       if (activationForm.id) payload.id = activationForm.id
+
       await axios.post(`${API_BASE}/payments/admin/activation-fees/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+
       setActivationMessage({ type: 'success', text: activationForm.id ? 'Activation fee updated' : 'Activation fee created' })
+
       setShowActivationForm(false)
+
       setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '', activation_tutor_amount: '', activation_institution_amount: '' })
+
       loadActivationFees()
+
       setTimeout(() => setActivationMessage(null), 3000)
+
     } catch (err: any) {
+
       console.error('Failed to save activation fee', err)
+
       setActivationMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to save activation fee' })
+
     }
+
   }
+
+
 
   async function deleteActivationFee(id: number) {
+
     if (!confirm('Delete this activation fee?')) return
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.delete(`${API_BASE}/payments/admin/activation-fees/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+
       setActivationMessage({ type: 'success', text: 'Activation fee deleted' })
+
       loadActivationFees()
+
       setTimeout(() => setActivationMessage(null), 3000)
+
     } catch (err) {
+
       console.error('Failed to delete activation fee', err)
+
       setActivationMessage({ type: 'error', text: 'Failed to delete activation fee' })
+
     }
+
   }
+
+
 
   async function loadBlogCategories() {
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/blog/categories/`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+
       setBlogCategories(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []))
+
     } catch (e) {}
+
   }
+
+
 
   async function handleCreateCategory() {
+
     if (!newCategoryName.trim()) return
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.post(`${API_BASE}/blog/categories/`, { name: newCategoryName.trim() }, { headers: { Authorization: `Bearer ${token}` } })
+
       setBlogCategories(prev => [...prev, res.data])
+
       setBlogFormData(prev => ({ ...prev, category: res.data.id }))
+
       setNewCategoryName('')
+
       setShowAddCategoryInput(false)
+
       setBlogMessage({ type: 'success', text: 'Category created and selected!' })
+
       setTimeout(() => setBlogMessage(null), 3000)
+
     } catch (err: any) {
+
       alert(err?.response?.data?.detail || 'Failed to create category')
+
     }
+
   }
 
+
+
   async function loadBlogs(page = 1) {
+
     setBlogsLoading(true)
+
     loadBlogCategories()
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/blog/?page=${page}`, { headers: { Authorization: `Bearer ${token}` } })
+
       const data = res.data.results || res.data
+
       const items = Array.isArray(data) ? data : []
+
       setBlogs(items)
+
       setBlogPage(page)
+
       setBlogPageInfo({
+
         count: res.data.count || items.length || 0,
+
         next: res.data.next || null,
+
         previous: res.data.previous || null,
+
         current: page
+
       })
+
     } catch (err) { 
+
       console.error(err)
+
       setBlogs([])
+
       setBlogPageInfo({count: 0, next: null, previous: null, current: page})
+
     } finally {
+
       setBlogsLoading(false)
+
     }
+
   }
+
+
+
 
 
   // --- Promos loader / CRUD ---
+
   async function loadPromos() {
+
     setPromosLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/promos/promocodes/`, { headers: { Authorization: `Bearer ${token}` } })
+
       const data = res.data.results || res.data
+
       setPromos(Array.isArray(data) ? data : [])
+
     } catch (err) {
+
       console.error('Failed to load promos', err)
+
       setPromos([])
+
     } finally {
+
       setPromosLoading(false)
+
     }
+
   }
+
+
 
   async function savePromo() {
+
     setPromosLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const headers: any = { Authorization: `Bearer ${token}` }
+
       const payload: any = {
+
         code: promoFormData.code || undefined,
+
         amount: promoFormData.amount,
+
         is_percentage: promoFormData.is_percentage,
+
         max_uses: promoFormData.max_uses || undefined,
+
         // convert local datetime-local value to UTC ISO for backend
+
         expires_at: promoFormData.expires_at ? new Date(promoFormData.expires_at).toISOString() : undefined,
+
         // If admin selected a specific exam, encode as `exam:<id>` so backend can match activation exam ids
+
         applicable_to: (promoFormData.applicable_to === 'exam' && promoFormData.applicable_id) ? `exam:${promoFormData.applicable_id}` : (promoFormData.applicable_to || 'all'),
+
         active: promoFormData.active,
+
       }
+
       let res
+
       if (editingPromo) {
+
         res = await axios.patch(`${API_BASE}/promos/promocodes/${editingPromo.id}/`, payload, { headers })
+
       } else {
+
         res = await axios.post(`${API_BASE}/promos/promocodes/`, payload, { headers })
+
       }
+
       setShowPromoForm(false)
+
       setEditingPromo(null)
+
       setPromoFormData({code: '', amount: '', is_percentage: false, max_uses: '', expires_at: '', applicable_to: 'all', applicable_id: '', active: true})
+
       loadPromos()
+
     } catch (err) {
+
       console.error('Failed to save promo', err)
+
     } finally {
+
       setPromosLoading(false)
+
     }
+
   }
+
+
 
   async function deletePromo(id: number) {
+
     if (!confirm('Delete this promo code?')) return
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.delete(`${API_BASE}/promos/promocodes/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+
       loadPromos()
+
     } catch (err) {
+
       console.error('Failed to delete promo', err)
+
     }
+
   }
 
+
+
   async function saveBlog() {
+
     if (!blogFormData.title.trim() || !blogFormData.content.trim()) {
+
       setBlogMessage({ type: 'error', text: 'Title and content are required' })
+
       return
+
     }
+
     setSavingBlog(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       let headers: any = { Authorization: `Bearer ${token}` }
+
       let res
+
         // If user did not change excerpt (left it equal to original), clear it
+
         // so frontend/public list will build an excerpt from updated content.
+
         const originalExcerpt = editingBlog ? (editingBlog.excerpt || '') : ''
+
         let excerptToSend = blogFormData.excerpt || ''
+
         if (editingBlog && excerptToSend.trim() === originalExcerpt.trim()) {
+
           excerptToSend = ''
+
         }
 
+
+
         if (blogFormData.image instanceof File) {
+
         const fd = new FormData()
+
         fd.append('title', blogFormData.title)
+
         fd.append('content', blogFormData.content)
+
         fd.append('excerpt', excerptToSend)
+
         fd.append('image_description', blogFormData.image_description || '')
+
         if (blogFormData.category) fd.append('category', String(blogFormData.category))
+
         fd.append('meta_title', blogFormData.meta_title || '')
+
         fd.append('meta_description', blogFormData.meta_description || '')
+
         fd.append('meta_keywords', blogFormData.meta_keywords || '')
+
         fd.append('is_featured', String(!!blogFormData.is_featured))
+
         fd.append('is_trending', String(!!blogFormData.is_trending))
+
         fd.append('is_popular', String(!!blogFormData.is_popular))
+        fd.append('ad_display_location', blogFormData.ad_display_location || 'bottom')
+        if (blogFormData.selected_ad) {
+          fd.append('selected_ad', String(blogFormData.selected_ad))
+        } else {
+          fd.append('selected_ad', '')
+        }
+
         fd.append('image_file', blogFormData.image)
+
         if (editingBlog) {
+
           res = await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, fd, { headers })
+
         } else {
+
           res = await axios.post(`${API_BASE}/blog/`, fd, { headers })
+
         }
+
         } else {
+
         const payload: any = {
+
           title: blogFormData.title,
+
           content: blogFormData.content,
+
           image: typeof blogFormData.image === 'string' ? blogFormData.image : undefined,
+
           excerpt: excerptToSend,
+
           image_description: blogFormData.image_description || '',
+
           meta_title: blogFormData.meta_title || '',
+
           meta_description: blogFormData.meta_description || '',
+
           meta_keywords: blogFormData.meta_keywords || '',
+
           is_featured: !!blogFormData.is_featured,
+
           is_trending: !!blogFormData.is_trending,
-          is_popular: !!blogFormData.is_popular
+
+          is_popular: !!blogFormData.is_popular,
+          ad_display_location: blogFormData.ad_display_location || 'bottom',
+          selected_ad: blogFormData.selected_ad ? Number(blogFormData.selected_ad) : null
         }
+
         if (blogFormData.category) payload.category = blogFormData.category
+
         if (editingBlog) {
+
           res = await axios.patch(`${API_BASE}/blog/${editingBlog.id}/`, payload, { headers })
+
         } else {
+
           res = await axios.post(`${API_BASE}/blog/`, payload, { headers })
+
         }
+
       }
+
+
+
 
 
       // Success: close modal, reset form and reload list
+
       setShowBlogForm(false)
+
       setBlogFormData({title: '', content: '', image: null, excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: '', is_featured: false, is_trending: false, is_popular: false})
+
       setEditingBlog(null)
+
       // Clear any saved draft for this post
+
       try {
+
         const key = draftKey(editingBlog?.id ?? null);
+
         localStorage.removeItem(key);
+
       } catch (e) {}
+
       loadBlogs(blogPage)
+
       setBlogMessage({ type: 'success', text: editingBlog ? 'Blog updated' : 'Blog created' })
+
       setTimeout(() => setBlogMessage(null), 3000)
+
     } catch (err) {
+
       console.error(err)
+
       setBlogMessage({ type: 'error', text: 'Failed to save blog' })
+
       setTimeout(() => setBlogMessage(null), 4000)
+
     } finally {
+
       setSavingBlog(false)
+
     }
+
   }
+
+
 
   async function publishBlog(blogId: number) {
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.post(`${API_BASE}/blog/${blogId}/publish/`, {}, { headers: { Authorization: `Bearer ${token}` } })
+
       loadBlogs(blogPage)
+
     } catch (err) {
+
       console.error(err)
+
       setBlogMessage({ type: 'error', text: 'Failed to publish blog' })
+
       setTimeout(() => setBlogMessage(null), 4000)
+
     }
+
   }
+
+
 
   async function deleteBlog(blogId: number) {
+
     if (!confirm('Delete this blog post?')) return
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.delete(`${API_BASE}/blog/${blogId}/`, { headers: { Authorization: `Bearer ${token}` } })
+
       loadBlogs(blogPage)
+
     } catch (err) {
+
       console.error(err)
+
       setBlogMessage({ type: 'error', text: 'Failed to delete blog' })
+
       setTimeout(() => setBlogMessage(null), 4000)
+
     }
+
   }
+
+
 
   async function loadAds() {
+
     setAdsLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/blog/ads/`, {
+
         headers: token ? { Authorization: `Bearer ${token}` } : {}
+
       })
+
       setBlogAds(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []))
+
     } catch (e) {
+
       console.error('Failed to load ads', e)
+
     } finally {
+
       setAdsLoading(false)
+
     }
+
   }
+
+
 
   async function saveAd() {
+
     if (!adFormData.title.trim() || !adFormData.button_link.trim()) {
+
       setAdMessage({ type: 'error', text: 'Title and link are required' })
+
       return
+
     }
+
     setSavingAd(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       let headers: any = { Authorization: `Bearer ${token}` }
+
       let res
+
+
 
       if (adFormData.image instanceof File) {
+
         const fd = new FormData()
+
         fd.append('title', adFormData.title)
+
         fd.append('description', adFormData.description || '')
+
         fd.append('badge_text', adFormData.badge_text || '')
+
         fd.append('bullets', adFormData.bullets || '')
+
         fd.append('button_text', adFormData.button_text || '')
+
         fd.append('button_link', adFormData.button_link || '')
+
         fd.append('is_active', String(adFormData.is_active))
+
         fd.append('image_file', adFormData.image)
 
+
+
         headers['Content-Type'] = 'multipart/form-data'
+
         if (editingAd) {
+
           res = await axios.patch(`${API_BASE}/blog/ads/${editingAd.id}/`, fd, { headers })
+
         } else {
+
           res = await axios.post(`${API_BASE}/blog/ads/`, fd, { headers })
+
         }
+
       } else {
+
         const payload = {
+
           title: adFormData.title,
+
           description: adFormData.description || '',
+
           badge_text: adFormData.badge_text || '',
+
           bullets: adFormData.bullets || '',
+
           button_text: adFormData.button_text || '',
+
           button_link: adFormData.button_link || '',
+
           is_active: adFormData.is_active,
+
           image: typeof adFormData.image === 'string' ? adFormData.image : ''
+
         }
+
         if (editingAd) {
+
           res = await axios.patch(`${API_BASE}/blog/ads/${editingAd.id}/`, payload, { headers })
+
         } else {
+
           res = await axios.post(`${API_BASE}/blog/ads/`, payload, { headers })
+
         }
+
       }
+
+
 
       setShowAdForm(false)
+
       setAdFormData({
+
         title: '',
+
         description: '',
+
         badge_text: '',
+
         bullets: '',
+
         button_text: 'Download Free',
+
         button_link: '',
+
         image: null,
+
         is_active: true
+
       })
+
       setEditingAd(null)
+
       loadAds()
+
       setAdMessage({ type: 'success', text: editingAd ? 'Ad updated' : 'Ad created' })
+
       setTimeout(() => setAdMessage(null), 3000)
+
     } catch (err: any) {
+
       console.error(err)
+
       setAdMessage({ type: 'error', text: 'Failed to save ad banner' })
+
       setTimeout(() => setAdMessage(null), 4000)
+
     } finally {
+
       setSavingAd(false)
+
     }
+
   }
+
+
 
   // User Profile - Courses & Modules Functions
+
   async function loadUserCourses(userId: number, userRole: string) {
+
     // Only load courses for tutors or institutions
+
     if (!['tutor', 'institution'].includes(userRole)) {
+
       setUserCourses([])
+
       setSelectedUserCourse(null)
+
       return
+
     }
+
     
+
     setLoadingUserCourses(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/courses/?author=${userId}`, { headers: { Authorization: `Bearer ${token}` } })
+
       const courses = res.data.results || res.data || []
+
       setUserCourses(Array.isArray(courses) ? courses : [])
+
       setSelectedUserCourse(null)
+
       setUserCourseModules([])
+
     } catch (err) {
+
       console.error('Failed to load user courses:', err)
+
       setUserCourses([])
+
     } finally {
+
       setLoadingUserCourses(false)
+
     }
+
   }
+
+
 
   async function loadCourseModules(courseId: number) {
+
     setLoadingModules(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/courses/${courseId}/modules/`, { headers: { Authorization: `Bearer ${token}` } })
+
       const modules = res.data.results || res.data || []
+
       setUserCourseModules(Array.isArray(modules) ? modules : [])
+
     } catch (err) {
+
       console.error('Failed to load course modules:', err)
+
       setUserCourseModules([])
+
     } finally {
+
       setLoadingModules(false)
+
     }
+
   }
+
+
 
   // Gospel Video Functions
+
   async function loadGospels() {
+
     setGospelLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/gospel-videos/`, { headers: { Authorization: `Bearer ${token}` } })
+
       const data = res.data.results || res.data
+
       setGospelVideos(Array.isArray(data) ? data : [])
+
     } catch (err) {
+
       console.error('Failed to load gospel videos:', err)
+
       setGospelVideos([])
+
     } finally {
+
       setGospelLoading(false)
+
     }
+
   }
+
+
 
   async function saveGospel() {
+
     if (!gospelFormData.youtube_url.trim()) {
+
       setGospelMessage({ type: 'error', text: 'YouTube URL is required' })
+
       return
+
     }
+
+
 
     setGospelLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const payload = {
+
         youtube_url: gospelFormData.youtube_url,
+
         scheduled_time: gospelFormData.scheduled_time,
+
         title: gospelFormData.title,
+
         description: gospelFormData.description,
+
         is_active: gospelFormData.is_active
+
       }
+
+
 
       let res
+
       if (editingGospel) {
+
         res = await axios.patch(`${API_BASE}/gospel-videos/${editingGospel.id}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+
         setGospelMessage({ type: 'success', text: 'Gospel video updated successfully' })
+
         // Update local list immediately if present
+
         setGospelVideos(prev => prev.map(g => g.id === res.data.id ? res.data : g))
+
       } else {
+
         res = await axios.post(`${API_BASE}/gospel-videos/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+
         setGospelMessage({ type: 'success', text: 'Gospel video created successfully' })
+
         // Prepend new gospel to local list
+
         setGospelVideos(prev => [res.data, ...prev])
+
       }
 
+
+
       setShowGospelForm(false)
+
       setGospelFormData({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
+
       setEditingGospel(null)
+
       // Ensure server list sync as well
+
       try { await loadGospels() } catch (e) { /* ignore */ }
+
       setTimeout(() => setGospelMessage(null), 3000)
+
     } catch (err: any) {
+
       console.error('Failed to save gospel video:', err)
+
       const detail = err.response?.data || err.message || 'Failed to save gospel video'
+
       setGospelMessage({ type: 'error', text: typeof detail === 'string' ? detail : JSON.stringify(detail) })
+
     } finally {
+
       setGospelLoading(false)
+
     }
+
   }
+
+
 
   async function deleteGospel(gospelId: number) {
+
     if (!confirm('Delete this gospel video?')) return
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.delete(`${API_BASE}/gospel-videos/${gospelId}/`, { headers: { Authorization: `Bearer ${token}` } })
+
       setGospelMessage({ type: 'success', text: 'Gospel video deleted successfully' })
+
       loadGospels()
+
       setTimeout(() => setGospelMessage(null), 3000)
+
     } catch (err: any) {
+
       console.error('Failed to delete gospel video:', err)
+
       setGospelMessage({ type: 'error', text: 'Failed to delete gospel video' })
+
     }
+
   }
+
+
 
   async function updateProfile() {
+
     setSettingsSaving(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.put(`${API_BASE}/users/profile-update/`, {
+
         first_name: settingsData.firstName,
+
         last_name: settingsData.lastName,
+
         email: settingsData.email
+
       }, { headers: { Authorization: `Bearer ${token}` } })
+
       setSettingsMessage({ type: 'success', text: 'Profile updated successfully' })
+
       setTimeout(() => setSettingsMessage(null), 3000)
+
     } catch (err: any) {
+
       setSettingsMessage({ type: 'error', text: err.response?.data?.error || 'Failed to update profile' })
+
     } finally {
+
       setSettingsSaving(false)
+
     }
+
   }
 
+
+
   async function changePassword() {
+
     if (passwordData.new_password !== passwordData.confirm_password) {
+
       setSettingsMessage({ type: 'error', text: 'Passwords do not match' })
+
       return
+
     }
+
     if (passwordData.new_password.length < 8) {
+
       setSettingsMessage({ type: 'error', text: 'Password must be at least 8 characters' })
+
       return
+
     }
+
     setSettingsSaving(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.post(`${API_BASE}/users/change-password/`, {
+
         old_password: passwordData.old_password,
+
         new_password: passwordData.new_password,
+
         confirm_password: passwordData.confirm_password
+
       }, { headers: { Authorization: `Bearer ${token}` } })
+
       setSettingsMessage({ type: 'success', text: 'Password changed successfully' })
+
       setPasswordData({ old_password: '', new_password: '', confirm_password: '' })
+
       setTimeout(() => setSettingsMessage(null), 3000)
+
     } catch (err: any) {
+
       setSettingsMessage({ type: 'error', text: err.response?.data?.error || 'Failed to change password' })
+
     } finally {
+
       setSettingsSaving(false)
+
     }
+
   }
+
+
 
   // --- Exam & Subject Management Functions ---
 
+
+
   async function loadExamsManagement() {
+
     setExamManagementLoading(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/cbt/exams/`, { headers: { Authorization: `Bearer ${token}` } })
+
       const data = res.data.results || res.data
+
       setExamsManagement(Array.isArray(data) ? data : [])
+
     } catch (err) {
+
       console.error('Failed to load exams:', err)
+
       setExamsManagement([])
+
     } finally {
+
       setExamManagementLoading(false)
+
     }
+
   }
+
+
 
   async function createOrUpdateExam() {
+
     if (!examFormData.title.trim()) {
+
       setExamMessage({ type: 'error', text: 'Exam title is required' })
+
       return
+
     }
+
     setSavingExam(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const payload = {
+
         title: examFormData.title,
+
         description: examFormData.description,
+
         time_limit_minutes: parseInt(examFormData.time_limit_minutes.toString()) || 120,
+
         slug: examFormData.slug || examFormData.title.toLowerCase().replace(/\s+/g, '-'),
+
         free_trial_attempts: parseInt((examFormData as any).free_trial_attempts?.toString()) ?? 5,
+
         free_trial_questions_per_subject: parseInt((examFormData as any).free_trial_questions_per_subject?.toString()) ?? 20,
+
         subject_select_limit: parseInt((examFormData as any).subject_select_limit?.toString()) || 0
+
       }
+
+
 
       if (editingExam) {
+
         await axios.put(`${API_BASE}/cbt/exams/${editingExam.id}/`, payload, {
+
           headers: { Authorization: `Bearer ${token}` }
+
         })
+
         setExamMessage({ type: 'success', text: 'Exam updated successfully' })
+
       } else {
+
         await axios.post(`${API_BASE}/cbt/exams/`, payload, {
+
           headers: { Authorization: `Bearer ${token}` }
+
         })
+
         setExamMessage({ type: 'success', text: 'Exam created successfully' })
+
       }
+
+
 
       setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20, subject_select_limit: 0 })
+
       setEditingExam(null)
+
       setShowExamForm(false)
+
       loadExamsManagement()
+
       setTimeout(() => setExamMessage(null), 3000)
+
     } catch (err: any) {
+
       console.error('Failed to save exam:', err)
+
       setExamMessage({ type: 'error', text: err.response?.data?.title?.[0] || 'Failed to save exam' })
+
     } finally {
+
       setSavingExam(false)
+
     }
+
   }
+
+
 
   async function deleteExam(examId: number) {
+
     if (!confirm('Are you sure you want to delete this exam? All subjects and questions will be removed.')) return
+
     try {
+
       const token = localStorage.getItem('access')
+
       await axios.delete(`${API_BASE}/cbt/exams/${examId}/`, {
+
         headers: { Authorization: `Bearer ${token}` }
+
       })
+
       setExamMessage({ type: 'success', text: 'Exam deleted successfully' })
+
       loadExamsManagement()
+
       setTimeout(() => setExamMessage(null), 3000)
+
     } catch (err) {
+
       console.error('Failed to delete exam:', err)
+
       setExamMessage({ type: 'error', text: 'Failed to delete exam' })
+
     }
+
   }
+
+
 
   async function loadSubjectsForExam(examId: number) {
+
     try {
+
       const token = localStorage.getItem('access')
+
       const res = await axios.get(`${API_BASE}/cbt/exams/${examId}/subjects/`, {
+
         headers: { Authorization: `Bearer ${token}` }
+
       })
+
       setSubjectList(Array.isArray(res.data) ? res.data : res.data.results || [])
+
     } catch (err) {
+
       console.error('Failed to load subjects:', err)
+
       setSubjectList([])
+
     }
+
   }
+
+
 
   async function createOrUpdateSubject() {
+
     if (!subjectFormData.exam || !subjectFormData.name.trim()) {
+
       setExamMessage({ type: 'error', text: 'Exam and subject name are required' })
+
       return
+
     }
+
     setSavingSubject(true)
+
     try {
+
       const token = localStorage.getItem('access')
+
       const payload = {
+
         exam: parseInt(subjectFormData.exam),
+
         name: subjectFormData.name,
+
         description: subjectFormData.description
+
       }
+
+
 
       if (editingSubject) {
+
         await axios.put(`${API_BASE}/cbt/subjects/${editingSubject.id}/`, payload, {
+
           headers: { Authorization: `Bearer ${token}` }
+
         })
+
         setExamMessage({ type: 'success', text: 'Subject updated successfully' })
+
       } else {
+
         await axios.post(`${API_BASE}/cbt/subjects/`, payload, {
+
           headers: { Authorization: `Bearer ${token}` }
+
         })
+
         setExamMessage({ type: 'success', text: 'Subject created successfully' })
+
       }
+
+
 
       setSubjectFormData({ exam: '', name: '', description: '' })
+
       setEditingSubject(null)
+
       setShowSubjectForm(false)
+
       // Reload subjects for the current exam
+
       if (selectedExamForSubjects) {
+
           loadSubjectsForExam(selectedExamForSubjects.id)
+
       }
+
     } catch (err: any) {
+
         console.error('Failed to save subject', err)
+
         setExamMessage({ type: 'error', text: 'Failed to save subject' })
+
     } finally {
+
         setSavingSubject(false)
+
     }
+
   }
+
+
 
   async function deleteSubject(subjectId: number) {
+
       if(!confirm("Are you sure you want to delete this subject?")) return
+
       try {
+
           const token = localStorage.getItem('access')
+
           await axios.delete(`${API_BASE}/cbt/subjects/${subjectId}/`, {
+
               headers: { Authorization: `Bearer ${token}` }
+
           })
+
           setExamMessage({ type: 'success', text: 'Subject deleted' })
+
           if (selectedExamForSubjects) {
+
               loadSubjectsForExam(selectedExamForSubjects.id)
+
           }
+
       } catch (err) {
+
           console.error("Failed to delete subject", err)
+
           setExamMessage({ type: 'error', text: 'Failed to delete subject' })
+
       }
+
   }
+
+
 
   const handleLogout = () => {
+
       localStorage.removeItem('access')
+
       localStorage.removeItem('refresh')
+
       navigate('/login')
+
   }
+
+
 
   const confirmDeleteUser = async () => {
+
       if (!deleteConfirmation.userId) return
+
       try {
+
           const token = localStorage.getItem('access')
+
           await axios.delete(`${API_BASE}/admin/users/${deleteConfirmation.userId}/`, {
+
               headers: { Authorization: `Bearer ${token}` }
+
           })
+
           setUsersMessage({type: 'success', text: 'User deleted successfully'})
+
           setDeleteConfirmation({open: false, userId: null, userName: ''})
+
           loadUsers(pageInfo.current)
+
       } catch (err: any) {
+
           console.error("Failed to delete user", err)
+
           setUsersMessage({type: 'error', text: 'Failed to delete user'})
+
       }
+
   }
+
+
 
   const submitBulk = async () => {
+
       if (!bulkData.trim() || !selectedExam || !selectedSubject) {
+
           setBulkMessage({type: 'error', text: 'Please fill all fields'})
+
           return
+
       }
+
       try {
+
           const parsed = JSON.parse(bulkData)
+
           if (!Array.isArray(parsed)) throw new Error("Data is not an array")
+
           
+
           const token = localStorage.getItem('access')
+
           // Using a hypothetical endpoint for JSON array upload or iterating
+
           // Adapting to single create or batch create if available
+
           // Assuming backend accepts a list at a bulk endpoint
+
                 const res = await axios.post(`${API_BASE}/cbt/bulk-upload/`, { // backend exposes /api/cbt/bulk-upload/
+
                   exam_id: selectedExam,
+
                   subject: selectedSubject,
+
                   questions: parsed
+
                 }, {
+
                   headers: { Authorization: `Bearer ${token}` }
+
                 })
 
+
+
                 const createdCount = res?.data?.success ?? null
+
                 if (createdCount !== null && !isNaN(createdCount)) {
+
                 setBulkMessage({ type: 'success', text: `Success! Created ${createdCount} questions.` })
+
                 } else {
+
                 setBulkMessage({ type: 'success', text: 'Questions uploaded successfully' })
+
                 }
+
                 setBulkData('')
+
                 setTimeout(() => setBulkMessage(null), 5000)
+
       } catch (err: any) {
+
           console.error('Bulk upload failed', err)
+
                 // Try to get server error detail
+
                 const msg = err?.response?.data?.detail || err?.response?.data || 'Invalid JSON or Server Error'
+
                 setBulkMessage({type: 'error', text: typeof msg === 'string' ? msg : 'Invalid JSON or Server Error'})
+
       }
+
   }
+
+
 
   const getRoleIcon = (role: string) => {
+
     switch(role) {
+
       case 'student': return <GraduationCap className="w-4 h-4" />
+
       case 'tutor': return <UserCog className="w-4 h-4" />
+
       case 'institution': return <Building2 className="w-4 h-4" />
+
       case 'researcher': return <Briefcase className="w-4 h-4" />
+
       case 'admin': return <Shield className="w-4 h-4" />
+
       default: return <User className="w-4 h-4" />
+
     }
+
   }
+
+
 
   const getRoleColor = (role: string) => {
+
     switch(role) {
+
       case 'student': return 'bg-yellow-100 text-yellow-800'
+
       case 'tutor': return 'bg-yellow-100 text-yellow-800'
+
       case 'institution': return 'bg-yellow-100 text-yellow-800'
+
       case 'researcher': return 'bg-amber-100 text-amber-800'
+
       case 'admin': return 'bg-red-100 text-red-800'
+
       default: return 'bg-gray-100 text-gray-800'
+
     }
+
   }
 
+
+
   if (loadingSummary) return (
+
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-yellow-50 flex items-center justify-center">
+
       <div className="text-center">
+
         <Loader2 className="w-12 h-12 text-yellow-600 animate-spin mx-auto mb-4" />
+
         <p className="text-gray-600">Loading admin dashboard...</p>
+
       </div>
+
     </div>
+
   )
+
     
+
   if (!summary) return (
+
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-yellow-50 flex items-center justify-center">
+
       <div className="text-center">
+
         <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to load dashboard</h2>
+
         <p className="text-gray-600">Please try refreshing the page or contact support</p>
+
       </div>
+
     </div>
+
   )
+
+
 
   return (
+
     <ThemeProvider theme={theme}>
+
       <CssBaseline />
+
       {/* Scoped dark-mode & scrollbar styles to improve contrast and replace the local, heavy scrollbar */}
+
       <style>{`
+
         .dashboard-root { scrollbar-width: thin; }
+
         .dashboard-root ::-webkit-scrollbar { width: 10px; height: 10px; }
+
         .dashboard-root ::-webkit-scrollbar-track { background: transparent; }
+
         .dashboard-root ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 9999px; border: 2px solid transparent; background-clip: padding-box; }
+
         .dashboard-root ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.18); }
+
         .dashboard-root.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); }
+
         .dashboard-root.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
         .dashboard-root.dark { scrollbar-color: rgba(255,255,255,0.10) transparent; }
 
+
+
         .dashboard-root.dark .bg-white { background-color: #0f1724 !important; }
+
         .dashboard-root.dark .bg-gray-50 { background-color: #071028 !important; }
+
         .dashboard-root.dark .bg-gray-100 { background-color: #1e293b !important; color: #e2e8f0 !important; }
+
         .dashboard-root.dark .bg-gray-200 { background-color: #334155 !important; color: #f1f5f9 !important; }
+
         .dashboard-root.dark .bg-gray-300 { background-color: #475569 !important; color: #f8fafc !important; }
+
         .dashboard-root.dark .bg-yellow-50 { background-color: #0f1724 !important; }
+
         .dashboard-root.dark .text-gray-900, .dashboard-root.dark .text-gray-800 { color: #e6eef8 !important; }
+
         .dashboard-root.dark .text-gray-700, .dashboard-root.dark .text-gray-600, .dashboard-root.dark .text-gray-500 { color: #9ca3af !important; }
+
         .dashboard-root.dark .border-gray-200, .dashboard-root.dark .border-gray-100, .dashboard-root.dark .border-gray-300 { border-color: #1f2a3a !important; }
+
         .dashboard-root.dark .shadow-lg { box-shadow: 0 6px 18px rgba(2,6,23,0.6) !important; }
+
         .dashboard-root.dark .bg-yellow-100 { background-color: #1b2a3a !important; color: #f8fafc !important; }
+
         .dashboard-root.dark .bg-yellow-500 { background-color: #b45309 !important; }
+
         .dashboard-root.dark input, .dashboard-root.dark select, .dashboard-root.dark textarea { background-color: #071026 !important; color: #e6eef8 !important; border-color: #1f2a3a !important; }
+
         .dashboard-root.dark button.bg-white, .dashboard-root.dark a.bg-white { background-color: #1e293b !important; color: #f1f5f9 !important; border-color: #334155 !important; }
+
         .dashboard-root.dark button.bg-white:hover, .dashboard-root.dark a.bg-white:hover { background-color: #334155 !important; }
+
         .dashboard-root.dark button.bg-gray-100, .dashboard-root.dark a.bg-gray-100 { background-color: #1e293b !important; color: #e2e8f0 !important; border-color: #334155 !important; }
+
         .dashboard-root.dark button.bg-gray-100:hover, .dashboard-root.dark a.bg-gray-100:hover { background-color: #334155 !important; color: #f8fafc !important; }
+
         .dashboard-root.dark button.bg-gray-200, .dashboard-root.dark a.bg-gray-200 { background-color: #334155 !important; color: #f8fafc !important; }
+
         .dashboard-root.dark button.border:not([class*="bg-yellow-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-blue-"]) { border-color: #334155 !important; color: #e2e8f0 !important; background-color: #1e293b !important; }
+
         .dashboard-root.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; color: #f8fafc !important; }
+
         .dashboard-root.dark .hover\:bg-gray-50:hover { background-color: #1e293b !important; }
+
         .dashboard-root.dark .hover\:bg-gray-200:hover { background-color: #475569 !important; }
+
       `}</style>
+
       <div className={`dashboard-root min-h-screen ${darkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-gradient-to-br from-gray-50 to-yellow-50 text-gray-900'}`}>
+
       {/* Header */}
+
       <motion.header 
+
         initial={{ y: -20, opacity: 0 }}
+
         animate={{ y: 0, opacity: 1 }}
+
         className={`sticky top-0 z-40 ${darkMode ? 'bg-slate-900/80 border-b border-slate-700 text-slate-100' : 'bg-white/80 backdrop-blur-md border-b border-gray-200'}`}
+
       >
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
           <div className="flex items-center justify-between h-16">
+
             <div className="flex items-center space-x-3">
+
               <img src={labanonLogo} alt="LightHub Academy logo" width={32} height={32} className="w-8 h-8 object-contain" />
+
                 <div>
+
                 <h1 className={`text-lg font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+
                   {subadminPermissions ? 'Sub-Admin Dashboard' : 'Master Admin Dashboard'}
+
                 </h1>
+
               </div>
+
             </div>
+
+
 
               <div className="flex items-center space-x-4">
+
                 <div className="hidden md:flex items-center space-x-3">
+
                 <div
+
                   className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer overflow-hidden shadow-sm"
+
                   onClick={() => setTab('profile')}
+
                   title="View Profile"
+
                 >
+
                   {summary?.profile_image ? (
+
                     <img
+
                       src={resolveImageUrl(summary.profile_image)}
+
                       alt={summary.username || 'Admin'}
+
                       className="w-full h-full object-cover"
+
                       onError={(e) => handleImageError(e, DEFAULT_AVATAR_FALLBACK)}
+
                     />
+
                   ) : (
+
                     summary?.username?.charAt(0).toUpperCase() || 'A'
+
                   )}
+
                 </div>
+
                 <div className="cursor-pointer" onClick={() => setTab('profile')} title="View Profile">
+
                   <p className={`text-sm font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</p>
+
                   <p className={`text-xs ${darkMode ? 'text-slate-300' : 'text-gray-500'}`}>
+
                     {subadminPermissions ? 'Restricted Access' : 'Master Administrator'}
+
                   </p>
+
                 </div>
+
               </div>
+
               <button
+
                 onClick={() => setSidebarOpen(!sidebarOpen)}
+
                 className={`p-2 rounded-lg lg:hidden transition-colors ${darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'}`}
+
                 title="Toggle menu"
+
               >
+
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+
               </button>
 
+
+
               {/* Theme toggle (Material UI Switch) */}
+
               <div className="flex items-center mr-2">
+
                 <Switch checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)} color="default" />
+
               </div>
+
               {/* logout button removed from header (moved to sidebar) */}
+
             </div>
+
           </div>
+
         </div>
 
+
+
               
+
       </motion.header>
 
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <div className="flex flex-col lg:flex-row gap-6 relative w-full">
+
+
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 min-h-[calc(100vh-5rem)]">
+
+        <div className="flex flex-col lg:flex-row gap-6 relative w-full items-start">
+
           {/* Sidebar Backdrop for mobile */}
+
           {sidebarOpen && (
+
             <div
+
               className="fixed inset-0 bg-black/50 lg:hidden z-30"
+
               onClick={() => setSidebarOpen(false)}
+
             />
+
           )}
 
+
+
           {/* Sidebar */}
+
           <motion.aside
+
             initial={{ x: -20, opacity: 0 }}
+
             animate={{ x: 0, opacity: 1 }}
+
             className={`${
+
               sidebarOpen ? 'fixed left-0 top-16 bottom-0 w-64 z-40' : 'hidden'
-            } lg:static lg:block lg:w-64 lg:flex-shrink-0 h-fit lg:h-auto`}
+
+            } lg:static lg:flex lg:flex-col lg:w-64 lg:flex-shrink-0 lg:self-stretch`}
+
           >
-            <div className={`${darkMode ? 'bg-slate-800 text-slate-100' : 'bg-white'} rounded-2xl shadow-lg p-6 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto overflow-x-hidden box-border`}>
-              {/* Admin Profile */}
-              <div className="mb-8">
-                <div className="flex items-center space-x-4 mb-4">
-                  <div
-                    className="relative cursor-pointer group"
-                    onClick={() => setTab('profile')}
-                    title="Click to view/edit profile"
-                  >
-                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold overflow-hidden shadow-md">
-                      {summary?.profile_image ? (
-                        <img
-                          src={resolveImageUrl(summary.profile_image)}
-                          alt={summary.username || 'Admin'}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          onError={(e) => handleImageError(e, DEFAULT_AVATAR_FALLBACK)}
-                        />
-                      ) : (
-                        summary?.username?.charAt(0).toUpperCase() || 'A'
-                      )}
+
+            <div className={`${darkMode ? 'bg-slate-800 text-slate-100' : 'bg-white'} rounded-2xl shadow-lg p-5 sticky top-20 min-h-[calc(100vh-6.5rem)] max-h-[calc(100vh-6rem)] flex flex-col justify-between overflow-hidden box-border`}>
+
+              {/* Top part: Profile & Tabs list */}
+
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+
+                {/* Admin Profile */}
+
+                <div className="mb-6 flex-shrink-0">
+
+                  <div className="flex items-center space-x-3 mb-2">
+
+                    <div
+
+                      className="relative cursor-pointer group flex-shrink-0"
+
+                      onClick={() => setTab('profile')}
+
+                      title="Click to view/edit profile"
+
+                    >
+
+                      <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold overflow-hidden shadow-md">
+
+                        {summary?.profile_image ? (
+
+                          <img
+
+                            src={resolveImageUrl(summary.profile_image)}
+
+                            alt={summary.username || 'Admin'}
+
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+
+                            onError={(e) => handleImageError(e, DEFAULT_AVATAR_FALLBACK)}
+
+                          />
+
+                        ) : (
+
+                          summary?.username?.charAt(0).toUpperCase() || 'A'
+
+                        )}
+
+                      </div>
+
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-xs">
+
+                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+
+                      </div>
+
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-xs">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
+
+                    <div className="min-w-0 flex-1">
+
+                      <h3 className={`font-bold truncate text-sm ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</h3>
+
+                      <p className={`text-xs truncate ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+
+                        {subadminPermissions ? 'Sub-Admin' : 'Master Administrator'}
+
+                      </p>
+
+                      <div className="flex items-center mt-0.5 text-[11px]">
+
+                        <Database className="w-3 h-3 text-yellow-500 mr-1 flex-shrink-0" />
+
+                        <span className={`font-medium truncate ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+
+                          {subadminPermissions ? 'Limited Access' : 'Full System Access'}
+
+                        </span>
+
+                      </div>
+
                     </div>
+
                   </div>
-                  <div>
-                    <h3 className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{summary?.username}</h3>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                      {subadminPermissions ? 'Sub-Admin' : 'Master Administrator'}
-                    </p>
-                    <div className="flex items-center mt-1 text-xs">
-                      <Database className="w-3 h-3 text-yellow-500 mr-1" />
-                      <span className={`font-medium ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-                        {subadminPermissions ? 'Limited Access' : 'Full System Access'}
-                      </span>
-                    </div>
-                  </div>
+
                 </div>
+
+
+
+                {/* Navigation */}
+
+                <nav className="space-y-1.5 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+
+                  {tabs.map((item) => (
+
+                    <motion.button
+
+                      key={item.id}
+
+                      whileHover={{ x: 4 }}
+
+                      onClick={() => {
+
+                        setTab(item.id)
+
+                        setSidebarOpen(false)
+
+                      }}
+
+                      className={`flex items-center space-x-3 w-full h-11 px-3.5 py-2 rounded-xl transition-all duration-300 ${
+
+                        tab === item.id
+
+                          ? `${darkMode ? 'bg-slate-700 text-yellow-400 border-l-4 border-yellow-500' : 'bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-600 border-l-4 border-yellow-500'}`
+
+                          : `${darkMode ? 'text-slate-200 hover:bg-slate-700' : 'text-gray-700 hover:bg-gray-50'}`
+
+                      }`}
+
+                    >
+
+                      <div className={`${tab === item.id ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-slate-300' : 'text-gray-500')}`}>
+
+                        {item.icon}
+
+                      </div>
+
+                      <span className="font-medium whitespace-nowrap text-sm">{item.label}</span>
+
+                    </motion.button>
+
+                  ))}
+
+                </nav>
+
               </div>
 
-              {/* Navigation */}
-              <nav className="space-y-2">
-                {tabs.map((item) => (
-                  <motion.button
-                    key={item.id}
-                    whileHover={{ x: 5 }}
-                    onClick={() => {
-                      setTab(item.id)
-                      setSidebarOpen(false)
-                    }}
-                      className={`flex items-center space-x-3 w-full h-12 px-4 py-3 rounded-xl transition-all duration-300 ${
-                      tab === item.id
-                        ? `${darkMode ? 'bg-slate-700 text-yellow-400 border-l-4 border-yellow-500' : 'bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-600 border-l-4 border-yellow-500'}`
-                        : `${darkMode ? 'text-slate-200 hover:bg-slate-700' : 'text-gray-700 hover:bg-gray-50'}`
-                    }`}
-                  >
-                    <div className={`${tab === item.id ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-slate-300' : 'text-gray-500')}`}>
-                      {item.icon}
-                    </div>
-                      <span className="font-medium whitespace-nowrap">{item.label}</span>
-                  </motion.button>
-                ))}
-              </nav>
 
-              {/* System Stats */}
-              <div className="mt-8 pt-8 border-t">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">System Overview</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Total Users</span>
-                    <span className="font-semibold">{pageInfo.count?.toLocaleString() || '0'}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Active Sessions</span>
-                    <span className="font-semibold">{(summary.active_sessions || 142).toLocaleString()}</span>
-                  </div>
-                </div>
+
+              {/* Bottom Actions & Stats */}
+
+              <div className="pt-4 mt-auto border-t border-gray-200 dark:border-slate-700/60 flex-shrink-0">
+
+                {!subadminPermissions && (
+
+                  <>
+
+                    <div className="mb-4">
+
+                      <h4 className={`text-xs font-semibold uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>System Overview</h4>
+
+                      <div className="space-y-2">
+
+                        <div className="flex items-center justify-between text-xs">
+
+                          <span className={darkMode ? 'text-slate-400' : 'text-gray-500'}>Total Users</span>
+
+                          <span className="font-semibold">{pageInfo.count?.toLocaleString() || '0'}</span>
+
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs">
+
+                          <span className={darkMode ? 'text-slate-400' : 'text-gray-500'}>Active Sessions</span>
+
+                          <span className="font-semibold">{(summary?.active_sessions || 142).toLocaleString()}</span>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+
+
+                    <motion.button
+
+                      whileHover={{ scale: 1.02 }}
+
+                      whileTap={{ scale: 0.98 }}
+
+                      onClick={() => setShowSettings(true)}
+
+                      className="mb-2 w-full py-2.5 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl text-sm font-semibold hover:shadow-lg transition-shadow"
+
+                    >
+
+                      <Settings className="w-4 h-4 inline mr-2" />
+
+                      System Settings
+
+                    </motion.button>
+
+                  </>
+
+                )}
+
+
+
+                <motion.button
+
+                  whileHover={{ scale: 1.02 }}
+
+                  whileTap={{ scale: 0.98 }}
+
+                  onClick={handleLogout}
+
+                  className="w-full py-2.5 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+
+                >
+
+                  <LogOut className="w-4 h-4 inline mr-2" />
+
+                  Logout
+
+                </motion.button>
+
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setShowSettings(true)}
-                className="mt-6 w-full py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
-              >
-                <Settings className="w-5 h-5 inline mr-2" />
-                System Settings
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleLogout}
-                className="mt-3 w-full py-3 bg-red-50 text-red-700 rounded-xl font-semibold hover:bg-red-100 transition-colors"
-              >
-                <LogOut className="w-5 h-5 inline mr-2" />
-                Logout
-              </motion.button>
             </div>
+
           </motion.aside>
 
+
+
           {/* Main Content */}
+
           <div className="flex-1">
+
             {/* Welcome Header */}
+
             <motion.div
+
               initial={{ opacity: 0, y: 20 }}
+
               animate={{ opacity: 1, y: 0 }}
+
               className="mb-6"
+
             >
+
               <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+
                 Welcome back, <span className="bg-gradient-to-r from-yellow-600 to-yellow-600 bg-clip-text text-transparent">{summary.username}</span>
+
               </h1>
+
               <p className="text-gray-600 mt-2">
+
                 {subadminPermissions 
+
                   ? 'Accessing authorized modules and configurations.' 
+
                   : 'Manage users, courses, exams, and system configurations'}
+
               </p>
+
             </motion.div>
 
+
+
             {/* Overview Widgets */}
+
             {tab === 'overview' && (
+
               <div className="p-4">
+
                 <div className={darkMode ? 'rounded-xl p-6 bg-slate-800 text-slate-100' : 'rounded-xl p-6 bg-white'}>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+
                     <div
+
                       role="button"
+
                       tabIndex={0}
+
                       onClick={() => { setTab('users'); }}
+
                       onKeyDown={(e) => { if (e.key === 'Enter') setTab('users') }}
+
                       className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-yellow-50'} cursor-pointer hover:shadow-md transition w-full`}
+
                     >
+
                       <div className="text-sm">Total Users</div>
+
                       <div className="text-2xl font-bold">{pageInfo.count?.toLocaleString() || 0}</div>
+
                     </div>
 
+
+
                     <div
+
                       role="button"
+
                       tabIndex={0}
+
                       onClick={() => { setTab('institutions'); }}
+
                       onKeyDown={(e) => { if (e.key === 'Enter') setTab('institutions') }}
+
                       className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
+
                     >
+
                       <div className="text-sm">Institutions</div>
+
                       <div className="text-2xl font-bold">{institutionsCount.toLocaleString() || 0}</div>
+
                     </div>
 
+
+
                     <div
+
                       role="button"
+
                       tabIndex={0}
+
                       onClick={() => { setTab('courses'); }}
+
                       onKeyDown={(e) => { if (e.key === 'Enter') setTab('courses') }}
+
                       className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
+
                     >
+
                       <div className="text-sm">Courses</div>
+
                       <div className="text-2xl font-bold">{courses.length}</div>
+
                     </div>
 
+
+
                     <div
+
                       role="button"
+
                       tabIndex={0}
+
                       onClick={() => { setTab('payments'); }}
+
                       onKeyDown={(e) => { if (e.key === 'Enter') setTab('payments') }}
+
                       className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
+
                     >
+
                       <div className="text-sm">Revenue</div>
+
                       <div className="text-2xl font-bold">{paymentStats?.total_revenue ? new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats.total_revenue) : '₦0'}</div>
+
                     </div>
 
+
+
                     <div
+
                       role="button"
+
                       tabIndex={0}
+
                       onClick={() => { setAnalyticsActivePanel('registrations'); setTab('analytics'); }}
+
                       onKeyDown={(e) => { if (e.key === 'Enter') { setAnalyticsActivePanel('registrations'); setTab('analytics') } }}
+
                       className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
+
                     >
+
                       <div className="text-sm">Registrations (daily)</div>
+
                       <div className="text-2xl font-bold truncate max-w-full">{registrationsLoading ? '...' : (registrations?.daily ?? dailyTotals?.new_registrations ?? 0)}</div>
+
                       <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs mt-1`}>Weekly: {registrations?.weekly ?? '-'} • Monthly: {registrations?.monthly ?? '-'}</div>
+
                       <div className="mt-3 flex gap-2">
+
                         <button onClick={()=>openModal('registrations')} className="px-2 py-1 text-xs bg-yellow-600 text-white rounded">View details</button>
+
                         <button onClick={()=>{ setAnalyticsActivePanel('registrations'); setTab('analytics'); }} className={`px-2 py-1 text-xs border rounded transition-colors ${darkMode ? 'border-slate-600 text-slate-200 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Open in analytics</button>
+
                       </div>
+
                     </div>
 
+
+
                     <div
+
                       role="button"
+
                       tabIndex={0}
+
                       onClick={() => { setAnalyticsActivePanel('downloads'); setTab('analytics'); }}
+
                       onKeyDown={(e) => { if (e.key === 'Enter') { setAnalyticsActivePanel('downloads'); setTab('analytics') } }}
+
                       className={`${darkMode ? 'p-4 rounded-lg bg-slate-700' : 'p-4 rounded-lg bg-white'} cursor-pointer hover:shadow-md transition w-full`}
+
                     >
+
                       <div className="text-sm">Downloads</div>
+
                       <div className="text-2xl font-bold truncate max-w-full">{downloadsLoading ? '...' : (downloads?.total_downloads ?? 0)}</div>
+
                       <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs mt-1`}>Top: {downloads?.top?.[0]?.full_url ? (downloads.top[0].full_url.length > 40 ? downloads.top[0].full_url.slice(0,40)+'...' : downloads.top[0].full_url) : '-'}</div>
+
                       <div className="mt-3 flex gap-2">
+
                         <button onClick={()=>openModal('downloads')} className="px-2 py-1 text-xs bg-yellow-600 text-white rounded">View details</button>
+
                         <button onClick={()=>{ setAnalyticsActivePanel('downloads'); setTab('analytics'); }} className={`px-2 py-1 text-xs border rounded transition-colors ${darkMode ? 'border-slate-600 text-slate-200 hover:bg-slate-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>Open in analytics</button>
+
                       </div>
+
                     </div>
+
                   </div>
+
+
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
                     <div className="lg:col-span-2 bg-white rounded-lg p-4">
+
                       <h4 className="font-semibold mb-2">Recent Signups <span className="text-sm text-gray-500 ml-2">({users.length})</span></h4>
+
                       {users.length === 0 ? (
+
                         <div className="text-gray-500">No recent signups</div>
+
                       ) : (
+
                         <>
+
                         <div className="space-y-2">
+
                           {(showAllSignups ? users : users.slice(0,5)).map((u) => (
+
                             <div key={u.id} className="flex items-center justify-between p-2 border rounded">
+
                               <div className="flex items-center gap-3 min-w-0">
+
                                 <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white flex-shrink-0">{u.username?.charAt(0).toUpperCase()}</div>
+
                                 <div className="min-w-0">
+
                                   <div className="font-medium truncate">{u.username}</div>
+
                                   <div className="text-xs text-gray-500 truncate">{u.email}</div>
+
                                 </div>
+
                               </div>
+
                               <div className="text-sm text-gray-600 flex-shrink-0 ml-4">{u.role}</div>
+
                             </div>
+
                           ))}
+
                         </div>
+
                         {users.length > 5 && (
+
                           <div className="mt-3 flex justify-center">
+
                             <button onClick={() => setShowAllSignups(prev => !prev)} className={`${darkMode ? 'px-4 py-2 text-sm border rounded bg-slate-700 text-slate-100 border-slate-600 hover:bg-slate-600' : 'px-4 py-2 text-sm border rounded hover:bg-gray-50'}`}>
+
                               {showAllSignups ? 'Show less' : `Show more (${users.length - 5} more)`}
+
                             </button>
+
                           </div>
+
                         )}
+
                         </>
+
                       )}
+
                     </div>
+
+
 
                     <div className="bg-white rounded-lg p-4">
+
                       <h4 className="font-semibold mb-3">Top Courses</h4>
+
                       {courses.length === 0 ? (
+
                         <div className="text-gray-500">No courses</div>
+
                       ) : (
+
                         <div className="space-y-2">
+
                           {courses.slice(0, 6).map((c) => (
+
                             <div key={c.id} className="flex items-center justify-between">
+
                               <div className="text-sm truncate">{c.title}</div>
+
                               <div className="text-xs text-gray-600">{c.enrollment_count ?? c.students_count ?? '-'}</div>
+
                             </div>
+
                           ))}
+
                         </div>
+
                       )}
+
                     </div>
+
+
 
                     <div className="lg:col-span-3 mt-6">
+
                       <h4 className="font-semibold mb-3">Activity (last 30 days)</h4>
+
                       <div style={{ width: '100%', height: 220 }} className="bg-white rounded-lg p-2">
+
                         <ResponsiveContainer>
+
                           <LineChart data={dailyAnalytics || gaSummary?.timeseries || []}>
+
                             <CartesianGrid strokeDasharray="3 3" />
+
                             <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+
                             <YAxis />
+
                             <Tooltip />
+
                             <Line type="monotone" dataKey="views" stroke="#F59E0B" strokeWidth={2} dot={false} />
+
                           </LineChart>
+
                         </ResponsiveContainer>
+
                       </div>
+
                       {downloads?.timeseries && (
+
                         <div className={`${darkMode ? 'bg-slate-700 text-slate-100' : 'bg-white'} mt-4 rounded-lg p-2`} style={{ width: '100%', height: 240 }}>
+
                           <h5 className="text-sm font-medium mb-2">Downloads (last 30 days)</h5>
+
                           <div style={{ width: '100%', height: 120 }}>
+
                             <ResponsiveContainer>
+
                               <LineChart data={downloads.timeseries}>
+
                                 <CartesianGrid strokeDasharray="3 3" />
+
                                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+
                                 <YAxis />
+
                                 <Tooltip />
+
                                 <Line type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} dot={false} />
+
                               </LineChart>
+
                             </ResponsiveContainer>
+
                           </div>
+
+
 
                           {downloads?.top && downloads.top.length > 0 && (
+
                             <div className="mt-3 overflow-hidden rounded">
+
                               <h6 className="text-xs font-semibold mb-2">Top downloads</h6>
+
                               <div className="text-sm">
+
                                 {downloads.top.slice(0,6).map((d:any, idx:number) => (
+
                                   <div key={idx} className={`flex items-center justify-between py-2 border-t ${darkMode ? 'border-slate-600' : 'border-gray-100'}`}>
+
                                     <div className="truncate max-w-[70%]">{d.full_url}</div>
+
                                     <div className="text-xs text-gray-500">{d.count}</div>
+
                                   </div>
+
                                 ))}
+
                               </div>
+
                             </div>
+
                           )}
+
                         </div>
+
                       )}
+
                     </div>
+
                   </div>
+
                 </div>
+
               </div>
+
             )}
 
+
+
             {/* Tab Content */}
+
             <motion.div
+
               initial={{ opacity: 0 }}
+
               animate={{ opacity: 1 }}
+
               key={tab}
+
               className={`${darkMode ? 'bg-slate-800 text-slate-100' : 'bg-white'} rounded-2xl shadow-lg overflow-hidden`}
+
             >
+
               {/* Scroll to analytics subpanel when requested */}
+
               {tab === 'analytics' && analyticsActivePanel && (
+
                 <EffectRunner panel={analyticsActivePanel} />
+
               )}
 
+
+
               {/* Drill modal */}
+
               <AnalyticsDrillModal open={modalOpen} type={modalType} onClose={closeModal} apiBase={API_BASE} token={token} darkMode={darkMode} />
+
               {/* No Permissions or Unauthorized Tab Access Guard */}
+
               {!tab || tabs.length === 0 || !tabs.some(t => t.id === tab) ? (
+
                 <div className="flex flex-col items-center justify-center py-20">
+
                   <Shield className="w-16 h-16 text-red-400 mb-4" />
+
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Restricted</h3>
+
                   <p className="text-gray-600 max-w-md text-center">
+
                     You do not have permission to access this section. Please contact your master administrator if you require access.
+
                   </p>
+
                 </div>
+
               ) : (
+
                 <>
+
               {/* Tab Header */}
+
               <div className="border-b border-gray-200 px-6 py-4">
+
                 <div className="flex items-center justify-between">
+
                   <div className="flex items-center space-x-2">
+
                     {tabs.find(t => t.id === tab)?.icon}
+
                     <h2 className="text-xl font-semibold text-gray-900">
+
                       {tabs.find(t => t.id === tab)?.label}
+
                     </h2>
+
                   </div>
+
                   {tab === 'users' && (
+
                     <div className="text-sm text-gray-500">
+
                       Total: <span className="font-semibold">{pageInfo.count?.toLocaleString() || '0'}</span> users
+
                     </div>
+
                   )}
+
                 </div>
+
               </div>
 
+
+
               {/* Dynamic Content */}
+
               <div className="p-6">
+
                 {tab === 'users' && (
+
                   <div>
+
                     {usersMessage && (
+
                       <div className={`p-3 rounded-lg mb-4 ${usersMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+
                         {usersMessage.text}
+
                       </div>
+
                     )}
+
                     {/* Search and Filter */}
+
                     <div className="mb-6">
+
                       <div className="grid md:grid-cols-3 gap-4">
+
                         <div className="relative">
+
                           <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+
                           <input
+
                             type="text"
+
                             placeholder="Search users by name or email"
+
                             value={searchTerm}
+
                             onChange={(e) => setSearchTerm(e.target.value)}
+
                             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none"
+
                           />
+
                         </div>
+
                         <select
+
                           value={roleFilter}
+
                           onChange={(e) => setRoleFilter(e.target.value)}
+
                           className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none"
+
                         >
+
                           <option value="">All Roles</option>
+
                           <option value="student">Student</option>
+
                           <option value="tutor">Tutor</option>
+
                           <option value="institution">Institution</option>
+
                           <option value="researcher">Researcher</option>
+
                           <option value="admin">Admin</option>
+
                         </select>
+
                         <motion.button
+
                           whileHover={{ scale: 1.05 }}
+
                           whileTap={{ scale: 0.95 }}
+
                           onClick={() => loadUsers(1)}
+
                           className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
+
                         >
+
                           <Filter className="w-5 h-5 inline mr-2" />
+
                           Apply Filters
+
                         </motion.button>
+
                       </div>
+
                     </div>
+
+
 
                     {loading ? (
+
                       <div className="flex items-center justify-center py-12">
+
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                         <span className="text-gray-600">Loading users...</span>
+
                       </div>
+
                     ) : (
+
                       <div className="grid lg:grid-cols-2 gap-6">
+
                         {/* User List */}
+
                         <div>
+
                           {users.length === 0 ? (
+
                             <div className="text-center py-12">
+
                               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+
                               <p className="text-gray-500">No users found</p>
+
                             </div>
+
                           ) : (
+
                             <div className="space-y-3">
+
                               {users.map((user) => (
+
                                 <motion.div
+
                                   key={user.id}
+
                                   whileHover={{ x: 5 }}
+
                                   onClick={() => {
+
                                     setSelectedUser(user)
+
                                     loadUserCourses(user.id, user.role)
+
                                   }}
+
                                   className={`p-4 rounded-xl border cursor-pointer transition-all ${
+
                                     selectedUser?.id === user.id
+
                                       ? (darkMode ? 'border-yellow-500 bg-slate-700' : 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-yellow-50')
+
                                       : (darkMode ? 'border-slate-700 hover:bg-slate-800 hover:shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-md')
+
                                   }`}
+
                                 >
+
                                     <div className="grid grid-cols-2 items-center gap-4">
+
                                     <div className="flex items-center space-x-4 min-w-0">
+
                                       <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+
                                         {user.username?.charAt(0).toUpperCase()}
+
                                       </div>
+
                                       <div className="min-w-0">
+
                                         <h4 className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'} truncate`}>{user.username}</h4>
+
                                         <div className="flex items-center mt-1 space-x-3">
+
                                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
+
                                             {getRoleIcon(user.role)}
+
                                             <span className="ml-1">{user.role}</span>
+
                                           </span>
+
                                           <span className={`${darkMode ? 'text-slate-300' : 'text-sm text-gray-500'} truncate`}>{user.email}</span>
+
                                         </div>
+
                                       </div>
+
                                     </div>
+
                                     <div className="flex items-center space-x-2 justify-end">
+
                                       <motion.button
+
                                         whileHover={{ scale: 1.05 }}
+
                                         whileTap={{ scale: 0.95 }}
+
                                         onClick={(e) => {
+
                                           e.stopPropagation()
+
                                           setSelectedUser(user)
+
                                         }}
+
                                         className={`${darkMode ? 'p-1 text-slate-300 hover:text-yellow-400' : 'p-1 text-gray-500 hover:text-yellow-600'} flex-shrink-0 w-8 h-8 flex items-center justify-center rounded`}
+
                                         title="View"
+
                                       >
+
                                         <Eye className="w-4 h-4" />
+
                                       </motion.button>
+
                                       <motion.button
+
                                         whileHover={{ scale: 1.05 }}
+
                                         whileTap={{ scale: 0.95 }}
+
                                         onClick={(e) => {
+
                                           e.stopPropagation()
+
                                           setDeleteConfirmation({open: true, userId: user.id, userName: user.username})
+
                                         }}
+
                                         className={`${darkMode ? 'p-1 text-slate-300 hover:text-red-500' : 'p-1 text-gray-500 hover:text-red-600'} flex-shrink-0 w-8 h-8 flex items-center justify-center rounded`}
+
                                         title="Delete"
+
                                       >
+
                                         <Trash2 className="w-4 h-4" />
+
                                       </motion.button>
+
                                     </div>
+
                                   </div>
+
                                 </motion.div>
+
                               ))}
+
                             </div>
+
                           )}
+
+
 
                           {/* Pagination */}
+
                           {users.length > 0 && (
+
                             <div className="mt-6 flex items-center justify-between">
+
                               <div className="text-sm text-gray-600">
+
                                 Showing page {pageInfo.current} of {Math.ceil(pageInfo.count / 10)}
+
                               </div>
+
                               <div className="flex space-x-2">
+
                                 <motion.button
+
                                   whileHover={{ scale: 1.05 }}
+
                                   whileTap={{ scale: 0.95 }}
+
                                   onClick={() => loadUsers(Math.max(1, pageInfo.current - 1))}
+
                                   disabled={!pageInfo.previous}
+
                                   className={`px-4 py-2 rounded-lg font-medium flex items-center ${
+
                                     pageInfo.previous
+
                                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+
                                       : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+
                                   }`}
+
                                 >
+
                                   <ChevronLeft className="w-4 h-4 mr-1" />
+
                                   Previous
+
                                 </motion.button>
+
                                 <motion.button
+
                                   whileHover={{ scale: 1.05 }}
+
                                   whileTap={{ scale: 0.95 }}
+
                                   onClick={() => loadUsers(pageInfo.current + 1)}
+
                                   disabled={!pageInfo.next}
+
                                   className={`px-4 py-2 rounded-lg font-medium flex items-center ${
+
                                     pageInfo.next
+
                                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+
                                       : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+
                                   }`}
+
                                 >
+
                                   Next
+
                                   <ChevronRight className="w-4 h-4 ml-1" />
+
                                 </motion.button>
+
                               </div>
+
                             </div>
+
                           )}
+
                         </div>
+
+
 
                         {/* Registrations & Downloads quick panels (targets for drill-through) */}
+
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+
                           <div id="analytics-registrations" className={`${darkMode ? 'bg-slate-700 text-slate-100' : 'bg-white'} p-4 rounded-lg border`}>
+
                             <h4 className="text-sm font-semibold mb-2">Registrations</h4>
+
                             <div className="flex items-center justify-between">
+
                               <div>
+
                                 <div className="text-xs text-gray-500">Today</div>
+
                                 <div className="text-2xl font-bold">{registrationsLoading ? '...' : (registrations?.daily ?? dailyTotals?.new_registrations ?? 0)}</div>
+
                                 <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs`}>Weekly: {registrations?.weekly ?? '-'} • Monthly: {registrations?.monthly ?? '-'}</div>
+
                               </div>
+
                               <div className="w-24 sm:w-40 h-20">
+
                                 {registrations?.timeseries && (
+
                                   <ResponsiveContainer>
+
                                     <LineChart data={registrations.timeseries}>
+
                                       <XAxis dataKey="date" hide />
+
                                       <YAxis hide />
+
                                       <Tooltip />
+
                                       <Line dataKey="count" stroke="#F59E0B" dot={false} strokeWidth={2} />
+
                                     </LineChart>
+
                                   </ResponsiveContainer>
+
                                 )}
+
                               </div>
+
                             </div>
+
                           </div>
+
+
 
                           <div id="analytics-downloads" className={`${darkMode ? 'bg-slate-700 text-slate-100' : 'bg-white'} p-4 rounded-lg border`}>
+
                             <h4 className="text-sm font-semibold mb-2">Downloads</h4>
+
                             <div className="flex items-center justify-between">
+
                               <div>
+
                                 <div className="text-xs text-gray-500">Total</div>
+
                                 <div className="text-2xl font-bold">{downloadsLoading ? '...' : (downloads?.total_downloads ?? 0)}</div>
+
                                 <div className={`${darkMode ? 'text-slate-300' : 'text-gray-500'} text-xs`}>Top: {downloads?.top?.[0]?.full_url ? (downloads.top[0].full_url.length > 40 ? downloads.top[0].full_url.slice(0,40)+'...' : downloads.top[0].full_url) : '-'}</div>
+
                               </div>
+
                               <div className="w-24 sm:w-40 h-20">
+
                                 {downloads?.timeseries && (
+
                                   <ResponsiveContainer>
+
                                     <LineChart data={downloads.timeseries}>
+
                                       <XAxis dataKey="date" hide />
+
                                       <YAxis hide />
+
                                       <Tooltip />
+
                                       <Line dataKey="count" stroke="#3B82F6" dot={false} strokeWidth={2} />
+
                                     </LineChart>
+
                                   </ResponsiveContainer>
+
                                 )}
+
                               </div>
+
                             </div>
+
                           </div>
+
                         </div>
+
+
 
                         {/* User Details */}
+
                         <div className="lg:border-l lg:pl-6">
+
                           {selectedUser ? (
+
                             <div>
+
                               <div className="mb-6">
+
                                 <h3 className={`text-lg font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-900'} mb-4`}>User Details</h3>
+
                                 <div className={darkMode ? 'rounded-2xl p-6 bg-slate-800' : 'bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-2xl p-6'}>
+
                                   <div className="flex items-center space-x-4 mb-6">
+
                                     <div className={darkMode ? 'w-16 h-16 bg-yellow-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold' : 'w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold'}>
+
                                       {selectedUser.username?.charAt(0).toUpperCase()}
+
                                     </div>
+
                                     <div>
+
                                       <h4 className={`text-xl font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{selectedUser.username}</h4>
+
                                       <div className="flex items-center mt-2">
+
                                         <span className={`inline-flex items-center px-4 py-2 rounded-full font-medium ${getRoleColor(selectedUser.role)}`}>
+
                                           {getRoleIcon(selectedUser.role)}
+
                                           <span className="ml-2">{selectedUser.role}</span>
+
                                         </span>
+
                                       </div>
+
                                     </div>
+
                                   </div>
+
+
 
                                   <div className="space-y-4">
+
                                     <div>
+
                                       <label className={`block text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'} mb-1`}>Email Address</label>
+
                                       <div className={darkMode ? 'flex items-center p-3 rounded-lg bg-slate-900' : 'flex items-center p-3 bg-white rounded-lg'}>
+
                                         <Mail className="w-5 h-5 text-gray-400 mr-3" />
+
                                         <span className={`${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{selectedUser.email}</span>
+
                                       </div>
+
                                     </div>
+
                                     <div className="grid grid-cols-2 gap-4">
+
                                       <div>
+
                                         <label className={`block text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'} mb-1`}>First Name</label>
+
                                         <div className={darkMode ? 'p-3 rounded-lg bg-slate-900' : 'p-3 bg-white rounded-lg'}>
+
                                           <span className={`${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{selectedUser.first_name || 'Not provided'}</span>
+
                                         </div>
+
                                       </div>
+
                                       <div>
+
                                         <label className={`block text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-gray-700'} mb-1`}>Last Name</label>
+
                                         <div className={darkMode ? 'p-3 rounded-lg bg-slate-900' : 'p-3 bg-white rounded-lg'}>
+
                                           <span className={`${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>{selectedUser.last_name || 'Not provided'}</span>
+
                                         </div>
+
                                       </div>
+
                                     </div>
+
                                   </div>
+
                                 </div>
+
                               </div>
+
+
 
                               {/* Courses Section - Only for Tutors/Institutions */}
+
                               {['tutor', 'institution'].includes(selectedUser.role) && (
+
                                 <div className="mb-6">
+
                                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Courses Created</h3>
+
                                   <div className="bg-white rounded-2xl p-6 border border-gray-200">
+
                                     {loadingUserCourses ? (
+
                                       <div className="flex items-center justify-center py-8">
+
                                         <Loader2 className="w-6 h-6 text-yellow-600 animate-spin mr-2" />
+
                                         <span className="text-gray-600">Loading courses...</span>
+
                                       </div>
+
                                     ) : userCourses.length === 0 ? (
+
                                       <p className="text-gray-500 text-center py-4">No courses created yet</p>
+
                                     ) : (
+
                                       <div className="space-y-4">
+
                                         <div>
+
                                           <label className="block text-sm font-medium text-gray-700 mb-2">Select a Course</label>
+
                                           <select
+
                                             value={selectedUserCourse?.id || ''}
+
                                             onChange={(e) => {
+
                                               const courseId = parseInt(e.target.value);
+
                                               const course = userCourses.find(c => c.id === courseId);
+
                                               setSelectedUserCourse(course || null);
+
                                               if (course) {
+
                                                 loadCourseModules(courseId);
+
                                               }
+
                                             }}
+
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+
                                           >
+
                                             <option value="">Choose a course...</option>
+
                                             {userCourses.map(course => (
+
                                               <option key={course.id} value={course.id}>
+
                                                 {course.title}
+
                                               </option>
+
                                             ))}
+
                                           </select>
+
                                         </div>
 
+
+
                                         {/* Course Details */}
+
                                         {selectedUserCourse && (
+
                                           <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-lg p-4 border border-yellow-200">
+
                                             <h4 className="font-semibold text-gray-900 mb-2">{selectedUserCourse.title}</h4>
+
                                             <p className="text-sm text-gray-600 mb-3">{selectedUserCourse.description}</p>
+
                                             
+
                                             {/* Modules */}
+
                                             {loadingModules ? (
+
                                               <div className="flex items-center justify-center py-6">
+
                                                 <Loader2 className="w-5 h-5 text-yellow-600 animate-spin mr-2" />
+
                                                 <span className="text-sm text-gray-600">Loading modules...</span>
+
                                               </div>
+
                                             ) : userCourseModules.length === 0 ? (
+
                                               <p className="text-sm text-gray-500 py-3">No modules in this course</p>
+
                                             ) : (
+
                                               <div>
+
                                                 <h5 className="text-sm font-semibold text-gray-700 mb-3">Modules ({userCourseModules.length})</h5>
+
                                                 <div className="space-y-2 max-h-60 overflow-y-auto">
+
                                                   {userCourseModules.map(module => (
+
                                                     <div key={module.id} className="bg-white p-3 rounded-lg border border-gray-200">
+
                                                       <div className="flex items-start justify-between">
+
                                                         <div className="flex-1">
+
                                                           <h6 className="font-medium text-gray-900 text-sm">{module.title}</h6>
+
                                                           {module.description && (
+
                                                             <p className="text-xs text-gray-600 mt-1 line-clamp-2">{module.description}</p>
+
                                                           )}
+
                                                         </div>
+
                                                       </div>
+
                                                     </div>
+
                                                   ))}
+
                                                 </div>
+
                                               </div>
+
                                             )}
+
                                           </div>
+
                                         )}
+
                                       </div>
+
                                     )}
+
                                   </div>
+
                                 </div>
+
                               )}
+
                             </div>
+
                           ) : (
+
                             <div className="text-center py-12">
+
                               <Eye className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+
                               <p className="text-gray-500">Select a user to view details</p>
+
                             </div>
+
                           )}
+
                         </div>
+
                       </div>
+
                     )}
+
                   </div>
+
                 )}
+
                 {tab === 'students' && (
+
                   <StudentsManagement />
+
                 )}
+
+
 
                 {tab === 'tutors' && (
+
                   <TutorsManagement />
+
                 )}
+
+
 
                 {tab === 'institutions' && (
+
                   <InstitutionsManagement />
+
                 )}
+
+
 
                 {tab === 'admins' && (
+
                   <AdminsManagement />
+
                 )}
+
+
 
                 {tab === 'materials' && (
+
                   <div className="space-y-8">
+
                     {/* Create Material Form */}
+
                     <div>
+
                       <CreateMaterialForm onSuccess={() => setMaterialsRefreshKey(prev => prev + 1)} />
+
                     </div>
+
+
 
                     {/* Materials Activity Section */}
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
                       <div className="lg:col-span-2">
+
                         <MaterialsActivitySection />
+
                       </div>
+
                       <div>
+
                         {/* Stats would go here if needed */}
+
                       </div>
+
                     </div>
+
+
 
                     {/* Materials List */}
+
                     <div>
+
                       <MaterialsList key={materialsRefreshKey} onRefresh={() => setMaterialsRefreshKey(prev => prev + 1)} />
+
                     </div>
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'lessons' && (
+
                   <LessonManager />
+
                 )}
+
+
 
                 {tab === 'courseDetail' && selectedCourseId && (
+
                   <div>
+
                     <AdminCourseDetail idParam={String(selectedCourseId)} onClose={() => { setSelectedCourseId(null); setTab('courses') }} />
+
                   </div>
+
                 )}
+
                 {tab === 'trial' && (
+
                   <div>
+
                     <div className={`p-3 rounded-lg mb-4 ${settingsMessage?.type === 'success' ? 'bg-yellow-50 text-yellow-800' : settingsMessage?.type === 'error' ? 'bg-red-50 text-red-800' : ''}`}>
+
                       {settingsMessage?.text}
+
                     </div>
+
+
 
                     <div className="mb-6">
+
                       <h3 className="text-lg font-semibold mb-2">Free Trial Period (days)</h3>
+
                       <p className="text-sm text-gray-600 mb-4">This value determines how long new tutor and institution accounts can use the dashboard before seeing the activation modal. You can load the value from server or provide via environment variable <code>VITE_TRIAL_DAYS</code>.</p>
 
+
+
                       <div className="flex items-center gap-3">
+
                         <input type="number" min={1} value={trialDays as any} onChange={(e) => setTrialDays(e.target.value === '' ? '' : Number(e.target.value))} className="w-40 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none" />
+
                         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={saveTrialDays} disabled={trialSaving} className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50">
+
                           {trialSaving ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
+
                           Save
+
                         </motion.button>
+
                         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={loadTrialDays} disabled={trialLoading} className={`px-3 py-2 rounded-lg border transition-colors ${darkMode ? 'bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600' : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'}`}>
+
                           {trialLoading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
+
                           Load From Server
+
                         </motion.button>
+
                       </div>
+
                     </div>
+
                   </div>
+
                 )}
+
+
 
                 {(tab === 'analytics') && (
+
                   <div>
+
                     {adminLoading ? (
+
                       <div className="flex items-center justify-center py-12">
+
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                         <span className="text-gray-600">Loading analytics...</span>
+
                       </div>
+
                     ) : (
+
                       <div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
                           <motion.div whileHover={{ y: -5 }} className={`${darkMode ? 'bg-slate-700 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200'} rounded-xl p-6`}>
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+
                                 <Globe className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Page Views</h3>
+
                             <p className="text-3xl font-bold text-yellow-900">{gaSummary?.summary?.screenPageViews ?? 'N/A'}</p>
+
                           </motion.div>
 
+
+
                           <motion.div whileHover={{ y: -5 }} className={`${darkMode ? 'bg-slate-700 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200'} rounded-xl p-6`}>
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+
                                 <BarChart3 className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Total Attempts</h3>
+
                             <p className="text-3xl font-bold text-yellow-900">{cbtAnalytics?.total_attempts || 0}</p>
+
                           </motion.div>
 
+
+
                           <motion.div whileHover={{ y: -5 }} className={`${darkMode ? 'bg-slate-700 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200'} rounded-xl p-6`}>
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+
                                 <Briefcase className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Total Revenue</h3>
+
                             <p className="text-3xl font-bold text-yellow-900 truncate max-w-full">{paymentStats?.total_revenue ? new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats.total_revenue) : '₦0'}</p>
+
                           </motion.div>
+
+
 
                           <motion.div whileHover={{ y: -5 }} className={`${darkMode ? 'bg-slate-700 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200'} rounded-xl p-6`}>
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+
                                 <User className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Transactions</h3>
+
                             <p className="text-3xl font-bold text-orange-900">{paymentStats?.total_transactions || 0}</p>
+
                           </motion.div>
+
                         </div>
+
+
 
                         <div className={`${darkMode ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white rounded-xl p-6 border border-gray-200'}`}>
+
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">Traffic Overview</h3>
+
                           <div className="grid lg:grid-cols-3 gap-6">
+
                             <div className="lg:col-span-2">
+
                               <h4 className="text-sm text-gray-600 mb-3">Page Views (last 28 days)</h4>
+
                               <div style={{ width: '100%', height: 260 }}>
+
                                 <ResponsiveContainer>
+
                                   <LineChart data={gaSummary?.timeseries || []} margin={{ top: 10, right: 16, left: -8, bottom: 6 }}>
+
                                     <CartesianGrid strokeDasharray="3 3" />
+
                                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+
                                     <YAxis />
+
                                     <Tooltip />
+
                                     <Line type="monotone" dataKey="views" stroke="#F59E0B" strokeWidth={2} dot={{ r: 2 }} />
+
                                   </LineChart>
+
                                 </ResponsiveContainer>
+
                               </div>
+
                             </div>
 
+
+
                             <div>
+
                               <h4 className="text-sm text-gray-600 mb-3">Top Browsers</h4>
+
                               <div style={{ width: '100%', height: 200 }}>
+
                                 <ResponsiveContainer>
+
                                   <PieChart>
+
                                     <Pie data={ (gaSummary?.technology?.browsers || []).map(b => ({ name: b.browser || b.name, value: b.users || b.value })) }
+
                                          dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} fill="#8884d8">
+
                                       { (gaSummary?.technology?.browsers || []).map((entry: any, index: number) => (
+
                                         <Cell key={`cell-${index}`} fill={["#F59E0B", "#F97316", "#FB923C", "#FCD34D", "#93C5FD"][index % 5]} />
+
                                       ))}
+
                                     </Pie>
+
                                     <Legend verticalAlign="bottom" height={36} />
+
                                   </PieChart>
+
                                 </ResponsiveContainer>
+
                               </div>
+
                               <h4 className="text-sm text-gray-600 mb-3 mt-4">Top Countries</h4>
+
                               <div style={{ width: '100%', height: 160 }}>
+
                                 <ResponsiveContainer>
+
                                   <BarChart data={(gaSummary?.countries || []).slice(0,8)}>
+
                                     <CartesianGrid strokeDasharray="3 3" />
+
                                     <XAxis dataKey="country" tick={{ fontSize: 11 }} />
+
                                     <YAxis />
+
                                     <Tooltip />
+
                                     <Bar dataKey="users" fill="#F59E0B" />
+
                                   </BarChart>
+
                                 </ResponsiveContainer>
+
                               </div>
+
                             </div>
+
                           </div>
+
+
 
                           <div className="mt-6 grid md:grid-cols-3 gap-4">
+
                             <div className="md:col-span-3">
+
                               <h4 className="text-lg font-semibold text-gray-900 mb-3">Referrer & UTM Sources</h4>
+
                               <div className="grid md:grid-cols-2 gap-4 mb-6">
+
                                 <div className="bg-white p-4 rounded-lg border">
+
                                   <h5 className="text-sm text-gray-600 mb-3">Top UTM Sources</h5>
+
                                   <div className="space-y-2 text-sm">
+
                                     {(utmSources || []).slice(0, 5).map((r: any, idx: number) => (
+
                                       <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+
                                         <span className="text-gray-700">{r.source || r.utm_source || '—'}</span>
+
                                         <span className="font-semibold text-gray-900">{r.users || r.visits || 0}</span>
+
                                       </div>
+
                                     ))}
+
                                     {(!utmSources || utmSources.length === 0) && (
+
                                       <p className="text-gray-500">No referrer data available</p>
+
                                     )}
+
                                   </div>
+
                                 </div>
+
                               </div>
 
+
+
                               <div>
+
                                 <h4 className="text-sm text-gray-600 mb-2">Technology</h4>
+
                                 <div className="bg-white p-4 rounded-lg shadow-sm border">
+
                                   <div style={{ width: '100%', height: 180 }}>
+
                                     <ResponsiveContainer>
+
                                       <PieChart>
+
                                         <Pie data={ (gaSummary?.technology?.browsers || []).map((b:any)=>({ name: b.browser || b.name, value: b.users || b.value })) }
+
                                              dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={30}>
+
                                           { (gaSummary?.technology?.browsers || []).map((entry: any, index: number) => (
+
                                             <Cell key={`cell-tech-${index}`} fill={["#F59E0B", "#F97316", "#FB923C", "#FCD34D", "#93C5FD"][index % 5]} />
+
                                           ))}
+
                                         </Pie>
+
                                         <Legend verticalAlign="bottom" height={28} />
+
                                       </PieChart>
+
                                     </ResponsiveContainer>
+
                                   </div>
+
+
 
                                   <div className="mt-3 grid grid-cols-1 gap-2">
+
                                     {(gaSummary?.technology?.devices || []).map((d:any, i:number) => (
+
                                       <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded">
+
                                         <div className="text-sm text-gray-700">{d.device}</div>
+
                                         <div className="text-sm font-semibold text-gray-900">{d.users}</div>
+
                                       </div>
+
                                     ))}
+
                                   </div>
+
                                 </div>
+
                               </div>
 
+
+
                               <div>
+
                                 <h4 className="text-sm text-gray-600 mb-2">Top Countries</h4>
+
                                 <div className="bg-white p-4 rounded-lg shadow-sm border">
+
                                   <div style={{ width: '100%', height: 240 }}>
+
                                     <ResponsiveContainer>
+
                                       <BarChart data={(gaSummary?.countries || []).slice(0,8)} layout="vertical" margin={{ left: 0, right: 8 }}>
+
                                         <XAxis type="number" hide />
+
                                         <YAxis dataKey="country" type="category" width={110} tick={{ fontSize: 12 }} />
+
                                         <Tooltip />
+
                                         <Bar dataKey="users" fill="#F59E0B" />
+
                                       </BarChart>
+
                                     </ResponsiveContainer>
+
                                   </div>
+
                                   <div className="mt-3">
+
                                     {(gaSummary?.countries || []).slice(0,6).map((c:any, idx:number) => (
+
                                       <div key={idx} className="flex items-center justify-between py-2 border-b last:border-b-0">
+
                                         <div className="text-sm text-gray-700">{c.country}</div>
+
                                         <div className="text-sm font-semibold text-gray-900">{c.users}</div>
+
                                       </div>
+
                                     ))}
+
                                   </div>
+
                                 </div>
+
                               </div>
+
                             </div>
+
                           </div>
+
                         </div>
+
+
 
                         {/* Daily Reports Section */}
+
                         <div className="bg-white rounded-xl p-6 border border-gray-200 mt-6">
+
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Analytics Report</h3>
+
                           
+
                           {/* Date Range Selector */}
+
                           <div className="grid md:grid-cols-3 gap-4 mb-6">
+
                             <div>
+
                               <label className="block text-sm text-gray-600 mb-2">Start Date</label>
+
                               <input
+
                                 type="date"
+
                                 value={dateRangeStart}
+
                                 onChange={(e) => setDateRangeStart(e.target.value)}
+
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+
                               />
+
                             </div>
+
                             <div>
+
                               <label className="block text-sm text-gray-600 mb-2">End Date</label>
+
                               <input
+
                                 type="date"
+
                                 value={dateRangeEnd}
+
                                 onChange={(e) => setDateRangeEnd(e.target.value)}
+
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+
                               />
+
                             </div>
+
                             <div className="flex items-end">
+
                               <button
+
                                 onClick={loadDailyAnalytics}
+
                                 disabled={dailyLoading}
+
                                 className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 text-sm font-medium"
+
                               >
+
                                 {dailyLoading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
+
                                 Apply Filter
+
                               </button>
+
                             </div>
+
                           </div>
+
+
 
                           {/* Daily Totals Summary */}
+
                           {dailyTotals && (
+
                             <div className="grid md:grid-cols-3 gap-4 mb-6">
+
                               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+
                                 <div className="text-sm text-gray-600 mb-1">Total Views</div>
+
                                 <div className="text-2xl font-bold text-blue-900">{dailyTotals.views || 0}</div>
+
                                 <div className="text-xs text-gray-500 mt-1">Landing: {dailyTotals.landing_views || 0}</div>
+
                               </div>
+
                               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+
                                 <div className="text-sm text-gray-600 mb-1">Transactions</div>
+
                                 <div className="text-2xl font-bold text-green-900">{dailyTotals.transactions || 0}</div>
+
                                 <div className="text-xs text-gray-500 mt-1">Revenue: ${(dailyTotals.revenue || 0).toFixed(2)}</div>
+
                               </div>
+
                               <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+
                                 <div className="text-sm text-gray-600 mb-1">Platform Fee</div>
+
                                 <div className="text-2xl font-bold text-purple-900">${(dailyTotals.platform_fee || 0).toFixed(2)}</div>
+
                                 <div className="text-xs text-gray-500 mt-1">Creator: ${(dailyTotals.creator_amount || 0).toFixed(2)}</div>
+
                               </div>
+
                             </div>
+
                           )}
+
+
 
                           {/* Daily Chart */}
+
                           {dailyAnalytics && dailyAnalytics.length > 0 && (
+
                             <div className="mb-6">
+
                               <h4 className="text-sm text-gray-600 mb-3">Daily Page Views & Transactions</h4>
+
                               <div style={{ width: '100%', height: 300 }}>
+
                                 <ResponsiveContainer>
+
                                   <BarChart data={dailyAnalytics} margin={{ top: 10, right: 16, left: -8, bottom: 6 }}>
+
                                     <CartesianGrid strokeDasharray="3 3" />
+
                                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+
                                     <YAxis yAxisId="left" />
+
                                     <YAxis yAxisId="right" orientation="right" />
+
                                     <Tooltip />
+
                                     <Legend />
+
                                     <Bar yAxisId="left" dataKey="views" fill="#F59E0B" name="Page Views" />
+
                                     <Bar yAxisId="right" dataKey="transactions" fill="#10B981" name="Transactions" />
+
                                   </BarChart>
+
                                 </ResponsiveContainer>
+
                               </div>
+
                             </div>
+
                           )}
+
+
 
                           {/* Daily Table */}
+
                           <div className="overflow-x-auto">
+
                             <h4 className="text-sm text-gray-600 mb-3">Daily Breakdown</h4>
+
                             {dailyLoading ? (
+
                               <div className="text-center py-6"><Loader2 className="animate-spin w-6 h-6 text-yellow-600 mx-auto" /></div>
+
                             ) : dailyAnalytics && dailyAnalytics.length > 0 ? (
+
                               <table className="w-full text-sm">
+
                                 <thead className="bg-gray-50 border-b border-gray-200">
+
                                   <tr>
+
                                     <th className="px-4 py-2 text-left text-gray-700 font-semibold">Date</th>
+
                                     <th className="px-4 py-2 text-right text-gray-700 font-semibold">Views</th>
+
                                     <th className="px-4 py-2 text-right text-gray-700 font-semibold">Landing</th>
+
                                     <th className="px-4 py-2 text-right text-gray-700 font-semibold">Trans.</th>
+
                                     <th className="px-4 py-2 text-right text-gray-700 font-semibold">Revenue</th>
+
                                     <th className="px-4 py-2 text-right text-gray-700 font-semibold">Platform Fee</th>
+
                                   </tr>
+
                                 </thead>
+
                                 <tbody>
+
                                   {dailyAnalytics.map((row: any, idx: number) => (
+
                                     <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
+
                                       <td className="px-4 py-2 text-gray-700">{row.date}</td>
+
                                       <td className="px-4 py-2 text-right text-gray-900 font-medium">{row.views || 0}</td>
+
                                       <td className="px-4 py-2 text-right text-gray-700">{row.landing_views || 0}</td>
+
                                       <td className="px-4 py-2 text-right text-gray-700">{row.transactions || 0}</td>
+
                                       <td className="px-4 py-2 text-right text-gray-900 font-medium">${(row.revenue || 0).toFixed(2)}</td>
+
                                       <td className="px-4 py-2 text-right text-gray-700">${(row.platform_fee || 0).toFixed(2)}</td>
+
                                     </tr>
+
                                   ))}
+
                                 </tbody>
+
                               </table>
+
                             ) : (
+
                               <div className="text-center py-6 text-gray-500">No data available for the selected period</div>
+
                             )}
+
                           </div>
+
                         </div>
+
                       </div>
+
                     )}
+
                   </div>
+
                 )}
+
                 {tab === 'signature' && (
+
                   <div>
+
                     {/* Master signature management for platform CEO */}
+
                     <MasterSignature />
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'courses' && (
+
                   <div>
+
                     {creatingCourse ? (
+
                       <div>
+
                         <motion.button
+
                           whileHover={{ scale: 1.02 }}
+
                           whileTap={{ scale: 0.98 }}
+
                           onClick={() => setCreatingCourse(false)}
+
                           className="mb-6 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+
                         >
+
                           ← Back to Courses
+
                         </motion.button>
+
                         <CreateCourse onSaveSuccess={() => setCreatingCourse(false)} />
+
                       </div>
+
                     ) : coursesLoading ? (
+
                       <div className="flex items-center justify-center py-12">
+
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                         <span className="text-gray-600">Loading courses...</span>
+
                       </div>
+
                     ) : (
+
                       <div>
+
                         <div className="mb-6 flex items-center justify-between">
+
                           <h3 className="text-lg font-semibold text-gray-900">All Courses</h3>
+
                           <motion.button
+
                             whileHover={{ scale: 1.05 }}
+
                             whileTap={{ scale: 0.95 }}
+
                             onClick={() => setCreatingCourse(true)}
+
                             className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
+
                           >
+
                             <BookOpen className="w-5 h-5 inline mr-2" />
+
                             Create Course
+
                           </motion.button>
+
                         </div>
+
                          
+
                         {courses.length === 0 ? (
+
                           <div className="text-center py-12">
+
                             <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+
                             <p className="text-gray-500">No courses found</p>
+
                           </div>
+
                         ) : (
+
                           <div className="grid lg:grid-cols-2 gap-6">
+
                             {courses.map((course) => (
+
                               <motion.div
+
                                 key={course.id}
+
                                 whileHover={{ y: -5 }}
+
                                 className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all"
+
                               >
+
                                 <div className="aspect-video bg-gradient-to-br from-yellow-500 to-yellow-500 relative">
+
                                   {course.image && (
+
                                     <img src={course.image} alt={course.title} className="w-full h-full object-cover" width={384} height={192} loading="lazy" decoding="async" />
+
                                   )}
+
                                   <div className="absolute top-4 right-4">
+
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${course.published ? 'bg-yellow-500 text-white' : 'bg-yellow-500 text-white'}`}>
+
                                       {course.published ? 'Published' : 'Draft'}
+
                                     </span>
+
                                   </div>
+
                                 </div>
+
                                 <div className="p-6">
+
                                   <h4 className="text-lg font-bold text-gray-900 mb-2">{course.title}</h4>
+
                                   <p className="text-sm text-gray-600 mb-4 line-clamp-2">{course.description}</p>
+
                                    
+
                                   <div className="space-y-3 mb-4">
+
                                     <div className="flex items-center text-sm text-gray-700">
+
                                       <User className="w-4 h-4 mr-2 text-gray-500" />
+
                                       <span><strong>Creator:</strong> {course.creator_username || 'N/A'}</span>
+
                                     </div>
+
                                     <div className="flex items-center text-sm text-gray-700">
+
                                       <Building2 className="w-4 h-4 mr-2 text-gray-500" />
+
                                       <span><strong>Institution:</strong> {course.institution_name || 'Self'}</span>
+
                                     </div>
+
                                     <div className="flex items-center text-sm text-gray-700">
+
                                       <span className="text-xs px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full mr-2">
+
                                         {new Date(course.created_at).toLocaleDateString()}
+
                                       </span>
+
                                       <span><strong>Price:</strong> ${parseFloat(course.price || 0).toFixed(2)}</span>
+
                                     </div>
+
                                   </div>
+
+
 
                                   <div className="flex gap-3">
+
                                     <motion.button
+
                                       whileHover={{ scale: 1.05 }}
+
                                       whileTap={{ scale: 0.95 }}
+
                                       onClick={() => { setSelectedCourseId(course.id); setTab('courseDetail') }}
+
                                       className="flex-1 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
+
                                     >
+
                                       View
+
                                     </motion.button>
+
                                     <motion.button
+
                                       whileHover={{ scale: 1.05 }}
+
                                       whileTap={{ scale: 0.95 }}
+
                                       className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${darkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+
                                     >
+
                                       Edit
+
                                     </motion.button>
+
                                   </div>
+
                                 </div>
+
                               </motion.div>
+
                             ))}
+
                           </div>
+
                         )}
+
                       </div>
+
                     )}
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'cbt' && (
+
                   <div>
+
                     {cbtLoading ? (
+
                       <div className="flex items-center justify-center py-12">
+
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                         <span className="text-gray-600">Loading analytics...</span>
+
                       </div>
+
                     ) : (
+
                       <div>
+
                         {/* Analytics Cards */}
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
                           <motion.div
+
                             whileHover={{ y: -5 }}
+
                             className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"
+
                           >
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+
                                 <FileText className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Total Exams</h3>
+
                             <p className="text-3xl font-bold text-yellow-900">{cbtAnalytics?.total_exams ?? exams.length}</p>
+
                           </motion.div>
 
+
+
                           <motion.div
+
                             whileHover={{ y: -5 }}
+
                             className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"
+
                           >
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+
                                 <BarChart3 className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Total Attempts</h3>
+
                             <p className="text-3xl font-bold text-yellow-900">{cbtAnalytics?.total_attempts || 0}</p>
+
                           </motion.div>
 
+
+
                           <motion.div
+
                             whileHover={{ y: -5 }}
+
                             className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"
+
                           >
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+
                                 <GraduationCap className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Avg Score</h3>
+
                             <p className="text-3xl font-bold text-yellow-900">{cbtAnalytics?.average_score?.toFixed(1) || '0'}%</p>
+
                           </motion.div>
 
+
+
                           <motion.div
+
                             whileHover={{ y: -5 }}
+
                             className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200"
+
                           >
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+
                                 <BookOpen className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Subjects</h3>
+
                             <p className="text-3xl font-bold text-orange-900">{cbtAnalytics?.subjects?.length || 0}</p>
+
                           </motion.div>
+
                         </div>
+
+
 
                         {/* Exams List */}
+
                           <div className="bg-white rounded-xl p-6 border border-gray-200">
+
                             {/* Additional CBT summary: pass rate, avg time, active students, top subject */}
+
                             <div className="grid sm:grid-cols-4 gap-4 mb-6">
+
                               <div className="bg-white rounded-lg p-4 border border-gray-100">
+
                                 <div className="text-sm text-gray-600">Pass Rate</div>
+
                                 <div className="text-lg font-bold text-green-700 mt-1">{cbtAnalytics?.pass_rate != null ? `${(cbtAnalytics.pass_rate * 100).toFixed(1)}%` : (cbtAnalytics?.passed_attempts != null && cbtAnalytics?.total_attempts ? `${((cbtAnalytics.passed_attempts / cbtAnalytics.total_attempts) * 100).toFixed(1)}%` : 'N/A')}</div>
+
                               </div>
 
+
+
                               <div className="bg-white rounded-lg p-4 border border-gray-100">
+
                                 <div className="text-sm text-gray-600">Avg Time (mins)</div>
+
                                 <div className="text-lg font-bold text-gray-900 mt-1">{cbtAnalytics?.average_time_minutes != null ? cbtAnalytics.average_time_minutes.toFixed(1) : (cbtAnalytics?.average_time_seconds ? (cbtAnalytics.average_time_seconds/60).toFixed(1) : 'N/A')}</div>
+
                               </div>
 
+
+
                               <div className="bg-white rounded-lg p-4 border border-gray-100">
+
                                 <div className="text-sm text-gray-600">Active Students</div>
+
                                 <div className="text-lg font-bold text-yellow-800 mt-1">{cbtAnalytics?.active_students_count ?? cbtAnalytics?.unique_students ?? 'N/A'}</div>
+
                               </div>
 
+
+
                               <div className="bg-white rounded-lg p-4 border border-gray-100">
+
                                 <div className="text-sm text-gray-600">Top Subject</div>
+
                                 <div className="text-lg font-bold text-orange-800 mt-1">{
+
                                   (function(){
+
                                     const subjects = cbtAnalytics?.subjects || [];
+
                                     if (!subjects || subjects.length === 0) return 'N/A';
+
                                     // subjects may be [{name, attempts}]
+
                                     const top = subjects.reduce((a: any, b: any) => ( ((b.attempt_count ?? b.attempts) || 0) > ((a.attempt_count ?? a.attempts) || 0) ? b : a), subjects[0]);
+
                                     return top.name || top.title || 'N/A';
+
                                   })()
+
                                 }</div>
+
                               </div>
+
                             </div>
+
                           <h3 className="text-lg font-semibold text-gray-900 mb-6">Available Exams</h3>
+
                           {exams.length === 0 ? (
+
                             <div className="text-center py-12">
+
                               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+
                               <p className="text-gray-500">No exams found</p>
+
                             </div>
+
                           ) : (
+
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+
                               {exams.map((exam) => (
+
                                 <motion.div
+
                                   key={exam.id}
+
                                   whileHover={{ y: -5 }}
+
                                   className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all"
+
                                 >
+
                                   <div className="flex items-start justify-between mb-3">
+
                                     <div className="flex items-center space-x-3">
+
                                       <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-400 rounded-lg flex items-center justify-center">
+
                                         <FileText className="w-5 h-5 text-white" />
+
                                       </div>
+
                                       <div>
+
                                         <h4 className="font-semibold text-gray-900 text-sm">{exam.title}</h4>
+
                                         <div className="text-xs text-gray-500 mt-1">ID: {exam.id}</div>
+
                                       </div>
+
                                     </div>
+
                                   </div>
+
                                   <p className="text-xs text-gray-600 line-clamp-2 mb-3">{exam.description || 'No description available'}</p>
+
                                   <div className="space-y-2">
+
                                     <div className="flex items-center justify-between text-xs">
+
                                       <span className="text-gray-600">Questions:</span>
+
                                       <span className="font-semibold text-gray-900">{exam.question_count || 'N/A'}</span>
+
                                     </div>
+
                                     <div className="flex items-center justify-between text-xs">
+
                                       <span className="text-gray-600">Type:</span>
+
                                       <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+
                                         {exam.exam_type || 'Standard'}
+
                                       </span>
+
                                     </div>
+
                                   </div>
+
                                 </motion.div>
+
                               ))}
+
                             </div>
+
                           )}
+
                         </div>
+
+
 
                         {/* Reviews Management for CBT */}
+
                         <div className="bg-white rounded-xl p-6 border border-gray-200 mt-8">
+
                           <div className="flex items-center justify-between mb-4">
+
                             <h3 className="text-lg font-semibold text-gray-900">CBT Reviews Management</h3>
+
                             <button onClick={() => loadAdminReviews()} className="px-3 py-2 bg-yellow-50 text-yellow-700 rounded">Refresh</button>
+
                           </div>
+
                           <div>
+
                             {adminReviews && adminReviews.length === 0 && <div className="text-gray-500">No reviews found.</div>}
+
                             <div className="space-y-3">
+
                               {adminReviews?.map((r: any) => (
+
                                 <div key={r.id} className="p-3 border rounded flex items-start justify-between">
+
                                   <div>
+
                                     <div className="font-semibold">{r.name || r.author?.username || 'Anonymous'} <span className="text-xs text-gray-500">• {r.role}</span></div>
+
                                     <div className="text-xs text-gray-500">{r.message}</div>
+
                                     <div className="text-xs text-gray-400 mt-1">Exam: {r.cbt_exam} • Subject: {r.cbt_subject} • Score: {r.cbt_score}</div>
+
                                   </div>
+
                                   <div className="flex items-center gap-2">
+
                                     {!r.is_approved && <button onClick={() => approveReview(r.id)} className="px-3 py-1 bg-green-600 text-white rounded">Approve</button>}
+
                                     <button onClick={() => deleteReview(r.id)} className="px-3 py-1 bg-red-50 text-red-600 rounded">Delete</button>
+
                                   </div>
+
                                 </div>
+
                               ))}
+
                             </div>
+
                           </div>
+
                         </div>
+
+
 
                         {/* Top Scorers */}
+
                         {(cbtAnalytics?.top_scorers?.length || cbtAnalytics?.top_students?.length) ? (
+
                           <div className="bg-white rounded-xl p-6 border border-gray-200 mt-8">
+
                             <div className="flex items-center justify-between mb-4">
+
                               <h3 className="text-lg font-semibold text-gray-900">Top Scorers</h3>
+
                               <div className="text-sm text-gray-500">Top 3 recent high scorers</div>
+
                             </div>
+
                             <div className="space-y-3">
+
                               {(cbtAnalytics.top_scorers || cbtAnalytics.top_students).slice(0,3).map((s: any, idx: number) => (
+
                                 <div key={idx} className="flex items-center justify-between p-3 border rounded">
+
                                   <div>
+
                                     <div className="font-semibold">{s.name || s.username || s.user_name || 'Anonymous'}</div>
+
                                     <div className="text-xs text-gray-500">{s.exam || s.cbt_exam || ''} • {s.subject || s.cbt_subject || ''}</div>
+
                                   </div>
+
                                   <div className="text-right">
+
                                     <div className="text-lg font-bold text-yellow-700">{s.score != null ? `${s.score}%` : (s.cbt_score != null ? `${s.cbt_score}` : 'N/A')}</div>
+
                                     <div className="text-xs text-gray-400">{s.date ? new Date(s.date).toLocaleDateString() : (s.attempted_at ? new Date(s.attempted_at).toLocaleDateString() : '')}</div>
+
                                   </div>
+
                                 </div>
+
                               ))}
+
                             </div>
+
                           </div>
+
                         ) : null}
+
                       </div>
+
                     )}
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'mock-exams' && (
+
                   <MasterAdminMockPanel darkMode={darkMode} />
+
                 )}
+
+
 
                 {tab === 'exam-library' && (
+
                   <ExamLibraryManagement onManageExam={(exam) => {
+
                     setSelectedExamForSubjects({ id: exam.id, title: exam.title })
+
                     setShowSubjectForm(false)
+
                     loadSubjectsForExam(exam.id)
+
                     setTab('exams')
+
                   }} />
+
                 )}
 
+
+
                 {tab === 'exams' && (
+
                   <div>
+
                     {/* Show Question Management Page if selected */}
+
                     {showQuestionManagement && selectedSubjectForQuestions ? (
+
                       <QuestionManagementPage
+
                         subject={selectedSubjectForQuestions}
+
                         onBack={() => {
+
                           setShowQuestionManagement(false)
+
                           setSelectedSubjectForQuestions(null)
+
                         }}
+
                       />
+
                     ) : (
+
                       <div>
+
                         {examMessage && (
+
                           <motion.div
+
                             initial={{ opacity: 0, y: -10 }}
+
                             animate={{ opacity: 1, y: 0 }}
+
                             className={`mb-4 p-4 rounded-lg ${examMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
+
                           >
+
                             {examMessage.text}
+
                           </motion.div>
+
                         )}
+
+
 
                         {examManagementLoading ? (
+
                           <div className="flex items-center justify-center py-12">
+
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                         <span className="text-gray-600">Loading exams...</span>
+
                       </div>
+
                     ) : (
+
                       <div className="space-y-8">
+
                         {/* Exam Management Section */}
+
                         <div>
+
                           <div className="flex items-center justify-between mb-6">
+
                             <h2 className="text-2xl font-bold text-gray-900">Manage Exams</h2>
+
                             <motion.button
+
                               whileHover={{ scale: 1.05 }}
+
                               whileTap={{ scale: 0.95 }}
+
                               onClick={() => {
+
                                 setShowExamForm(!showExamForm)
+
                                 setEditingExam(null)
+
                                  setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20, subject_select_limit: 0 })
+
                               }}
+
                               className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+
                             >
+
                               + Add New Exam
+
                             </motion.button>
+
                           </div>
+
+
 
                           {showExamForm && (
+
                             <motion.div
+
                               initial={{ opacity: 0, y: -10 }}
+
                               animate={{ opacity: 1, y: 0 }}
+
                               className="bg-white border-2 border-yellow-200 rounded-xl p-6 mb-6"
+
                             >
+
                               <h3 className="text-lg font-semibold mb-4 text-gray-900">
+
                                 {editingExam ? 'Edit Exam' : 'Create New Exam'}
+
                               </h3>
+
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                                 <div>
+
                                   <label className="block text-sm font-medium text-gray-700 mb-2">Exam Title *</label>
+
                                   <input
+
                                     type="text"
+
                                     value={examFormData.title}
+
                                     onChange={(e) => setExamFormData({ ...examFormData, title: e.target.value })}
+
                                     placeholder="e.g., JAMB CBT, NECO, WAEC"
+
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                   />
+
                                 </div>
+
                                 <div>
+
                                   <label className="block text-sm font-medium text-gray-700 mb-2">Slug</label>
+
                                   <input
+
                                     type="text"
+
                                     value={examFormData.slug}
+
                                     onChange={(e) => setExamFormData({ ...examFormData, slug: e.target.value })}
+
                                     placeholder="Auto-generated if empty"
+
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                   />
+
                                 </div>
+
                                 <div className="md:col-span-2">
+
                                   <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+
                                   <textarea
+
                                     value={examFormData.description}
+
                                     onChange={(e) => setExamFormData({ ...examFormData, description: e.target.value })}
+
                                     placeholder="Exam description"
+
                                     rows={3}
+
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                   />
+
                                 </div>
+
                                 <div>
+
                                   <label className="block text-sm font-medium text-gray-700 mb-2">Time Limit (minutes)</label>
+
                                   <input
+
                                     type="number"
+
                                     value={examFormData.time_limit_minutes}
+
                                     onChange={(e) => setExamFormData({ ...examFormData, time_limit_minutes: parseInt(e.target.value) || 120 })}
+
                                     min="1"
+
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                   />
+
                                 </div>
+
                                 <div>
+
                                   <label className="block text-sm font-medium text-gray-700 mb-2">Free Trial Attempts</label>
+
                                   <input
+
                                     type="number"
+
                                     value={(examFormData as any).free_trial_attempts}
+
                                     onChange={(e) => setExamFormData({ ...examFormData, free_trial_attempts: parseInt(e.target.value) ?? 5 })}
+
                                     min="0"
+
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                   />
+
                                 </div>
+
                                 <div>
+
                                   <label className="block text-sm font-medium text-gray-700 mb-2">Trial Questions Per Subject</label>
+
                                   <input
+
                                     type="number"
+
                                     value={(examFormData as any).free_trial_questions_per_subject}
+
                                     onChange={(e) => setExamFormData({ ...examFormData, free_trial_questions_per_subject: parseInt(e.target.value) ?? 20 })}
+
                                     min="0"
+
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                   />
+
                                 </div>
+
                                 <div>
+
                                   <label className="block text-sm font-medium text-gray-700 mb-2">Subject Selection Limit</label>
+
                                   <input
+
                                     type="number"
+
                                     value={(examFormData as any).subject_select_limit ?? 0}
+
                                     onChange={(e) => setExamFormData({ ...examFormData, subject_select_limit: parseInt(e.target.value) || 0 })}
+
                                     min="0"
+
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                     placeholder="e.g., 4 (0 = unlock all)"
+
                                   />
+
                                 </div>
+
                               </div>
+
                               <div className="flex gap-3 mt-6">
+
                                 <motion.button
+
                                   whileHover={{ scale: 1.05 }}
+
                                   whileTap={{ scale: 0.95 }}
+
                                   onClick={createOrUpdateExam}
+
                                   disabled={savingExam}
+
                                   className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50"
+
                                 >
+
                                   {savingExam ? 'Saving...' : editingExam ? 'Update Exam' : 'Create Exam'}
+
                                 </motion.button>
+
                                 <button
+
                                   onClick={() => {
+
                                     setShowExamForm(false)
+
                                     setEditingExam(null)
+
                                     setExamFormData({ title: '', description: '', time_limit_minutes: 120, slug: '', free_trial_attempts: 5, free_trial_questions_per_subject: 20, subject_select_limit: 0 })
+
                                   }}
+
                                   className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-all"
+
                                 >
+
                                   Cancel
+
                                 </button>
+
                               </div>
+
                             </motion.div>
+
                           )}
+
+
 
                           {examsManagement.length === 0 ? (
+
                             <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+
                               <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+
                               <p className="text-gray-500 text-lg">No exams found. Create your first exam!</p>
+
                             </div>
+
                           ) : (
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
                               {examsManagement.map((exam) => (
+
                                 <motion.div
+
                                   key={exam.id}
+
                                   whileHover={{ y: -5 }}
+
                                   className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
+
                                 >
+
                                   <div className="flex items-start justify-between mb-4">
+
                                     <div className="flex-1">
+
                                       <h4 className="font-semibold text-gray-900 text-lg">{exam.title}</h4>
+
                                       <p className="text-xs text-gray-500 mt-1">{exam.slug}</p>
+
                                     </div>
+
                                     <div className="flex gap-2">
+
                                       <motion.button
+
                                         whileHover={{ scale: 1.1 }}
+
                                         whileTap={{ scale: 0.95 }}
+
                                         onClick={() => {
+
                                           setEditingExam(exam)
+
                                           setExamFormData({
+
                                             title: exam.title,
+
                                             description: exam.description || '',
+
                                             time_limit_minutes: exam.time_limit_minutes || 120,
+
                                             slug: exam.slug,
+
                                             free_trial_attempts: exam.free_trial_attempts ?? 5,
+
                                             free_trial_questions_per_subject: exam.free_trial_questions_per_subject ?? 20,
+
                                             subject_select_limit: exam.subject_select_limit ?? 0
+
                                           })
+
                                           setShowExamForm(true)
+
                                         }}
+
                                         className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-all"
+
                                         title="Edit"
+
                                       >
+
                                         <FileText className="w-4 h-4" />
+
                                       </motion.button>
+
                                       <motion.button
+
                                         whileHover={{ scale: 1.1 }}
+
                                         whileTap={{ scale: 0.95 }}
+
                                         onClick={() => deleteExam(exam.id)}
+
                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+
                                         title="Delete"
+
                                       >
+
                                         <Trash2 className="w-4 h-4" />
+
                                       </motion.button>
+
                                     </div>
+
                                   </div>
+
                                   <p className="text-sm text-gray-600 mb-3 line-clamp-2">{exam.description || 'No description'}</p>
+
                                   <div className="space-y-1 mb-4">
+
                                     <div className="flex justify-between text-xs">
+
                                       <span className="text-gray-600">Subjects:</span>
+
                                       <span className="font-semibold text-gray-900">{exam.subjects?.length || 0}</span>
+
                                     </div>
+
                                     <div className="flex justify-between text-xs">
+
                                       <span className="text-gray-600">Time Limit:</span>
+
                                       <span className="font-semibold text-gray-900">{exam.time_limit_minutes} mins</span>
+
                                     </div>
+
                                   </div>
+
                                   <motion.button
+
                                     whileHover={{ scale: 1.02 }}
+
                                     whileTap={{ scale: 0.98 }}
+
                                     onClick={() => {
+
                                       setSelectedExamForSubjects(exam)
+
                                       setShowSubjectForm(false)
+
                                       loadSubjectsForExam(exam.id)
+
                                     }}
+
                                     className="w-full px-4 py-2 bg-gradient-to-r from-yellow-50 to-yellow-50 text-yellow-700 rounded-lg font-medium hover:from-yellow-100 hover:to-yellow-100 transition-all border border-yellow-200"
+
                                   >
+
                                     Manage Subjects
+
                                   </motion.button>
+
                                 </motion.div>
+
                               ))}
+
                             </div>
+
                           )}
+
                         </div>
 
+
+
                         {/* Subject Management Section */}
+
                         {selectedExamForSubjects && (
+
                           <div>
+
                             <div className="flex items-center justify-between mb-6 pb-4 border-t-2 border-gray-200 pt-8">
+
                               <div>
+
                                 <button
+
                                   onClick={() => {
+
                                     setSelectedExamForSubjects(null)
+
                                     setShowSubjectForm(false)
+
                                     setEditingSubject(null)
+
                                   }}
+
                                   className="text-gray-600 hover:text-gray-900 mb-2 flex items-center gap-2 text-sm"
+
                                 >
+
                                   <ChevronLeft className="w-4 h-4" /> Back to Exams
+
                                 </button>
+
                                 <h2 className="text-2xl font-bold text-gray-900">
+
                                   Subjects: {selectedExamForSubjects.title}
+
                                 </h2>
+
                               </div>
+
                               <motion.button
+
                                 whileHover={{ scale: 1.05 }}
+
                                 whileTap={{ scale: 0.95 }}
+
                                 onClick={() => {
+
                                   setShowSubjectForm(!showSubjectForm)
+
                                   setEditingSubject(null)
+
                                   setSubjectFormData({ exam: selectedExamForSubjects.id.toString(), name: '', description: '' })
+
                                 }}
+
                                 className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+
                               >
+
                                 + Add Subject
+
                               </motion.button>
+
                             </div>
+
+
 
                             {showSubjectForm && (
+
                               <motion.div
+
                                 initial={{ opacity: 0, y: -10 }}
+
                                 animate={{ opacity: 1, y: 0 }}
+
                                 className="bg-white border-2 border-yellow-200 rounded-xl p-6 mb-6"
+
                               >
+
                                 <h3 className="text-lg font-semibold mb-4 text-gray-900">
+
                                   {editingSubject ? 'Edit Subject' : 'Create New Subject'}
+
                                 </h3>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                                   <div className="md:col-span-2">
+
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
+
                                     <input
+
                                       type="text"
+
                                       value={subjectFormData.name}
+
                                       onChange={(e) => setSubjectFormData({ ...subjectFormData, name: e.target.value })}
+
                                       placeholder="e.g., Mathematics, Chemistry, Physics"
+
                                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                     />
+
                                   </div>
+
                                   <div className="md:col-span-2">
+
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+
                                     <textarea
+
                                       value={subjectFormData.description}
+
                                       onChange={(e) => setSubjectFormData({ ...subjectFormData, description: e.target.value })}
+
                                       placeholder="Subject description"
+
                                       rows={3}
+
                                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                     />
+
                                   </div>
+
                                 </div>
+
                                 <div className="flex gap-3 mt-6">
+
                                   <motion.button
+
                                     whileHover={{ scale: 1.05 }}
+
                                     whileTap={{ scale: 0.95 }}
+
                                     onClick={createOrUpdateSubject}
+
                                     disabled={savingSubject}
+
                                     className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50"
+
                                   >
+
                                     {savingSubject ? 'Saving...' : editingSubject ? 'Update Subject' : 'Create Subject'}
+
                                   </motion.button>
+
                                   <button
+
                                     onClick={() => {
+
                                       setShowSubjectForm(false)
+
                                       setEditingSubject(null)
+
                                       setSubjectFormData({ exam: selectedExamForSubjects.id.toString(), name: '', description: '' })
+
                                     }}
+
                                     className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-all"
+
                                   >
+
                                     Cancel
+
                                   </button>
+
                                 </div>
+
                               </motion.div>
+
                             )}
+
+
 
                             {subjectList.length === 0 ? (
+
                               <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+
                                 <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+
                                 <p className="text-gray-500 text-lg">No subjects found for this exam</p>
+
                               </div>
+
                             ) : (
+
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                                 {subjectList.map((subject) => (
+
                                   <motion.div
+
                                     key={subject.id}
+
                                     whileHover={{ y: -5 }}
+
                                     className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
+
                                   >
+
                                     <div className="flex items-start justify-between mb-4">
+
                                       <div className="flex-1">
+
                                         <h4 className="font-semibold text-gray-900 text-lg">{subject.name}</h4>
+
                                         <p className="text-xs text-gray-500 mt-1">ID: {subject.id}</p>
+
                                       </div>
+
                                       <div className="flex gap-2">
+
                                         <motion.button
+
                                           whileHover={{ scale: 1.1 }}
+
                                           whileTap={{ scale: 0.95 }}
+
                                           onClick={() => {
+
                                             setEditingSubject(subject)
+
                                             setSubjectFormData({
+
                                               exam: selectedExamForSubjects.id.toString(),
+
                                               name: subject.name,
+
                                               description: subject.description || ''
+
                                             })
+
                                             setShowSubjectForm(true)
+
                                           }}
+
                                           className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-all"
+
                                           title="Edit"
+
                                         >
+
                                           <FileText className="w-4 h-4" />
+
                                         </motion.button>
+
                                         <motion.button
+
                                           whileHover={{ scale: 1.1 }}
+
                                           whileTap={{ scale: 0.95 }}
+
                                           onClick={() => deleteSubject(subject.id)}
+
                                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+
                                           title="Delete"
+
                                         >
+
                                           <Trash2 className="w-4 h-4" />
+
                                         </motion.button>
+
                                       </div>
+
                                     </div>
+
                                     <p className="text-sm text-gray-600 line-clamp-2">{subject.description || 'No description'}</p>
+
                                     <div className="mt-4 pt-4 border-t border-gray-200">
+
                                       <p className="text-xs text-gray-500 mb-3">
+
                                         Questions: <span className="font-semibold text-gray-900">{subject.question_count ?? 0}</span>
+
                                       </p>
+
                                       <motion.button
+
                                         whileHover={{ scale: 1.02 }}
+
                                         whileTap={{ scale: 0.98 }}
+
                                         onClick={() => {
+
                                           setSelectedSubjectForQuestions(subject)
+
                                           setShowQuestionManagement(true)
+
                                         }}
+
                                         className="w-full px-3 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition-all border border-blue-200 text-sm"
+
                                       >
+
                                         View & Manage Questions
+
                                       </motion.button>
+
                                     </div>
+
                                   </motion.div>
+
                                 ))}
+
                               </div>
+
                             )}
+
                           </div>
+
                         )}
+
                         
+
                         {/* Activation Fees Management included here for context */}
+
                         <div className="mt-8">
+
                           <div className="flex items-center justify-between mb-4">
+
                             <h3 className="text-lg font-semibold text-gray-900">Payment Split Configuration</h3>
+
                             <div>
+
                               <p className="text-xs text-gray-600">Configure creator share percentages (platform receives the remainder).</p>
+
                             </div>
+
                           </div>
+
+
 
                           <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
+
                             {splitMessage && (
+
                               <div className={`p-3 rounded-md mb-3 ${splitMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+
                                 {splitMessage.text}
+
                               </div>
+
                             )}
 
+
+
                             <div className="grid grid-cols-2 gap-4 items-end">
+
                               <div>
+
                                 <label className="block text-sm font-medium text-gray-700">Tutor Share (%)</label>
+
                                 <input type="number" value={splitConfig?.tutor_share || ''} onChange={(e) => setSplitConfig({ ...(splitConfig || { tutor_share: '', institution_share: '' }), tutor_share: e.target.value })} className="w-full mt-1 p-2 border rounded-lg" />
+
                               </div>
+
                               <div>
+
                                 <label className="block text-sm font-medium text-gray-700">Institution Share (%)</label>
+
                                 <input type="number" value={splitConfig?.institution_share || ''} onChange={(e) => setSplitConfig({ ...(splitConfig || { tutor_share: '', institution_share: '' }), institution_share: e.target.value })} className="w-full mt-1 p-2 border rounded-lg" />
+
                               </div>
+
                               <div className="col-span-2 flex justify-end">
+
                                 <button onClick={() => loadSplitConfig()} className="px-4 py-2 bg-gray-100 rounded-lg mr-2">Reload</button>
+
                                 <button onClick={() => saveSplitConfig()} className={`px-4 py-2 rounded-lg ${splitLoading ? 'bg-gray-400 text-gray-100' : 'bg-yellow-600 text-white'}`}>{splitLoading ? 'Saving...' : 'Save'}</button>
+
                               </div>
+
                             </div>
+
                           </div>
+
+
 
                           <div className="flex items-center justify-between mb-4">
+
                             <h3 className="text-lg font-semibold text-gray-900">Activation Fees</h3>
+
                               <div className="flex items-center space-x-3">
+
                               <button onClick={() => { setShowActivationForm(true); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '', activation_tutor_amount: '', activation_institution_amount: '' }); if (examsManagement.length === 0) loadExamsManagement() }} className="px-4 py-2 bg-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg">+ New Fee</button>
+
                               {activationFees.some((f:any) => f.type === 'account' && !f.account_role) && (
+
                                 <button onClick={async () => {
+
                                   if (!confirm('Split combined account activation fees into separate Tutor and Institution entries?')) return
+
                                   try {
+
                                     const token = localStorage.getItem('access')
+
                                     const combined = activationFees.filter((f: any) => f.type === 'account' && !f.account_role)
+
                                     for (const f of combined) {
+
                                       // create tutor
+
                                       await axios.post(`${API_BASE}/payments/admin/activation-fees/`, { type: 'account', account_role: 'tutor', currency: f.currency || 'NGN', amount: Number(f.amount) }, { headers: { Authorization: `Bearer ${token}` } })
+
                                       // create institution
+
                                       await axios.post(`${API_BASE}/payments/admin/activation-fees/`, { type: 'account', account_role: 'institution', currency: f.currency || 'NGN', amount: Number(f.amount) }, { headers: { Authorization: `Bearer ${token}` } })
+
                                       // delete original combined
+
                                       await axios.delete(`${API_BASE}/payments/admin/activation-fees/${f.id}/`, { headers: { Authorization: `Bearer ${token}` } })
+
                                     }
+
                                     setActivationMessage({ type: 'success', text: 'Combined account fees split' })
+
                                     loadActivationFees()
+
                                     setTimeout(() => setActivationMessage(null), 3000)
+
                                   } catch (err) {
+
                                     console.error('Failed to split combined fees', err)
+
                                     setActivationMessage({ type: 'error', text: 'Failed to split combined fees' })
+
                                     setTimeout(() => setActivationMessage(null), 3000)
+
                                   }
+
                                 }} className="px-4 py-2 bg-gray-800 text-white rounded-xl font-semibold hover:shadow-lg">Split Combined Account Fees</button>
+
                               )}
+
                             </div>
+
                           </div>
 
+
+
                           {activationMessage && (
+
                             <div className={`p-3 rounded-lg mb-4 ${activationMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+
                               {activationMessage.text}
+
                             </div>
+
                           )}
 
+
+
                           {showActivationForm && (
+
                             <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
+
                               <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                                  <select value={activationForm.type} onChange={(e) => setActivationForm({ ...activationForm, type: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
-                                    <option value="exam">Exam</option>
-                                    <option value="interview">Interview Subject</option>
-                                    <option value="account_tutor">Account (Tutor)</option>
-                                    <option value="account_institution">Account (Institution)</option>
-                                  </select>
-                                </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                                  <select value={activationForm.currency} onChange={(e) => setActivationForm({ ...activationForm, currency: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
-                                    {SUPPORTED_CURRENCIES.map((c) => (
-                                      <option key={c.code} value={c.code}>{c.label}</option>
-                                    ))}
+
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+
+                                  <select value={activationForm.type} onChange={(e) => setActivationForm({ ...activationForm, type: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
+
+                                    <option value="exam">Exam</option>
+
+                                    <option value="interview">Interview Subject</option>
+
+                                    <option value="account_tutor">Account (Tutor)</option>
+
+                                    <option value="account_institution">Account (Institution)</option>
+
                                   </select>
+
                                 </div>
+
+
+
+                                <div>
+
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+
+                                  <select value={activationForm.currency} onChange={(e) => setActivationForm({ ...activationForm, currency: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
+
+                                    {SUPPORTED_CURRENCIES.map((c) => (
+
+                                      <option key={c.code} value={c.code}>{c.label}</option>
+
+                                    ))}
+
+                                  </select>
+
+                                </div>
+
+
 
                                 {(activationForm.type === 'exam' || activationForm.type === 'interview') && (
+
                                   <div>
+
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Select Exam</label>
+
                                     <select value={activationForm.exam_identifier} onChange={(e) => { setActivationForm({ ...activationForm, exam_identifier: e.target.value }); if (activationForm.type === 'interview' || activationForm.type === 'interview_subject') loadSubjectsForExam(Number(e.target.value)) }} className="w-full px-3 py-2 border rounded-lg">
+
                                       <option value="">Choose an exam...</option>
+
                                       {examsManagement.map((ex) => (
+
                                         <option key={ex.id} value={ex.id}>{ex.title}</option>
+
                                       ))}
+
                                     </select>
+
                                   </div>
+
                                 )}
+
+
 
                                 
 
+
+
                                 {activationForm.type === 'interview' && (
+
                                   <div>
+
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Select Subject</label>
+
                                     <select value={activationForm.subject_id} onChange={(e) => setActivationForm({ ...activationForm, subject_id: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
+
                                       <option value="">Choose a subject...</option>
+
                                       {subjectList.map((s) => (
+
                                         <option key={s.id} value={s.id}>{s.name}</option>
+
                                       ))}
+
                                     </select>
+
                                   </div>
+
                                 )}
 
+
+
                                 <div>
+
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+
                                   <input value={activationForm.amount} onChange={(e) => setActivationForm({ ...activationForm, amount: e.target.value })} className="w-full px-3 py-2 border rounded-lg" />
+
                                 </div>
+
+
 
                                 <div className="flex items-end justify-end">
+
                                   <div className="flex space-x-2">
+
                                     <button onClick={() => { setShowActivationForm(false); setActivationForm({ id: null, type: 'exam', exam_identifier: '', subject_id: '', account_role: '', currency: 'NGN', amount: '', activation_tutor_amount: '', activation_institution_amount: '' }) }} className="px-4 py-2 bg-gray-100 rounded-lg">Cancel</button>
+
                                     <button onClick={() => saveActivationFee()} className="px-4 py-2 bg-yellow-600 text-white rounded-lg">Save</button>
+
                                   </div>
+
                                 </div>
+
                               </div>
+
                             </div>
+
                           )}
+
+
 
                           <div className="bg-white rounded-xl p-6 border border-gray-200">
+
                             <h4 className="text-md font-semibold text-gray-900 mb-4">Configured Activation Fees</h4>
+
                             {activationLoading ? (
+
                               <div className="py-8 text-center text-gray-500">Loading activation fees...</div>
+
                             ) : activationFees.length === 0 ? (
+
                               <div className="py-8 text-center text-gray-500">No activation fees configured</div>
+
                             ) : (
+
                               <div className="overflow-x-auto">
+
                                 <table className="w-full">
+
                                   <thead>
+
                                     <tr className="border-b border-gray-200">
+
                                       <th className="text-left px-4 py-2 text-sm font-semibold">ID</th>
+
                                       <th className="text-left px-4 py-2 text-sm font-semibold">Type</th>
+
                                       <th className="text-left px-4 py-2 text-sm font-semibold">Exam / Subject / Role</th>
+
                                       <th className="text-left px-4 py-2 text-sm font-semibold">Currency</th>
+
                                       <th className="text-left px-4 py-2 text-sm font-semibold">Amount</th>
+
                                       <th className="text-left px-4 py-2 text-sm font-semibold">Actions</th>
+
                                     </tr>
+
                                   </thead>
+
                                   <tbody>
+
                                     {activationFees.map((f: any) => (
+
                                       <tr key={f.id} className="border-b border-gray-100 hover:bg-gray-50">
+
                                         <td className="px-4 py-3 text-sm text-gray-900">#{f.id}</td>
+
                                         <td className="px-4 py-3 text-sm text-gray-600">{f.type === 'account' ? `account${f.account_role ? ` (${f.account_role})` : ''}` : f.type}</td>
+
                                         <td className="px-4 py-3 text-sm text-gray-600">{f.type === 'account' ? (f.account_role || 'All') : (f.exam_identifier || f.subject_id || '—')}</td>
+
                                         <td className="px-4 py-3 text-sm text-gray-600">{f.currency}</td>
+
                                         <td className="px-4 py-3 text-sm font-semibold text-gray-900">{parseFloat(f.amount).toFixed(2)}</td>
+
                                         <td className="px-4 py-3 text-sm">
+
                                           <div className="flex items-center space-x-2">
+
                                             <button onClick={() => {
+
                                               const newType = f.type === 'account' ? (f.account_role === 'tutor' ? 'account_tutor' : (f.account_role === 'institution' ? 'account_institution' : 'account_tutor')) : f.type
+
                                               setActivationForm({ id: f.id, type: newType, exam_identifier: f.exam_identifier || '', subject_id: f.subject_id || '', account_role: f.account_role || '', currency: f.currency || 'NGN', amount: String(f.amount), activation_tutor_amount: '', activation_institution_amount: '' })
+
                                               setShowActivationForm(true);
+
                                               if (examsManagement.length === 0) loadExamsManagement();
+
                                               if ((f.type === 'interview_subject' || f.type === 'interview') && f.exam_identifier) loadSubjectsForExam(Number(f.exam_identifier))
+
                                             }} className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg">Edit</button>
+
                                             <button onClick={() => deleteActivationFee(f.id)} className="px-3 py-1 bg-red-100 text-red-700 rounded-lg">Delete</button>
+
                                           </div>
+
                                         </td>
+
                                       </tr>
+
                                     ))}
+
                                   </tbody>
+
                                 </table>
+
                               </div>
+
                             )}
+
                           </div>
+
                         </div>
+
                       </div>
+
                     )}
+
                     </div>
+
                     )}
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'referrals' && (
+
                   <AdminExamReferralPanel />
+
                 )}
+
+
 
                 {tab === 'legacy-referrals' && (
+
                   <div className="space-y-6">
+
                     <div className="flex items-center justify-between">
+
                       <div>
+
                         <h2 className="text-2xl font-bold text-gray-900">Referral Management</h2>
+
                         <p className="text-gray-600 mt-1">Track referral progress, rewards, and point redemptions.</p>
+
                       </div>
+
                       <button onClick={loadReferralAdmin} className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">Refresh</button>
+
                     </div>
+
+
 
                     <div className="bg-white rounded-lg border p-5">
+
                       <h3 className="font-semibold text-gray-900 mb-3">Referral Reward Settings</h3>
+
                       <div className="flex flex-col gap-3">
+
                         <div className="flex-1">
+
                           <label className="text-sm font-medium text-gray-700 mb-1 block">Referral Percent (Decimal)</label>
+
                           <input type="number" min="0" step="0.01" value={referralPercentInput} onChange={(e) => setReferralPercentInput(e.target.value)} className="px-3 py-2 border rounded-lg w-full" placeholder="e.g., 0.05 for 5%" />
+
                           <p className="text-xs text-gray-500 mt-1">Enter as decimal fraction (0.05 = 5%, 0.10 = 10%, 0.25 = 25%)</p>
+
                         </div>
+
                         <button onClick={saveReferralSettings} className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 w-full sm:w-auto font-medium transition-colors">Save Referral Settings</button>
+
                       </div>
+
                       {referralMessage && <p className={`text-sm mt-2 ${referralMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{referralMessage.text}</p>}
+
                     </div>
+
+
 
                     {referralAdminLoading ? (
+
                       <div className="flex items-center justify-center py-12">
+
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                         <span className="text-gray-600">Loading referrals...</span>
+
                       </div>
+
                     ) : (
+
                       <>
+
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
                           {[
+
                             ['Total Events', referralAdminData?.summary?.total_events || 0],
+
                             ['Successful Referrals', referralAdminData?.summary?.successful_referrals || 0],
+
                             ['Points Awarded', referralAdminData?.summary?.awarded_points || 0],
+
                             ['Points Redeemed', referralAdminData?.summary?.redeemed_points || 0],
+
                           ].map(([label, value]) => (
+
                             <div key={String(label)} className="bg-white rounded-lg border p-5">
+
                               <div className="text-sm text-gray-600">{label}</div>
+
                               <div className="text-2xl font-bold text-gray-900 mt-1">{Number(value).toLocaleString()}</div>
+
                             </div>
+
                           ))}
+
                         </div>
+
+
 
                         <div className="bg-white rounded-lg border overflow-hidden">
+
                           <div className="overflow-x-auto">
+
                             <table className="w-full">
+
                               <thead className="bg-gray-50 border-b">
+
                                 <tr>
+
                                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Referrer</th>
+
                                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Referred User</th>
+
                                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Action</th>
+
                                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Item</th>
+
                                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Points</th>
+
                                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Date</th>
+
                                 </tr>
+
                               </thead>
+
                               <tbody className="divide-y divide-gray-100">
+
                                 {(referralAdminData?.results || []).map((event: any) => (
+
                                   <tr key={event.id} className="hover:bg-gray-50">
+
                                     <td className="px-4 py-3 text-sm text-gray-900">{event.referrer_name || event.referrer_email}</td>
+
                                     <td className="px-4 py-3 text-sm text-gray-600">{event.referred_name || event.referred_email || '—'}</td>
+
                                     <td className="px-4 py-3 text-sm text-gray-600 capitalize">{String(event.event_type || '').replace(/_/g, ' ')}</td>
+
                                     <td className="px-4 py-3 text-sm text-gray-600">{event.item_title || event.material_id || '—'}</td>
+
                                     <td className={`px-4 py-3 text-sm font-semibold ${event.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>{event.points > 0 ? '+' : ''}{event.points}</td>
+
                                     <td className="px-4 py-3 text-sm text-gray-600">{event.created_at ? new Date(event.created_at).toLocaleString() : '—'}</td>
+
                                   </tr>
+
                                 ))}
+
                                 {(!referralAdminData?.results || referralAdminData.results.length === 0) && (
+
                                   <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No referral activity yet</td></tr>
+
                                 )}
+
                               </tbody>
+
                             </table>
+
                           </div>
+
                         </div>
+
                       </>
+
                     )}
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'payments' && (
+
                   <div>
+
                     {paymentsLoading ? (
+
                       <div className="flex items-center justify-center py-12">
+
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                         <span className="text-gray-600">Loading payment data...</span>
+
                       </div>
+
                     ) : (
+
                       <div>
+
                         {/* Payment Stats Cards */}
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
                           <motion.div
+
                             whileHover={{ y: -5 }}
+
                             className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"
+
                           >
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+
                                 <BarChart3 className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Total Revenue</h3>
+
                             <p className="text-2xl font-bold text-yellow-900 break-words">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats?.total_revenue || 0)}</p>
+
                           </motion.div>
 
+
+
                           <motion.div
+
                             whileHover={{ y: -5 }}
+
                             className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"
+
                           >
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+
                                 <Briefcase className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Transactions</h3>
+
                             <p className="text-3xl font-bold text-yellow-900">{paymentStats?.total_transactions || 0}</p>
+
                           </motion.div>
 
+
+
                           <motion.div
+
                             whileHover={{ y: -5 }}
+
                             className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200"
+
                           >
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+
                                 <Shield className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Platform Commission</h3>
+
                             <p className="text-2xl font-bold text-yellow-900 break-words">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats?.platform_commission || 0)}</p>
+
                           </motion.div>
 
+
+
                           <motion.div
+
                             whileHover={{ y: -5 }}
+
                             className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200"
+
                           >
+
                             <div className="flex items-center justify-between mb-4">
+
                               <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+
                                 <Clock className="w-6 h-6 text-white" />
+
                               </div>
+
                             </div>
+
                             <h3 className="text-gray-700 text-sm font-medium mb-1">Pending Payouts</h3>
+
                             <p className="text-2xl font-bold text-orange-900 break-words">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(paymentStats?.pending_payouts || 0)}</p>
+
                           </motion.div>
+
                         </div>
+
+
 
                         {/* Transaction History */}
+
                         <div className="bg-white rounded-xl p-6 border border-gray-200">
+
                           <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Transactions</h3>
+
                           {payments.length === 0 ? (
+
                             <div className="text-center py-12">
+
                               <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+
                               <p className="text-gray-500">No transactions found</p>
+
                             </div>
+
                           ) : (
+
                             <div className="overflow-x-auto">
+
                               <table className="w-full">
+
                                 <thead>
+
                                   <tr className="border-b border-gray-200">
+
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">ID</th>
+
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Course</th>
+
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Amount</th>
+
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Gateway</th>
+
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Reference</th>
+
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Gateway Fee</th>
+
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Platform Fee</th>
+
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Status</th>
+
                                     <th className="text-left px-4 py-3 font-semibold text-gray-900">Date</th>
+
                                   </tr>
+
                                 </thead>
+
                                 <tbody>
+
                                   {payments.map((payment) => (
+
                                     <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
+
                                       <td className="px-4 py-3 text-sm text-gray-900">#{payment.id}</td>
+
                                       <td className="px-4 py-3 text-sm text-gray-600">
+
                                         {payment.course_title || (payment.kind === 'unlock' ? 'Account Activation' : payment.diploma_title || 'Payment')}
+
                                       </td>
+
                                       <td className="px-4 py-3 text-sm text-gray-900 font-semibold">₦{parseFloat(payment.amount || 0).toLocaleString()}</td>
+
                                       <td className="px-4 py-3 text-sm text-gray-600 capitalize">{payment.gateway || '—'}</td>
+
                                       <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs">{payment.reference ? payment.reference.substring(0, 12) + '...' : '—'}</td>
+
                                       <td className="px-4 py-3 text-sm text-gray-600">₦{parseFloat(payment.gateway_fee || 0).toLocaleString()}</td>
+
                                       <td className="px-4 py-3 text-sm text-gray-600">₦{parseFloat(payment.merchant_fee || 0).toLocaleString()}</td>
+
                                       <td className="px-4 py-3 text-sm">
+
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+
                                           payment.status === 'success' ? 'bg-yellow-100 text-yellow-800' :
+
                                           payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+
                                           'bg-red-100 text-red-800'
+
                                         }`}>
+
                                           {payment.status === 'success' ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
+
                                           {payment.status?.charAt(0).toUpperCase() + payment.status?.slice(1)}
+
                                         </span>
+
                                       </td>
+
                                       <td className="px-4 py-3 text-sm text-gray-600">{new Date(payment.created_at).toLocaleDateString()}</td>
+
                                     </tr>
+
                                   ))}
+
                                 </tbody>
+
                               </table>
+
                             </div>
+
                           )}
+
+
 
                           {/* Pagination */}
+
                           {payments.length > 0 && (
+
                             <div className="mt-6 flex items-center justify-between px-6 py-4 border-t border-gray-200">
+
                               <div className="text-sm text-gray-600">
+
                                 Showing {(paymentPage - 1) * 10 + 1} to {Math.min(paymentPage * 10, paymentPageInfo.count)} of {paymentPageInfo.count?.toLocaleString() || '0'} transactions
+
                               </div>
+
                               <div className="flex space-x-2">
+
                                 <motion.button
+
                                   whileHover={{ scale: 1.05 }}
+
                                   whileTap={{ scale: 0.95 }}
+
                                   onClick={() => loadPayments(paymentPage - 1)}
+
                                   disabled={!paymentPageInfo.previous}
+
                                   className={`px-4 py-2 rounded-lg font-medium flex items-center ${
+
                                     paymentPageInfo.previous
+
                                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+
                                       : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+
                                   }`}
+
                                 >
+
                                   <ChevronLeft className="w-4 h-4 mr-1" />
+
                                   Previous
+
                                 </motion.button>
+
                                 <motion.button
+
                                   whileHover={{ scale: 1.05 }}
+
                                   whileTap={{ scale: 0.95 }}
+
                                   onClick={() => loadPayments(paymentPage + 1)}
+
                                   disabled={!paymentPageInfo.next}
+
                                   className={`px-4 py-2 rounded-lg font-medium flex items-center ${
+
                                     paymentPageInfo.next
+
                                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+
                                       : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+
                                   }`}
+
                                 >
+
                                   Next
+
                                   <ChevronRight className="w-4 h-4 ml-1" />
+
                                 </motion.button>
+
                               </div>
+
                             </div>
+
                           )}
+
                         </div>
+
                       </div>
+
                     )}
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'promos' && (
+
                   <div>
+
                     <div className="mb-6 flex items-center justify-between">
+
                       <h3 className="text-lg font-semibold text-gray-900">Promo Codes</h3>
+
                       <div>
+
                         <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => { setShowPromoForm(true); setEditingPromo(null); setPromoFormData({code: '', amount: '', is_percentage: false, max_uses: '', expires_at: '', applicable_to: 'all', applicable_id: '', active: true}); if (exams.length === 0) loadExams(); }} className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium">+ New Promo</motion.button>
+
                       </div>
+
                     </div>
+
+
 
                     {promosLoading ? (
+
                       <div className="flex items-center justify-center py-8">
+
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                         <span className="text-gray-600">Loading promos...</span>
+
                       </div>
+
                     ) : (
+
                       <div>
+
                         <div className="overflow-x-auto bg-white rounded-lg shadow">
+
                           <table className="min-w-full divide-y divide-gray-200">
+
                             <thead className="bg-gray-50">
+
                               <tr>
+
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Code</th>
+
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Amount</th>
+
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Uses</th>
+
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Expires</th>
+
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Active</th>
+
                                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Actions</th>
+
                               </tr>
+
                             </thead>
+
                             <tbody className="bg-white divide-y divide-gray-100">
+
                               {promos.map((p) => (
+
                                 <tr key={p.id}>
+
                                   <td className="px-4 py-3 text-sm text-gray-900 font-mono">{p.code}</td>
+
                                   <td className="px-4 py-3 text-sm text-gray-600">{p.is_percentage ? `${p.amount}%` : p.amount}</td>
+
                                   <td className="px-4 py-3 text-sm text-gray-600">{p.uses}{p.max_uses ? ` / ${p.max_uses}` : ''}</td>
+
                                   <td className="px-4 py-3 text-sm text-gray-600">{p.expires_at ? new Date(p.expires_at).toLocaleString() : '—'}</td>
+
                                   <td className="px-4 py-3 text-sm text-gray-600">{p.active ? 'Yes' : 'No'}</td>
+
                                   <td className="px-4 py-3 text-sm text-right">
+
                                     <div className="flex items-center justify-end gap-2">
+
                                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => {
+
                                         // parse applicable_to (support exam:<id> encoding)
+
                                         let applicable_to = p.applicable_to || 'all'
+
                                         let applicable_id = ''
+
                                         if (typeof applicable_to === 'string' && applicable_to.startsWith('exam:')) {
+
                                           applicable_id = applicable_to.split(':', 2)[1] || ''
+
                                           applicable_to = 'exam'
+
                                         }
+
                                           setEditingPromo(p);
+
                                           setShowPromoForm(true);
+
                                           if (exams.length === 0) loadExams();
+
                                         // convert server UTC time to local datetime-local value
+
                                         let expiresLocal = ''
+
                                         if (p.expires_at) {
+
                                           try {
+
                                             const d = new Date(p.expires_at)
+
                                             expiresLocal = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0,16)
+
                                           } catch (e) {
+
                                             expiresLocal = ''
+
                                           }
+
                                         }
+
                                         setPromoFormData({
+
                                           code: p.code || '',
+
                                           amount: String(p.amount),
+
                                           is_percentage: !!p.is_percentage,
+
                                           max_uses: p.max_uses ? String(p.max_uses) : '',
+
                                           expires_at: expiresLocal,
+
                                           applicable_to: applicable_to,
+
                                           applicable_id: applicable_id,
+
                                           active: !!p.active
+
                                         })
+
                                       }} className="px-3 py-1 bg-gray-100 rounded">Edit</motion.button>
+
                                       <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => deletePromo(p.id)} className="px-3 py-1 bg-red-100 text-red-700 rounded">Delete</motion.button>
+
                                     </div>
+
                                   </td>
+
                                 </tr>
+
                               ))}
+
                               {promos.length === 0 && (
+
                                 <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">No promo codes yet</td></tr>
+
                               )}
+
                             </tbody>
+
                           </table>
+
                         </div>
+
                       </div>
+
                     )}
+
+
 
                     <AnimatePresence>
+
                       {showPromoForm && (
+
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+
                           <motion.div initial={{ y: 20 }} animate={{ y: 0 }} exit={{ y: 20 }} className="w-full max-w-md bg-white rounded-lg p-6">
+
                             <h4 className="text-lg font-semibold mb-3">{editingPromo ? 'Edit Promo' : 'New Promo'}</h4>
+
                             <div className="space-y-3">
+
                               <input placeholder="Code (optional - auto)" value={promoFormData.code} onChange={(e) => setPromoFormData(prev => ({...prev, code: e.target.value}))} className="w-full px-3 py-2 border rounded" />
+
                               <div className="flex gap-2">
+
                                 <input placeholder="Amount" value={promoFormData.amount} onChange={(e) => setPromoFormData(prev => ({...prev, amount: e.target.value}))} className="w-2/3 px-3 py-2 border rounded" />
+
                                 <label className="flex items-center gap-2"><input type="checkbox" checked={promoFormData.is_percentage} onChange={(e) => setPromoFormData(prev => ({...prev, is_percentage: e.target.checked}))} /> Percentage</label>
+
                               </div>
+
                               <input placeholder="Max uses (empty for unlimited)" value={promoFormData.max_uses} onChange={(e) => setPromoFormData(prev => ({...prev, max_uses: e.target.value}))} className="w-full px-3 py-2 border rounded" />
+
                               <input type="datetime-local" value={promoFormData.expires_at} onChange={(e) => setPromoFormData(prev => ({...prev, expires_at: e.target.value}))} className="w-full px-3 py-2 border rounded" />
+
                               <div className="flex items-center justify-between">
+
                                 <div className="w-2/3">
+
                                   <label className="block text-xs text-gray-500 mb-1">Applicable To</label>
+
                                   <select value={promoFormData.applicable_to} onChange={(e) => setPromoFormData(prev => ({...prev, applicable_to: e.target.value, applicable_id: ''}))} className="w-full px-3 py-2 border rounded">
+
                                     <option value="all">All</option>
+
                                     <option value="exam">Exam</option>
+
                                     <option value="interview">Interview Subject</option>
+
                                     <option value="account_tutor">Account (Tutor)</option>
+
                                     <option value="account_institution">Account (Institution)</option>
+
                                   </select>
+
                                   {promoFormData.applicable_to === 'exam' && (
+
                                     <div className="mt-2">
+
                                       <label className="block text-xs text-gray-500 mb-1">Choose Exam</label>
+
                                       <select value={promoFormData.applicable_id || ''} onChange={(e) => setPromoFormData(prev => ({...prev, applicable_id: e.target.value}))} className="w-full px-3 py-2 border rounded">
+
                                         <option value="">-- Select exam --</option>
+
                                         {exams.map((ex: any) => (
+
                                           <option key={ex.id} value={ex.id}>{ex.title || ex.name || ex.slug || `Exam ${ex.id}`}</option>
+
                                         ))}
+
                                       </select>
+
                                     </div>
+
                                   )}
+
                                 </div>
+
                                 <label className="flex items-center gap-2"><input type="checkbox" checked={promoFormData.active} onChange={(e) => setPromoFormData(prev => ({...prev, active: e.target.checked}))} /> Active</label>
+
                               </div>
+
                             </div>
+
                             <div className="mt-4 flex justify-end gap-2">
+
                               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setShowPromoForm(false); setEditingPromo(null) }} className="px-4 py-2 bg-gray-100 rounded">Cancel</motion.button>
+
                               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => savePromo()} className="px-4 py-2 bg-yellow-600 text-white rounded">Save</motion.button>
+
                             </div>
+
                           </motion.div>
+
                         </motion.div>
+
                       )}
+
                     </AnimatePresence>
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'broadcast' && (
+
                   <div>
+
                     <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Email Broadcast</h2>
+
                     {broadcastMessage && (
+
                       <div className={`p-4 rounded-lg mb-6 ${broadcastMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+
                         {broadcastMessage.text}
+
                       </div>
+
                     )}
+
                     <div className={`p-6 rounded-xl border shadow-sm ${darkMode ? 'bg-[#1a1d27] border-slate-700/50' : 'bg-white border-gray-200'}`}>
+
                       <div className="grid grid-cols-1 gap-6">
+
                         <div>
+
                           <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Target Audience</label>
+
                           <select
+
                             value={broadcastAudience}
+
                             onChange={(e) => setBroadcastAudience(e.target.value)}
+
                             className={`w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 ${darkMode ? 'bg-[#161922] border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+
                           >
+
                             <option value="all">All Users</option>
+
                             <option value="student">Students</option>
+
                             <option value="tutor">Tutors</option>
+
                             <option value="institution">Institutions</option>
+
                           </select>
+
                         </div>
+
                         <div>
+
                           <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Subject</label>
+
                           <input
+
                             type="text"
+
                             value={broadcastSubject}
+
                             onChange={(e) => setBroadcastSubject(e.target.value)}
+
                             className={`w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 ${darkMode ? 'bg-[#161922] border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+
                             placeholder="e.g. Important Platform Update"
+
                           />
+
                         </div>
+
                         <div>
+
                           <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-gray-700'}`}>Message</label>
+
                           <div className={darkMode ? 'text-black bg-white rounded overflow-hidden' : 'bg-white text-black'}>
+
                             <ReactQuill
+
                               ref={broadcastQuillRef as any}
+
                               theme="snow"
+
                               value={broadcastContent}
+
                               onChange={setBroadcastContent}
+
                               modules={broadcastQuillModules}
+
                               className="h-64 mb-12"
+
                             />
+
                           </div>
+
                         </div>
+
                         <div className="flex justify-end mt-4">
+
                           <button
+
                             onClick={sendBroadcast}
+
                             disabled={isBroadcasting}
+
                             className="flex items-center gap-2 px-6 py-2.5 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+
                           >
+
                             {isBroadcasting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
+
                             {isBroadcasting ? 'Sending...' : 'Send Broadcast'}
+
                           </button>
+
                         </div>
+
                       </div>
+
                     </div>
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'blog' && (
+
                   <div>
+
                     {/* Sub-tab navigation */}
+
                     <div className="flex border-b border-gray-200 mb-6">
+
                       <button
+
                         onClick={() => setBlogSubTab('posts')}
+
                         className={`py-2.5 px-6 font-semibold text-sm transition-all border-b-2 -mb-px ${
+
                           blogSubTab === 'posts'
+
                             ? 'border-yellow-600 text-yellow-600'
+
                             : 'border-transparent text-gray-500 hover:text-gray-700'
+
                         }`}
+
                       >
+
                         Manage Posts
+
                       </button>
+
                       <button
+
                         onClick={() => setBlogSubTab('ads')}
+
                         className={`py-2.5 px-6 font-semibold text-sm transition-all border-b-2 -mb-px ${
+
                           blogSubTab === 'ads'
+
                             ? 'border-yellow-600 text-yellow-600'
+
                             : 'border-transparent text-gray-500 hover:text-gray-700'
+
                         }`}
+
                       >
+
                         Manage Ads
+
                       </button>
+
                     </div>
+
+
 
                     {blogSubTab === 'posts' && (
+
                       <div>
+
                         {blogMessage && (
+
                           <div className={`p-3 rounded-lg mb-4 ${blogMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+
                             {blogMessage.text}
+
                           </div>
+
                         )}
+
                         {blogsLoading ? (
+
                           <div className="flex items-center justify-center py-12">
+
                             <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                             <span className="text-gray-600">Loading blogs...</span>
+
                           </div>
+
                         ) : (
+
                           <div>
+
                             <div className="mb-6 flex items-center justify-between">
+
                               <h3 className="text-lg font-semibold text-gray-900">Blog Posts</h3>
+
                               <div className="flex items-center gap-3">
+
                                 {/* Ensure visible on desktop: duplicate CTA that is explicitly shown on md+ */}
+
                                 <motion.button
+
                                   whileHover={{ scale: 1.05 }}
+
                                   whileTap={{ scale: 0.95 }}
+
                                   onClick={() => {
+
                                     setShowBlogForm(true)
+
                                     setEditingBlog(null)
+
                                     setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: '', is_featured: false, is_trending: false, is_popular: false})
+
                                   }}
+
                                   className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg hidden md:inline-flex"
+
                                 >
+
                                   + New Blog Post
+
                                 </motion.button>
+
+
 
                                 {/* Also include a compact button visible on small screens */}
+
                                 <motion.button
+
                                   whileHover={{ scale: 1.05 }}
+
                                   whileTap={{ scale: 0.95 }}
+
                                   onClick={() => { setShowBlogForm(true); setEditingBlog(null); setBlogFormData({title: '', content: '', image: '', excerpt: '', image_description: '', meta_title: '', meta_description: '', meta_keywords: '', is_featured: false, is_trending: false, is_popular: false}) }}
+
                                   className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold md:hidden"
+
                                 >
+
                                   + New
+
                                 </motion.button>
+
                               </div>
+
                             </div>
+
+
 
                             {/* Search and Filters Bar */}
+
                             <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+
                               <div className="sm:col-span-2 relative">
+
                                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+
                                 <input
+
                                   type="text"
+
                                   value={blogSearch}
+
                                   onChange={(e) => setBlogSearch(e.target.value)}
+
                                   placeholder="Search blog posts by title, author, keyword, or excerpt..."
+
                                   className="w-full pl-10 pr-9 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 shadow-sm"
+
                                 />
+
                                 {blogSearch && (
+
                                   <button
+
                                     type="button"
+
                                     onClick={() => setBlogSearch('')}
+
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+
                                   >
+
                                     <X className="w-4 h-4" />
+
                                   </button>
+
                                 )}
+
                               </div>
+
+
 
                               <div className="relative">
+
                                 <select
+
                                   value={blogCategoryFilter}
+
                                   onChange={(e) => setBlogCategoryFilter(e.target.value)}
+
                                   className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 shadow-sm appearance-none"
+
                                 >
+
                                   <option value="all">All Categories ({blogs.length})</option>
+
                                   {blogCategories.map((c: any) => (
+
                                     <option key={c.id} value={String(c.id)}>
+
                                       {c.name}
+
                                     </option>
+
                                   ))}
+
                                 </select>
+
                                 <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+
                               </div>
+
                             </div>
+
+
 
                             {/* Active search filter indicators */}
+
                             {(blogSearch || blogCategoryFilter !== 'all') && (
+
                               <div className="mb-4 flex items-center justify-between text-xs text-gray-600 bg-amber-50 px-3.5 py-2 rounded-lg border border-amber-200">
+
                                 <span>
+
                                   Found {
+
                                     (blogs || []).filter((b: any) => {
+
                                       const term = blogSearch.toLowerCase().trim()
+
                                       const matchSearch = !term ||
+
                                         (b.title || '').toLowerCase().includes(term) ||
+
                                         (b.author_username || '').toLowerCase().includes(term) ||
+
                                         (b.category_name || '').toLowerCase().includes(term) ||
+
                                         (b.excerpt || '').toLowerCase().includes(term) ||
+
                                         (b.slug || '').toLowerCase().includes(term)
+
                                       const matchCat = blogCategoryFilter === 'all' || 
+
                                         String(b.category) === blogCategoryFilter || 
+
                                         b.category_slug === blogCategoryFilter ||
+
                                         b.category_name === blogCategoryFilter
+
                                       return matchSearch && matchCat
+
                                     }).length
+
                                   } of {blogs.length} posts matching criteria
+
                                 </span>
+
                                 <button
+
                                   type="button"
+
                                   onClick={() => { setBlogSearch(''); setBlogCategoryFilter('all') }}
+
                                   className="text-amber-700 font-semibold hover:underline"
+
                                 >
+
                                   Reset filters
+
                                 </button>
+
                               </div>
+
                             )}
+
+
 
                             {blogs.length === 0 ? (
+
                               <div className="text-center py-12">
+
                                 <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+
                                 <p className="text-gray-500">No blog posts yet</p>
+
                               </div>
+
                             ) : (
+
                               <div className="space-y-4">
+
                                 {blogs.filter((blog: any) => {
+
                                   const term = blogSearch.toLowerCase().trim()
+
                                   const matchSearch = !term ||
+
                                     (blog.title || '').toLowerCase().includes(term) ||
+
                                     (blog.author_username || '').toLowerCase().includes(term) ||
+
                                     (blog.category_name || '').toLowerCase().includes(term) ||
+
                                     (blog.excerpt || '').toLowerCase().includes(term) ||
+
                                     (blog.slug || '').toLowerCase().includes(term)
+
                                   const matchCat = blogCategoryFilter === 'all' || 
+
                                     String(blog.category) === blogCategoryFilter || 
+
                                     blog.category_slug === blogCategoryFilter ||
+
                                     blog.category_name === blogCategoryFilter
+
                                   return matchSearch && matchCat
+
                                 }).map((blog) => (
+
                                   <motion.div
+
                                     key={blog.id}
+
                                     whileHover={{ y: -3 }}
+
                                     className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
+
                                   >
+
                                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+
                                       <div className="flex-1 min-w-0">
+
                                         <h4 className="text-lg font-bold text-gray-900 break-words">{blog.title}</h4>
+
                                         <div className="flex flex-wrap gap-2 items-center mt-1">
+
                                           <p className="text-xs text-gray-500">By {blog.author_username} • {new Date(blog.created_at).toLocaleDateString()}</p>
+
                                           {blog.is_featured && <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">Featured</span>}
+
                                           {blog.is_trending && <span className="bg-teal-100 text-teal-800 text-[10px] font-bold px-2 py-0.5 rounded">Trending</span>}
+
                                           {blog.is_popular && <span className="bg-orange-100 text-orange-800 text-[10px] font-bold px-2 py-0.5 rounded">Popular</span>}
+
                                         </div>
+
                                       </div>
+
                                       <span className={`inline-flex shrink-0 items-center px-4 py-2 rounded-full text-xs font-semibold ${
+
                                         blog.is_published ? 'bg-yellow-100 text-yellow-800' : 'bg-yellow-100 text-yellow-800'
+
                                       }`}>
+
                                         {blog.is_published ? 'Published' : 'Draft'}
+
                                       </span>
+
                                     </div>
+
                                      
+
                                     {(() => {
+
                                       const firstImg = blog.image || extractFirstImageSrc(blog.content)
+
                                       const imgUrl = firstImg ? getImageUrl(firstImg) : ''
+
                                       return imgUrl ? (
+
                                         <img src={imgUrl} alt={blog.title} className="w-full h-48 object-cover rounded-lg mb-4" width={768} height={192} loading="lazy" decoding="async" />
+
                                       ) : null
+
                                     })()}
 
+
+
                                     <p className="text-gray-600 mb-4 line-clamp-2 break-words">{stripHtml(blog.excerpt || blog.content)}</p>
+
                                      
+
                                     <div className="flex flex-wrap gap-3">
+
                                       <motion.button
+
                                         whileHover={{ scale: 1.05 }}
+
                                         whileTap={{ scale: 0.95 }}
+
                                         onClick={() => {
+
                                           setEditingBlog(blog)
+
                                           setBlogFormData({
+
                                             title: blog.title,
+
                                             content: blog.content,
+
                                             image: blog.image,
+
                                             excerpt: blog.excerpt,
+
                                             image_description: blog.image_description || '',
+
                                             meta_title: blog.meta_title || '',
+
                                             meta_description: blog.meta_description || '',
+
                                             meta_keywords: blog.meta_keywords || '',
+
                                             category: blog.category || '',
+
                                             is_featured: !!blog.is_featured,
+
                                             is_trending: !!blog.is_trending,
-                                            is_popular: !!blog.is_popular
+
+                                            is_popular: !!blog.is_popular,
+
+                                            ad_display_location: blog.ad_display_location || 'bottom',
+
+                                            selected_ad: blog.selected_ad || null
+
                                           })
+
                                           setShowBlogForm(true)
+
                                         }}
+
                                         className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
+
                                       >
+
                                         Edit
+
                                       </motion.button>
+
                                       {!blog.is_published && (
+
                                         <motion.button
+
                                           whileHover={{ scale: 1.05 }}
+
                                           whileTap={{ scale: 0.95 }}
+
                                           onClick={() => publishBlog(blog.id)}
+
                                           className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200"
+
                                         >
+
                                           Publish
+
                                         </motion.button>
+
                                       )}
+
                                       <motion.button
+
                                         whileHover={{ scale: 1.05 }}
+
                                         whileTap={{ scale: 0.95 }}
+
                                         onClick={() => deleteBlog(blog.id)}
+
                                         className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200"
+
                                       >
+
                                         Delete
+
                                       </motion.button>
+
                                     </div>
+
                                   </motion.div>
+
                                 ))}
+
+
 
                                 {(blogPageInfo.count > 10 || blogPageInfo.next || blogPageInfo.previous) && (
+
                                   <div className="mt-6 flex flex-col gap-3 items-center justify-between sm:flex-row">
+
                                     <div className="text-sm text-gray-600">Page {blogPageInfo.current} of {Math.max(1, Math.ceil(blogPageInfo.count / 10))}</div>
+
                                     <div className="flex items-center gap-2">
+
                                       <motion.button
+
                                         whileHover={{ scale: 1.05 }}
+
                                         whileTap={{ scale: 0.95 }}
+
                                         onClick={() => loadBlogs(Math.max(1, blogPage - 1))}
+
                                         disabled={!blogPageInfo.previous}
+
                                         className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+
                                           blogPageInfo.previous
+
                                             ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+
                                             : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+
                                         }`}
+
                                       >
+
                                         <ChevronLeft className="w-4 h-4 mr-1" />
+
                                         Previous
+
                                       </motion.button>
+
                                       <motion.button
+
                                         whileHover={{ scale: 1.05 }}
+
                                         whileTap={{ scale: 0.95 }}
+
                                         onClick={() => loadBlogs(blogPage + 1)}
+
                                         disabled={!blogPageInfo.next}
+
                                         className={`px-4 py-2 rounded-lg font-medium flex items-center transition ${
+
                                           blogPageInfo.next
+
                                             ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+
                                             : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+
                                         }`}
+
                                       >
+
                                         Next
+
                                         <ChevronRight className="w-4 h-4 ml-1" />
+
                                       </motion.button>
+
                                     </div>
+
                                   </div>
+
                                 )}
+
                               </div>
+
                             )}
+
                           </div>
+
                         )}
+
                       </div>
+
                     )}
+
+
 
                     {blogSubTab === 'ads' && (
+
                       <div>
+
                         {adMessage && (
+
                           <div className={`p-3 rounded-lg mb-4 ${adMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+
                             {adMessage.text}
+
                           </div>
+
                         )}
+
                         <div className="mb-6 flex items-center justify-between">
+
                           <h3 className="text-lg font-semibold text-gray-900">Blog Ads / Banners</h3>
+
                           <motion.button
+
                             whileHover={{ scale: 1.05 }}
+
                             whileTap={{ scale: 0.95 }}
+
                             onClick={() => {
+
                               setShowAdForm(true)
+
                               setEditingAd(null)
+
                               setAdFormData({
+
                                 title: '',
+
                                 description: '',
+
                                 badge_text: '',
+
                                 bullets: '',
+
                                 button_text: 'Download Free',
+
                                 button_link: '',
+
                                 image: null,
+
                                 is_active: true
+
                               })
+
                             }}
+
                             className="px-6 py-2.5 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
+
                           >
+
                             + New Ad Banner
+
                           </motion.button>
+
                         </div>
+
+
 
                         {adsLoading ? (
+
                           <div className="flex items-center justify-center py-12">
+
                             <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                             <span className="text-gray-600">Loading Ads...</span>
+
                           </div>
+
                         ) : blogAds.length === 0 ? (
+
                           <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col items-center">
+
                             <Megaphone className="w-12 h-12 text-gray-300 mb-3" />
+
                             <p className="text-gray-500 text-sm">No ad banners created yet. The website will show fallback banners.</p>
+
                           </div>
+
                         ) : (
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
                             {blogAds.map((ad) => (
+
                               <div key={ad.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+
                                 <div>
+
                                   <div className="flex items-start justify-between gap-3 mb-2">
+
                                     <h4 className="font-bold text-gray-900">{ad.title}</h4>
+
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ad.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+
                                       {ad.is_active ? 'Active' : 'Inactive'}
+
                                     </span>
+
                                   </div>
+
                                   {ad.badge_text && (
+
                                     <span className="inline-block bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded mb-2">
+
                                       {ad.badge_text}
+
                                     </span>
+
                                   )}
+
                                   <p className="text-xs text-gray-600 line-clamp-2 mb-3">{ad.description || 'No description'}</p>
+
                                   {ad.bullets && (
+
                                     <ul className="text-[11px] text-gray-500 space-y-0.5 mb-3 list-disc list-inside">
+
                                       {ad.bullets.split(',').map((b: string, idx: number) => (
+
                                         <li key={idx}>{b.trim()}</li>
+
                                       ))}
+
                                     </ul>
+
                                   )}
+
                                   {ad.image && (
+
                                     <img src={getImageUrl(ad.image)} alt={ad.title} className="w-full h-auto max-h-64 object-contain rounded-lg mb-3" />
+
                                   )}
+
                                   <div className="text-xs text-gray-500 mb-4 bg-gray-50 p-2 rounded">
+
                                     <p><strong className="text-gray-700">Button:</strong> {ad.button_text}</p>
+
                                     <p className="truncate"><strong className="text-gray-700">Link:</strong> {ad.button_link}</p>
+
                                   </div>
+
                                 </div>
+
                                 <div className="flex gap-2">
+
                                   <button
+
                                     onClick={() => {
+
                                       setEditingAd(ad)
+
                                       setAdFormData({
+
                                         title: ad.title,
+
                                         description: ad.description || '',
+
                                         badge_text: ad.badge_text || '',
+
                                         bullets: ad.bullets || '',
+
                                         button_text: ad.button_text || 'Download Free',
+
                                         button_link: ad.button_link || '',
+
                                         image: ad.image || null,
+
                                         is_active: ad.is_active ?? true
+
                                       })
+
                                       setShowAdForm(true)
+
                                     }}
+
                                     className="px-3 py-1.5 text-xs bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100"
+
                                   >
+
                                     Edit
+
                                   </button>
+
                                   <button
+
                                     onClick={async () => {
+
                                       if (!confirm('Delete this ad?')) return
+
                                       try {
+
                                         const token = localStorage.getItem('access')
+
                                         await axios.delete(`${API_BASE}/blog/ads/${ad.id}/`, {
+
                                           headers: { Authorization: `Bearer ${token}` }
+
                                         })
+
                                         loadAds()
+
                                         setAdMessage({ type: 'success', text: 'Ad deleted' })
+
                                         setTimeout(() => setAdMessage(null), 3000)
+
                                       } catch (err) {
+
                                         setAdMessage({ type: 'error', text: 'Failed to delete ad' })
+
                                         setTimeout(() => setAdMessage(null), 3000)
+
                                       }
+
                                     }}
+
                                     className="px-3 py-1.5 text-xs bg-red-50 text-red-700 rounded-lg hover:bg-red-100"
+
                                   >
+
                                     Delete
+
                                   </button>
+
                                 </div>
+
                               </div>
+
                             ))}
+
                           </div>
+
                         )}
+
                       </div>
+
                     )}
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'gospel' && (
+
                   <div>
+
                     {gospelMessage && (
+
                       <motion.div
+
                         initial={{ opacity: 0, y: -10 }}
+
                         animate={{ opacity: 1, y: 0 }}
+
                         className={`mb-4 p-4 rounded-lg ${gospelMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' : 'bg-red-50 text-red-800 border border-red-200'}`}
+
                       >
+
                         {gospelMessage.text}
+
                       </motion.div>
+
                     )}
+
+
 
                     {gospelLoading ? (
+
                       <div className="flex items-center justify-center py-12">
+
                         <Loader2 className="w-8 h-8 text-yellow-600 animate-spin mr-3" />
+
                         <span className="text-gray-600">Loading gospel videos...</span>
+
                       </div>
+
                     ) : (
+
                       <div>
+
                         <div className="mb-6 flex items-center justify-between">
+
                           <h3 className="text-lg font-semibold text-gray-900">Gospel Videos</h3>
+
                           <motion.button
+
                             whileHover={{ scale: 1.05 }}
+
                             whileTap={{ scale: 0.95 }}
+
                             onClick={() => {
+
                               setShowGospelForm(true)
+
                               setEditingGospel(null)
+
                               setGospelFormData({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
+
                             }}
+
                             className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg"
+
                           >
+
                             + Add Gospel Video
+
                           </motion.button>
+
                         </div>
+
+
 
                         {showGospelForm && (
+
                           <motion.div
+
                             initial={{ opacity: 0, y: -10 }}
+
                             animate={{ opacity: 1, y: 0 }}
+
                             className="bg-white border-2 border-yellow-200 rounded-xl p-6 mb-6"
+
                           >
+
                             <h3 className="text-lg font-semibold mb-4 text-gray-900">
+
                               {editingGospel ? 'Edit Gospel Video' : 'Add New Gospel Video'}
+
                             </h3>
+
                             <div className="space-y-4">
+
                               <div>
+
                                 <label className="block text-sm font-medium text-gray-700 mb-2">YouTube URL *</label>
+
                                 <input
+
                                   type="text"
+
                                   value={gospelFormData.youtube_url}
+
                                   onChange={(e) => setGospelFormData({ ...gospelFormData, youtube_url: e.target.value })}
+
                                   placeholder="https://www.youtube.com/watch?v=..."
+
                                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                 />
+
                               </div>
+
+
 
                               <div className="grid grid-cols-2 gap-4">
+
                                 <div>
+
                                   <label className="block text-sm font-medium text-gray-700 mb-2">Scheduled Time (HH:MM) *</label>
+
                                   <input
+
                                     type="time"
+
                                     value={gospelFormData.scheduled_time}
+
                                     onChange={(e) => setGospelFormData({ ...gospelFormData, scheduled_time: e.target.value })}
+
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                   />
+
                                 </div>
+
                                 <div>
+
                                   <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+
                                   <input
+
                                     type="text"
+
                                     value={gospelFormData.title}
+
                                     onChange={(e) => setGospelFormData({ ...gospelFormData, title: e.target.value })}
+
                                     placeholder="Gospel Message"
+
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                   />
+
                                 </div>
+
                               </div>
+
+
 
                               <div>
+
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+
                                 <textarea
+
                                   value={gospelFormData.description}
+
                                   onChange={(e) => setGospelFormData({ ...gospelFormData, description: e.target.value })}
+
                                   placeholder="Optional description for the video"
+
                                   rows={3}
+
                                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+
                                 />
+
                               </div>
+
+
 
                               <div className="flex items-center">
+
                                 <input
+
                                   type="checkbox"
+
                                   checked={gospelFormData.is_active}
+
                                   onChange={(e) => setGospelFormData({ ...gospelFormData, is_active: e.target.checked })}
+
                                   className="w-4 h-4 text-yellow-600 rounded focus:ring-2 focus:ring-yellow-500"
+
                                 />
+
                                 <label className="ml-2 text-sm font-medium text-gray-700">Active (will display to users at scheduled time)</label>
+
                               </div>
+
+
 
                               <div className="flex gap-3">
+
                                 <motion.button
+
                                   whileHover={gospelLoading ? undefined : { scale: 1.05 }}
+
                                   whileTap={gospelLoading ? undefined : { scale: 0.95 }}
+
                                   onClick={saveGospel}
+
                                   disabled={gospelLoading}
+
                                   aria-disabled={gospelLoading}
+
                                   className={`px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-medium transition-all ${gospelLoading ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-lg'}`}
+
                                 >
+
                                   {editingGospel ? 'Update Video' : 'Add Video'}
+
                                 </motion.button>
+
                                 <button
+
                                   onClick={() => {
+
                                     setShowGospelForm(false)
+
                                     setEditingGospel(null)
+
                                     setGospelFormData({ youtube_url: '', scheduled_time: '09:00', title: 'Gospel Message', description: '', is_active: true })
+
                                   }}
+
                                   className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-all"
+
                                 >
+
                                   Cancel
+
                                 </button>
+
                               </div>
+
                             </div>
+
                           </motion.div>
+
                         )}
+
+
 
                         {gospelVideos.length === 0 ? (
+
                           <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+
                             <Mail className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+
                             <p className="text-gray-500 text-lg">No gospel videos configured yet</p>
+
                             <p className="text-gray-400 text-sm mt-2">Create your first gospel video to start broadcasting to your community</p>
+
                           </div>
+
                         ) : (
+
                           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+
                             {gospelVideos.map((gospel) => (
+
                               <motion.div
+
                                 key={gospel.id}
+
                                 whileHover={{ y: -5 }}
+
                                 className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all"
+
                               >
+
                                 <div className="aspect-video bg-black flex items-center justify-center relative">
+
                                   <Globe className="w-12 h-12 text-gray-600" />
+
                                   <div className="absolute top-2 right-2">
+
                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+
                                       gospel.is_active ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+
                                     }`}>
+
                                       {gospel.is_active ? '🟢 Active' : '⚫ Inactive'}
+
                                     </span>
+
                                   </div>
+
                                 </div>
+
+
 
                                 <div className="p-4">
+
                                   <h4 className="font-semibold text-gray-900 mb-1">{gospel.title}</h4>
+
                                   <p className="text-xs text-gray-500 mb-3 line-clamp-2">{gospel.description || 'No description'}</p>
 
+
+
                                   <div className="space-y-2 mb-4">
+
                                     <div className="flex items-center text-sm">
+
                                       <Clock className="w-4 h-4 text-gray-400 mr-2" />
+
                                       <span className="text-gray-600">Scheduled: {gospel.scheduled_time}</span>
+
                                     </div>
+
                                     <div className="flex items-center text-xs text-gray-500">
+
                                       <span>Created: {new Date(gospel.created_at).toLocaleDateString()}</span>
+
                                     </div>
+
                                   </div>
+
+
 
                                   <div className="flex gap-2">
+
                                     <motion.button
+
                                       whileHover={{ scale: 1.05 }}
+
                                       whileTap={{ scale: 0.95 }}
+
                                       onClick={() => {
+
                                         setEditingGospel(gospel)
+
                                         setGospelFormData({
+
                                           youtube_url: gospel.youtube_url,
+
                                           scheduled_time: gospel.scheduled_time,
+
                                           title: gospel.title,
+
                                           description: gospel.description,
+
                                           is_active: gospel.is_active
+
                                         })
+
                                         setShowGospelForm(true)
+
                                       }}
+
                                       className="flex-1 px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium hover:bg-yellow-200 transition-all text-sm"
+
                                     >
+
                                       Edit
+
                                     </motion.button>
+
                                     <motion.button
+
                                       whileHover={{ scale: 1.05 }}
+
                                       whileTap={{ scale: 0.95 }}
+
                                       onClick={() => deleteGospel(gospel.id)}
+
                                       className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition-all text-sm"
+
                                     >
+
                                       Delete
+
                                     </motion.button>
+
                                   </div>
+
                                 </div>
+
                               </motion.div>
+
                             ))}
+
                           </div>
+
                         )}
+
                     </div>
+
                     )}
+
                   </div>
+
                 )}
+
+
 
                 {tab === 'bulk' && (
+
                   <div>
+
                     <div className="mb-6">
+
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">Question Management</h3>
+
                       <p className="text-gray-600">
+
                         Upload questions via JSON, CSV, or manually.
+
                       </p>
+
                     </div>
+
+
 
                     {/* Upload Mode Selection */}
+
                     <div className="flex space-x-4 mb-6">
+
                       <button onClick={() => setUploadMode('json')} className={`px-4 py-2 rounded-lg font-medium transition-colors ${uploadMode === 'json' ? 'bg-yellow-100 text-yellow-700' : (darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}>
+
                         JSON Paste
+
                       </button>
+
                       <button onClick={() => setUploadMode('file')} className={`px-4 py-2 rounded-lg font-medium transition-colors ${uploadMode === 'file' ? 'bg-yellow-100 text-yellow-700' : (darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}>
+
                         CSV/Excel File
+
                       </button>
+
                       <button onClick={() => setUploadMode('manual')} className={`px-4 py-2 rounded-lg font-medium transition-colors ${uploadMode === 'manual' ? 'bg-yellow-100 text-yellow-700' : (darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}>
+
                         Manual Entry
+
                       </button>
+
                     </div>
+
                      
+
                     {/* Exam and Subject Selection */}
+
                     <div className="grid grid-cols-2 gap-4 mb-6">
+
                       <div>
+
                         <label className="block text-sm font-medium text-gray-700 mb-2">
+
                           Select Exam <span className="text-red-500">*</span>
+
                         </label>
+
                         <select
+
                           value={selectedExamId}
+
                           onChange={(e) => {
+
                             const examId = e.target.value
+
                             setSelectedExamId(examId)
+
                             // Find the exam object to get the slug for submitBulk
+
                             const exam = exams.find(ex => String(ex.id) === examId)
+
                             setSelectedExam(exam?.slug || exam?.id || '')
+
                             loadSubjects(examId)
+
                           }}
+
                           className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none"
+
                         >
+
                           <option value="">Choose an exam...</option>
+
                           {exams.map((exam) => (
+
                             <option key={exam.id} value={exam.id}>
+
                               {exam.title}
+
                             </option>
+
                           ))}
+
                         </select>
+
                       </div>
+
                       
+
                       <div>
+
                         <label className="block text-sm font-medium text-gray-700 mb-2">
+
                           Select Subject <span className="text-red-500">*</span>
+
                         </label>
+
                         <select
+
                           value={selectedSubject}
+
                           onChange={async (e) => {
+
                             const subjName = e.target.value
+
                             setSelectedSubject(subjName)
+
                             setAdminBulkYear('')
+
                             setCustomBulkYear('')
+
                             setAvailableYearsForSubject([])
+
                             setUnassignedCountForSubject(0)
 
+
+
                             if (subjName) {
+
                               const foundSubj = subjects.find(s => s.name === subjName)
+
                               if (foundSubj) {
+
                                 setLoadingSubjectYears(true)
+
                                 try {
+
                                   const token = localStorage.getItem('access')
+
                                   const res = await axios.get(`${API_BASE}/cbt/subjects/${foundSubj.id}/available_years/`, {
+
                                     headers: token ? { Authorization: `Bearer ${token}` } : undefined
+
                                   })
+
                                   if (res.data) {
+
                                     setAvailableYearsForSubject(res.data.years || [])
+
                                     setUnassignedCountForSubject(res.data.unassigned_count || 0)
+
                                   }
+
                                 } catch (err) {
+
                                   console.error('Failed to load years for subject:', err)
+
                                 } finally {
+
                                   setLoadingSubjectYears(false)
+
                                 }
+
                               }
+
                             }
+
                           }}
+
                           disabled={!selectedExamId}
+
                           className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+
                         >
+
                           <option value="">Choose a subject...</option>
+
                           {subjects.map((subject) => (
+
                             <option key={subject.id} value={subject.name}>
+
                               {subject.name}
+
+                            </option>
+
+                          ))}
+
+                        </select>
+
+                      </div>
+
+                    </div>
+
+
+
+                    {/* Unassigned Questions Notification Alert for Master Admin */}
+
+                    {selectedSubject && unassignedCountForSubject > 0 && (
+
+                      <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-xl flex items-center justify-between gap-4">
+
+                        <div className="flex items-center gap-3">
+
+                          <span className="text-2xl">⚠️</span>
+
+                          <div>
+
+                            <h4 className="font-semibold text-amber-900 text-sm">
+
+                              Notice: Unassigned Question Years in {selectedSubject}
+
+                            </h4>
+
+                            <p className="text-xs text-amber-800">
+
+                              <strong>{unassignedCountForSubject}</strong> question(s) currently have no year assigned and will default to year <strong>2021</strong> for students during practice exams.
+
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                    )}
+
+                     
+
+                    {uploadMode === 'json' && (
+
+                    <>
+
+                    {bulkMessage && (
+
+                      <div className={`p-3 rounded-lg mb-4 ${bulkMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+
+                        {bulkMessage.text}
+
+                      </div>
+
+                    )}
+
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-2xl p-6 mb-6">
+
+                      <div className="flex items-start space-x-3 mb-4">
+
+                        <Database className="w-6 h-6 text-yellow-600 mt-1" />
+
+                        <div>
+
+                          <h4 className="font-semibold text-gray-900 mb-1">JSON Format Example</h4>
+
+                          <p className="text-xs text-gray-600 mb-3">Paste just the questions array below. Include an optional <strong>"year"</strong> field in each question object (e.g., "year": "2014").</p>
+
+                          <pre className="text-xs bg-white p-3 rounded-lg overflow-x-auto">
+
+{`[
+
+  {
+
+    "id": "chem_1",
+
+    "question_text": "What is the molar volume...",
+
+    "options": {
+
+      "A": "0.89 mol",
+
+      "B": "1.90 mol",
+
+      "C": "3.80 mol",
+
+      "D": "5.70 mol"
+
+    },
+
+    "correct_answer": "A",
+
+    "explanation": "Convert to Kelvin...",
+
+    "subject": "Chemistry",
+
+    "year": "2014"
+
+  }
+
+]`}
+
+                          </pre>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+
+
+                    <div className="space-y-4">
+
+                      <div>
+
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+
+                          Paste your JSON data here
+
+                        </label>
+
+                        <textarea
+
+                          value={bulkData}
+
+                          onChange={(e) => setBulkData(e.target.value)}
+
+                          placeholder="Paste your JSON data here..."
+
+                          className="w-full h-64 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none font-mono text-sm"
+
+                        />
+
+                      </div>
+
+                       
+
+                      <div className="flex items-center justify-between">
+
+                        <div className="text-sm text-gray-500">
+
+                          {bulkData.length > 0 && (
+
+                            <>
+
+                              <CheckCircle className="w-4 h-4 text-yellow-500 inline mr-1" />
+
+                              {Math.ceil(bulkData.length / 1024)} KB of data
+
+                            </>
+
+                          )}
+
+                        </div>
+
+                        <motion.button
+
+                          whileHover={{ scale: 1.05 }}
+
+                          whileTap={{ scale: 0.95 }}
+
+                          onClick={submitBulk}
+
+                          disabled={!bulkData.trim()}
+
+                          className={`px-6 py-3 rounded-xl font-semibold flex items-center ${
+
+                            bulkData.trim()
+
+                              ? 'bg-gradient-to-r from-yellow-600 to-yellow-600 text-white hover:shadow-lg'
+
+                              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+
+                          }`}
+
+                        >
+
+                          <Upload className="w-5 h-5 mr-2" />
+
+                          Upload Questions
+
+                        </motion.button>
+
+                      </div>
+
+                    </div>
+
+                    </>
+
+                    )}
+
+
+
+                    {uploadMode === 'file' && (
+
+                      <div className="bg-white p-6 rounded-xl border border-gray-200">
+
+                        {bulkMessage && (
+
+                          <div className={`p-3 rounded-lg mb-4 ${bulkMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
+
+                            {bulkMessage.text}
+
+                          </div>
+
+                        )}
+
+                        <h4 className="font-semibold mb-4">Upload CSV or Excel File</h4>
+
+                        <p className="text-sm text-gray-600 mb-4">
+
+                          File should have columns: question_text, option_a, option_b, option_c, option_d, correct_answer, explanation.
+
+                        </p>
+
+                        {/* Year Selection for CSV/Excel File */}
+
+                        <div className="mb-4">
+
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+
+                            Exam Year for this File
+
+                          </label>
+
+                          <div className="flex flex-col sm:flex-row gap-2">
+
+                            <select
+
+                              value={adminBulkYear}
+
+                              onChange={(e) => setAdminBulkYear(e.target.value)}
+
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm bg-white"
+
+                            >
+
+                              <option value="">Choose Year (or type below)</option>
+
+                              {availableYearsForSubject.map((y) => (
+
+                                <option key={y.year} value={y.year}>
+
+                                  📅 Year {y.year} ({y.question_count} questions)
+
+                                </option>
+
+                              ))}
+
+                              {customBulkYear && !availableYearsForSubject.some(y => y.year === customBulkYear) && (
+
+                                <option value={customBulkYear}>
+
+                                  📅 Year {customBulkYear} (New)
+
+                                </option>
+
+                              )}
+
+                            </select>
+
+                            <input
+
+                              type="text"
+
+                              value={customBulkYear}
+
+                              onChange={(e) => {
+
+                                setCustomBulkYear(e.target.value)
+
+                                setAdminBulkYear(e.target.value)
+
+                              }}
+
+                              placeholder="Or type new year (e.g. 2025)"
+
+                              className="w-48 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm"
+
+                            />
+
+                          </div>
+
+                          {adminBulkYear && (
+
+                            <p className="text-xs text-yellow-700 mt-1">
+
+                              Will tag questions with year: <strong>{adminBulkYear}</strong>
+
+                            </p>
+
+                          )}
+
+                        </div>
+
+
+
+                        <input 
+
+                          type="file" 
+
+                          accept=".csv, .xlsx, .xls"
+
+                          onChange={(e) => setBulkFile(e.target.files ? e.target.files[0] : null)}
+
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"
+
+                        />
+
+                        <motion.button
+
+                          whileHover={{ scale: 1.05 }}
+
+                          whileTap={{ scale: 0.95 }}
+
+                            onClick={async () => {
+
+                            if (!bulkFile || !selectedExam || !selectedSubject) {
+
+                              setBulkMessage({ type: 'error', text: 'Please select exam, subject and file' })
+
+                              setTimeout(() => setBulkMessage(null), 4000)
+
+                              return
+
+                            }
+
+                            const formData = new FormData()
+
+                            formData.append('file', bulkFile)
+
+                            formData.append('exam_id', selectedExam)
+
+                            formData.append('subject', selectedSubject)
+
+                            const effectiveYear = adminBulkYear.trim() || customBulkYear.trim() || new Date().getFullYear().toString()
+
+                            formData.append('year', effectiveYear)
+
+                             
+
+                            try {
+
+                              const token = localStorage.getItem('access')
+
+                              const res = await axios.post(`${API_BASE}/cbt/bulk-upload/`, formData, {
+
+                                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+
+                              })
+
+                              setBulkMessage({ type: 'success', text: `Success! Created ${res.data.success} questions.` })
+
+                              setTimeout(() => setBulkMessage(null), 5000)
+
+                            } catch (err: any) {
+
+                              console.error('Bulk file upload error:', err)
+
+                              let msg = 'Upload failed: '
+
+                              if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+
+                                msg += err.response.data.errors.join('; ')
+
+                              } else if (err.response?.data?.detail) {
+
+                                msg += err.response.data.detail
+
+                              } else if (err.response?.data?.error) {
+
+                                msg += err.response.data.error
+
+                              } else if (err.message) {
+
+                                msg += err.message
+
+                              } else {
+
+                                msg += 'Unknown error'
+
+                              }
+
+                              setBulkMessage({ type: 'error', text: msg })
+
+                              setTimeout(() => setBulkMessage(null), 6000)
+
+                            }
+
+                          }}
+
+                          className="mt-4 px-6 py-2 bg-yellow-600 text-white rounded-lg font-semibold"
+
+                        >
+
+                          Upload File
+
+                        </motion.button>
+
+                      </div>
+
+                    )}
+
+
+
+                    {uploadMode === 'manual' && (
+
+                      <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">
+
+                        <h4 className="font-semibold">Add Single Question</h4>
+
+                        <div>
+
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
+
+                          <MathFormulaToolbar
+
+                            onInsert={(snippet) => setManualQuestion(prev => ({ ...prev, text: (prev.text || '') + ' ' + snippet }))}
+
+                            currentValue={manualQuestion.text}
+
+                            label="Math & Chemistry Formula Helper"
+
+                          />
+
+                          <textarea 
+
+                            value={manualQuestion.text}
+
+                            onChange={e => setManualQuestion({...manualQuestion, text: e.target.value})}
+
+                            className="w-full mt-1 p-2 border rounded-lg"
+
+                            placeholder="Enter question text or math formulas (e.g., $x^2 + y^2 = r^2$ or \ce{H2SO4})..."
+
+                            rows={3}
+
+                          />
+
+                        </div>
+
+                        <div>
+
+                          <label className="block text-sm font-medium text-gray-700">Image (Optional)</label>
+
+                          <input 
+
+                            type="file" 
+
+                            accept="image/*"
+
+                            onChange={e => setManualQuestion({...manualQuestion, image: e.target.files ? e.target.files[0] : null})}
+
+                            className="mt-1 block w-full text-sm text-gray-500"
+
+                          />
+
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+
+                          <div>
+
+                            <label className="block text-sm font-medium text-gray-700">Option A</label>
+
+                            <input type="text" value={manualQuestion.optionA} onChange={e => setManualQuestion({...manualQuestion, optionA: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+
+                          </div>
+
+                          <div>
+
+                            <label className="block text-sm font-medium text-gray-700">Option B</label>
+
+                            <input type="text" value={manualQuestion.optionB} onChange={e => setManualQuestion({...manualQuestion, optionB: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+
+                          </div>
+
+                          <div>
+
+                            <label className="block text-sm font-medium text-gray-700">Option C</label>
+
+                            <input type="text" value={manualQuestion.optionC} onChange={e => setManualQuestion({...manualQuestion, optionC: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+
+                          </div>
+
+                          <div>
+
+                            <label className="block text-sm font-medium text-gray-700">Option D</label>
+
+                            <input type="text" value={manualQuestion.optionD} onChange={e => setManualQuestion({...manualQuestion, optionD: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+
+                          </div>
+
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+
+                          <div>
+
+                            <label className="block text-sm font-medium text-gray-700">Correct Answer</label>
+
+                            <select value={manualQuestion.correctAnswer} onChange={e => setManualQuestion({...manualQuestion, correctAnswer: e.target.value})} className="w-full mt-1 p-2 border rounded-lg">
+
+                              <option value="A">A</option>
+
+                              <option value="B">B</option>
+
+                              <option value="C">C</option>
+
+                              <option value="D">D</option>
+
+                            </select>
+
+                          </div>
+
+                          <div>
+
+                            <label className="block text-sm font-medium text-gray-700">Exam Year</label>
+
+                            <div className="flex gap-2 mt-1">
+
+                              <select
+
+                                value={manualQuestion.year}
+
+                                onChange={e => {
+
+                                  const val = e.target.value
+
+                                  if (val !== '__custom__') {
+
+                                    setManualQuestion({ ...manualQuestion, year: val })
+
+                                  }
+
+                                }}
+
+                                className="flex-1 p-2 border rounded-lg text-sm bg-white"
+
+                              >
+
+                                <option value="">No Year (Defaults to 2021 for students)</option>
+
+                                {availableYearsForSubject.map(y => (
+
+                                  <option key={y.year} value={y.year}>
+
+                                    📅 Year {y.year}
+
+                                  </option>
+
+                                ))}
+
+                                {manualQuestion.year && !availableYearsForSubject.some(y => y.year === manualQuestion.year) && (
+
+                                  <option value={manualQuestion.year}>
+
+                                    📅 Year {manualQuestion.year} (New)
+
+                                  </option>
+
+                                )}
+
+                              </select>
+
+                              <input
+
+                                type="text"
+
+                                placeholder="Or type year"
+
+                                className="w-28 p-2 border rounded-lg text-sm"
+
+                                onKeyDown={e => {
+
+                                  if (e.key === 'Enter') {
+
+                                    e.preventDefault()
+
+                                    const val = (e.target as HTMLInputElement).value.trim()
+
+                                    if (val) {
+
+                                      setManualQuestion({ ...manualQuestion, year: val })
+
+                                      ;(e.target as HTMLInputElement).value = ''
+
+                                    }
+
+                                  }
+
+                                }}
+
+                                onBlur={e => {
+
+                                  const val = e.target.value.trim()
+
+                                  if (val) {
+
+                                    setManualQuestion({ ...manualQuestion, year: val })
+
+                                    e.target.value = ''
+
+                                  }
+
+                                }}
+
+                              />
+
+                            </div>
+
+                            {manualQuestion.year && (
+
+                              <p className="text-xs text-yellow-700 mt-1">
+
+                                Assigned year: <strong>{manualQuestion.year}</strong>
+
+                              </p>
+
+                            )}
+
+                          </div>
+
+                        </div>
+
+                        <div>
+
+                          <label className="block text-sm font-medium text-gray-700">Explanation</label>
+
+                          <input type="text" value={manualQuestion.explanation} onChange={e => setManualQuestion({...manualQuestion, explanation: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
+
+                        </div>
+
+
+
+                        {manualMessage && (
+
+                          <div className={`p-4 rounded-lg flex items-center ${manualMessage.type === 'success' ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}>
+
+                            {manualMessage.type === 'success' ? <CheckCircle className="w-5 h-5 mr-2" /> : <AlertCircle className="w-5 h-5 mr-2" />}
+
+                            {manualMessage.text}
+
+                          </div>
+
+                        )}
+
+
+
+                        <motion.button
+
+                          whileHover={{ scale: 1.05 }}
+
+                          whileTap={{ scale: 0.95 }}
+
+                          onClick={async () => {
+
+                            if (!selectedExam || !selectedSubject || !manualQuestion.text) {
+
+                              setManualMessage({type: 'error', text: 'Please fill in all required fields (Exam, Subject, Question Text)'})
+
+                              return
+
+                            }
+
+                            const subj = subjects.find(s => s.name === selectedSubject)
+
+                            if (!subj) return setManualMessage({type: 'error', text: 'Invalid subject selected'})
+
+
+
+                            setManualLoading(true)
+
+                            setManualMessage(null)
+
+                            const formData = new FormData()
+
+                            formData.append('subject', subj.id)
+
+                            formData.append('text', manualQuestion.text)
+
+                            if (manualQuestion.image) formData.append('image', manualQuestion.image)
+
+                            if (manualQuestion.year) formData.append('year', manualQuestion.year)
+
+                             
+
+                            const opts = [
+
+                              { text: manualQuestion.optionA, key: 'A' },
+
+                              { text: manualQuestion.optionB, key: 'B' },
+
+                              { text: manualQuestion.optionC, key: 'C' },
+
+                              { text: manualQuestion.optionD, key: 'D' }
+
+                            ]
+
+                            const choices = opts.map(opt => ({
+
+                              text: opt.text,
+
+                              is_correct: opt.key === manualQuestion.correctAnswer
+
+                            }))
+
+                            formData.append('choices_json', JSON.stringify(choices))
+
+
+
+                            try {
+
+                              const token = localStorage.getItem('access')
+
+                              await axios.post(`${API_BASE}/cbt/questions/`, formData, {
+
+                                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+
+                              })
+
+                              setManualMessage({type: 'success', text: 'Question created successfully!'})
+
+                              setManualQuestion({ text: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A', explanation: '', year: '', image: null })
+
+                            } catch (err: any) {
+
+                              setManualMessage({type: 'error', text: 'Failed: ' + (err.response?.data?.detail || err.message)})
+
+                            } finally {
+
+                              setManualLoading(false)
+
+                            }
+
+                          }}
+
+                          disabled={manualLoading}
+
+                          className={`px-6 py-2 rounded-lg font-semibold flex items-center justify-center ${manualLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 text-white'}`}
+
+                        >
+
+                          {manualLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Add Question'}
+
+                        </motion.button>
+
+                      </div>
+
+                    )}
+
+                  </div>
+
+                )}
+
+
+
+                 {tab === 'messages' && (
+
+                  <AdminMessages />
+
+                )} 
+
+
+
+                {tab === 'legal-documents' && (
+
+                  <LegalDocumentsManagement />
+
+                )}
+
+
+
+                {tab === 'subscriptions' && (
+
+                  <SubscriptionManager />
+
+                )}
+
+
+
+                {tab === 'verification' && (
+
+                  <VerificationDashboard />
+
+                )}
+
+
+
+                {tab === 'profile' && (
+
+                  <AdminProfileManagement
+
+                    darkMode={darkMode}
+
+                    summary={summary}
+
+                    onProfileUpdated={(updated) => {
+
+                      setSummary((prev: any) => ({
+
+                        ...prev,
+
+                        ...updated
+
+                      }))
+
+                    }}
+
+                  />
+
+                )}
+
+              </div>
+
+              </>
+
+              )}
+
+             </motion.div> 
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <>
+
+      {/* Blog Form Modal */}
+
+      {showBlogForm && (
+
+        <motion.div
+
+          initial={{ opacity: 0 }}
+
+          animate={{ opacity: 1 }}
+
+          exit={{ opacity: 0 }}
+
+          className="fixed inset-0 z-50 bg-white flex flex-col w-screen h-screen overflow-hidden"
+
+          onClick={(e) => e.stopPropagation()}
+
+        >
+
+          {/* Full Page Header */}
+
+          <div className="bg-gradient-to-r from-yellow-600 via-amber-600 to-yellow-700 px-6 py-4 flex items-center justify-between flex-shrink-0 shadow-md">
+
+            <div className="flex items-center gap-3">
+
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white">
+
+                <BookOpen className="w-5 h-5" />
+
+              </div>
+
+              <div>
+
+                <h2 className="text-xl font-bold text-white">
+
+                  {editingBlog ? `Edit Blog Post: ${editingBlog.title || ''}` : 'Create New Blog Post'}
+
+                </h2>
+
+                <p className="text-xs text-yellow-100">Full-page workspace with rich media editor and autosave</p>
+
+              </div>
+
+            </div>
+
+            <div className="flex items-center gap-3">
+
+              <button
+
+                type="button"
+
+                onClick={() => setShowBlogForm(false)}
+
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-sm font-medium transition flex items-center gap-1.5"
+
+              >
+
+                <X className="w-4 h-4" />
+
+                Close Full Page
+
+              </button>
+
+            </div>
+
+          </div>
+
+
+
+          <div className="p-6 md:p-10 overflow-y-auto flex-1 min-h-0 bg-slate-50/70">
+
+            <div className="max-w-5xl mx-auto space-y-6 bg-white p-6 md:p-10 rounded-2xl border border-gray-200/80 shadow-sm">
+
+              <div className="space-y-6">
+
+                <div>
+
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+
+                  <input
+
+                    type="text"
+
+                    value={blogFormData.title}
+
+                    onKeyDown={(e) => {
+
+                      if (e.key === 'Enter') e.preventDefault()
+
+                    }}
+
+                    onChange={(e) => setBlogFormData((prev) => ({...prev, title: e.target.value}))}
+
+                    placeholder="Blog post title"
+
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+
+                  />
+
+                </div>
+
+
+
+                <div>
+
+                  <div className="flex items-center justify-between mb-2">
+
+                    <label className="block text-sm font-medium text-gray-700">Category</label>
+
+                    <button
+
+                      type="button"
+
+                      onClick={() => setShowAddCategoryInput(!showAddCategoryInput)}
+
+                      className="text-xs font-semibold text-yellow-700 hover:text-yellow-800"
+
+                    >
+
+                      {showAddCategoryInput ? 'Cancel' : '+ Create New Category'}
+
+                    </button>
+
+                  </div>
+
+
+
+                  {showAddCategoryInput ? (
+
+                    <div className="flex items-center gap-2">
+
+                      <input
+
+                        type="text"
+
+                        value={newCategoryName}
+
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+
+                        placeholder="New category name (e.g. Technology, Tutorials)"
+
+                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-yellow-500"
+
+                      />
+
+                      <button
+
+                        type="button"
+
+                        onClick={handleCreateCategory}
+
+                        className="px-4 py-2.5 bg-yellow-600 text-white font-semibold text-sm rounded-lg hover:bg-yellow-700 transition"
+
+                      >
+
+                        Add Category
+
+                      </button>
+
+                    </div>
+
+                  ) : (
+
+                    <select
+
+                      value={blogFormData.category || ''}
+
+                      onChange={(e) => setBlogFormData((prev) => ({ ...prev, category: e.target.value }))}
+
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none bg-white text-sm"
+
+                    >
+
+                      <option value="">Select a category...</option>
+
+                      {blogCategories.map((cat) => (
+
+                        <option key={cat.id} value={cat.id}>
+
+                          {cat.name}
+
+                        </option>
+
+                      ))}
+
+                    </select>
+
+                  )}
+
+                </div>
+
+
+
+
+
+                <div>
+
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
+
+                  <textarea
+
+                    value={blogFormData.excerpt}
+
+                    onChange={(e) => setBlogFormData((prev) => ({...prev, excerpt: e.target.value}))}
+
+                    placeholder="Brief summary of the post (max 500 characters)"
+
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none h-24 resize-none"
+
+                  />
+
+                </div>
+
+
+
+                <div>
+
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Content</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const editor = quillRef.current?.getEditor ? quillRef.current.getEditor() : null
+                        if (!editor) return
+                        const range = editor.getSelection(true) || { index: editor.getLength() }
+                        editor.clipboard.dangerouslyPasteHTML(
+                          range.index,
+                          '<div data-blog-ad="true" style="padding:14px; margin:18px 0; border:2px dashed #ca8a04; background:#fefce8; border-radius:10px; text-align:center; font-weight:600; color:#854d0e; font-size:13px;">📢 [AD BANNER DISPLAY AREA — Selected active ad will render here]</div><p><br></p>'
+                        )
+                        setBlogFormData(prev => ({ ...prev, ad_display_location: 'custom' }))
+                      }}
+                      className="px-2.5 py-1 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 rounded-lg hover:bg-amber-100 transition-colors flex items-center gap-1.5 shadow-2xs"
+                      title="Insert ad banner directly at current cursor position"
+                    >
+                      <PostAddRoundedIcon sx={{ fontSize: 16 }} />
+                      Insert Ad Banner at Cursor
+                    </button>
+                  </div>
+
+                    <div className="w-full [&_.ql-editor]:min-h-[380px] [&_.ql-editor]:text-base">
+
+                      {/* Quill editor with custom image upload handler */}
+
+                      <ReactQuill
+
+                        ref={quillRef as any}
+
+                        theme="snow"
+
+                        value={blogFormData.content}
+
+                        onChange={handleQuillChange}
+
+                        modules={quillModules}
+
+                      />
+
+                    </div>
+
+                </div>
+
+                <div className="mt-2">
+
+                  <button
+
+                    type="button"
+
+                    onClick={() => {
+
+                      // Strip embedded <img> tags from the content
+
+                      try {
+
+                        const newContent = (blogFormData.content || '').replace(/<img[^>]*>/gi, '')
+
+                        setBlogFormData((prev) => ({ ...prev, content: newContent }))
+
+                        setBlogMessage({ type: 'success', text: 'Removed embedded images from content' })
+
+                        setTimeout(() => setBlogMessage(null), 3000)
+
+                      } catch (e) {
+
+                        console.error('Failed to remove embedded images', e)
+
+                        setBlogMessage({ type: 'error', text: 'Failed to remove images' })
+
+                        setTimeout(() => setBlogMessage(null), 3000)
+
+                      }
+
+                    }}
+
+                    className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded mr-2"
+
+                  >
+
+                    Remove embedded images
+
+                  </button>
+
+                </div>
+
+
+
+                {/* SEO Fields */}
+
+                <div className="pt-4 border-t">
+
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3">SEO / Metadata (optional)</h4>
+
+                  <div className="space-y-3">
+
+                    <div>
+
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
+
+                      <input
+
+                        type="text"
+
+                        value={blogFormData.meta_title}
+
+                        onChange={(e) => setBlogFormData((prev) => ({...prev, meta_title: e.target.value}))}
+
+                        placeholder="Optional: title for search engines"
+
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+
+                      />
+
+                    </div>
+
+
+
+                    <div>
+
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
+
+                      <input
+
+                        type="text"
+
+                        value={blogFormData.meta_description}
+
+                        onChange={(e) => setBlogFormData((prev) => ({...prev, meta_description: e.target.value}))}
+
+                        placeholder="Optional: short description for search engines (150-320 chars)"
+
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+
+                      />
+
+                    </div>
+
+
+
+                    <div>
+
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Keywords</label>
+
+                      <input
+
+                        type="text"
+
+                        value={blogFormData.meta_keywords}
+
+                        onChange={(e) => setBlogFormData((prev) => ({...prev, meta_keywords: e.target.value}))}
+
+                        placeholder="Optional: comma-separated keywords"
+
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
+
+                      />
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+
+                <div>
+
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Image (upload)</label>
+
+                  <input
+
+                    type="file"
+
+                    accept="image/*"
+
+                    onChange={(e) => {
+
+                      const file = e.target.files?.[0] ?? null
+
+                      if (!file) {
+
+                        setBlogFormData((prev) => ({ ...prev, image: null }))
+
+                        return
+
+                      }
+
+                      const validation = validateImageSize(file)
+
+                      if (!validation.ok) {
+
+                        setOversizeFileSize(validation.bytes)
+
+                        setOversizeModalOpen(true)
+
+                        return
+
+                      }
+
+                      setBlogFormData((prev) => ({ ...prev, image: file }))
+
+                    }}
+
+                    className="w-full"
+
+                  />
+
+                  {typeof blogFormData.image === 'string' && blogFormData.image && (
+
+                    <div className="mt-2 flex items-center gap-3">
+
+                      <img src={getImageUrl(blogFormData.image)} alt={blogFormData.title || 'Blog preview image'} className="w-32 h-20 object-cover rounded" width={128} height={80} loading="lazy" decoding="async" />
+
+                      <button
+
+                        type="button"
+
+                        onClick={() => setBlogFormData((prev) => ({...prev, image: ''}))}
+
+                        className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded"
+
+                      >
+
+                        Remove image
+
+                      </button>
+
+                    </div>
+
+                  )}
+
+                  {blogFormData.image instanceof File && (
+
+                    <div className="mt-2 flex items-center gap-3">
+
+                      <p className="text-sm text-gray-600">Selected file: {blogFormData.image.name}</p>
+
+                      <button
+
+                        type="button"
+
+                        onClick={() => setBlogFormData((prev) => ({...prev, image: null}))}
+
+                        className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded"
+
+                      >
+
+                        Remove selection
+
+                      </button>
+
+                    </div>
+
+                  )}
+
+                </div>
+
+
+
+                <div>
+
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Image Description (Alt Text)</label>
+
+                  <textarea
+
+                    value={blogFormData.image_description}
+
+                    onChange={(e) => setBlogFormData((prev) => ({...prev, image_description: e.target.value}))}
+
+                    placeholder="Brief description of the image for accessibility and SEO"
+
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none h-16 resize-none"
+
+                    maxLength={255}
+
+                  />
+
+                  <p className="text-xs text-gray-500 mt-1">{blogFormData.image_description.length}/255 characters</p>
+
+                </div>
+
+
+
+                {/* Blog Page Section Flags */}
+
+                <div className="pt-4 border-t border-gray-200">
+
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Blog Page Sections</h4>
+
+                  <div className="flex flex-col sm:flex-row gap-6">
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+
+                      <input
+
+                        type="checkbox"
+
+                        checked={!!blogFormData.is_featured}
+
+                        onChange={(e) => setBlogFormData(prev => ({ ...prev, is_featured: e.target.checked }))}
+
+                        className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
+
+                      />
+
+                      <span className="text-sm font-medium text-gray-700">Featured Article (only 1 active)</span>
+
+                    </label>
+
+
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+
+                      <input
+
+                        type="checkbox"
+
+                        checked={!!blogFormData.is_trending}
+
+                        onChange={(e) => setBlogFormData(prev => ({ ...prev, is_trending: e.target.checked }))}
+
+                        className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
+
+                      />
+
+                      <span className="text-sm font-medium text-gray-700">Trending This Week</span>
+
+                    </label>
+
+
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+
+                      <input
+
+                        type="checkbox"
+
+                        checked={!!blogFormData.is_popular}
+
+                        onChange={(e) => setBlogFormData(prev => ({ ...prev, is_popular: e.target.checked }))}
+
+                        className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
+
+                      />
+
+                      <span className="text-sm font-medium text-gray-700">Popular Article</span>
+
+                    </label>
+
+                  </div>
+
+                </div>
+
+                {/* Advertisement & Banner Placement Section */}
+                <div className="pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center text-yellow-800">
+                        <CampaignRoundedIcon sx={{ fontSize: 20 }} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900">Advertisement & Banner Placement</h4>
+                        <p className="text-xs text-gray-500">Configure which active ad banner displays on this blog and where it appears</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Position Selector */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    {[
+                      { id: 'middle', label: 'Middle of Article', desc: 'Injected halfway into content', icon: <AlignVerticalCenterRoundedIcon sx={{ fontSize: 18 }} /> },
+                      { id: 'bottom', label: 'Bottom of Article', desc: 'Displayed before comments', icon: <AlignVerticalBottomRoundedIcon sx={{ fontSize: 18 }} /> },
+                      { id: 'both', label: 'Both Positions', desc: 'Middle and bottom banners', icon: <ViewStreamRoundedIcon sx={{ fontSize: 18 }} /> },
+                      { id: 'none', label: 'No Ads', desc: 'Suppress ads for this post', icon: <BlockRoundedIcon sx={{ fontSize: 18 }} /> },
+                    ].map((pos) => {
+                      const isSelected = (blogFormData.ad_display_location || 'bottom') === pos.id
+                      return (
+                        <div
+                          key={pos.id}
+                          onClick={() => setBlogFormData(prev => ({ ...prev, ad_display_location: pos.id as any }))}
+                          className={`cursor-pointer p-3 rounded-xl border-2 transition-all flex flex-col justify-between ${
+                            isSelected
+                              ? 'border-yellow-600 bg-yellow-50/60 shadow-xs'
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={isSelected ? 'text-yellow-700' : 'text-gray-500'}>{pos.icon}</span>
+                            {isSelected && <CheckCircleRoundedIcon sx={{ fontSize: 16, color: '#ca8a04' }} />}
+                          </div>
+                          <div>
+                            <div className={`text-xs font-bold ${isSelected ? 'text-yellow-900' : 'text-gray-800'}`}>{pos.label}</div>
+                            <div className="text-[11px] text-gray-500 mt-0.5 leading-tight">{pos.desc}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Active Ad Selection (when position != 'none') */}
+                  {(blogFormData.ad_display_location || 'bottom') !== 'none' && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-3 space-y-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                          <AutoAwesomeRoundedIcon sx={{ fontSize: 16, color: '#ca8a04' }} />
+                          Select Active Ad to Display
+                        </label>
+                        <select
+                          value={blogFormData.selected_ad || ''}
+                          onChange={(e) => setBlogFormData(prev => ({ ...prev, selected_ad: e.target.value ? Number(e.target.value) : null }))}
+                          className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 outline-none"
+                        >
+                          <option value="">⭐ Auto-Rotate All Active Ads (Recommended)</option>
+                          {blogAds.filter(ad => ad.is_active).map(ad => (
+                            <option key={ad.id} value={ad.id}>
+                              {ad.title} {ad.badge_text ? `[${ad.badge_text}]` : ''}
                             </option>
                           ))}
                         </select>
                       </div>
-                    </div>
 
-                    {/* Unassigned Questions Notification Alert for Master Admin */}
-                    {selectedSubject && unassignedCountForSubject > 0 && (
-                      <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-xl flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">⚠️</span>
-                          <div>
-                            <h4 className="font-semibold text-amber-900 text-sm">
-                              Notice: Unassigned Question Years in {selectedSubject}
-                            </h4>
-                            <p className="text-xs text-amber-800">
-                              <strong>{unassignedCountForSubject}</strong> question(s) currently have no year assigned and will default to year <strong>2021</strong> for students during practice exams.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                     
-                    {uploadMode === 'json' && (
-                    <>
-                    {bulkMessage && (
-                      <div className={`p-3 rounded-lg mb-4 ${bulkMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
-                        {bulkMessage.text}
-                      </div>
-                    )}
-                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-50 rounded-2xl p-6 mb-6">
-                      <div className="flex items-start space-x-3 mb-4">
-                        <Database className="w-6 h-6 text-yellow-600 mt-1" />
-                        <div>
-                          <h4 className="font-semibold text-gray-900 mb-1">JSON Format Example</h4>
-                          <p className="text-xs text-gray-600 mb-3">Paste just the questions array below. Include an optional <strong>"year"</strong> field in each question object (e.g., "year": "2014").</p>
-                          <pre className="text-xs bg-white p-3 rounded-lg overflow-x-auto">
-{`[
-  {
-    "id": "chem_1",
-    "question_text": "What is the molar volume...",
-    "options": {
-      "A": "0.89 mol",
-      "B": "1.90 mol",
-      "C": "3.80 mol",
-      "D": "5.70 mol"
-    },
-    "correct_answer": "A",
-    "explanation": "Convert to Kelvin...",
-    "subject": "Chemistry",
-    "year": "2014"
-  }
-]`}
-                          </pre>
-                        </div>
-                      </div>
-                    </div>
+                      {/* Live Selected Ad Preview Card */}
+                      {(() => {
+                        const activeList = blogAds.filter(ad => ad.is_active)
+                        const previewAd = blogFormData.selected_ad
+                          ? activeList.find(a => String(a.id) === String(blogFormData.selected_ad))
+                          : (activeList[0] || null)
 
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Paste your JSON data here
-                        </label>
-                        <textarea
-                          value={bulkData}
-                          onChange={(e) => setBulkData(e.target.value)}
-                          placeholder="Paste your JSON data here..."
-                          className="w-full h-64 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none font-mono text-sm"
-                        />
-                      </div>
-                       
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-500">
-                          {bulkData.length > 0 && (
-                            <>
-                              <CheckCircle className="w-4 h-4 text-yellow-500 inline mr-1" />
-                              {Math.ceil(bulkData.length / 1024)} KB of data
-                            </>
-                          )}
-                        </div>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={submitBulk}
-                          disabled={!bulkData.trim()}
-                          className={`px-6 py-3 rounded-xl font-semibold flex items-center ${
-                            bulkData.trim()
-                              ? 'bg-gradient-to-r from-yellow-600 to-yellow-600 text-white hover:shadow-lg'
-                              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                          }`}
-                        >
-                          <Upload className="w-5 h-5 mr-2" />
-                          Upload Questions
-                        </motion.button>
-                      </div>
-                    </div>
-                    </>
-                    )}
+                        if (!previewAd) return null
 
-                    {uploadMode === 'file' && (
-                      <div className="bg-white p-6 rounded-xl border border-gray-200">
-                        {bulkMessage && (
-                          <div className={`p-3 rounded-lg mb-4 ${bulkMessage.type === 'success' ? 'bg-yellow-50 text-yellow-800' : 'bg-red-50 text-red-800'}`}>
-                            {bulkMessage.text}
-                          </div>
-                        )}
-                        <h4 className="font-semibold mb-4">Upload CSV or Excel File</h4>
-                        <p className="text-sm text-gray-600 mb-4">
-                          File should have columns: question_text, option_a, option_b, option_c, option_d, correct_answer, explanation.
-                        </p>
-                        {/* Year Selection for CSV/Excel File */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Exam Year for this File
-                          </label>
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <select
-                              value={adminBulkYear}
-                              onChange={(e) => setAdminBulkYear(e.target.value)}
-                              className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm bg-white"
-                            >
-                              <option value="">Choose Year (or type below)</option>
-                              {availableYearsForSubject.map((y) => (
-                                <option key={y.year} value={y.year}>
-                                  📅 Year {y.year} ({y.question_count} questions)
-                                </option>
-                              ))}
-                              {customBulkYear && !availableYearsForSubject.some(y => y.year === customBulkYear) && (
-                                <option value={customBulkYear}>
-                                  📅 Year {customBulkYear} (New)
-                                </option>
-                              )}
-                            </select>
-                            <input
-                              type="text"
-                              value={customBulkYear}
-                              onChange={(e) => {
-                                setCustomBulkYear(e.target.value)
-                                setAdminBulkYear(e.target.value)
-                              }}
-                              placeholder="Or type new year (e.g. 2025)"
-                              className="w-48 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 text-sm"
-                            />
-                          </div>
-                          {adminBulkYear && (
-                            <p className="text-xs text-yellow-700 mt-1">
-                              Will tag questions with year: <strong>{adminBulkYear}</strong>
-                            </p>
-                          )}
-                        </div>
-
-                        <input 
-                          type="file" 
-                          accept=".csv, .xlsx, .xls"
-                          onChange={(e) => setBulkFile(e.target.files ? e.target.files[0] : null)}
-                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"
-                        />
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                            onClick={async () => {
-                            if (!bulkFile || !selectedExam || !selectedSubject) {
-                              setBulkMessage({ type: 'error', text: 'Please select exam, subject and file' })
-                              setTimeout(() => setBulkMessage(null), 4000)
-                              return
-                            }
-                            const formData = new FormData()
-                            formData.append('file', bulkFile)
-                            formData.append('exam_id', selectedExam)
-                            formData.append('subject', selectedSubject)
-                            const effectiveYear = adminBulkYear.trim() || customBulkYear.trim() || new Date().getFullYear().toString()
-                            formData.append('year', effectiveYear)
-                             
-                            try {
-                              const token = localStorage.getItem('access')
-                              const res = await axios.post(`${API_BASE}/cbt/bulk-upload/`, formData, {
-                                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
-                              })
-                              setBulkMessage({ type: 'success', text: `Success! Created ${res.data.success} questions.` })
-                              setTimeout(() => setBulkMessage(null), 5000)
-                            } catch (err: any) {
-                              console.error('Bulk file upload error:', err)
-                              let msg = 'Upload failed: '
-                              if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
-                                msg += err.response.data.errors.join('; ')
-                              } else if (err.response?.data?.detail) {
-                                msg += err.response.data.detail
-                              } else if (err.response?.data?.error) {
-                                msg += err.response.data.error
-                              } else if (err.message) {
-                                msg += err.message
-                              } else {
-                                msg += 'Unknown error'
-                              }
-                              setBulkMessage({ type: 'error', text: msg })
-                              setTimeout(() => setBulkMessage(null), 6000)
-                            }
-                          }}
-                          className="mt-4 px-6 py-2 bg-yellow-600 text-white rounded-lg font-semibold"
-                        >
-                          Upload File
-                        </motion.button>
-                      </div>
-                    )}
-
-                    {uploadMode === 'manual' && (
-                      <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">
-                        <h4 className="font-semibold">Add Single Question</h4>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
-                          <MathFormulaToolbar
-                            onInsert={(snippet) => setManualQuestion(prev => ({ ...prev, text: (prev.text || '') + ' ' + snippet }))}
-                            currentValue={manualQuestion.text}
-                            label="Math & Chemistry Formula Helper"
-                          />
-                          <textarea 
-                            value={manualQuestion.text}
-                            onChange={e => setManualQuestion({...manualQuestion, text: e.target.value})}
-                            className="w-full mt-1 p-2 border rounded-lg"
-                            placeholder="Enter question text or math formulas (e.g., $x^2 + y^2 = r^2$ or \ce{H2SO4})..."
-                            rows={3}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Image (Optional)</label>
-                          <input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={e => setManualQuestion({...manualQuestion, image: e.target.files ? e.target.files[0] : null})}
-                            className="mt-1 block w-full text-sm text-gray-500"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Option A</label>
-                            <input type="text" value={manualQuestion.optionA} onChange={e => setManualQuestion({...manualQuestion, optionA: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Option B</label>
-                            <input type="text" value={manualQuestion.optionB} onChange={e => setManualQuestion({...manualQuestion, optionB: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Option C</label>
-                            <input type="text" value={manualQuestion.optionC} onChange={e => setManualQuestion({...manualQuestion, optionC: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Option D</label>
-                            <input type="text" value={manualQuestion.optionD} onChange={e => setManualQuestion({...manualQuestion, optionD: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Correct Answer</label>
-                            <select value={manualQuestion.correctAnswer} onChange={e => setManualQuestion({...manualQuestion, correctAnswer: e.target.value})} className="w-full mt-1 p-2 border rounded-lg">
-                              <option value="A">A</option>
-                              <option value="B">B</option>
-                              <option value="C">C</option>
-                              <option value="D">D</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Exam Year</label>
-                            <div className="flex gap-2 mt-1">
-                              <select
-                                value={manualQuestion.year}
-                                onChange={e => {
-                                  const val = e.target.value
-                                  if (val !== '__custom__') {
-                                    setManualQuestion({ ...manualQuestion, year: val })
-                                  }
-                                }}
-                                className="flex-1 p-2 border rounded-lg text-sm bg-white"
-                              >
-                                <option value="">No Year (Defaults to 2021 for students)</option>
-                                {availableYearsForSubject.map(y => (
-                                  <option key={y.year} value={y.year}>
-                                    📅 Year {y.year}
-                                  </option>
-                                ))}
-                                {manualQuestion.year && !availableYearsForSubject.some(y => y.year === manualQuestion.year) && (
-                                  <option value={manualQuestion.year}>
-                                    📅 Year {manualQuestion.year} (New)
-                                  </option>
-                                )}
-                              </select>
-                              <input
-                                type="text"
-                                placeholder="Or type year"
-                                className="w-28 p-2 border rounded-lg text-sm"
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault()
-                                    const val = (e.target as HTMLInputElement).value.trim()
-                                    if (val) {
-                                      setManualQuestion({ ...manualQuestion, year: val })
-                                      ;(e.target as HTMLInputElement).value = ''
-                                    }
-                                  }
-                                }}
-                                onBlur={e => {
-                                  const val = e.target.value.trim()
-                                  if (val) {
-                                    setManualQuestion({ ...manualQuestion, year: val })
-                                    e.target.value = ''
-                                  }
-                                }}
-                              />
+                        return (
+                          <div className="border border-yellow-200 bg-white rounded-lg p-3 text-xs shadow-xs">
+                            <div className="flex items-center justify-between text-yellow-800 font-semibold mb-2">
+                              <span className="flex items-center gap-1">
+                                <VisibilityRoundedIcon sx={{ fontSize: 14 }} />
+                                Preview: {blogFormData.selected_ad ? 'Specific Active Ad' : 'Auto-Rotating Top Active Ad'}
+                              </span>
+                              <span className="px-2 py-0.5 bg-green-100 text-green-800 text-[10px] font-bold rounded-full">Active</span>
                             </div>
-                            {manualQuestion.year && (
-                              <p className="text-xs text-yellow-700 mt-1">
-                                Assigned year: <strong>{manualQuestion.year}</strong>
-                              </p>
-                            )}
+                            <div className="flex items-center gap-3">
+                              {previewAd.image && (
+                                <img
+                                  src={resolveImageUrl(previewAd.image)}
+                                  alt={previewAd.title}
+                                  className="w-16 h-16 object-cover rounded-md border border-gray-100 flex-shrink-0"
+                                  onError={(e) => handleImageError(e, DEFAULT_AVATAR_FALLBACK)}
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                {previewAd.badge_text && (
+                                  <span className="text-[10px] uppercase font-bold text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">
+                                    {previewAd.badge_text}
+                                  </span>
+                                )}
+                                <div className="font-bold text-gray-900 truncate mt-0.5">{previewAd.title}</div>
+                                <div className="text-gray-500 line-clamp-1 text-[11px] mt-0.5">{previewAd.description}</div>
+                              </div>
+                              <div className="flex-shrink-0">
+                                <span className="px-3 py-1 bg-yellow-600 text-white rounded font-medium text-[11px] inline-flex items-center gap-1">
+                                  <AdsClickRoundedIcon sx={{ fontSize: 13 }} />
+                                  {previewAd.button_text || 'View'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Explanation</label>
-                          <input type="text" value={manualQuestion.explanation} onChange={e => setManualQuestion({...manualQuestion, explanation: e.target.value})} className="w-full mt-1 p-2 border rounded-lg" />
-                        </div>
-
-                        {manualMessage && (
-                          <div className={`p-4 rounded-lg flex items-center ${manualMessage.type === 'success' ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}>
-                            {manualMessage.type === 'success' ? <CheckCircle className="w-5 h-5 mr-2" /> : <AlertCircle className="w-5 h-5 mr-2" />}
-                            {manualMessage.text}
-                          </div>
-                        )}
-
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={async () => {
-                            if (!selectedExam || !selectedSubject || !manualQuestion.text) {
-                              setManualMessage({type: 'error', text: 'Please fill in all required fields (Exam, Subject, Question Text)'})
-                              return
-                            }
-                            const subj = subjects.find(s => s.name === selectedSubject)
-                            if (!subj) return setManualMessage({type: 'error', text: 'Invalid subject selected'})
-
-                            setManualLoading(true)
-                            setManualMessage(null)
-                            const formData = new FormData()
-                            formData.append('subject', subj.id)
-                            formData.append('text', manualQuestion.text)
-                            if (manualQuestion.image) formData.append('image', manualQuestion.image)
-                            if (manualQuestion.year) formData.append('year', manualQuestion.year)
-                             
-                            const opts = [
-                              { text: manualQuestion.optionA, key: 'A' },
-                              { text: manualQuestion.optionB, key: 'B' },
-                              { text: manualQuestion.optionC, key: 'C' },
-                              { text: manualQuestion.optionD, key: 'D' }
-                            ]
-                            const choices = opts.map(opt => ({
-                              text: opt.text,
-                              is_correct: opt.key === manualQuestion.correctAnswer
-                            }))
-                            formData.append('choices_json', JSON.stringify(choices))
-
-                            try {
-                              const token = localStorage.getItem('access')
-                              await axios.post(`${API_BASE}/cbt/questions/`, formData, {
-                                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
-                              })
-                              setManualMessage({type: 'success', text: 'Question created successfully!'})
-                              setManualQuestion({ text: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A', explanation: '', year: '', image: null })
-                            } catch (err: any) {
-                              setManualMessage({type: 'error', text: 'Failed: ' + (err.response?.data?.detail || err.message)})
-                            } finally {
-                              setManualLoading(false)
-                            }
-                          }}
-                          disabled={manualLoading}
-                          className={`px-6 py-2 rounded-lg font-semibold flex items-center justify-center ${manualLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 text-white'}`}
-                        >
-                          {manualLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Add Question'}
-                        </motion.button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                 {tab === 'messages' && (
-                  <AdminMessages />
-                )} 
-
-                {tab === 'legal-documents' && (
-                  <LegalDocumentsManagement />
-                )}
-
-                {tab === 'subscriptions' && (
-                  <SubscriptionManager />
-                )}
-
-                {tab === 'verification' && (
-                  <VerificationDashboard />
-                )}
-
-                {tab === 'profile' && (
-                  <AdminProfileManagement
-                    darkMode={darkMode}
-                    summary={summary}
-                    onProfileUpdated={(updated) => {
-                      setSummary((prev: any) => ({
-                        ...prev,
-                        ...updated
-                      }))
-                    }}
-                  />
-                )}
-              </div>
-              </>
-              )}
-             </motion.div> 
-          </div>
-        </div>
-      </div>
-
-      <>
-      {/* Blog Form Modal */}
-      {showBlogForm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-white flex flex-col w-screen h-screen overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Full Page Header */}
-          <div className="bg-gradient-to-r from-yellow-600 via-amber-600 to-yellow-700 px-6 py-4 flex items-center justify-between flex-shrink-0 shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">
-                  {editingBlog ? `Edit Blog Post: ${editingBlog.title || ''}` : 'Create New Blog Post'}
-                </h2>
-                <p className="text-xs text-yellow-100">Full-page workspace with rich media editor and autosave</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setShowBlogForm(false)}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-sm font-medium transition flex items-center gap-1.5"
-              >
-                <X className="w-4 h-4" />
-                Close Full Page
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6 md:p-10 overflow-y-auto flex-1 min-h-0 bg-slate-50/70">
-            <div className="max-w-5xl mx-auto space-y-6 bg-white p-6 md:p-10 rounded-2xl border border-gray-200/80 shadow-sm">
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={blogFormData.title}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') e.preventDefault()
-                    }}
-                    onChange={(e) => setBlogFormData((prev) => ({...prev, title: e.target.value}))}
-                    placeholder="Blog post title"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">Category</label>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddCategoryInput(!showAddCategoryInput)}
-                      className="text-xs font-semibold text-yellow-700 hover:text-yellow-800"
-                    >
-                      {showAddCategoryInput ? 'Cancel' : '+ Create New Category'}
-                    </button>
-                  </div>
-
-                  {showAddCategoryInput ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="New category name (e.g. Technology, Tutorials)"
-                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-yellow-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCreateCategory}
-                        className="px-4 py-2.5 bg-yellow-600 text-white font-semibold text-sm rounded-lg hover:bg-yellow-700 transition"
-                      >
-                        Add Category
-                      </button>
-                    </div>
-                  ) : (
-                    <select
-                      value={blogFormData.category || ''}
-                      onChange={(e) => setBlogFormData((prev) => ({ ...prev, category: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none bg-white text-sm"
-                    >
-                      <option value="">Select a category...</option>
-                      {blogCategories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
-                  <textarea
-                    value={blogFormData.excerpt}
-                    onChange={(e) => setBlogFormData((prev) => ({...prev, excerpt: e.target.value}))}
-                    placeholder="Brief summary of the post (max 500 characters)"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none h-24 resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                    <div className="w-full [&_.ql-editor]:min-h-[380px] [&_.ql-editor]:text-base">
-                      {/* Quill editor with custom image upload handler */}
-                      <ReactQuill
-                        ref={quillRef as any}
-                        theme="snow"
-                        value={blogFormData.content}
-                        onChange={handleQuillChange}
-                        modules={quillModules}
-                      />
-                    </div>
-                </div>
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Strip embedded <img> tags from the content
-                      try {
-                        const newContent = (blogFormData.content || '').replace(/<img[^>]*>/gi, '')
-                        setBlogFormData((prev) => ({ ...prev, content: newContent }))
-                        setBlogMessage({ type: 'success', text: 'Removed embedded images from content' })
-                        setTimeout(() => setBlogMessage(null), 3000)
-                      } catch (e) {
-                        console.error('Failed to remove embedded images', e)
-                        setBlogMessage({ type: 'error', text: 'Failed to remove images' })
-                        setTimeout(() => setBlogMessage(null), 3000)
-                      }
-                    }}
-                    className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded mr-2"
-                  >
-                    Remove embedded images
-                  </button>
-                </div>
-
-                {/* SEO Fields */}
-                <div className="pt-4 border-t">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-3">SEO / Metadata (optional)</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
-                      <input
-                        type="text"
-                        value={blogFormData.meta_title}
-                        onChange={(e) => setBlogFormData((prev) => ({...prev, meta_title: e.target.value}))}
-                        placeholder="Optional: title for search engines"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
-                      <input
-                        type="text"
-                        value={blogFormData.meta_description}
-                        onChange={(e) => setBlogFormData((prev) => ({...prev, meta_description: e.target.value}))}
-                        placeholder="Optional: short description for search engines (150-320 chars)"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Keywords</label>
-                      <input
-                        type="text"
-                        value={blogFormData.meta_keywords}
-                        onChange={(e) => setBlogFormData((prev) => ({...prev, meta_keywords: e.target.value}))}
-                        placeholder="Optional: comma-separated keywords"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image (upload)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null
-                      if (!file) {
-                        setBlogFormData((prev) => ({ ...prev, image: null }))
-                        return
-                      }
-                      const validation = validateImageSize(file)
-                      if (!validation.ok) {
-                        setOversizeFileSize(validation.bytes)
-                        setOversizeModalOpen(true)
-                        return
-                      }
-                      setBlogFormData((prev) => ({ ...prev, image: file }))
-                    }}
-                    className="w-full"
-                  />
-                  {typeof blogFormData.image === 'string' && blogFormData.image && (
-                    <div className="mt-2 flex items-center gap-3">
-                      <img src={getImageUrl(blogFormData.image)} alt={blogFormData.title || 'Blog preview image'} className="w-32 h-20 object-cover rounded" width={128} height={80} loading="lazy" decoding="async" />
-                      <button
-                        type="button"
-                        onClick={() => setBlogFormData((prev) => ({...prev, image: ''}))}
-                        className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded"
-                      >
-                        Remove image
-                      </button>
-                    </div>
-                  )}
-                  {blogFormData.image instanceof File && (
-                    <div className="mt-2 flex items-center gap-3">
-                      <p className="text-sm text-gray-600">Selected file: {blogFormData.image.name}</p>
-                      <button
-                        type="button"
-                        onClick={() => setBlogFormData((prev) => ({...prev, image: null}))}
-                        className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded"
-                      >
-                        Remove selection
-                      </button>
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image Description (Alt Text)</label>
-                  <textarea
-                    value={blogFormData.image_description}
-                    onChange={(e) => setBlogFormData((prev) => ({...prev, image_description: e.target.value}))}
-                    placeholder="Brief description of the image for accessibility and SEO"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none h-16 resize-none"
-                    maxLength={255}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">{blogFormData.image_description.length}/255 characters</p>
-                </div>
-
-                {/* Blog Page Section Flags */}
-                <div className="pt-4 border-t border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Blog Page Sections</h4>
-                  <div className="flex flex-col sm:flex-row gap-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={!!blogFormData.is_featured}
-                        onChange={(e) => setBlogFormData(prev => ({ ...prev, is_featured: e.target.checked }))}
-                        className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Featured Article (only 1 active)</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={!!blogFormData.is_trending}
-                        onChange={(e) => setBlogFormData(prev => ({ ...prev, is_trending: e.target.checked }))}
-                        className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Trending This Week</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={!!blogFormData.is_popular}
-                        onChange={(e) => setBlogFormData(prev => ({ ...prev, is_popular: e.target.checked }))}
-                        className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Popular Article</span>
-                    </label>
-                  </div>
-                </div>
               </div>
+
             </div>
+
           </div>
+
+
 
           {/* Full Page Pinned Bottom Actions Bar */}
+
           <div className="border-t border-gray-200 px-8 py-4 flex items-center justify-between bg-white flex-shrink-0 shadow-lg">
+
             <div className="text-xs text-gray-500 flex items-center gap-2">
+
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+
               Full page editor active • Draft autosaved locally
+
             </div>
+
             <div className="flex gap-3">
+
               <motion.button
+
                 whileHover={{ scale: 1.02 }}
+
                 whileTap={{ scale: 0.98 }}
+
                 onClick={() => setShowBlogForm(false)}
+
                 className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-medium text-sm transition-colors"
+
               >
+
                 Cancel
+
               </motion.button>
+
               <motion.button
+
                 whileHover={{ scale: 1.02 }}
+
                 whileTap={{ scale: 0.98 }}
+
                 onClick={saveBlog}
+
                 disabled={savingBlog}
+
                 className={`px-7 py-2.5 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl font-semibold text-sm hover:shadow-lg transition-all flex items-center gap-2 ${savingBlog ? 'opacity-60 cursor-not-allowed' : ''}`}
+
               >
+
                 {savingBlog ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+
                 {editingBlog ? 'Update Post' : 'Create Post'}
+
               </motion.button>
+
             </div>
+
           </div>
+
         </motion.div>
+
       )}
+
+
 
       {/* Ad Form Modal */}
+
       {showAdForm && (
+
         <motion.div
+
           initial={{ opacity: 0 }}
+
           animate={{ opacity: 1 }}
+
           exit={{ opacity: 0 }}
+
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-8"
+
           onClick={() => setShowAdForm(false)}
+
         >
+
           <motion.div
+
             initial={{ scale: 0.9, opacity: 0 }}
+
             animate={{ scale: 1, opacity: 1 }}
+
             exit={{ scale: 0.9, opacity: 0 }}
+
             onClick={(e) => e.stopPropagation()}
+
             className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 flex flex-col max-h-[85vh]"
+
           >
+
             <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 p-6 rounded-t-2xl flex items-center justify-between flex-shrink-0">
+
               <h2 className="text-xl font-bold text-white">{editingAd ? 'Edit Ad Banner' : 'Create Ad Banner'}</h2>
+
             </div>
+
+
 
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
+
               <div>
+
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Badge Text (e.g. FREE DOWNLOAD)</label>
+
                 <input
+
                   type="text"
+
                   value={adFormData.badge_text}
+
                   onChange={(e) => setAdFormData(prev => ({ ...prev, badge_text: e.target.value }))}
+
                   placeholder="FREE DOWNLOAD"
+
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+
                 />
+
               </div>
 
+
+
               <div>
+
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Title *</label>
+
                 <input
+
                   type="text"
+
                   value={adFormData.title}
+
                   onChange={(e) => setAdFormData(prev => ({ ...prev, title: e.target.value }))}
+
                   placeholder="e.g. 2026 WAEC Physics Formula Sheet"
+
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+
                   required
+
                 />
+
               </div>
 
+
+
               <div>
+
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Description / Subtitle</label>
+
                 <textarea
+
                   value={adFormData.description}
+
                   onChange={(e) => setAdFormData(prev => ({ ...prev, description: e.target.value }))}
+
                   placeholder="Brief subtitle or summary"
+
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500 h-16 resize-none"
+
                 />
+
               </div>
 
+
+
               <div>
+
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Bullet Points (comma-separated, optional)</label>
+
                 <input
+
                   type="text"
+
                   value={adFormData.bullets}
+
                   onChange={(e) => setAdFormData(prev => ({ ...prev, bullets: e.target.value }))}
+
                   placeholder="e.g. Python, SQL, Power BI"
+
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+
                 />
+
               </div>
+
+
 
               <div className="grid grid-cols-2 gap-3">
+
                 <div>
+
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Button Text</label>
+
                   <input
+
                     type="text"
+
                     value={adFormData.button_text}
+
                     onChange={(e) => setAdFormData(prev => ({ ...prev, button_text: e.target.value }))}
+
                     placeholder="Download Free"
+
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+
                   />
+
                 </div>
+
                 <div>
+
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Button Link (Redirect Path) *</label>
+
                   <input
+
                     type="text"
+
                     value={adFormData.button_link}
+
                     onChange={(e) => setAdFormData(prev => ({ ...prev, button_link: e.target.value }))}
+
                     placeholder="e.g. /courses or https://..."
+
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-yellow-500"
+
                     required
+
                   />
+
                 </div>
+
               </div>
+
+
 
               <div>
+
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Image Asset (upload)</label>
+
                 <input
+
                   type="file"
+
                   accept="image/*"
+
                   onChange={(e) => {
+
                     const file = e.target.files?.[0] ?? null
+
                     if (!file) {
+
                       setAdFormData(prev => ({ ...prev, image: null }))
+
                       return
+
                     }
+
                     const validation = validateImageSize(file)
+
                     if (!validation.ok) {
+
                       setOversizeFileSize(validation.bytes)
+
                       setOversizeModalOpen(true)
+
                       return
+
                     }
+
                     setAdFormData(prev => ({ ...prev, image: file }))
+
                   }}
+
                   className="w-full text-xs"
+
                 />
+
                 {typeof adFormData.image === 'string' && adFormData.image && (
+
                   <div className="mt-2 flex items-center gap-3">
+
                     <img src={getImageUrl(adFormData.image)} alt="Preview" className="w-24 h-14 object-cover rounded" />
+
                     <button
+
                       type="button"
+
                       onClick={() => setAdFormData(prev => ({ ...prev, image: '' }))}
+
                       className="px-2 py-1 text-xs bg-red-50 text-red-700 rounded"
+
                     >
+
                       Remove image
+
                     </button>
+
                   </div>
+
                 )}
+
                 {adFormData.image instanceof File && (
+
                   <div className="mt-2 flex items-center gap-3">
+
                     <p className="text-xs text-gray-500 truncate max-w-[200px]">Selected: {adFormData.image.name}</p>
+
                     <button
+
                       type="button"
+
                       onClick={() => setAdFormData(prev => ({ ...prev, image: null }))}
+
                       className="px-2 py-1 text-xs bg-red-50 text-red-700 rounded"
+
                     >
+
                       Remove selection
+
                     </button>
+
                   </div>
+
                 )}
+
               </div>
+
+
 
               <div className="flex items-center gap-2">
+
                 <input
+
                   type="checkbox"
+
                   id="ad_is_active"
+
                   checked={!!adFormData.is_active}
+
                   onChange={(e) => setAdFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+
                   className="rounded text-yellow-600 focus:ring-yellow-500 w-4 h-4"
+
                 />
+
                 <label htmlFor="ad_is_active" className="text-xs font-semibold text-gray-700 cursor-pointer">
+
                   Activate Banner (will display on Blog page)
+
                 </label>
+
               </div>
+
             </div>
+
+
 
             <div className="border-t p-4 flex gap-3 justify-end bg-gray-50 flex-shrink-0">
+
               <button
+
                 type="button"
+
                 onClick={() => setShowAdForm(false)}
+
                 className="px-4 py-2 bg-gray-200 text-gray-900 rounded-lg text-sm font-semibold hover:bg-gray-300"
+
               >
+
                 Cancel
+
               </button>
+
               <button
+
                 type="button"
+
                 onClick={saveAd}
+
                 disabled={savingAd}
+
                 className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-semibold hover:bg-yellow-700 disabled:opacity-60 flex items-center gap-2"
+
               >
+
                 {savingAd && <Loader2 className="w-4 h-4 animate-spin" />}
+
                 {editingAd ? 'Update Banner' : 'Create Banner'}
+
               </button>
+
             </div>
+
           </motion.div>
+
         </motion.div>
+
       )}
+
+
 
       {/* Delete Confirmation Modal */}
+
       {deleteConfirmation.open && (
+
         <motion.div
+
           initial={{ opacity: 0 }}
+
           animate={{ opacity: 1 }}
+
           exit={{ opacity: 0 }}
+
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+
           onClick={() => setDeleteConfirmation({open: false, userId: null, userName: ''})}
+
         >
+
           <motion.div
+
             initial={{ scale: 0.9, opacity: 0 }}
+
             animate={{ scale: 1, opacity: 1 }}
+
             exit={{ scale: 0.9, opacity: 0 }}
+
             onClick={(e) => e.stopPropagation()}
+
             className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full"
+
           >
+
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+
               <AlertCircle className="w-6 h-6 text-red-600" />
+
             </div>
+
             <h3 className="text-lg font-bold text-gray-900 text-center mb-2">Delete User</h3>
+
             <p className="text-gray-600 text-center mb-6">
+
               Are you sure you want to permanently delete <strong>{deleteConfirmation.userName}</strong>? This action cannot be undone and will remove all associated data.
+
             </p>
+
             <div className="flex gap-4">
+
               <motion.button
+
                 whileHover={{ scale: 1.02 }}
+
                 whileTap={{ scale: 0.98 }}
+
                 onClick={() => setDeleteConfirmation({open: false, userId: null, userName: ''})}
+
                 className="flex-1 px-4 py-3 bg-gray-100 text-gray-900 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+
               >
+
                 Cancel
+
               </motion.button>
+
               <motion.button
+
                 whileHover={{ scale: 1.02 }}
+
                 whileTap={{ scale: 0.98 }}
+
                 onClick={confirmDeleteUser}
+
                 className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+
               >
+
                 Delete
+
               </motion.button>
+
             </div>
+
           </motion.div>
+
         </motion.div>
+
       )}
+
+
 
       <OversizeImageModal
+
         open={oversizeModalOpen}
+
         size={oversizeFileSize}
+
         maxSize={400 * 1024}
+
         onClose={() => setOversizeModalOpen(false)}
+
         darkMode={darkMode}
+
       />
+
+
 
       {/* System Settings Modal */}
+
       {showSettings && (
+
         <motion.div
+
           initial={{ opacity: 0 }}
+
           animate={{ opacity: 1 }}
+
           exit={{ opacity: 0 }}
+
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-8"
+
           onClick={() => setShowSettings(false)}
+
         >
+
           <motion.div
+
             initial={{ scale: 0.9, opacity: 0 }}
+
             animate={{ scale: 1, opacity: 1 }}
+
             exit={{ scale: 0.9, opacity: 0 }}
+
             onClick={(e) => e.stopPropagation()}
+
             className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4"
+
           >
+
             <div className="bg-gradient-to-r from-yellow-600 to-yellow-600 p-6 rounded-t-2xl flex items-center justify-between">
+
               <h2 className="text-2xl font-bold text-white">System Settings</h2>
+
               <motion.button
+
                 whileHover={{ scale: 1.1 }}
+
                 whileTap={{ scale: 0.9 }}
+
                 onClick={() => setShowSettings(false)}
+
                 className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+
               >
+
                 <XCircle className="w-6 h-6" />
+
               </motion.button>
+
             </div>
+
+
 
             <div className="p-8 max-h-[80vh] overflow-y-auto">
+
               {/* Status Messages */}
+
               {settingsMessage && (
+
                 <motion.div
+
                   initial={{ opacity: 0, y: -10 }}
+
                   animate={{ opacity: 1, y: 0 }}
+
                   className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
+
                     settingsMessage.type === 'success' 
+
                       ? 'bg-yellow-50 border border-yellow-200' 
+
                       : 'bg-red-50 border border-red-200'
+
                   }`}
+
                 >
+
                   {settingsMessage.type === 'success' ? (
+
                     <CheckCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+
                   ) : (
+
                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+
                   )}
+
                   <span className={settingsMessage.type === 'success' ? 'text-yellow-800' : 'text-red-800'}>
+
                     {settingsMessage.text}
+
                   </span>
+
                 </motion.div>
+
               )}
+
+
 
               {/* Admin Profile Section */}
+
               <div className="mb-8">
+
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Profile</h3>
+
                 <div className="space-y-4">
+
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+
                     <input type="text" value={summary?.username || ''} disabled className="w-full px-4 py-2 bg-gray-100 rounded-lg text-gray-700" />
+
                   </div>
+
                   <div className="grid md:grid-cols-2 gap-4">
+
                     <div>
+
                       <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+
                       <input 
+
                         type="email" 
+
                         value={settingsData.email}
+
                         onChange={(e) => setSettingsData({...settingsData, email: e.target.value})}
+
                         placeholder="admin@example.com" 
+
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none" 
+
                       />
+
                     </div>
+
                     <div>
+
                       <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+
                       <input 
+
                         type="text" 
+
                         value={`${settingsData.firstName} ${settingsData.lastName}`.trim()}
+
                         onChange={(e) => {
+
                           const parts = e.target.value.split(' ')
+
                           setSettingsData({
+
                             ...settingsData, 
+
                             firstName: parts[0] || '',
+
                             lastName: parts.slice(1).join(' ') || ''
+
                           })
+
                         }}
+
                         placeholder="Admin Name" 
+
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none" 
+
                       />
+
                     </div>
+
                   </div>
+
                   <motion.button
+
                     whileHover={{ scale: 1.02 }}
+
                     whileTap={{ scale: 0.98 }}
+
                     onClick={updateProfile}
+
                     disabled={settingsSaving}
+
                     className="mt-4 px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50"
+
                   >
+
                     {settingsSaving ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
+
                     Update Profile
+
                   </motion.button>
+
                 </div>
+
               </div>
+
+
 
               {/* Password Change Section */}
+
               <div className="border-t pt-8 mb-8">
+
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
+
                 <div className="space-y-4">
+
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+
                     <input 
+
                       type="password" 
+
                       value={passwordData.old_password}
+
                       onChange={(e) => setPasswordData({...passwordData, old_password: e.target.value})}
+
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none" 
+
                     />
+
                   </div>
+
                   <div className="grid md:grid-cols-2 gap-4">
+
                     <div>
+
                       <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+
                       <input 
+
                         type="password" 
+
                         value={passwordData.new_password}
+
                         onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none" 
+
                       />
+
                     </div>
+
                     <div>
+
                       <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+
                       <input 
+
                         type="password" 
+
                         value={passwordData.confirm_password}
+
                         onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
+
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none" 
+
                       />
+
                     </div>
+
                   </div>
+
                   <motion.button
+
                     whileHover={{ scale: 1.02 }}
+
                     whileTap={{ scale: 0.98 }}
+
                     onClick={changePassword}
+
                     disabled={settingsSaving}
+
                     className="mt-4 px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50"
+
                   >
+
                     {settingsSaving ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : ''}
+
                     Change Password
+
                   </motion.button>
+
                 </div>
+
               </div>
+
+
 
               {/* Sub-Admin Management Section - Only for Master Admins */}
+
               {!subadminPermissions && (
+
               <div className="border-t pt-8">
+
                 <div className="flex items-center justify-between mb-6">
+
                   <h3 className="text-lg font-semibold text-gray-900">Sub-Admin Management</h3>
+
                   <motion.button
+
                     whileHover={{ scale: 1.05 }}
+
                     whileTap={{ scale: 0.95 }}
+
                     onClick={() => setShowSubAdminForm(true)}
+
                     className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-600 text-white rounded-lg font-semibold"
+
                   >
+
                     + Create Sub-Admin
+
                   </motion.button>
+
                 </div>
+
                 <p className="text-gray-600 text-sm mb-4">Manage sub-admin accounts and their permissions</p>
+
                 <div className="bg-gray-50 rounded-xl p-6 text-center">
+
                   <Shield className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+
                   <p className="text-gray-500">No sub-admin accounts yet</p>
+
                   <p className="text-sm text-gray-400">Create one to delegate specific dashboard features</p>
+
                 </div>
+
               </div>
+
               )}
+
+
 
               {/* Permissions Management Section */}
+
               {!subadminPermissions && (
+
               <div className="border-t pt-8">
+
                 <div className="flex items-center justify-between mb-6">
+
                   <h3 className="text-lg font-semibold text-gray-900">Permissions Management</h3>
+
                   <motion.button
+
                     whileHover={{ scale: 1.05 }}
+
                     whileTap={{ scale: 0.95 }}
+
                     onClick={() => setShowPermissionManager(true)}
+
                     className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold"
+
                   >
+
                     🔐 Manage Permissions
+
                   </motion.button>
+
                 </div>
+
                 <p className="text-gray-600 text-sm">Configure granular tab-based permissions for all sub-admins. Control access to 25+ dashboard features including Users, Courses, Exams, Payments, Blog, Messages, and more.</p>
+
               </div>
+
               )}
+
             </div>
+
+
 
             <div className="border-t p-6 flex gap-4 justify-end bg-gray-50">
+
               <motion.button
+
                 whileHover={{ scale: 1.02 }}
+
                 whileTap={{ scale: 0.98 }}
+
                 onClick={() => setShowSettings(false)}
+
                 className="px-6 py-3 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+
               >
+
                 Close
+
               </motion.button>
+
             </div>
+
           </motion.div>
+
         </motion.div>
+
       )}
 
+
+
       {/* Sub-Admin Form Modal */}
+
       <SubAdminForm
+
         isOpen={showSubAdminForm}
+
         onClose={() => setShowSubAdminForm(false)}
+
         onSuccess={() => {
+
           setShowSubAdminForm(false)
+
         }}
+
       />
+
+
 
       {/* Permission Manager Modal */}
+
       <PermissionManager
+
         isOpen={showPermissionManager}
+
         onClose={() => setShowPermissionManager(false)}
+
         onSuccess={() => {
+
           setShowPermissionManager(false)
+
         }}
+
       />
+
       </>
+
       </div>
+
     </ThemeProvider>
+
   )
+
 }
+
+
 
 // Small helper component to run a scroll effect when analytics tab is opened with a target panel
+
 function EffectRunner({ panel }: { panel: string }) {
+
   useEffect(() => {
+
     try {
+
       const id = panel === 'registrations' ? 'analytics-registrations' : panel === 'downloads' ? 'analytics-downloads' : null
+
       if (id) {
+
         const el = document.getElementById(id)
+
         if (el) {
+
           setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)
+
         }
+
       }
+
     } catch (e) {
+
       // ignore
+
     }
+
   }, [panel])
+
   return null
+
 }
 
+
+
 // SUPPORTED_CURRENCIES imported from src/constants/currencies.ts
+

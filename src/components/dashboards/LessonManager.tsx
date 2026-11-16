@@ -1,16 +1,26 @@
-import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
   Plus,
   Trash2,
   FolderOpen,
   ChevronDown,
+  ChevronUp,
   Loader2,
   Edit,
   Save,
   Tags,
   X,
+  Maximize2,
+  Minimize2,
+  Calculator,
+  Lightbulb,
+  AlertTriangle,
+  Target,
+  BookOpen,
+  Minus,
+  Table as TableIcon,
 } from 'lucide-react'
 import api from '../../utils/axiosInterceptor'
 import showToast from '../../utils/toast'
@@ -113,10 +123,15 @@ const quillModules = {
     container: [
       ['bold', 'italic', 'underline', 'strike'],
       ['blockquote', 'code-block'],
-      [{ header: [1, 2, 3, false] }],
-      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ header: [1, 2, 3, 4, false] }],
+      [{ size: ['small', false, 'large', 'huge'] }],
+      [{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
       [{ script: 'sub' }, { script: 'super' }],
-      ['image', 'link', 'formula'],
+      [{ indent: '-1' }, { indent: '+1' }],
+      [{ direction: 'rtl' }],
+      [{ color: [] }, { background: [] }],
+      [{ align: [] }],
+      ['image', 'video', 'link', 'formula'],
       ['table'],
       ['clean'],
     ],
@@ -127,7 +142,7 @@ const quillModules = {
           this.quill.insertEmbed(
             range.index,
             'qtable',
-            '<table><tr><td>Header 1</td><td>Header 2</td></tr><tr><td>Cell 1</td><td>Cell 2</td></tr></table>'
+            '<table style="width:100%; border-collapse: collapse; margin: 12px 0;"><tr style="background:#f8fafc;"><th style="border:1px solid #cbd5e1; padding:8px 12px; font-weight:600; text-align:left;">Header 1</th><th style="border:1px solid #cbd5e1; padding:8px 12px; font-weight:600; text-align:left;">Header 2</th><th style="border:1px solid #cbd5e1; padding:8px 12px; font-weight:600; text-align:left;">Header 3</th></tr><tr><td style="border:1px solid #cbd5e1; padding:8px 12px;">Cell 1</td><td style="border:1px solid #cbd5e1; padding:8px 12px;">Cell 2</td><td style="border:1px solid #cbd5e1; padding:8px 12px;">Cell 3</td></tr><tr><td style="border:1px solid #cbd5e1; padding:8px 12px;">Cell 4</td><td style="border:1px solid #cbd5e1; padding:8px 12px;">Cell 5</td><td style="border:1px solid #cbd5e1; padding:8px 12px;">Cell 6</td></tr></table>'
           )
           this.quill.setSelection(range.index + 1)
         }
@@ -145,7 +160,15 @@ const quillModules = {
   }
 }
 
-const quillFormats = ['bold', 'italic', 'underline', 'strike', 'blockquote', 'code-block', 'header', 'list', 'script', 'image', 'link', 'formula', 'table', 'qtable']
+const quillFormats = [
+  'bold', 'italic', 'underline', 'strike',
+  'blockquote', 'code-block',
+  'header', 'size',
+  'list', 'script', 'indent', 'direction',
+  'color', 'background', 'align',
+  'image', 'video', 'link', 'formula',
+  'table', 'qtable'
+]
 
 const toArray = (data: any) => Array.isArray(data) ? data : (data?.results || [])
 
@@ -193,6 +216,84 @@ export default function LessonManager() {
   const [metaDescription, setMetaDescription] = useState('')
   const [metaKeywords, setMetaKeywords] = useState('')
   const [ogImage, setOgImage] = useState('')
+
+  const quillRef = useRef<any>(null)
+  const [showMathDrawer, setShowMathDrawer] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  const wordCount = useMemo(() => {
+    const text = lessonContent.replace(/<[^>]*>/g, ' ').trim()
+    return text ? text.split(/\s+/).filter(Boolean).length : 0
+  }, [lessonContent])
+
+  const charCount = useMemo(() => {
+    return lessonContent.replace(/<[^>]*>/g, '').trim().length
+  }, [lessonContent])
+
+  const readingTime = useMemo(() => {
+    return Math.max(1, Math.ceil(wordCount / 200))
+  }, [wordCount])
+
+  const insertCallout = (type: 'note' | 'warning' | 'definition' | 'example') => {
+    const editor = quillRef.current?.getEditor ? quillRef.current.getEditor() : null
+    if (!editor) return
+    const range = editor.getSelection(true) || { index: editor.getLength() }
+    
+    let html = ''
+    if (type === 'note') {
+      html = `<div style="border-left: 4px solid #3b82f6; background-color: #eff6ff; padding: 12px 16px; margin: 12px 0; border-radius: 6px;"><strong style="color: #1d4ed8;">💡 Key Concept:</strong> Enter key concept or tip here...</div><p><br></p>`
+    } else if (type === 'warning') {
+      html = `<div style="border-left: 4px solid #f59e0b; background-color: #fffbeb; padding: 12px 16px; margin: 12px 0; border-radius: 6px;"><strong style="color: #b45309;">⚠️ Important Reminder:</strong> Enter important reminder or common pitfall...</div><p><br></p>`
+    } else if (type === 'definition') {
+      html = `<div style="border-left: 4px solid #10b981; background-color: #ecfdf5; padding: 12px 16px; margin: 12px 0; border-radius: 6px;"><strong style="color: #047857;">🎯 Definition / Formula:</strong> State the core rule or definition here...</div><p><br></p>`
+    } else if (type === 'example') {
+      html = `<div style="border-left: 4px solid #8b5cf6; background-color: #f5f3ff; padding: 12px 16px; margin: 12px 0; border-radius: 6px;"><strong style="color: #6d28d9;">📝 Worked Example:</strong> State the problem statement and step-by-step solution...</div><p><br></p>`
+    }
+    
+    editor.clipboard.dangerouslyPasteHTML(range.index, html)
+    editor.setSelection(range.index + html.length)
+  }
+
+  const insertDivider = () => {
+    const editor = quillRef.current?.getEditor ? quillRef.current.getEditor() : null
+    if (!editor) return
+    const range = editor.getSelection(true) || { index: editor.getLength() }
+    const html = `<hr style="border: none; border-top: 2px dashed #cbd5e1; margin: 24px 0;" /><p><br></p>`
+    editor.clipboard.dangerouslyPasteHTML(range.index, html)
+  }
+
+  const mathSymbols = [
+    { label: 'Fraction', latex: '\\frac{a}{b}' },
+    { label: '√ Root', latex: '\\sqrt{x}' },
+    { label: 'Power x²', latex: 'x^{2}' },
+    { label: 'Subscript xᵢ', latex: 'x_{i}' },
+    { label: '± Plus-Minus', latex: '\\pm' },
+    { label: '× Times', latex: '\\times' },
+    { label: '÷ Divide', latex: '\\div' },
+    { label: 'π Pi', latex: '\\pi' },
+    { label: 'θ Theta', latex: '\\theta' },
+    { label: 'α Alpha', latex: '\\alpha' },
+    { label: 'β Beta', latex: '\\beta' },
+    { label: 'Δ Delta', latex: '\\Delta' },
+    { label: 'λ Lambda', latex: '\\lambda' },
+    { label: '≤ Less/Equal', latex: '\\le' },
+    { label: '≥ Greater/Equal', latex: '\\ge' },
+    { label: '≈ Approx', latex: '\\approx' },
+    { label: '≠ Not Equal', latex: '\\ne' },
+    { label: '∑ Sum', latex: '\\sum_{i=1}^{n}' },
+    { label: '∫ Integral', latex: '\\int_{a}^{b}' },
+    { label: '∞ Infinity', latex: '\\infty' },
+    { label: '→ Arrow', latex: '\\rightarrow' },
+    { label: '° Degree', latex: '^\\circ' },
+  ]
+
+  const insertMathSnippet = (latex: string) => {
+    const editor = quillRef.current?.getEditor ? quillRef.current.getEditor() : null
+    if (!editor) return
+    const range = editor.getSelection(true) || { index: editor.getLength() }
+    editor.insertEmbed(range.index, 'formula', latex)
+    editor.setSelection(range.index + 1)
+  }
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -958,17 +1059,143 @@ export default function LessonManager() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Lesson Content (Rich Text with Math Support)</label>
-                  <div className="border border-gray-300 rounded-lg overflow-hidden [&_.ql-editor]:min-h-[560px] [&_.ql-container]:min-h-[560px]">
+                <div className={isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-slate-900 p-6 md:p-8 flex flex-col overflow-hidden" : ""}>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                    <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100">
+                      Lesson Content (Rich Text with Math, Media & Alignment)
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowMathDrawer(!showMathDrawer)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border flex items-center gap-1.5 transition-colors ${
+                          showMathDrawer
+                            ? 'bg-yellow-500 text-white border-yellow-500'
+                            : 'bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100'
+                        }`}
+                        title="Toggle Math & Science symbols toolbar"
+                      >
+                        <Calculator className="w-3.5 h-3.5" />
+                        Math Symbols
+                        {showMathDrawer ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg border border-gray-300 dark:border-slate-700 hover:bg-gray-200 transition-colors flex items-center gap-1.5"
+                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Writing Mode"}
+                      >
+                        {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                        {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Math Symbols Collapsible Drawer */}
+                  <AnimatePresence>
+                    {showMathDrawer && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mb-3 p-3 bg-amber-50/70 border border-amber-200 rounded-xl overflow-hidden"
+                      >
+                        <div className="text-xs font-semibold text-amber-900 mb-2 flex items-center gap-1.5">
+                          <Calculator className="w-3.5 h-3.5 text-amber-600" />
+                          Click any symbol to insert as KaTeX math formula:
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {mathSymbols.map((s, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => insertMathSnippet(s.latex)}
+                              className="px-2.5 py-1 text-xs font-mono bg-white hover:bg-amber-100 border border-amber-200 text-amber-900 rounded-md shadow-xs transition-colors"
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Educational Callout Quick Inserts Bar */}
+                  <div className="mb-2 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500 dark:text-slate-400 pl-1 mr-1">Insert Blocks:</span>
+                    <button
+                      type="button"
+                      onClick={() => insertCallout('note')}
+                      className="px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors flex items-center gap-1"
+                    >
+                      <Lightbulb className="w-3 h-3 text-blue-600" />
+                      Key Concept
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertCallout('warning')}
+                      className="px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors flex items-center gap-1"
+                    >
+                      <AlertTriangle className="w-3 h-3 text-amber-600" />
+                      Important
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertCallout('definition')}
+                      className="px-2.5 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors flex items-center gap-1"
+                    >
+                      <Target className="w-3 h-3 text-emerald-600" />
+                      Definition
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertCallout('example')}
+                      className="px-2.5 py-1 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg border border-purple-200 transition-colors flex items-center gap-1"
+                    >
+                      <BookOpen className="w-3 h-3 text-purple-600" />
+                      Example
+                    </button>
+                    <button
+                      type="button"
+                      onClick={insertDivider}
+                      className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors flex items-center gap-1"
+                    >
+                      <Minus className="w-3 h-3 text-gray-600" />
+                      Divider
+                    </button>
+                  </div>
+
+                  {/* Main Quill Editor */}
+                  <div className={`border border-gray-300 dark:border-slate-700 rounded-lg overflow-hidden ${isFullscreen ? "flex-1 flex flex-col [&_.ql-container]:flex-1 [&_.ql-editor]:h-full" : "[&_.ql-editor]:min-h-[560px] [&_.ql-container]:min-h-[560px]"}`}>
                     <ReactQuill
+                      ref={quillRef}
                       value={lessonContent}
                       onChange={setLessonContent}
                       modules={quillModules}
                       formats={quillFormats}
                       theme="snow"
-                      placeholder="Enter lesson content..."
+                      placeholder="Enter comprehensive lesson content, formulas, diagrams, and video walkthroughs..."
                     />
+                  </div>
+
+                  {/* Writing Metrics Bar */}
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400 mt-2 px-1">
+                    <div className="flex items-center gap-4">
+                      <span><strong>{wordCount}</strong> words</span>
+                      <span><strong>{charCount}</strong> characters</span>
+                      <span>~<strong>{readingTime}</strong> min reading time</span>
+                    </div>
+                    {isFullscreen && (
+                      <button
+                        type="button"
+                        onClick={() => setIsFullscreen(false)}
+                        className="px-3 py-1 bg-yellow-600 text-white rounded-md text-xs font-semibold hover:bg-yellow-700"
+                      >
+                        Exit Fullscreen
+                      </button>
+                    )}
                   </div>
                 </div>
 

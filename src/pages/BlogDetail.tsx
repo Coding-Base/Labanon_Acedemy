@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
 import { motion } from 'framer-motion'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
@@ -76,6 +76,14 @@ export default function BlogDetailPage() {
   const [sharesCount, setSharesCount] = useState(blog?.shares_count || 0)
   const [liking, setLiking] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<number | undefined>()
+
+  const adLocation = blog?.ad_display_location || 'bottom'
+  const targetAds = useMemo(() => {
+    if (blog?.selected_ad_detail) {
+      return [blog.selected_ad_detail]
+    }
+    return undefined
+  }, [blog?.selected_ad_detail])
 
   useEffect(() => {
     if (slug) {
@@ -341,11 +349,48 @@ export default function BlogDetailPage() {
 
             {/* Body */}
             <div className="prose prose-lg max-w-none">
-              <div className="text-gray-700 leading-relaxed blog-content">
-                <div
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatBlogContent(blog.content || '')) }}
-                />
-              </div>
+              {(() => {
+                const formattedHtml = DOMPurify.sanitize(formatBlogContent(blog.content || ''))
+                const showMiddle = adLocation === 'middle' || adLocation === 'both' || adLocation === 'custom'
+                const markerRegex = /<div[^>]*data-blog-ad="true"[^>]*>[\s\S]*?<\/div>|\[AD_PLACEHOLDER\]/i
+
+                if (markerRegex.test(formattedHtml) && adLocation !== 'none') {
+                  const parts = formattedHtml.split(markerRegex)
+                  return (
+                    <div className="text-gray-700 leading-relaxed blog-content">
+                      <div dangerouslySetInnerHTML={{ __html: parts[0] }} />
+                      <div className="my-8 not-prose">
+                        <BlogAdCards ads={targetAds} layout="horizontal" showHeader={false} />
+                      </div>
+                      <div dangerouslySetInnerHTML={{ __html: parts.slice(1).join('') }} />
+                    </div>
+                  )
+                }
+
+                if (showMiddle && adLocation !== 'none') {
+                  const paragraphs = formattedHtml.split('</p>')
+                  if (paragraphs.length >= 3) {
+                    const mid = Math.floor(paragraphs.length / 2)
+                    const part1 = paragraphs.slice(0, mid).join('</p>') + '</p>'
+                    const part2 = paragraphs.slice(mid).join('</p>')
+                    return (
+                      <div className="text-gray-700 leading-relaxed blog-content">
+                        <div dangerouslySetInnerHTML={{ __html: part1 }} />
+                        <div className="my-8 not-prose">
+                          <BlogAdCards ads={targetAds} layout="horizontal" showHeader={false} />
+                        </div>
+                        <div dangerouslySetInnerHTML={{ __html: part2 }} />
+                      </div>
+                    )
+                  }
+                }
+
+                return (
+                  <div className="text-gray-700 leading-relaxed blog-content">
+                    <div dangerouslySetInnerHTML={{ __html: formattedHtml }} />
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Engagement Stats & Actions */}
@@ -405,15 +450,17 @@ export default function BlogDetailPage() {
         {/* Comments Section */}
         <CommentSection blogId={blog.id} currentUserId={currentUserId} />
 
-        {/* Recommended Ads Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="max-w-4xl mx-auto mt-12 px-4"
-        >
-          <BlogAdCards layout="horizontal" showHeader={true} />
-        </motion.div>
+        {/* Recommended Ads Section - Based on configured ad_display_location */}
+        {adLocation !== 'none' && (adLocation === 'bottom' || adLocation === 'both' || !adLocation) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="max-w-4xl mx-auto mt-12 px-4"
+          >
+            <BlogAdCards ads={targetAds} layout="horizontal" showHeader={true} />
+          </motion.div>
+        )}
         <footer className="max-w-4xl mx-auto px-4 py-12">
           <div className="bg-gradient-to-tr from-white to-gray-50 rounded-lg p-8 shadow-sm border border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

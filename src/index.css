@@ -78,6 +78,28 @@ html, body, #root { height: 100%; }
   min-height: 120px;
 }
 
+/* ── Scrollbar utilities ─────────────────── */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 4px;
+}
+.dark .custom-scrollbar {
+  scrollbar-color: #334155 transparent;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
 /* ── CoursePlayer dark theme utilities ─────────────────── */
 .course-scrollbar {
   scrollbar-width: thin;

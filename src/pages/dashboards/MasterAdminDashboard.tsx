@@ -3139,7 +3139,7 @@ export default function MasterAdminDashboard({ summary: propSummary }: MasterPro
 
 
 
-        headers['Content-Type'] = 'multipart/form-data'
+        // multipart/form-data boundary handled automatically by Axios
 
         if (editingAd) {
 

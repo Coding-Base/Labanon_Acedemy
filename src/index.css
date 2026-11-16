@@ -217,8 +217,131 @@ html, body, #root { height: 100%; }
   background-color: transparent !important;
 }
 
+/* ══════════════════════════════════════════════════════════
+   QUILL DARK MODE THEME (Universal support across all Quill editors)
+   ══════════════════════════════════════════════════════════ */
+.dark .ql-toolbar.ql-snow {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
 
-/* Fullscreen Lesson Editor scrolling and layout */
+.dark .ql-container.ql-snow {
+  background-color: #0b1120 !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark .ql-editor {
+  color: #f8fafc !important;
+  background-color: transparent !important;
+}
+
+.dark .ql-editor.ql-blank::before {
+  color: #64748b !important;
+}
+
+/* Quill Toolbar SVG icons in dark mode */
+.dark .ql-snow .ql-stroke {
+  stroke: #cbd5e1 !important;
+}
+
+.dark .ql-snow .ql-fill {
+  fill: #cbd5e1 !important;
+}
+
+.dark .ql-snow .ql-stroke.ql-thin {
+  stroke: #cbd5e1 !important;
+}
+
+.dark .ql-snow .ql-picker {
+  color: #cbd5e1 !important;
+}
+
+.dark .ql-snow .ql-picker-label {
+  color: #cbd5e1 !important;
+}
+
+.dark .ql-snow .ql-picker-label svg .ql-stroke {
+  stroke: #cbd5e1 !important;
+}
+
+.dark .ql-snow .ql-picker-options {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .ql-snow .ql-picker-item {
+  color: #cbd5e1 !important;
+}
+
+.dark .ql-snow .ql-picker-item:hover,
+.dark .ql-snow .ql-picker-item.ql-selected {
+  color: #f59e0b !important;
+  background-color: #334155 !important;
+}
+
+/* Hover and active states for toolbar buttons in dark mode */
+.dark .ql-snow.ql-toolbar button:hover .ql-stroke,
+.dark .ql-snow.ql-toolbar button:focus .ql-stroke,
+.dark .ql-snow.ql-toolbar button.ql-active .ql-stroke {
+  stroke: #f59e0b !important;
+}
+
+.dark .ql-snow.ql-toolbar button:hover .ql-fill,
+.dark .ql-snow.ql-toolbar button:focus .ql-fill,
+.dark .ql-snow.ql-toolbar button.ql-active .ql-fill {
+  fill: #f59e0b !important;
+}
+
+.dark .ql-snow.ql-toolbar button:hover,
+.dark .ql-snow.ql-toolbar button:focus,
+.dark .ql-snow.ql-toolbar button.ql-active {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  border-radius: 4px;
+}
+
+/* Dark mode styling for inserted callout blocks */
+.dark .ql-editor div[style*="background-color: #eff6ff"] {
+  background-color: rgba(30, 58, 138, 0.25) !important;
+  border-color: #3b82f6 !important;
+  color: #bfdbfe !important;
+}
+.dark .ql-editor div[style*="background-color: #eff6ff"] strong {
+  color: #60a5fa !important;
+}
+
+.dark .ql-editor div[style*="background-color: #fffbeb"] {
+  background-color: rgba(120, 53, 15, 0.25) !important;
+  border-color: #f59e0b !important;
+  color: #fde68a !important;
+}
+.dark .ql-editor div[style*="background-color: #fffbeb"] strong {
+  color: #fbbf24 !important;
+}
+
+.dark .ql-editor div[style*="background-color: #ecfdf5"] {
+  background-color: rgba(6, 78, 59, 0.25) !important;
+  border-color: #10b981 !important;
+  color: #a7f3d0 !important;
+}
+.dark .ql-editor div[style*="background-color: #ecfdf5"] strong {
+  color: #34d399 !important;
+}
+
+.dark .ql-editor div[style*="background-color: #f5f3ff"] {
+  background-color: rgba(76, 29, 149, 0.25) !important;
+  border-color: #8b5cf6 !important;
+  color: #ddd6fe !important;
+}
+.dark .ql-editor div[style*="background-color: #f5f3ff"] strong {
+  color: #a78bfa !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   FULLSCREEN LESSON EDITOR LAYOUT & SCROLLING
+   ══════════════════════════════════════════════════════════ */
 .lesson-editor-fullscreen {
   position: fixed !important;
   inset: 0 !important;
@@ -241,7 +364,6 @@ html, body, #root { height: 100%; }
 
 .lesson-editor-fullscreen .ql-toolbar {
   flex-shrink: 0 !important;
-  background-color: #f8fafc !important;
   border-top-left-radius: 0.5rem !important;
   border-top-right-radius: 0.5rem !important;
 }
@@ -254,7 +376,6 @@ html, body, #root { height: 100%; }
   height: 100% !important;
   overflow: hidden !important;
   position: relative !important;
-  background-color: #ffffff !important;
 }
 
 .lesson-editor-fullscreen .ql-editor {
@@ -264,23 +385,92 @@ html, body, #root { height: 100%; }
   max-height: 100% !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
-  padding: 1.25rem 1.5rem !important;
+  padding: 1.5rem !important;
   font-size: 1rem !important;
-  line-height: 1.7 !important;
+  line-height: 1.75 !important;
 }
 
-/* Custom sleek scrollbar for editor */
-.lesson-editor-fullscreen .ql-editor::-webkit-scrollbar {
+/* Light mode specific colors for Fullscreen */
+:not(.dark) .lesson-editor-fullscreen,
+html:not(.dark) .lesson-editor-fullscreen {
+  background-color: #ffffff !important;
+}
+
+:not(.dark) .lesson-editor-fullscreen .ql-toolbar,
+html:not(.dark) .lesson-editor-fullscreen .ql-toolbar {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+:not(.dark) .lesson-editor-fullscreen .ql-container,
+html:not(.dark) .lesson-editor-fullscreen .ql-container {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+:not(.dark) .lesson-editor-fullscreen .ql-editor,
+html:not(.dark) .lesson-editor-fullscreen .ql-editor {
+  color: #0f172a !important;
+}
+
+:not(.dark) .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar,
+html:not(.dark) .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar {
   width: 8px;
 }
-.lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-track {
+:not(.dark) .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-track,
+html:not(.dark) .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 4px;
 }
-.lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb {
+:not(.dark) .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb,
+html:not(.dark) .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
-.lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb:hover {
+:not(.dark) .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb:hover,
+html:not(.dark) .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Dark mode specific colors for Fullscreen */
+.dark .lesson-editor-fullscreen,
+html.dark .lesson-editor-fullscreen {
+  background-color: #0f172a !important;
+}
+
+.dark .lesson-editor-fullscreen .ql-toolbar,
+html.dark .lesson-editor-fullscreen .ql-toolbar {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.dark .lesson-editor-fullscreen .ql-container,
+html.dark .lesson-editor-fullscreen .ql-container {
+  background-color: #0b1120 !important;
+  border-color: #334155 !important;
+}
+
+.dark .lesson-editor-fullscreen .ql-editor,
+html.dark .lesson-editor-fullscreen .ql-editor {
+  color: #f8fafc !important;
+}
+
+.dark .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar,
+html.dark .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar {
+  width: 8px;
+}
+.dark .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-track,
+html.dark .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-radius: 4px;
+}
+.dark .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb,
+html.dark .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+.dark .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb:hover,
+html.dark .lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+

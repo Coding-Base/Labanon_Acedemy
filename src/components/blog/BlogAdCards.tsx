@@ -5,7 +5,21 @@ import { ChevronRight, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { resolveImageUrl, handleImageError } from '../../utils/imageUtils'
 
-const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
+function getEffectiveApiBase(): string {
+  const envApi = (import.meta.env.VITE_API_BASE as string) || ''
+  if (envApi && !envApi.includes('localhost')) {
+    return envApi
+  }
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return envApi || 'http://localhost:8000/api'
+    }
+    return 'https://api.lighthubacademy.org/api'
+  }
+  return 'https://api.lighthubacademy.org/api'
+}
+
+const API_BASE = getEffectiveApiBase()
 const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
 
 function getImageSrc(img?: string) {

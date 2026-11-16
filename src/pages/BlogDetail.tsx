@@ -2,30 +2,30 @@ import React, { useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
 import { motion } from 'framer-motion'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Calendar, User, Loader2, Heart, MessageCircle, Share2, BookOpen, Globe } from 'lucide-react'
+import { ArrowLeft, Calendar, User, Loader2, Heart, MessageCircle, Share2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
 import CommentSection from '../components/blog/CommentSection'
 import BlogAdCards from '../components/blog/BlogAdCards'
 import DOMPurify from 'dompurify'
 import { resolveImageUrl, formatRichContentImages, handleImageError } from '../utils/imageUtils'
 
-const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000/api'
-
-function getEffectiveBackendOrigin(): string {
+function getEffectiveApiBase(): string {
   const envApi = (import.meta.env.VITE_API_BASE as string) || ''
   if (envApi && !envApi.includes('localhost')) {
-    return envApi.replace(/\/api\/?$/, '')
+    return envApi
   }
   if (typeof window !== 'undefined') {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:8000'
+      return envApi || 'http://localhost:8000/api'
     }
-    return 'https://api.lighthubacademy.org'
+    return 'https://api.lighthubacademy.org/api'
   }
-  return 'https://api.lighthubacademy.org'
+  return 'https://api.lighthubacademy.org/api'
 }
 
-const BACKEND_ORIGIN = getEffectiveBackendOrigin()
+const API_BASE = getEffectiveApiBase()
+const BACKEND_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
 
 function getImageSrc(img?: string): string {
   return resolveImageUrl(img)
@@ -77,13 +77,46 @@ export default function BlogDetailPage() {
   const [liking, setLiking] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<number | undefined>()
 
+  const [activeAds, setActiveAds] = useState<any[]>([])
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const publicApi = axios.create({ baseURL: API_BASE })
+        const res = await publicApi.get('/blog/ads/')
+        const items = (res.data?.results || res.data || []).filter((ad: any) => ad.is_active)
+        if (mounted && items.length > 0) {
+          setActiveAds(items)
+        }
+      } catch (err) {
+        console.warn('Could not fetch active ads for blog detail:', err)
+      }
+    })()
+    return () => { mounted = false }
+  }, [])
+
   const adLocation = blog?.ad_display_location || 'bottom'
-  const targetAds = useMemo(() => {
+
+  const inContentAds = useMemo(() => {
+    if (blog?.selected_ad_detail) {
+      return [blog.selected_ad_detail]
+    }
+    if (activeAds.length > 0) {
+      return [activeAds[0]]
+    }
+    return undefined
+  }, [blog?.selected_ad_detail, activeAds])
+
+  const bottomAds = useMemo(() => {
+    if (activeAds.length > 0) {
+      return activeAds
+    }
     if (blog?.selected_ad_detail) {
       return [blog.selected_ad_detail]
     }
     return undefined
-  }, [blog?.selected_ad_detail])
+  }, [activeAds, blog?.selected_ad_detail])
 
   useEffect(() => {
     if (slug) {
@@ -360,7 +393,7 @@ export default function BlogDetailPage() {
                     <div className="text-gray-700 leading-relaxed blog-content">
                       <div dangerouslySetInnerHTML={{ __html: parts[0] }} />
                       <div className="my-8 not-prose">
-                        <BlogAdCards ads={targetAds} layout="horizontal" showHeader={false} />
+                        <BlogAdCards ads={inContentAds} layout="horizontal" showHeader={false} />
                       </div>
                       <div dangerouslySetInnerHTML={{ __html: parts.slice(1).join('') }} />
                     </div>
@@ -377,7 +410,7 @@ export default function BlogDetailPage() {
                       <div className="text-gray-700 leading-relaxed blog-content">
                         <div dangerouslySetInnerHTML={{ __html: part1 }} />
                         <div className="my-8 not-prose">
-                          <BlogAdCards ads={targetAds} layout="horizontal" showHeader={false} />
+                          <BlogAdCards ads={inContentAds} layout="horizontal" showHeader={false} />
                         </div>
                         <div dangerouslySetInnerHTML={{ __html: part2 }} />
                       </div>
@@ -450,79 +483,34 @@ export default function BlogDetailPage() {
         {/* Comments Section */}
         <CommentSection blogId={blog.id} currentUserId={currentUserId} />
 
-        {/* Recommended Ads Section - Based on configured ad_display_location */}
-        {adLocation !== 'none' && (adLocation === 'bottom' || adLocation === 'both' || !adLocation) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="max-w-4xl mx-auto mt-12 px-4"
-          >
-            <BlogAdCards ads={targetAds} layout="horizontal" showHeader={true} />
-          </motion.div>
-        )}
-        <footer className="max-w-4xl mx-auto px-4 py-12">
-          <div className="bg-gradient-to-tr from-white to-gray-50 rounded-lg p-8 shadow-sm border border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-50 rounded-md text-green-600">
-                    <BookOpen className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900">About LightHub Academy</h3>
-                </div>
-                <p className="text-sm text-gray-600">Practical learning resources, courses, and community insights for educators and learners. Join our community and grow your skills with hands-on content.</p>
-                <div className="mt-2 flex items-center gap-3">
-                  <a href="/blog" className="text-sm text-gray-700 hover:text-green-600 flex items-center gap-2"><Share2 className="w-4 h-4" /> Follow our updates</a>
-                </div>
-              </div>
-
-              <div className="md:pl-6">
-                <h4 className="font-semibold text-gray-900 mb-2">Quick Links</h4>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="/" className="text-gray-600 hover:text-green-600">Home</a></li>
-                  <li><a href="/courses" className="text-gray-600 hover:text-green-600">Courses</a></li>
-                  <li><a href="/blog" className="text-gray-600 hover:text-green-600">All Articles</a></li>
-                  <li><a href="/contact" className="text-gray-600 hover:text-green-600">Contact</a></li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Stay in touch</h4>
-                <p className="text-sm text-gray-600 mb-3">Subscribe for occasional updates and course announcements.</p>
-                <div className="flex gap-2">
-                  <input aria-label="Email" placeholder="you@email.com" className="flex-1 px-3 py-2 border rounded-md text-sm" />
-                  <button className="px-3 py-2 bg-green-600 text-white rounded-md text-sm">Subscribe</button>
-                </div>
-
-                <div className="mt-4 flex items-center gap-3 text-sm text-gray-600">
-                  <a href="/" className="flex items-center gap-2 hover:text-green-600"><Globe className="w-4 h-4" /> Website</a>
-                  <a href="/contact" className="flex items-center gap-2 hover:text-green-600"><MessageCircle className="w-4 h-4" /> Contact</a>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 border-t pt-4 text-sm text-gray-500 flex flex-col md:flex-row md:justify-between items-start md:items-center">
-              <div>© {new Date().getFullYear()} LightHub Academy. All rights reserved.</div>
-              <div className="mt-2 md:mt-0">Made with <span className="text-red-500">♥</span> · <a href="/privacy" className="text-gray-700 underline">Privacy</a></div>
-            </div>
-          </div>
-        </footer>
+        {/* Static / Fixed Active Ads Section - Always visible at the bottom of each blog after comments */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="max-w-4xl mx-auto mt-12 px-4"
+        >
+          <BlogAdCards ads={bottomAds} layout="horizontal" showHeader={true} />
+        </motion.div>
         {/* Navigation */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.4 }}
           className="mt-12 text-center"
         >
           <button
             onClick={() => navigate('/blog')}
-            className="px-8 py-3 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
+            className="px-8 py-3 bg-gradient-to-r from-green-600 to-yellow-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow inline-flex items-center gap-2"
           >
+            <ArrowLeft className="w-5 h-5" />
             Back to All Articles
           </button>
         </motion.div>
       </div>
+
+      {/* Global Custom Footer */}
+      <Footer />
     </div>
   )
 }

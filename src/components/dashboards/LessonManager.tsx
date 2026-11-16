@@ -1118,19 +1118,19 @@ export default function LessonManager() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mb-3 p-3 bg-amber-50/70 border border-amber-200 rounded-xl overflow-hidden"
+                        className="mb-3 p-3 bg-amber-50/70 border border-amber-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl overflow-hidden shrink-0"
                       >
-                        <div className="text-xs font-semibold text-amber-900 mb-2 flex items-center gap-1.5">
-                          <Calculator className="w-3.5 h-3.5 text-amber-600" />
+                        <div className="text-xs font-semibold text-amber-900 dark:text-amber-300 mb-2 flex items-center gap-1.5">
+                          <Calculator className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                           Click any symbol to insert as KaTeX math formula:
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
                           {mathSymbols.map((s, idx) => (
                             <button
                               key={idx}
                               type="button"
                               onClick={() => insertMathSnippet(s.latex)}
-                              className="px-2.5 py-1 text-xs font-mono bg-white hover:bg-amber-100 border border-amber-200 text-amber-900 rounded-md shadow-xs transition-colors"
+                              className="px-2.5 py-1 text-xs font-mono bg-white hover:bg-amber-100 border border-amber-200 text-amber-900 dark:bg-slate-900 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-amber-300 rounded-md shadow-xs transition-colors"
                             >
                               {s.label}
                             </button>
@@ -1146,41 +1146,41 @@ export default function LessonManager() {
                     <button
                       type="button"
                       onClick={() => insertCallout('note')}
-                      className="px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors flex items-center gap-1"
+                      className="px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/60 rounded-lg border border-blue-200 transition-colors flex items-center gap-1"
                     >
-                      <Lightbulb className="w-3 h-3 text-blue-600" />
+                      <Lightbulb className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                       Key Concept
                     </button>
                     <button
                       type="button"
                       onClick={() => insertCallout('warning')}
-                      className="px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors flex items-center gap-1"
+                      className="px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/60 rounded-lg border border-amber-200 transition-colors flex items-center gap-1"
                     >
-                      <AlertTriangle className="w-3 h-3 text-amber-600" />
+                      <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                       Important
                     </button>
                     <button
                       type="button"
                       onClick={() => insertCallout('definition')}
-                      className="px-2.5 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors flex items-center gap-1"
+                      className="px-2.5 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/60 rounded-lg border border-emerald-200 transition-colors flex items-center gap-1"
                     >
-                      <Target className="w-3 h-3 text-emerald-600" />
+                      <Target className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       Definition
                     </button>
                     <button
                       type="button"
                       onClick={() => insertCallout('example')}
-                      className="px-2.5 py-1 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg border border-purple-200 transition-colors flex items-center gap-1"
+                      className="px-2.5 py-1 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800 dark:hover:bg-purple-900/60 rounded-lg border border-purple-200 transition-colors flex items-center gap-1"
                     >
-                      <BookOpen className="w-3 h-3 text-purple-600" />
+                      <BookOpen className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                       Example
                     </button>
                     <button
                       type="button"
                       onClick={insertDivider}
-                      className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors flex items-center gap-1"
+                      className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700 rounded-lg border border-gray-300 transition-colors flex items-center gap-1"
                     >
-                      <Minus className="w-3 h-3 text-gray-600" />
+                      <Minus className="w-3 h-3 text-gray-600 dark:text-slate-400" />
                       Divider
                     </button>
                   </div>

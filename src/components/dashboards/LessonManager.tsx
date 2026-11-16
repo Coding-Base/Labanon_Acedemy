@@ -221,6 +221,24 @@ export default function LessonManager() {
   const [showMathDrawer, setShowMathDrawer] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden'
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setIsFullscreen(false)
+        }
+      }
+      window.addEventListener('keydown', handleKeyDown)
+      return () => {
+        document.body.style.overflow = ''
+        window.removeEventListener('keydown', handleKeyDown)
+      }
+    } else {
+      document.body.style.overflow = ''
+    }
+  }, [isFullscreen])
+
   const wordCount = useMemo(() => {
     const text = lessonContent.replace(/<[^>]*>/g, ' ').trim()
     return text ? text.split(/\s+/).filter(Boolean).length : 0
@@ -1059,8 +1077,8 @@ export default function LessonManager() {
                   />
                 </div>
 
-                <div className={isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-slate-900 p-6 md:p-8 flex flex-col overflow-hidden" : ""}>
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                <div className={isFullscreen ? "lesson-editor-fullscreen fixed inset-0 z-50 bg-white dark:bg-slate-900 p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden" : ""}>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-2 shrink-0">
                     <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100">
                       Lesson Content (Rich Text with Math, Media & Alignment)
                     </label>
@@ -1123,7 +1141,7 @@ export default function LessonManager() {
                   </AnimatePresence>
 
                   {/* Educational Callout Quick Inserts Bar */}
-                  <div className="mb-2 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-wrap items-center gap-2">
+                  <div className="mb-2 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-wrap items-center gap-2 shrink-0">
                     <span className="text-xs font-medium text-gray-500 dark:text-slate-400 pl-1 mr-1">Insert Blocks:</span>
                     <button
                       type="button"
@@ -1168,7 +1186,11 @@ export default function LessonManager() {
                   </div>
 
                   {/* Main Quill Editor */}
-                  <div className={`border border-gray-300 dark:border-slate-700 rounded-lg overflow-hidden ${isFullscreen ? "flex-1 flex flex-col [&_.ql-container]:flex-1 [&_.ql-editor]:h-full" : "[&_.ql-editor]:min-h-[560px] [&_.ql-container]:min-h-[560px]"}`}>
+                  <div className={`border border-gray-300 dark:border-slate-700 rounded-lg overflow-hidden ${
+                    isFullscreen
+                      ? "flex-1 min-h-0 flex flex-col"
+                      : "[&_.ql-editor]:min-h-[560px] [&_.ql-container]:min-h-[560px]"
+                  }`}>
                     <ReactQuill
                       ref={quillRef}
                       value={lessonContent}
@@ -1181,7 +1203,7 @@ export default function LessonManager() {
                   </div>
 
                   {/* Writing Metrics Bar */}
-                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400 mt-2 px-1">
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400 mt-2 px-1 shrink-0">
                     <div className="flex items-center gap-4">
                       <span><strong>{wordCount}</strong> words</span>
                       <span><strong>{charCount}</strong> characters</span>

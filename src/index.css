@@ -217,3 +217,70 @@ html, body, #root { height: 100%; }
   background-color: transparent !important;
 }
 
+
+/* Fullscreen Lesson Editor scrolling and layout */
+.lesson-editor-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 50 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+.lesson-editor-fullscreen .quill {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.lesson-editor-fullscreen .ql-toolbar {
+  flex-shrink: 0 !important;
+  background-color: #f8fafc !important;
+  border-top-left-radius: 0.5rem !important;
+  border-top-right-radius: 0.5rem !important;
+}
+
+.lesson-editor-fullscreen .ql-container {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
+  background-color: #ffffff !important;
+}
+
+.lesson-editor-fullscreen .ql-editor {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 1.25rem 1.5rem !important;
+  font-size: 1rem !important;
+  line-height: 1.7 !important;
+}
+
+/* Custom sleek scrollbar for editor */
+.lesson-editor-fullscreen .ql-editor::-webkit-scrollbar {
+  width: 8px;
+}
+.lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.lesson-editor-fullscreen .ql-editor::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
